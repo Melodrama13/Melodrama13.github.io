@@ -1,0 +1,1955 @@
+<template>
+  <div class="pjsk-stats">
+    <div class="stats-layout" :class="{ 'nav-collapsed': navCollapsed }">
+      <aside class="stats-nav card-panel">
+        <button class="nav-toggle" @click="navCollapsed = !navCollapsed">{{ navCollapsed ? '>' : '<' }}</button>
+
+        <div v-if="!navCollapsed" class="nav-cutoff">
+            <div class="nav-cutoff-title">统计截止活动 ID</div>
+            <div class="nav-cutoff-controls">
+              <input
+                type="number"
+                v-model.number="displayEventId"
+                class="id-input"
+                placeholder="输入活动 ID"
+              />
+              <button @click="manualEventId = null" class="reset-mini-btn" :title="`恢复到当前参考活动 ID：${autoCurrentId}`">
+                恢复
+              </button>
+            </div>
+            <p class="config-tips">系统时间：{{ nowStr }} | 输入更大ID可查看预测统计。</p>
+        </div>
+
+        <template v-if="!navCollapsed">
+          <div class="nav-title">快速跳转</div>
+          <div class="nav-scroll">
+            <div v-for="group in navGroups" :key="group.id" class="nav-group">
+              <button
+                class="nav-link nav-link-main"
+                :class="{ active: isGroupActive(group) }"
+                :title="group.title"
+                @click="scrollToSection(group.id)"
+              >
+                {{ group.title }}
+              </button>
+              <div v-if="group.children?.length && isGroupExpanded(group)" class="nav-sub-list">
+                <button
+                  v-for="item in group.children"
+                  :key="item.id"
+                  class="nav-link nav-link-sub"
+                  :class="{ active: activeNavId === item.id }"
+                  :title="item.title"
+                  @click="scrollToSection(item.id)"
+                >
+                  {{ item.title }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </aside>
+
+      <div class="stats-main">
+        <h1>角色卡片统计</h1>
+
+        <div id="panel-dist" class="stats-section card-panel section-main">
+          <h2>阶梯分布</h2>
+          <div class="stats-grid">
+            <div
+              v-for="panel in groupPanels"
+              :key="panel.id"
+              class="stats-section card-panel"
+              :id="`panel-${panel.id}`"
+            >
+              <h2>{{ panel.title }}</h2>
+              <table class="count-table">
+                <thead>
+                  <tr><th width="50">数量</th><th>持有角色</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="group in panel.groups" :key="`${panel.id}-${group.count}`">
+                    <td class="count-cell" :class="panel.cellClass">{{ group.count }}</td>
+                    <td class="chars-cell">
+                      <div v-for="char in group.chars" :key="`${panel.id}-${char.name}`" class="char-avatar-box">
+                        <img
+                          :src="`/chibi_s/${getCharAbbr(char.name)}.webp`"
+                          :title="char.name"
+                          class="avatar-img"
+                          :style="{ borderColor: getCharColor(char.name) }"
+                        />
+                        <span class="abbr-text">{{ getCharAbbr(char.name) }}</span>
+                        <span v-if="panel.showRewardBreakdown" class="sub-stat">{{ char.rewardThreeCount }}+{{ char.rewardTwoCount }}</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="panel-related" class="stats-section card-panel related-panel">
+          <h2>相关记录</h2>
+
+          <div class="record-grid">
+            <div id="rel-last-four" class="record-block">
+              <h3>上一次四星（按时间）</h3>
+              <table class="record-table">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>活动</th>
+                    <th>日期</th>
+                    <th>距今</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in lastFourStarRecords" :key="`last-four-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                    <td class="record-char">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                      <span>{{ row.name }}</span>
+                    </td>
+                    <td>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ row.eventLabel }}</button>
+                    </td>
+                    <td>{{ row.date }}</td>
+                    <td>{{ row.months }}个月 | {{ row.periods }}期</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-last-limited" class="record-block">
+              <h3>上一次限定（按时间）</h3>
+              <table class="record-table">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>活动</th>
+                    <th>日期</th>
+                    <th>距今</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in lastLimitedRecords" :key="`last-limited-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                    <td class="record-char">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                      <span>{{ row.name }}</span>
+                    </td>
+                    <td>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ row.eventLabel }}</button>
+                    </td>
+                    <td>{{ row.date }}</td>
+                    <td>{{ row.months }}个月 | {{ row.periods }}期</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-four-long" class="record-block">
+              <h3>四星最长间隔（长→短）</h3>
+              <table class="record-table">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>活动始末</th>
+                    <th>最长</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in fourStarLongestIntervals" :key="`four-long-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                    <td class="record-char">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                      <span>{{ row.name }}</span>
+                    </td>
+                    <td class="range-cell">
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ row.longest?.startMark || '-' }}</button>
+                      <span>→</span>
+                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ row.longest?.endMark || '-' }}</button>
+                    </td>
+                    <td>{{ formatGapValue(row.longest) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-four-short" class="record-block">
+              <h3>四星最短间隔（短→长）</h3>
+              <table class="record-table">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>活动始末</th>
+                    <th>最短</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in fourStarShortestIntervals" :key="`four-short-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                    <td class="record-char">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                      <span>{{ row.name }}</span>
+                    </td>
+                    <td class="range-cell">
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ row.shortest?.startMark || '-' }}</button>
+                      <span>→</span>
+                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ row.shortest?.endMark || '-' }}</button>
+                    </td>
+                    <td>{{ formatGapValue(row.shortest) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-limited-long" class="record-block">
+              <h3>限定最长间隔（长→短）</h3>
+              <table class="record-table">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>活动始末</th>
+                    <th>最长</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in limitedLongestIntervals" :key="`lim-long-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                    <td class="record-char">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                      <span>{{ row.name }}</span>
+                    </td>
+                    <td class="range-cell">
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ row.longest?.startMark || '-' }}</button>
+                      <span>→</span>
+                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ row.longest?.endMark || '-' }}</button>
+                    </td>
+                    <td>{{ formatGapValue(row.longest) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-limited-short" class="record-block">
+              <h3>限定最短间隔（短→长）</h3>
+              <table class="record-table">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>活动始末</th>
+                    <th>最短</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in limitedShortestIntervals" :key="`lim-short-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                    <td class="record-char">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                      <span>{{ row.name }}</span>
+                    </td>
+                    <td class="range-cell">
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ row.shortest?.startMark || '-' }}</button>
+                      <span>→</span>
+                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ row.shortest?.endMark || '-' }}</button>
+                    </td>
+                    <td>{{ formatGapValue(row.shortest) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-ban-long" class="record-block">
+              <h3>Ban 最长间隔（长→短）</h3>
+              <table class="record-table">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>活动始末</th>
+                    <th>最长 Ban</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in banLongestIntervals" :key="`ban-long-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                    <td class="record-char">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                      <span>{{ row.name }}</span>
+                    </td>
+                    <td class="range-cell">
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ row.longest?.startMark || '-' }}</button>
+                      <span>→</span>
+                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ row.longest?.endMark || '-' }}</button>
+                    </td>
+                    <td>{{ formatGapValue(row.longest) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-ban-short" class="record-block">
+              <h3>Ban 最短间隔（短→长）</h3>
+              <table class="record-table">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>活动始末</th>
+                    <th>最短 Ban</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in banShortestIntervals" :key="`ban-short-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                    <td class="record-char">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                      <span>{{ row.name }}</span>
+                    </td>
+                    <td class="range-cell">
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ row.shortest?.startMark || '-' }}</button>
+                      <span>→</span>
+                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ row.shortest?.endMark || '-' }}</button>
+                    </td>
+                    <td>{{ formatGapValue(row.shortest) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="panel-vs-song" class="stats-section card-panel song-panel">
+          <h2>虚拟歌手参与书下</h2>
+          <div class="song-grid">
+            <div v-for="vs in virtualSingerSongStats" :key="`song-${vs.name}`" class="song-card" :style="{ backgroundColor: getRecordTint(vs.name, 0.2) }">
+              <div class="song-head">
+                <img :src="`/chibi_s/${getCharAbbr(vs.name)}.webp`" class="song-avatar" :style="{ borderColor: getCharColor(vs.name) }" />
+                <div>
+                  <div class="song-name">{{ vs.name }}</div>
+                  <div class="song-count">{{ vs.count }} 首</div>
+                </div>
+              </div>
+              <div class="unit-counts">
+                <span v-for="u in ['ln','mmj','vbs','ws','nc']" :key="`${vs.name}-${u}`" class="unit-chip" :style="{ backgroundColor: getUnitTint(u) }">
+                  <img :src="unitLogoMap[u]" class="unit-logo" :alt="u" />
+                  <span class="unit-count-num">{{ vs.unitCounts[u] }}</span>
+                </span>
+              </div>
+              <ul class="song-list">
+                <li v-for="s in vs.songs" :key="`${vs.name}-${s.tag}`">
+                  <span class="song-tag" :style="{ color: s.color }">{{ s.tag }}</span>
+                  <span class="song-title">{{ s.songName }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div id="panel-matrix" class="stats-section card-panel matrix-panel">
+          <h2>角色矩阵</h2>
+          <div class="matrix-wrap">
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th>角色</th>
+                  <th v-for="(attr, idx) in ATTRS" :key="`head-${attr}`" :class="matrixGroupClass(idx, ATTRS.length)">{{ ATTR_LABELS[attr] }}</th>
+                  <th :class="matrixGroupClass(0, 4)">分卡数</th>
+                  <th>P分数</th>
+                  <th>判卡数</th>
+                  <th :class="matrixGroupClass(3, 4)">奶卡数</th>
+                  <th :class="matrixGroupClass(0, 4)">四星数</th>
+                  <th>三星数</th>
+                  <th>二星数</th>
+                  <th :class="matrixGroupClass(3, 4)">报酬数</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in attrMatrixRows"
+                  :key="`attr-${row.name}`"
+                  :style="{ backgroundColor: getCharTint(row.name) }"
+                >
+                  <td class="row-char">
+                    <img
+                      :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                      class="mini-avatar"
+                      :title="row.name"
+                      :style="{ borderColor: getCharColor(row.name) }"
+                    />
+                  </td>
+                  <td
+                    v-for="(attr, idx) in ATTRS"
+                    :key="`${row.name}-${attr}`"
+                    class="matrix-num"
+                    :class="[matrixGroupClass(idx, ATTRS.length), getAttrExtremeClass(attr, row[attr])]"
+                  >
+                    {{ row[attr] }}
+                  </td>
+                  <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ row.pureScoreCount }}</td>
+                  <td class="matrix-num">{{ row.pScoreCount }}</td>
+                  <td class="matrix-num">{{ row.accuracyCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ row.recoveryCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ row.fourStarCount }}</td>
+                  <td class="matrix-num">{{ row.threeStarCount }}</td>
+                  <td class="matrix-num">{{ row.twoStarCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ row.rewardTotalCount }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>        
+        
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+// 1. 接收两个 Props
+const props = defineProps({
+  allEvents: { type: Array, default: () => [] },
+  allCards: { type: Array, default: () => [] },
+  jumpEventId: { type: [Number, String], default: null },
+  previewSyncEventId: { type: [Number, String], default: null }
+});
+const emit = defineEmits(['jump-to-event', 'stats-preview-update']);
+
+// 2. 新增：用户自定义的截止 ID 状态
+const manualEventId = ref(null);
+const navCollapsed = ref(false);
+const activeNavId = ref('panel-dist');
+let sectionObserver = null;
+
+const CHAR_MAP = {
+  "星乃一歌": "ICK", "天马咲希": "SAKI", "望月穗波": "HNM", "日野森志步": "SHIHO",
+  "花里实乃里": "MNR", "桐谷遥": "HRK", "桃井爱莉": "AIRI", "日野森雫": "SZK",
+  "小豆泽心羽": "KHN", "白石杏": "AN", "东云彰人": "AKT", "青柳冬弥": "TOYA",
+  "天马司": "TKS", "凤笑梦": "EMU", "草薙宁宁": "NENE", "神代类": "RUI",
+  "宵崎奏": "KND", "朝比奈真冬": "MFY", "东云绘名": "ENA", "晓山瑞希": "MZK",
+  "初音未来": "MIKU", "镜音铃": "RIN", "镜音连": "LEN", "巡音流歌": "LUKA", "MEIKO": "MEIKO", "KAITO": "KAITO"
+};
+
+//const getCharAbbr = (name) => CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
+const getCharAbbr = (name) => {
+  if (!name) return '';
+  // 尝试按空格拆分（例如 "初音未来 ln" -> ["初音未来", "ln"]）
+  const parts = name.split(' ');
+  const mainName = parts[0]; // 角色本体名字
+  const unitSuffix = parts.length > 1 ? parts[1].toLowerCase() : null; // 团队后缀
+  if (isVirtualSinger(mainName)) {  // 利用 isVirtualSinger 判断是否为虚拟歌手
+    const abbr = CHAR_MAP[mainName]; // 从映射表获取基础缩写，如 MIKU, RIN    
+    if (unitSuffix && unitSuffix !== 'vs') {    // 如果有团队后缀，且后缀不是 'vs'
+      return `${abbr.toLowerCase()}_${unitSuffix}`;      // 返回通用格式：缩写小写_团队名（如 miku_ln）
+    }
+    return abbr;    // 没有后缀或属于 vs 团队，返回原始大写缩写（如 MIKU）
+  }
+  // 非虚拟歌手角色，直接按全名查找映射
+  return CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
+};
+
+const jumpToHistoryByEventRef = (eventRef) => {
+  const id = String(eventRef?.id ?? '').trim();
+  if (!id) return;
+  emit('jump-to-event', id);
+};
+
+const getCharColor = (name) => {
+  const key = String(name || '').split(' ')[0];
+  return CHAR_COLORS[key] || '#d1d5db';
+};
+
+const VS_NAMES = ["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"];
+const UNIT_COLORS = {
+  ln: '#4455DD',
+  mmj: '#88DD44',
+  vbs: '#EE1166',
+  ws: '#FF9900',
+  nc: '#884499',
+  vs: '#111827'
+};
+const unitLogoMap = {
+  ln: '/elements/ln.png',
+  mmj: '/elements/mmj.png',
+  vbs: '/elements/vbs.png',
+  ws: '/elements/ws.png',
+  nc: '/elements/nc.png'
+};
+const CHAR_COLORS = {
+  "星乃一歌": "#33AAEE", "天马咲希": "#FFDD44", "望月穗波": "#EE6666", "日野森志步": "#BBDD22",
+  "花里实乃里": "#FFCCAA", "桐谷遥": "#99CCFF", "桃井爱莉": "#FFAACC", "日野森雫": "#99EEDD",
+  "小豆泽心羽": "#FF6699", "白石杏": "#00BBDD", "东云彰人": "#FF7722", "青柳冬弥": "#0077DD",
+  "天马司": "#FFBB00", "凤笑梦": "#FF66BB", "草薙宁宁": "#33DD99", "神代类": "#BB88EE",
+  "宵崎奏": "#BB6688", "朝比奈真冬": "#8888CC", "东云绘名": "#CCAA88", "晓山瑞希": "#DDAACC",
+  "初音未来": "#33CCBB", "镜音铃": "#FFCC11", "镜音连": "#FFEE11", "巡音流歌": "#FFBBCC", "MEIKO": "#DD4444", "KAITO": "#3366CC"
+};
+const CHAR_UNIT_MAP = {
+  "星乃一歌": "ln", "天马咲希": "ln", "望月穗波": "ln", "日野森志步": "ln",
+  "花里实乃里": "mmj", "桐谷遥": "mmj", "桃井爱莉": "mmj", "日野森雫": "mmj",
+  "小豆泽心羽": "vbs", "白石杏": "vbs", "东云彰人": "vbs", "青柳冬弥": "vbs",
+  "天马司": "ws", "凤笑梦": "ws", "草薙宁宁": "ws", "神代类": "ws",
+  "宵崎奏": "nc", "朝比奈真冬": "nc", "东云绘名": "nc", "晓山瑞希": "nc"
+};
+const CHAR_ORDER = {
+  "星乃一歌": 1, "天马咲希": 2, "望月穗波": 3, "日野森志步": 4,
+  "花里实乃里": 5, "桐谷遥": 6, "桃井爱莉": 7, "日野森雫": 8,
+  "小豆泽心羽": 9, "白石杏": 10, "东云彰人": 11, "青柳冬弥": 12,
+  "天马司": 13, "凤笑梦": 14, "草薙宁宁": 15, "神代类": 16,
+  "宵崎奏": 17, "朝比奈真冬": 18, "东云绘名": 19, "晓山瑞希": 20,
+  "初音未来": 21, "镜音铃": 22, "镜音连": 23, "巡音流歌": 24, "MEIKO": 25, "KAITO": 26
+};
+const ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
+const LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t']);
+const EXCLUDED_PERIOD_EVENT_TYPES = new Set(['测试']);
+const SPECIAL_EVENT_KEY_LABELS = {
+  c1: '大罪',
+  c2: '三丽欧',
+  c3: 'ES',
+  c4: '东方',
+  c5: '拓麻歌子',
+  movie: '剧场版'
+};
+const ATTR_LABELS = {
+  Pure: '绿草',
+  Cool: '蓝星',
+  Cute: '粉花',
+  Happy: '橙心',
+  Mysterious: '紫月'
+};
+
+const isVirtualSinger = (name) => VS_NAMES.includes(name);
+
+const parseVS = (vsStr) => {
+  if (!vsStr) return [];
+  const aliasMap = {
+    MIKU: '初音未来',
+    RIN: '镜音铃',
+    LEN: '镜音连',
+    LUKA: '巡音流歌',
+    MEIKO: 'MEIKO',
+    KAITO: 'KAITO',
+    '初音未来': '初音未来',
+    '镜音铃': '镜音铃',
+    '镜音连': '镜音连',
+    '巡音流歌': '巡音流歌'
+  };
+
+  return String(vsStr)
+    .split(/[,，/、\s]+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .map((token) => aliasMap[token.toUpperCase()] || aliasMap[token] || token)
+    .filter((name) => VS_NAMES.includes(name));
+};
+
+const getUnitByChar = (name) => {
+  if (VS_NAMES.includes(name)) return 'vs';
+  return CHAR_UNIT_MAP[name] || 'vs';
+};
+
+const hexToRgba = (hex, alpha) => {
+  const h = String(hex || '').replace('#', '');
+  if (h.length !== 6) return `rgba(0,0,0,${alpha})`;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const getCharTint = (name) => {
+  const unit = getUnitByChar(name);
+  return hexToRgba(UNIT_COLORS[unit] || '#111827', 0.2);
+};
+
+const getUnitTint = (unit) => hexToRgba(UNIT_COLORS[unit] || '#9ca3af', 0.3);
+
+const makeSongTag = (ev) => {
+  const sid = String(ev?.type_series_id || '').trim();
+  const bannerName = String(ev?.banner || '').trim();
+  const unit = String(ev?.unit || '').trim().toLowerCase();
+  if (bannerName) return `${getCharAbbr(bannerName).toLowerCase()}${sid}`;
+  if (unit) return `${unit}${sid}`;
+  return sid ? `ev${sid}` : 'unknown';
+};
+
+const getSongTagColor = (ev) => {
+  const bannerName = String(ev?.banner || '').trim();
+  const unit = bannerName ? getUnitByChar(bannerName) : String(ev?.unit || '').trim().toLowerCase();
+  return UNIT_COLORS[unit] || '#111827';
+};
+
+const getRecordTint = (name, alpha = 0.3) => hexToRgba(getCharColor(name), alpha);
+
+const parseDateSafe = (dateStr) => {
+  const d = new Date(String(dateStr || '').replace(/\//g, '-'));
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const normalizeBannerName = (banner) => String(banner || '').trim().split(/\s+/)[0] || '';
+
+const monthsSince = (dateStr) => {
+  const d = parseDateSafe(dateStr);
+  if (!d) return 0;
+  let m = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+  if (now.getDate() < d.getDate()) m -= 1;
+  return Math.max(0, m);
+};
+
+const daysBetween = (dateA, dateB) => {
+  const a = parseDateSafe(dateA);
+  const b = parseDateSafe(dateB);
+  if (!a || !b) return 0;
+  const diff = Math.abs(b.getTime() - a.getTime());
+  return Math.round(diff / (1000 * 60 * 60 * 24));
+};
+
+const compareCharOrder = (a, b) => (CHAR_ORDER[a] || 999) - (CHAR_ORDER[b] || 999);
+
+const getTypeSeriesText = (value) => {
+  const s = String(value ?? '').trim();
+  return s && s !== 'null' && s !== 'undefined' ? s : '';
+};
+
+const buildGapRanges = (eventList, countFn) => {
+  const ranges = [];
+  for (let i = 1; i < eventList.length; i += 1) {
+    const prev = eventList[i - 1];
+    const curr = eventList[i];
+    ranges.push({
+      startMark: getNonBanEventMark(prev),
+      endMark: getNonBanEventMark(curr),
+      startRef: prev,
+      endRef: curr,
+      startTypeSeriesId: prev.typeSeriesId,
+      endTypeSeriesId: curr.typeSeriesId,
+      startEventType: prev.eventType,
+      endEventType: curr.eventType,
+      days: daysBetween(prev.date, curr.date),
+      periods: countFn(prev, curr)
+    });
+  }
+  return ranges;
+};
+
+const pickGap = (ranges, mode) => {
+  if (!ranges.length) return null;
+  return [...ranges].sort((a, b) => {
+    if (mode === 'max') {
+      if (b.days !== a.days) return b.days - a.days;
+      return b.periods - a.periods;
+    }
+    if (a.days !== b.days) return a.days - b.days;
+    return a.periods - b.periods;
+  })[0];
+};
+
+const pickGapByPeriods = (ranges, mode) => {
+  if (!ranges.length) return null;
+  return [...ranges].sort((a, b) => {
+    if (mode === 'max') {
+      if (b.periods !== a.periods) return b.periods - a.periods;
+      return b.days - a.days;
+    }
+    if (a.periods !== b.periods) return a.periods - b.periods;
+    return a.days - b.days;
+  })[0];
+};
+
+const getEventTypeShort = (eventType) => {
+  const t = String(eventType || '').trim();
+  if (t === '箱活') return '箱';
+  if (t === '混活') return '混';
+  if (t === 'World Link') return 'WL';
+  if (t === 'World Link终章') return 'WL终';
+  return t || '?';
+};
+
+const getNonBanEventMark = (ev) => {
+  if (!ev) return '?';
+  const sourceKey = String(ev.sourceKey || ev.id || '').trim();
+  const typeSeries = getTypeSeriesText(ev.typeSeriesId);
+  const eventType = String(ev.eventType || '').trim();
+  const shortType = getEventTypeShort(eventType);
+  const bannerName = normalizeBannerName(ev.banner);
+  const bannerMark = bannerName ? getCharAbbr(bannerName).toLowerCase() : '';
+  const unitMark = String(ev.unit || '').trim().toLowerCase();
+  const collabLabel = SPECIAL_EVENT_KEY_LABELS[sourceKey] || '';
+
+  if (eventType === 'World Link' || eventType === 'World Link终章') {
+    const wlHead = bannerMark || unitMark || 'vs';
+    const base = typeSeries ? `${wlHead} wl${typeSeries}` : `${wlHead} wl`;
+    return ev.isFesCard ? `${base}(fes)` : base;
+  }
+
+  let base = '?';
+  if (bannerMark && typeSeries) base = `${bannerMark}${typeSeries}${shortType}`;
+  else if (bannerMark) base = `${bannerMark}${shortType}`;
+  else if (unitMark && typeSeries) base = `${unitMark}${typeSeries}${shortType}`;
+  else if (typeSeries) base = `${typeSeries}${shortType}`;
+  else if (collabLabel) base = collabLabel;
+  else if (sourceKey) base = sourceKey;
+
+  return ev.isFesCard ? `${base}(fes)` : base;
+};
+
+const formatRangeLabel = (gap) => (gap ? `${gap.startMark}→${gap.endMark}` : '-');
+const formatGapValue = (gap) => (gap ? `${gap.days}天 | ${gap.periods}期` : '-');
+
+const formatBanRangeLabel = (gap) => {
+  if (!gap) return '-';
+  const left = `${getTypeSeriesText(gap.startTypeSeriesId) || '?'}${getEventTypeShort(gap.startEventType)}`;
+  const right = `${getTypeSeriesText(gap.endTypeSeriesId) || '?'}${getEventTypeShort(gap.endEventType)}`;
+  return `${left}→${right}`;
+};
+
+const navGroups = computed(() => {
+  const distChildren = groupPanels.value.map((p) => ({
+    id: `panel-${p.id}`,
+    title: p.title
+  }));
+
+  return [
+    {
+      id: 'panel-dist',
+      title: '阶梯分布',
+      children: distChildren
+    },
+    {
+      id: 'panel-related',
+      title: '相关记录',
+      children: [
+        { id: 'rel-last-four', title: '上一次四星' },
+        { id: 'rel-last-limited', title: '上一次限定' },
+        { id: 'rel-four-long', title: '四星最长间隔' },
+        { id: 'rel-four-short', title: '四星最短间隔' },
+        { id: 'rel-limited-long', title: '限定最长间隔' },
+        { id: 'rel-limited-short', title: '限定最短间隔' },
+        { id: 'rel-ban-long', title: 'Ban最长间隔' },
+        { id: 'rel-ban-short', title: 'Ban最短间隔' }
+      ]
+    },
+    {
+      id: 'panel-vs-song',
+      title: '虚拟歌手书下',
+      children: []
+    },
+    {
+      id: 'panel-matrix',
+      title: '角色矩阵',
+      children: []
+    }
+  ];
+});
+
+const navTargetIds = computed(() => {
+  const ids = [];
+  navGroups.value.forEach((g) => {
+    ids.push(g.id);
+    (g.children || []).forEach((c) => ids.push(c.id));
+  });
+  return ids;
+});
+
+const isGroupActive = (group) => {
+  if (activeNavId.value === group.id) return true;
+  return (group.children || []).some((c) => c.id === activeNavId.value);
+};
+
+const isGroupExpanded = (group) => isGroupActive(group);
+
+const scrollToSection = (id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  activeNavId.value = id;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+const matrixGroupClass = (idx, len) => ({
+  'matrix-group-start': idx === 0,
+  'matrix-group-end': idx === len - 1
+});
+
+const bindSectionObserver = async () => {
+  if (sectionObserver) {
+    sectionObserver.disconnect();
+    sectionObserver = null;
+  }
+
+  await nextTick();
+  const ids = navTargetIds.value;
+
+  sectionObserver = new IntersectionObserver((entries) => {
+    const visible = entries
+      .filter((e) => e.isIntersecting)
+      .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
+    if (visible.length > 0) {
+      activeNavId.value = visible[0].target.id;
+    }
+  }, {
+    root: null,
+    rootMargin: '-25% 0px -60% 0px',
+    threshold: [0.05, 0.2, 0.4]
+  });
+
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) sectionObserver.observe(el);
+  });
+};
+
+onMounted(() => {
+  bindSectionObserver();
+});
+
+onBeforeUnmount(() => {
+  if (sectionObserver) sectionObserver.disconnect();
+});
+
+const normalizeAttr = (attr) => {
+  const map = {
+    pure: 'Pure',
+    cool: 'Cool',
+    cute: 'Cute',
+    happy: 'Happy',
+    mysterious: 'Mysterious'
+  };
+  return map[String(attr || '').trim().toLowerCase()] || '';
+};
+
+const isNumericEventId = (eventId) => /^\d+$/.test(String(eventId || '').trim());
+
+const isCardWithinLimit = (card, maxEid) => {
+  const eid = String(card?.EventID || '').trim();
+  if (eid === 'ori') return true;
+  if (isNumericEventId(eid)) return Number(eid) <= Number(maxEid);
+  return true;
+};
+
+const isEventRewardCard = (card) => {
+  const rarity = String(card?.Rarity || '').trim();
+  // 当前数据中活动报酬 2/3 星普遍是 perm，因此以“活动卡 + 2/3星”识别报酬。
+  return isNumericEventId(card?.EventID) && ['2', '3'].includes(rarity);
+};
+
+const now = new Date();
+const nowStr = now.toLocaleDateString();
+
+const toFiniteEventId = (value) => {
+  if (value === null || value === undefined) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return n > 0 ? n : null;
+};
+
+
+// 3. 自动计算“当前实际活动”的 ID (作为默认值)
+const autoCurrentId = computed(() => {
+  const today = new Date();
+  const numericIds = (props.allEvents || [])
+    .filter((ev) => {
+      if (ev?.isPredict) return false;
+      if (!isNumericEventId(ev?.id)) return false;
+      const evDate = parseDateSafe(ev?.date);
+      if (!evDate) return false;
+      return evDate <= today;
+    })
+    .map((e) => Number(e.id));
+
+  return numericIds.length > 0 ? Math.max(...numericIds) : 0;
+});
+// 4. 最终使用的截止 ID：如果用户没手动改过，就用自动计算的
+const displayEventId = computed({
+  get: () => {
+    const syncId = toFiniteEventId(props.previewSyncEventId);
+    const preferred = syncId ?? manualEventId.value ?? autoCurrentId.value;
+    const n = toFiniteEventId(preferred);
+    return n ?? 0;
+  },
+  set: (val) => {
+    const n = toFiniteEventId(val);
+    manualEventId.value = n ?? null;
+  }
+});
+
+const safeMaxEventId = computed(() => {
+  const n = toFiniteEventId(displayEventId.value);
+  return n ?? 0;
+});
+
+const eventsById = computed(() => {
+  const map = {};
+  (props.allEvents || []).forEach((ev) => {
+    if (ev?.isPredict) return;
+    if (!isNumericEventId(ev?.id)) return;
+    map[Number(ev.id)] = ev;
+  });
+  return map;
+});
+
+const validPeriodEventIds = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  return (props.allEvents || [])
+    .filter((ev) => {
+      if (ev?.isPredict) return false;
+      if (!isNumericEventId(ev?.id)) return false;
+      if (Number(ev.id) > maxEid) return false;
+      return !EXCLUDED_PERIOD_EVENT_TYPES.has(String(ev?.event_type || '').trim());
+    })
+    .map((ev) => Number(ev.id))
+    .sort((a, b) => a - b);
+});
+
+const validPeriodEvents = computed(() => {
+  const idSet = new Set(validPeriodEventIds.value);
+  return (props.allEvents || [])
+    .filter((ev) => {
+      if (ev?.isPredict) return false;
+      if (!isNumericEventId(ev?.id)) return false;
+      return idSet.has(Number(ev.id));
+    })
+    .map((ev) => ({
+      id: Number(ev.id),
+      dateObj: parseDateSafe(ev.date)
+    }))
+    .filter((ev) => ev.dateObj)
+    .sort((a, b) => a.id - b.id);
+});
+
+const countPeriodsBetweenExclusive = (startEvent, endEvent) => {
+  const startId = Number(startEvent?.id);
+  const endId = Number(endEvent?.id);
+  if (Number.isFinite(startId) && Number.isFinite(endId)) {
+    return validPeriodEventIds.value.filter((id) => id > startId && id < endId).length;
+  }
+
+  const startDate = parseDateSafe(startEvent?.date);
+  const endDate = parseDateSafe(endEvent?.date);
+  if (!startDate || !endDate) return 0;
+  return validPeriodEvents.value.filter((ev) => ev.dateObj > startDate && ev.dateObj < endDate).length;
+};
+
+const countPeriodsSince = (eventRef) => {
+  const eventId = Number(eventRef?.id ?? eventRef);
+  const maxEid = Number(displayEventId.value);
+  if (Number.isFinite(eventId)) {
+    return validPeriodEventIds.value.filter((id) => id > eventId && id <= maxEid).length;
+  }
+
+  const startDate = parseDateSafe(eventRef?.date);
+  if (!startDate) return 0;
+  return validPeriodEvents.value.filter((ev) => ev.dateObj > startDate).length;
+};
+
+// 2. 这里的计算属性直接指向完整的卡片源
+const processedStats = computed(() => {
+  const stats = {};
+  const maxEid = safeMaxEventId.value; // 这里拿到的是基于日期计算出的 ID
+  const cardsSource = props.allCards || []; // 使用 App.vue 传下来的全量卡片
+
+  cardsSource.forEach(card => {
+    const name = card.Name;
+    // 基础过滤：排除无效数据
+    if (!name || name === "-" || name === "CardID") return;
+
+    // --- 核心修改：日期约束逻辑 ---
+    // 逻辑：如果是活动卡 (有数字 EventID)，且 ID 大于当前正在进行的活动 ID，则跳过统计
+    // 除非是初始卡 ("ori")，否则必须满足 EventID <= maxEid
+    if (!isCardWithinLimit(card, maxEid)) {
+      return; 
+    }
+
+    // 初始化角色的统计对象
+    if (!stats[name]) {
+      stats[name] = { 
+        name, 
+        affiliation: card.Affiliation || 'vs', 
+        fourStarCount: 0, 
+        limitedCount: 0,
+        pScoreCount: 0,
+        twoStarCount: 0,
+        threeStarCount: 0,
+        rewardTwoCount: 0,
+        rewardThreeCount: 0,
+        accuracyCount: 0,
+        recoveryCount: 0,
+        unitScoreCount: 0,
+        pureScoreCount: 0,
+        attrCounts: { Pure: 0, Cool: 0, Cute: 0, Happy: 0, Mysterious: 0 }
+      };
+    }
+
+    const rarity = String(card.Rarity || '').trim();
+    const skill = String(card.Skill || '').toLowerCase();
+    const attr = normalizeAttr(card.Attribute);
+
+    // 统计 4 星卡片及技能分类
+    if (rarity === "4") {
+      stats[name].fourStarCount++;
+
+      if (skill === 'p_score') stats[name].pScoreCount++;
+      if (skill === 'accuracy') stats[name].accuracyCount++;
+      if (skill === 'recovery') stats[name].recoveryCount++;
+      if (skill === 'unit_score') stats[name].unitScoreCount++;
+
+      if (attr) {
+        stats[name].attrCounts[attr] += 1;
+      }
+    }
+
+    if (rarity === '3') stats[name].threeStarCount++;
+    if (rarity === '2') stats[name].twoStarCount++;
+
+    if (isEventRewardCard(card)) {
+      if (rarity === '3') stats[name].rewardThreeCount++;
+      if (rarity === '2') stats[name].rewardTwoCount++;
+    }
+
+    // 统计限定卡片 (含 Fes 和 联名限定)
+    if (LIMITED_TYPES.has(String(card.Type).toLowerCase())) {
+      stats[name].limitedCount++;
+    }
+  });
+
+  // 最后的汇总处理
+  return Object.values(stats).map(s => {
+    // 计算“纯分卡”数量：四星总数 - (判定 + 奶卡 + 团分)
+    // 这样剩下的就是 100% / 110% / 120% / 130% 等纯分卡
+    s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount;
+    s.rewardTotalCount = s.rewardThreeCount + s.rewardTwoCount;
+    s.attrTotalCount = ATTRS.reduce((sum, a) => sum + s.attrCounts[a], 0);
+    return s;
+  });
+});
+
+const groupByCount = (data, key) => {
+  const groups = {};
+  data.forEach(char => {
+    const count = char[key];
+    if (!groups[count]) groups[count] = [];
+    groups[count].push(char);
+  });
+  return Object.keys(groups)
+    .map(count => ({
+      count: parseInt(count, 10),
+      chars: groups[count].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+    }))
+    .sort((a, b) => b.count - a.count);
+};
+
+const groupPanels = computed(() => [
+  { id: 'four', title: '4星总数分布', cellClass: '', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'fourStarCount') },
+  { id: 'limited', title: '限定总数分布', cellClass: 'lim', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'limitedCount') },
+  { id: 'p-score', title: '4星P分数量分布', cellClass: 'p-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pScoreCount') },
+  { id: 'pure-score', title: '4星分卡数量分布 (非判非奶非团分)', cellClass: 'pure-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pureScoreCount') },
+  { id: 'recovery', title: '4星奶卡数量分布', cellClass: 'recovery', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'recoveryCount') },
+  { id: 'accuracy', title: '4星判卡数量分布', cellClass: 'accuracy', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'accuracyCount') },
+  { id: 'three', title: '3星总数分布', cellClass: 'three-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'threeStarCount') },
+  { id: 'two', title: '2星总数分布', cellClass: 'two-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'twoStarCount') },
+  { id: 'reward', title: '报酬总数分布 (活动3★+2★)', cellClass: 'reward', showRewardBreakdown: true, groups: groupByCount(processedStats.value, 'rewardTotalCount') }
+]);
+
+const statsPreviewPayload = computed(() => {
+  const fourPanel = groupPanels.value.find((p) => p.id === 'four');
+  const limitedPanel = groupPanels.value.find((p) => p.id === 'limited');
+  return {
+    maxEventId: safeMaxEventId.value,
+    groups: {
+      fourStarCount: fourPanel?.groups || [],
+      limitedCount: limitedPanel?.groups || []
+    }
+  };
+});
+
+watch(statsPreviewPayload, (payload) => {
+  emit('stats-preview-update', payload);
+}, { immediate: true });
+
+const attrMatrixRows = computed(() => {
+  return [...processedStats.value]
+    .sort((a, b) => (CHAR_ORDER[a.name] || 999) - (CHAR_ORDER[b.name] || 999))
+    .map((s) => ({
+      name: s.name,
+      Pure: s.attrCounts.Pure,
+      Cool: s.attrCounts.Cool,
+      Cute: s.attrCounts.Cute,
+      Happy: s.attrCounts.Happy,
+      Mysterious: s.attrCounts.Mysterious,
+      pureScoreCount: s.pureScoreCount,
+      pScoreCount: s.pScoreCount,
+      accuracyCount: s.accuracyCount,
+      recoveryCount: s.recoveryCount,
+      fourStarCount: s.fourStarCount,
+      threeStarCount: s.threeStarCount,
+      twoStarCount: s.twoStarCount,
+      rewardTotalCount: s.rewardTotalCount
+    }));
+});
+
+const attrExtremes = computed(() => {
+  const result = {};
+  ATTRS.forEach((attr) => {
+    const values = attrMatrixRows.value.map((r) => Number(r[attr]) || 0);
+    const max = values.length ? Math.max(...values) : 0;
+    const min = values.length ? Math.min(...values) : 0;
+    result[attr] = { max, min };
+  });
+  return result;
+});
+
+const getAttrExtremeClass = (attr, value) => {
+  const range = attrExtremes.value[attr];
+  if (!range) return '';
+  if (range.max !== range.min && value === range.max) return 'matrix-max';
+  if (range.max !== range.min && value === range.min) return 'matrix-min';
+  return '';
+};
+
+const virtualSingerSongStats = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const map = Object.fromEntries(VS_NAMES.map((n) => [n, []]));
+  const unitOrder = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5 };
+
+  (props.allEvents || []).forEach((ev) => {
+    if (ev?.isPredict) return;
+    if (!isNumericEventId(ev?.id)) return;
+    if (Number(ev.id) > maxEid) return;
+    if (!String(ev?.event_song || '').trim()) return;
+
+    const bannerName = String(ev?.banner || '').trim();
+    const unitRaw = String(ev?.unit || '').trim().toLowerCase();
+    const inferredUnit = bannerName ? getUnitByChar(bannerName) : unitRaw;
+    const songItem = {
+      tag: makeSongTag(ev),
+      songName: String(ev?.event_song || '').trim(),
+      color: getSongTagColor(ev),
+      unit: inferredUnit,
+      eventId: Number(ev.id)
+    };
+    parseVS(ev?.virtual_singer).forEach((vs) => {
+      if (!map[vs]) return;
+      map[vs].push(songItem);
+    });
+  });
+
+  return VS_NAMES.map((name) => {
+    const songs = [...map[name]].sort((a, b) => {
+      const ua = unitOrder[a.unit] || 99;
+      const ub = unitOrder[b.unit] || 99;
+      if (ua !== ub) return ua - ub;
+      return a.eventId - b.eventId;
+    });
+
+    const unitCounts = { ln: 0, mmj: 0, vbs: 0, ws: 0, nc: 0 };
+    songs.forEach((s) => {
+      if (unitCounts[s.unit] !== undefined) unitCounts[s.unit] += 1;
+    });
+
+    return {
+      name,
+      count: songs.length,
+      songs,
+      unitCounts
+    };
+  });
+});
+
+const charEventBuckets = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const buckets = {};
+
+  (props.allCards || []).forEach((card) => {
+    const name = String(card?.Name || '').trim();
+    if (!name || name === '-' || name === 'CardID') return;
+    if (!CHAR_ORDER[name]) return;
+    if (!isCardWithinLimit(card, maxEid)) return;
+
+    const eidRaw = String(card?.EventID || '').trim();
+    const gachaRaw = String(card?.GachaID || '').trim();
+    const sourceKey = eidRaw || gachaRaw;
+    if (!sourceKey) return;
+
+    const isNum = isNumericEventId(sourceKey);
+    const eventIdOrKey = isNum ? Number(sourceKey) : sourceKey;
+    const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
+    const cardDate = parseDateSafe(card?.Date);
+    if (!isNum && maxEventDate && cardDate && cardDate > maxEventDate) return;
+
+    if (!buckets[name]) {
+      buckets[name] = {
+        four: new Set(),
+        limited: new Set(),
+        eventMeta: {}
+      };
+    }
+
+    if (!buckets[name].eventMeta[sourceKey]) {
+      buckets[name].eventMeta[sourceKey] = {
+        id: eventIdOrKey,
+        date: String(ev?.date || card?.Date || ''),
+        title: String(ev?.event_title || '').trim() || `ID ${sourceKey}`,
+        typeSeriesId: ev?.type_series_id,
+        eventType: String(ev?.event_type || '').trim(),
+        banner: String(ev?.banner || '').trim(),
+        unit: String(ev?.unit || '').trim() || String(card?.Affiliation || '').trim(),
+        sourceKey,
+        isFesCard: false
+      };
+    }
+
+    if (['cfes', 'bfes'].includes(String(card?.Type || '').toLowerCase())) {
+      buckets[name].eventMeta[sourceKey].isFesCard = true;
+    }
+
+    if (String(card?.Rarity || '').trim() === '4') {
+      buckets[name].four.add(sourceKey);
+    }
+    if (LIMITED_TYPES.has(String(card?.Type || '').toLowerCase())) {
+      buckets[name].limited.add(sourceKey);
+    }
+  });
+
+  const toEvents = (set, metaMap) => [...set]
+    .map((key) => metaMap[key])
+    .filter(Boolean)
+    .sort((a, b) => {
+      const da = parseDateSafe(a.date)?.getTime() || 0;
+      const db = parseDateSafe(b.date)?.getTime() || 0;
+      if (da !== db) return da - db;
+      return String(a.sourceKey).localeCompare(String(b.sourceKey));
+    });
+
+  const result = {};
+  Object.keys(buckets).forEach((name) => {
+    result[name] = {
+      four: toEvents(buckets[name].four, buckets[name].eventMeta),
+      limited: toEvents(buckets[name].limited, buckets[name].eventMeta)
+    };
+  });
+  return result;
+});
+
+const lastFourStarRecords = computed(() => {
+  return Object.keys(charEventBuckets.value)
+    .map((name) => {
+      const arr = charEventBuckets.value[name].four;
+      if (!arr.length) return null;
+      const last = arr[arr.length - 1];
+      return {
+        name,
+        eventId: Number(last.id),
+        eventLabel: getNonBanEventMark(last),
+        eventRef: last,
+        date: last.date,
+        months: monthsSince(last.date),
+        periods: countPeriodsSince(last)
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      const da = parseDateSafe(a.date)?.getTime() || 0;
+      const db = parseDateSafe(b.date)?.getTime() || 0;
+      if (db !== da) return db - da;
+      return compareCharOrder(a.name, b.name);
+    });
+});
+
+const lastLimitedRecords = computed(() => {
+  return Object.keys(charEventBuckets.value)
+    .map((name) => {
+      const arr = charEventBuckets.value[name].limited;
+      if (!arr.length) return null;
+      const last = arr[arr.length - 1];
+      return {
+        name,
+        eventId: Number(last.id),
+        eventLabel: getNonBanEventMark(last),
+        eventRef: last,
+        date: last.date,
+        months: monthsSince(last.date),
+        periods: countPeriodsSince(last)
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      const da = parseDateSafe(a.date)?.getTime() || 0;
+      const db = parseDateSafe(b.date)?.getTime() || 0;
+      if (db !== da) return db - da;
+      return compareCharOrder(a.name, b.name);
+    });
+});
+
+const fourStarIntervalRecords = computed(() => {
+  const nowGapDate = now.toISOString().slice(0, 10).replace(/-/g, '/');
+  return Object.keys(charEventBuckets.value)
+    .map((name) => {
+      const arr = charEventBuckets.value[name].four;
+      if (!arr.length) return null;
+      const ranges = buildGapRanges(arr, countPeriodsBetweenExclusive);
+      const historicalRanges = [...ranges];
+      const last = arr[arr.length - 1];
+      ranges.push({
+        startMark: getNonBanEventMark(last),
+        endMark: '至今',
+        startRef: last,
+        endRef: null,
+        startTypeSeriesId: last.typeSeriesId,
+        endTypeSeriesId: 'NOW',
+        startEventType: last.eventType,
+        endEventType: '当前',
+        days: daysBetween(last.date, nowGapDate),
+        periods: countPeriodsSince(last)
+      });
+      return {
+        name,
+        longest: pickGapByPeriods(ranges, 'max'),
+        shortest: pickGap(historicalRanges, 'min')
+      };
+    })
+    .filter(Boolean);
+});
+
+const limitedIntervalRecords = computed(() => {
+  const nowGapDate = now.toISOString().slice(0, 10).replace(/-/g, '/');
+  return Object.keys(charEventBuckets.value)
+    .map((name) => {
+      const arr = charEventBuckets.value[name].limited;
+      if (!arr.length) return null;
+      const ranges = buildGapRanges(arr, countPeriodsBetweenExclusive);
+      const historicalRanges = [...ranges];
+      const last = arr[arr.length - 1];
+      ranges.push({
+        startMark: getNonBanEventMark(last),
+        endMark: '至今',
+        startRef: last,
+        endRef: null,
+        startTypeSeriesId: last.typeSeriesId,
+        endTypeSeriesId: 'NOW',
+        startEventType: last.eventType,
+        endEventType: '当前',
+        days: daysBetween(last.date, nowGapDate),
+        periods: countPeriodsSince(last)
+      });
+      return {
+        name,
+        longest: pickGapByPeriods(ranges, 'max'),
+        shortest: pickGap(historicalRanges, 'min')
+      };
+    })
+    .filter(Boolean);
+});
+
+const fourStarLongestIntervals = computed(() => {
+  return [...fourStarIntervalRecords.value].sort((a, b) => {
+    if (b.longest.days !== a.longest.days) return b.longest.days - a.longest.days;
+    if (b.longest.periods !== a.longest.periods) return b.longest.periods - a.longest.periods;
+    return compareCharOrder(a.name, b.name);
+  });
+});
+
+const fourStarShortestIntervals = computed(() => {
+  return [...fourStarIntervalRecords.value].sort((a, b) => {
+    const ad = a.shortest?.days ?? Number.POSITIVE_INFINITY;
+    const bd = b.shortest?.days ?? Number.POSITIVE_INFINITY;
+    if (ad !== bd) return ad - bd;
+
+    const ap = a.shortest?.periods ?? Number.POSITIVE_INFINITY;
+    const bp = b.shortest?.periods ?? Number.POSITIVE_INFINITY;
+    if (ap !== bp) return ap - bp;
+
+    return compareCharOrder(a.name, b.name);
+  });
+});
+
+const limitedLongestIntervals = computed(() => {
+  return [...limitedIntervalRecords.value].sort((a, b) => {
+    if (b.longest.days !== a.longest.days) return b.longest.days - a.longest.days;
+    if (b.longest.periods !== a.longest.periods) return b.longest.periods - a.longest.periods;
+    return compareCharOrder(a.name, b.name);
+  });
+});
+
+const limitedShortestIntervals = computed(() => {
+  return [...limitedIntervalRecords.value].sort((a, b) => {
+    const ad = a.shortest?.days ?? Number.POSITIVE_INFINITY;
+    const bd = b.shortest?.days ?? Number.POSITIVE_INFINITY;
+    if (ad !== bd) return ad - bd;
+
+    const ap = a.shortest?.periods ?? Number.POSITIVE_INFINITY;
+    const bp = b.shortest?.periods ?? Number.POSITIVE_INFINITY;
+    if (ap !== bp) return ap - bp;
+
+    return compareCharOrder(a.name, b.name);
+  });
+});
+
+const banIntervalRecords = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const bucket = {};
+
+  (props.allEvents || []).forEach((ev) => {
+    if (ev?.isPredict) return;
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (eid > maxEid) return;
+    if (EXCLUDED_PERIOD_EVENT_TYPES.has(String(ev?.event_type || '').trim())) return;
+    const name = normalizeBannerName(ev?.banner);
+    if (!CHAR_ORDER[name]) return;
+    if (VS_NAMES.includes(name)) return;
+
+    if (!bucket[name]) bucket[name] = [];
+    bucket[name].push({
+      id: eid,
+      date: String(ev?.date || ''),
+      typeSeriesId: ev?.type_series_id,
+      eventType: String(ev?.event_type || '').trim()
+    });
+  });
+
+  return Object.keys(bucket)
+    .map((name) => {
+      const events = bucket[name].sort((a, b) => a.id - b.id);
+      if (events.length < 2) {
+        return { name, shortest: null, longest: null };
+      }
+      const ranges = buildGapRanges(events, countPeriodsBetweenExclusive);
+      return {
+        name,
+        shortest: pickGap(ranges, 'min'),
+        longest: pickGap(ranges, 'max')
+      };
+    })
+    .sort((a, b) => compareCharOrder(a.name, b.name));
+});
+
+const banLongestIntervals = computed(() => {
+  return [...banIntervalRecords.value].sort((a, b) => {
+    const ad = a.longest?.days ?? -1;
+    const bd = b.longest?.days ?? -1;
+    if (bd !== ad) return bd - ad;
+    return compareCharOrder(a.name, b.name);
+  });
+});
+
+const banShortestIntervals = computed(() => {
+  return [...banIntervalRecords.value].sort((a, b) => {
+    const ad = a.shortest?.days ?? Number.POSITIVE_INFINITY;
+    const bd = b.shortest?.days ?? Number.POSITIVE_INFINITY;
+    if (ad !== bd) return ad - bd;
+    return compareCharOrder(a.name, b.name);
+  });
+});
+</script>
+
+<style scoped>
+.pjsk-stats {
+  padding: 24px;
+  color: #1f2937;
+  background: linear-gradient(45deg, rgba(253, 124, 193, 0.30) 0%, rgba(135, 192, 255, 0.30) 50%, rgba(248, 255, 135, 0.30) 100%);
+  min-height: 100vh;
+  --matrix-sticky-top: -20px;
+}
+
+.stats-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+}
+
+.stats-layout.nav-collapsed {
+  grid-template-columns: 56px 1fr;
+}
+
+.stats-nav {
+  position: sticky;
+  top: 8px;
+  align-self: start;
+  max-height: calc(100vh - 120px);
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 4px;
+  padding-right: 2px;
+}
+
+.nav-cutoff {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.nav-cutoff-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.nav-cutoff-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.nav-toggle {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.nav-title {
+  font-weight: 700;
+  color: #374151;
+  margin: 2px 0 4px;
+}
+
+.nav-link {
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.nav-link-main {
+  font-weight: 700;
+  border-color: #d1d5db;
+}
+
+.nav-sub-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-link-sub {
+  padding: 5px 8px 5px 18px;
+  font-size: 0.78rem;
+}
+
+.nav-link:hover {
+  background: #eef2ff;
+}
+
+.nav-link.active {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.stats-main {
+  min-width: 0;
+}
+
+.section-main {
+  margin-bottom: 18px;
+}
+
+.pjsk-stats h1 {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
+
+
+/* 2x2 网格布局 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.stats-section { flex: 1; }
+
+.card-panel {
+  background: #ffffffd9;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 6px 20px rgba(17, 24, 39, 0.06);
+}
+
+.card-panel h2 {
+  margin-top: 2px;
+  margin-bottom: 10px;
+  font-size: 1.05rem;
+}
+
+.count-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.count-table th, .count-table td {
+  border: 1px solid #f0f0f0;
+  padding: 10px;
+  text-align: left;
+}
+
+.count-cell {
+  font-size: 1.8em;
+  font-weight: bold;
+  text-align: center;
+  background: #fafafa;
+  color: #444;
+}
+
+.count-cell.lim { color: #ff4d4f; }
+.count-cell.p-score { color: #eb2f96; } /* P分粉色 */
+.count-cell.pure-score { color: #f5222d; } /* 分卡红色 */
+.count-cell.reward { color: #f97316; }
+.count-cell.three-star { color: #7c3aed; }
+.count-cell.two-star { color: #059669; }
+.count-cell.accuracy { color: #2563eb; }
+.count-cell.recovery { color: #db2777; }
+
+.chars-cell { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.char-avatar-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 56px;
+}
+
+.avatar-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  object-fit: cover;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -2px 4px rgba(15, 23, 42, 0.18),
+    0 2px 5px rgba(15, 23, 42, 0.22);
+}
+
+.abbr-text {
+  font-size: 0.6em;
+  margin-top: 2px;
+  color: #999;
+  font-weight: bold;
+}
+
+.sub-stat {
+  font-size: 0.66em;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.id-input {
+  width: 64px;
+  padding: 4px 6px;
+  border: 2px solid #33ccbb;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.reset-mini-btn {
+  padding: 4px 8px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.config-tips {
+  font-size: 0.74rem;
+  color: #4b5563;
+  margin: 0;
+  text-align: left;
+}
+
+.matrix-panel,
+.song-panel,
+.related-panel {
+  margin-top: 18px;
+}
+
+.matrix-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  table-layout: fixed;
+}
+
+.matrix-wrap {
+  overflow: visible;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.matrix-table th,
+.matrix-table td {
+  border: 1px solid #e5e7eb;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.matrix-table thead th {
+  position: sticky;
+  top: var(--matrix-sticky-top);
+  z-index: 1200;
+  background: #f8fafc;
+  box-shadow: 0 1px 0 #e5e7eb;
+}
+
+.row-char {
+  text-align: center;
+}
+
+.mini-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -2px 3px rgba(15, 23, 42, 0.2),
+    0 1px 3px rgba(15, 23, 42, 0.2);
+}
+
+.matrix-num {
+  color: #374151;
+  font-weight: 600;
+}
+
+.matrix-group-start {
+  border-left: 2px solid #94a3b8 !important;
+}
+
+.matrix-group-end {
+  border-right: 2px solid #94a3b8 !important;
+}
+
+.matrix-max {
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.matrix-min {
+  color: #2563eb;
+  font-weight: 800;
+}
+
+.song-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.song-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.song-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.song-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -2px 3px rgba(15, 23, 42, 0.2),
+    0 2px 5px rgba(15, 23, 42, 0.2);
+}
+
+.song-name {
+  font-weight: 700;
+  color: #111827;
+}
+
+.song-count {
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.song-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.unit-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.unit-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 2px 8px 2px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.unit-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.unit-count-num {
+  color: #111827;
+}
+
+.song-list li {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.song-tag {
+  font-weight: 700;
+  min-width: 4.4em;
+  font-family: Consolas, 'Courier New', monospace;
+}
+
+.song-title {
+  font-size: 0.7rem;
+  color: #111827;
+}
+
+.record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 12px;
+}
+
+.record-block {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px;
+}
+
+.record-block h3 {
+  margin: 2px 0 8px;
+  font-size: 0.92rem;
+  color: #111827;
+}
+
+.record-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.record-table th,
+.record-table td {
+  border: 1px solid #e5e7eb;
+  padding: 6px 8px;
+  text-align: center;
+  font-size: 0.78rem;
+}
+
+.record-table th + th,
+.record-table td + td {
+  border-left: 1px solid #9fb0c2;
+}
+
+.record-char {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-start;
+}
+
+.record-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.6px solid #d1d5db;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+}
+
+.record-table th {
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+.range-cell {
+  white-space: nowrap;
+}
+
+.range-cell > span {
+  margin: 0 3px;
+}
+
+.jump-link {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #1f2937;
+  background: var(--record-tint, #e5e7eb);
+  cursor: pointer;
+}
+
+.jump-link:hover:not(:disabled) {
+  filter: brightness(0.98);
+}
+
+.jump-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1200px) {
+  .stats-layout { grid-template-columns: 180px 1fr; }
+  .stats-layout.nav-collapsed { grid-template-columns: 48px 1fr; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .pjsk-stats { padding: 14px; }
+}
+</style>
