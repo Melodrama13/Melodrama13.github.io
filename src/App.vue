@@ -39,6 +39,15 @@
         />
       </keep-alive>
     </div>
+
+    <button
+      v-if="showBackToTopBtn"
+      class="floating-top-btn"
+      title="回到顶部"
+      @click="scrollContentToTop"
+    >
+      <span class="floating-top-btn-icon">↑</span>
+    </button>
   </div>
 </template>
 
@@ -60,6 +69,7 @@ const previewSyncEventId = ref(null);
 const tabComponentRef = ref(null);
 const contentAreaRef = ref(null);
 const statsScrollTop = ref(0);
+const showBackToTopBtn = ref(false);
 
 const handleStatsPreviewUpdate = (payload) => {
   statsPreviewData.value = payload || null;
@@ -95,7 +105,15 @@ const saveStatsScroll = () => {
 };
 
 const handleContentScroll = () => {
+  if (contentAreaRef.value) {
+    showBackToTopBtn.value = contentAreaRef.value.scrollTop > 260;
+  }
   saveStatsScroll();
+};
+
+const scrollContentToTop = () => {
+  if (!contentAreaRef.value) return;
+  contentAreaRef.value.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 const setCurrentTab = (tab) => {
@@ -494,5 +512,108 @@ button.active {
 
 .content-area {
   padding: 20px;
+}
+
+.floating-top-btn {
+  position: fixed;
+  right: 14px;
+  bottom: 18px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: #14b8a6;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(20, 184, 166, 0.35);
+  z-index: 2600;
+  cursor: pointer;
+}
+
+.floating-top-btn-icon {
+  display: block;
+  line-height: 1;
+  font-size: 1.05rem;
+  font-weight: 700;
+  transform: translateY(-1px);
+}
+
+.floating-top-btn:hover {
+  background: #0d9488;
+}
+
+@media (max-width: 900px) {
+  .main-app {
+    width: 100%;
+    height: 100dvh;
+  }
+
+  .nav-tabs {
+    gap: 6px;
+    padding: 8px 10px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .nav-tabs button,
+  .reset-btn {
+    flex: 0 0 auto;
+    padding: 7px 10px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  .predict-info {
+    margin-left: auto;
+    order: 0;
+    width: auto;
+    min-width: fit-content;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .content-area {
+    padding: 10px;
+  }
+
+  .content-area.history-mode {
+    padding: 0;
+  }
+
+  .floating-top-btn {
+    right: 10px;
+    bottom: 14px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .floating-top-btn-icon {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .nav-tabs {
+    gap: 5px;
+    padding: 6px 8px;
+  }
+
+  .nav-tabs button,
+  .reset-btn {
+    padding: 6px 8px;
+    font-size: 0.76rem;
+  }
+
+  .predict-info {
+    font-size: 0.65rem;
+    padding: 3px 6px;
+  }
 }
 </style>

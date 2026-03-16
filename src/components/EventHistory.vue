@@ -6,12 +6,15 @@
         class="predict-preview-floating"
         aria-live="polite"
       >
-        <div class="preview-config-panel">
+        <div class="preview-config-panel" :class="{ 'is-collapsed': previewFloatingCollapsed }">
           <div class="preview-config-head">
             <span>悬浮统计（最多5个）</span>
-            <button class="preview-config-reset" @click="resetPreviewPanelLayout">重置布局</button>
+            <div class="preview-config-actions">
+              <button class="preview-config-reset" @click="previewFloatingCollapsed = !previewFloatingCollapsed">{{ previewFloatingCollapsed ? '展开统计' : '收起统计' }}</button>
+              <button v-if="!previewFloatingCollapsed" class="preview-config-reset" @click="resetPreviewPanelLayout">重置布局</button>
+            </div>
           </div>
-          <div class="preview-config-options">
+          <div v-show="!previewFloatingCollapsed" class="preview-config-options">
             <button
               v-for="opt in previewPanelOptions"
               :key="`opt-${opt.id}`"
@@ -23,7 +26,7 @@
               {{ opt.title }}
             </button>
           </div>
-          <div v-if="selectedPreviewPanelIds.includes('attr-five')" class="preview-char-select">
+          <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('attr-five')" class="preview-char-select">
             <div class="preview-char-select-title">属性统计人选（最多8人）</div>
             <div class="preview-char-chips">
               <button
@@ -41,19 +44,22 @@
           </div>
         </div>
         <div
+          v-show="!previewFloatingCollapsed"
           v-for="panel in previewFloatingPanels"
           :key="panel.id"
           :class="['preview-panel', { 'is-collapsed': isPreviewPanelCollapsed(panel.id) }]"
           :style="getPreviewPanelStyle(panel.id)"
           @mousedown="bringPreviewPanelToFront(panel.id)"
+          @touchstart="bringPreviewPanelToFront(panel.id)"
         >
-          <div class="preview-panel-head" @mousedown.prevent="startDragPreview(panel.id, $event)">
+          <div class="preview-panel-head" @mousedown.prevent="startDragPreview(panel.id, $event)" @touchstart.prevent="startDragPreviewTouch(panel.id, $event)">
             <span class="preview-icon">{{ panel.icon }}</span>
             <span class="preview-title">{{ panel.title }}</span>
             <button
               class="preview-collapse-btn"
               :title="isPreviewPanelCollapsed(panel.id) ? '展开' : '收起'"
               @mousedown.stop
+              @touchstart.stop
               @click.stop="togglePreviewPanelCollapsed(panel.id)"
             >
               {{ isPreviewPanelCollapsed(panel.id) ? '▸' : '▾' }}
@@ -111,16 +117,16 @@
       </div>
     </transition>
     <div class="event-history" ref="historyContainer" @scroll.passive="handleHistoryScroll">
-      <h1>历史活动一览</h1>
       <div class="filter-sticky">
         <div class="filter-bar">
           <button @click="sortDesc = !sortDesc" class="sort-btn" :title="sortDesc ? '最新在前' : '最早在前'">
-            {{ isCompactFilterBar ? (sortDesc ? '↓' : '↑') : (sortDesc ? '最新在前 ↓' : '最早在前 ↑') }}
+            {{ isCompactFilterBar ? (sortDesc ? '新前' : '旧前') : (sortDesc ? '最新在前 ↓' : '最早在前 ↑') }}
           </button>
           <button
             @click="hideBirthdayRows = !hideBirthdayRows"
-            :class="['nav-btn', { 'active-highlight': hideBirthdayRows }]"
+            :class="['nav-btn', 'compact-tip', { 'active-highlight': !hideBirthdayRows }]"
             :title="hideBirthdayRows ? '已隐藏生日行' : '显示生日行'"
+            data-tip="生日行"
           >
             <template v-if="isCompactFilterBar">
               <img src="/elements/birthday.png" class="compact-btn-icon" alt="生日" />
@@ -131,24 +137,26 @@
           </button>
           <button
             @click="hideCollabPools = !hideCollabPools"
-            :class="['nav-btn', { 'active-highlight': hideCollabPools }]"
+            :class="['nav-btn', 'compact-tip', { 'active-highlight': !hideCollabPools }]"
             :title="hideCollabPools ? '已隐藏联动卡池' : '显示联动卡池'"
+            data-tip="联动卡池"
           >
-            {{ isCompactFilterBar ? 'C' : (hideCollabPools ? '联动卡池: 隐藏' : '联动卡池: 显示') }}
+            {{ isCompactFilterBar ? '联动' : (hideCollabPools ? '联动卡池: 隐藏' : '联动卡池: 显示') }}
           </button>
-          <button @click="scrollTo('top')" class="nav-btn" title="顶部">
+          <button @click="scrollTo('top')" class="nav-btn compact-tip" title="顶部" data-tip="回到顶部">
             {{ isCompactFilterBar ? '↑' : '↑ 顶部' }}
           </button>
-          <button @click="scrollTo('current')" class="nav-btn current-btn" title="当前活动">
-            {{ isCompactFilterBar ? '📍' : '📍 当前活动' }}
+          <button @click="scrollTo('current')" class="nav-btn current-btn compact-tip" title="当前活动" data-tip="当前活动">
+            {{ isCompactFilterBar ? '当期' : '📍 当前活动' }}
           </button>
-          <button @click="scrollTo('bottom')" class="nav-btn" title="底部">
+          <button @click="scrollTo('bottom')" class="nav-btn compact-tip" title="底部" data-tip="前往底部">
             {{ isCompactFilterBar ? '↓' : '↓ 底部' }}
           </button>
           <button 
             @click="showFilter = !showFilter" 
             :title="filterCriteria.selectedChars.length > 0 ? '已选筛选角色' : '筛选面板'"
-            :class="['nav-btn', { 'active-highlight': filterCriteria.selectedChars.length > 0 || showFilter }]"
+            :class="['nav-btn', 'compact-tip', { 'active-highlight': filterCriteria.selectedChars.length > 0 || showFilter }]"
+            data-tip="筛选面板"
           >
             {{ isCompactFilterBar ? '🔍' : (filterCriteria.selectedChars.length > 0 ? `已选: ${filterCriteria.selectedChars[0]}${filterMode === 'multi' && filterCriteria.selectedChars.length > 1 ? '...' : ''}` : '🔍 筛选面板') }}
           </button>
@@ -171,6 +179,7 @@
             <div class="chip-group">
               <div v-for="(abbr, name) in CHAR_MAP" :key="name" 
                   :class="['char-chip', { 'is-selected': filterCriteria.selectedChars.includes(name) }]"
+                  :title="name"
                   @click="toggleChar(name)">
                 <img :src="`/chars/${getCharAbbr(name)}.png`" class="chip-img" />
                 <span>{{ name }}</span>
@@ -269,11 +278,11 @@
           >
             ×
           </button>
-          <div v-if="getPredictStatus(row.event) === 'todo'" class="badge-todo">待预测</div>
-          <div v-if="getPredictStatus(row.event) === 'predicted'" class="badge-done">已预测</div>
           <div class="event-basic">
             <span class="event-id">#{{ row.event.id }}</span>
             <span class="event-date">{{ row.event.date }}</span>
+            <span v-if="getPredictStatus(row.event) === 'todo'" class="predict-status-badge is-todo">待预测</span>
+            <span v-if="getPredictStatus(row.event) === 'predicted'" class="predict-status-badge is-done">已预测</span>
             <div v-if="isSpecialFestival(row.event.festival)" class="fest-tag">
               {{ row.event.festival }}
             </div>
@@ -496,6 +505,7 @@ const lastFocusedEventId = ref(null);
 const previewLayerCursor = ref(0);
 const previewPanelLayers = ref({});
 const previewPanelState = ref({});
+const previewFloatingCollapsed = ref(false);
 const previewDragState = ref({ dragging: false, panelId: '', offsetX: 0, offsetY: 0 });
 const previewResizeState = ref({ resizing: false, panelId: '', startX: 0, startY: 0, startScale: 1 });
 const PREVIEW_LAYER_BASE = 4200;
@@ -634,6 +644,19 @@ const startDragPreview = (panelId, event) => {
   };
 };
 
+const startDragPreviewTouch = (panelId, event) => {
+  const t = event.touches?.[0] || event.changedTouches?.[0];
+  if (!t) return;
+  bringPreviewPanelToFront(panelId);
+  const current = previewPanelState.value[panelId] || getPreviewDefaultState(0);
+  previewDragState.value = {
+    dragging: true,
+    panelId,
+    offsetX: t.clientX - current.x,
+    offsetY: t.clientY - current.y
+  };
+};
+
 const stopDragPreview = () => {
   previewDragState.value = { dragging: false, panelId: '', offsetX: 0, offsetY: 0 };
 };
@@ -667,6 +690,32 @@ const handleDragPreview = (event) => {
   const maxY = Math.max(0, window.innerHeight - PREVIEW_DRAG_MIN_VISIBLE_Y);
   const nextX = event.clientX - previewDragState.value.offsetX;
   const nextY = event.clientY - previewDragState.value.offsetY;
+  previewPanelState.value = {
+    ...previewPanelState.value,
+    [panelId]: {
+      ...current,
+      x: Math.min(maxX, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelWidth, nextX)),
+      y: Math.min(maxY, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelHeight, nextY))
+    }
+  };
+};
+
+const handleDragPreviewTouch = (event) => {
+  if (previewResizeState.value.resizing) return;
+  if (!previewDragState.value.dragging) return;
+  const t = event.touches?.[0] || event.changedTouches?.[0];
+  if (!t) return;
+  event.preventDefault();
+  const panelId = previewDragState.value.panelId;
+  if (!panelId) return;
+  const current = previewPanelState.value[panelId] || getPreviewDefaultState(0);
+  const base = getPreviewPanelBaseSize(panelId);
+  const panelWidth = base.width * (current.scale || 1);
+  const panelHeight = current.collapsed ? 44 : (base.height * (current.scale || 1));
+  const maxX = Math.max(0, window.innerWidth - PREVIEW_DRAG_MIN_VISIBLE_X);
+  const maxY = Math.max(0, window.innerHeight - PREVIEW_DRAG_MIN_VISIBLE_Y);
+  const nextX = t.clientX - previewDragState.value.offsetX;
+  const nextY = t.clientY - previewDragState.value.offsetY;
   previewPanelState.value = {
     ...previewPanelState.value,
     [panelId]: {
@@ -1458,6 +1507,9 @@ onMounted(() => {
   window.addEventListener('mousemove', handleResizePreview);
   window.addEventListener('mouseup', stopDragPreview);
   window.addEventListener('mouseup', stopResizePreview);
+  window.addEventListener('touchmove', handleDragPreviewTouch, { passive: false });
+  window.addEventListener('touchend', stopDragPreview);
+  window.addEventListener('touchcancel', stopDragPreview);
   updateCompactFilterState();
   if (isReloadNavigation()) {
     historyScrollTop.value = 0;
@@ -1499,6 +1551,9 @@ onDeactivated(() => {
   window.removeEventListener('mousemove', handleResizePreview);
   window.removeEventListener('mouseup', stopDragPreview);
   window.removeEventListener('mouseup', stopResizePreview);
+  window.removeEventListener('touchmove', handleDragPreviewTouch);
+  window.removeEventListener('touchend', stopDragPreview);
+  window.removeEventListener('touchcancel', stopDragPreview);
   window.removeEventListener('resize', handleWindowResize);
 });
 
@@ -1516,6 +1571,9 @@ onActivated(() => {
   window.addEventListener('mousemove', handleResizePreview);
   window.addEventListener('mouseup', stopDragPreview);
   window.addEventListener('mouseup', stopResizePreview);
+  window.addEventListener('touchmove', handleDragPreviewTouch, { passive: false });
+  window.addEventListener('touchend', stopDragPreview);
+  window.addEventListener('touchcancel', stopDragPreview);
   window.addEventListener('resize', handleWindowResize);
 });
 
@@ -1535,6 +1593,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('mousemove', handleResizePreview);
   window.removeEventListener('mouseup', stopDragPreview);
   window.removeEventListener('mouseup', stopResizePreview);
+  window.removeEventListener('touchmove', handleDragPreviewTouch);
+  window.removeEventListener('touchend', stopDragPreview);
+  window.removeEventListener('touchcancel', stopDragPreview);
   window.removeEventListener('resize', handleWindowResize);
 });
 
@@ -1732,6 +1793,18 @@ const parseVS = (vsStr) => {
   margin-bottom: 6px;
 }
 
+.preview-config-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-config-panel.is-collapsed {
+  width: 210px;
+  max-height: none;
+  overflow: visible;
+}
+
 .preview-config-reset {
   border: 1px solid #cbd5e1;
   border-radius: 999px;
@@ -1844,6 +1917,7 @@ const parseVS = (vsStr) => {
   color: #1f2937;
   cursor: grab;
   user-select: none;
+  touch-action: none;
 }
 
 .preview-panel-head:active {
@@ -2014,11 +2088,15 @@ const parseVS = (vsStr) => {
   flex: 1; /* 占据剩余所有空间 */
   height: 100%;
   overflow-y: auto; /* 只有列表区可以滚动 */
-  padding: 20px;
+  padding: 0 20px 20px;
   box-sizing: border-box;
   background: #f4f7f6;
   transition: margin-right 0.18s ease;
   min-width: 0; /* 防止子元素撑开 flex */
+}
+
+.event-history > h1 {
+  display: none;
 }
 /* 如果你希望编辑器是覆盖式的（Overlapping），则维持 position: fixed 
    但给左侧列表增加 marginRight */
@@ -2075,6 +2153,7 @@ const parseVS = (vsStr) => {
 .event-history-wrapper.with-editor .event-main-content {
   width: 132px;
   padding: 0 4px;
+  min-width: 0;
 }
 
 .event-history-wrapper.with-editor .event-title {
@@ -2083,12 +2162,19 @@ const parseVS = (vsStr) => {
 }
 
 .event-history-wrapper.with-editor .type-tag {
-  font-size: 0.62rem;
+  font-size: clamp(0.52rem, 0.9vw, 0.62rem);
   padding: 1px 6px;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .event-history-wrapper.with-editor .series-text {
-  font-size: 0.72rem;
+  font-size: clamp(0.56rem, 1vw, 0.7rem);
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .event-history-wrapper.with-editor .fest-tag {
@@ -2099,6 +2185,8 @@ const parseVS = (vsStr) => {
 .event-history-wrapper.with-editor .type-indicator {
   margin-top: 3px;
   gap: 6px;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .event-history-wrapper.with-editor .event-members {
@@ -2168,7 +2256,7 @@ const parseVS = (vsStr) => {
 
 .filter-sticky {
   position: sticky;
-  top: -30px;
+  top: 0;
   z-index: 1000;
   background: #f4f7f6;
   overflow: visible;
@@ -2270,7 +2358,7 @@ const parseVS = (vsStr) => {
 .predict-delete-btn {
   position: absolute;
   top: 8px;
-  right: 8px;
+  right: 10px;
   width: 24px;
   height: 24px;
   border: none;
@@ -2287,6 +2375,27 @@ const parseVS = (vsStr) => {
 
 .predict-delete-btn:hover {
   background: #dc2626;
+}
+
+.predict-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  line-height: 1.2;
+  color: #fff;
+  font-weight: 700;
+}
+
+.predict-status-badge.is-todo {
+  background: #f59e0b;
+}
+
+.predict-status-badge.is-done {
+  background: #10b981;
 }
 
 
@@ -2501,8 +2610,9 @@ const parseVS = (vsStr) => {
 /* 3. 标题 */
 .event-main-content { width: 160px; padding: 0 5px; }
 .event-title { font-weight: bold; font-size: 1rem; color: #333; line-height: 1.3; }
-.type-indicator { margin-top: 5px; display: flex; align-items: center; gap: 8px; }
-.type-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; color: white; }
+.type-indicator { margin-top: 5px; display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: nowrap; }
+.type-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; color: white; white-space: nowrap; flex: 0 0 auto; }
+.series-text { white-space: nowrap; overflow: visible; text-overflow: clip; min-width: 0; flex: 1 1 auto; }
 
 /* 4. 角色卡片展示逻辑 */
 .event-members { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 0 15px; border-left: 1px solid #eee; }
@@ -2564,7 +2674,7 @@ const parseVS = (vsStr) => {
 .stars-overlay {
   position: absolute; bottom: -1px; left: -2px; display: flex; gap: 0px;
 }
-.star-icon { width: 12px; height: 12px; }
+.star-icon { width: 11px; height: 11px; }
 
 /* 5. VS & 音乐 */
 .vs-section { width: 80px; display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
@@ -2601,27 +2711,430 @@ const parseVS = (vsStr) => {
     height: 19px;
   }
 
+  .event-history-wrapper.with-editor .event-history {
+    margin-right: 0;
+  }
+
   .event-item { flex-wrap: wrap; }
   .event-members { width: 100%; border-left: none; border-top: 1px solid #eee; padding: 10px 0; }
 }
 
 @media (max-width: 900px) {
+  .event-history > h1 {
+    display: none;
+  }
+
   .filter-bar {
-    padding: 8px 4px;
-    gap: 6px;
-    margin-bottom: 8px;
+    padding: 6px 3px;
+    gap: 4px;
+    margin-bottom: 4px;
   }
 
   .sort-btn,
   .nav-btn,
   .clear-btn {
-    min-width: 42px;
-    height: 42px;
-    padding: 0 10px;
+    min-width: 31px;
+    height: 31px;
+    padding: 0 6px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.05rem;
+    font-size: 0.78rem;
+    line-height: 1;
+  }
+
+  .compact-btn-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .compact-tip {
+    position: relative;
+  }
+
+  .compact-tip:active::after,
+  .compact-tip:focus-visible::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 4px);
+    transform: translateX(-50%);
+    font-size: 0.62rem;
+    line-height: 1;
+    color: #fff;
+    background: rgba(15, 23, 42, 0.88);
+    border-radius: 6px;
+    padding: 4px 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1200;
+  }
+}
+
+@media (max-width: 768px) {
+  .event-history {
+    --member-avatar-size: clamp(42px, 10.2vw, 54px);
+  }
+
+  .event-history {
+    padding: 0 10px 10px;
+  }
+
+  .history-list {
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .filter-panel {
+    max-height: 52vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 8px;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .filter-row {
+    gap: 8px;
+  }
+
+  .row-label {
+    min-width: 38px;
+    font-size: 0.78rem;
+    padding-top: 2px;
+  }
+
+  .btn-group,
+  .btn-group-sm {
+    gap: 6px;
+  }
+
+  .btn-group button,
+  .btn-group-sm button {
+    font-size: 0.74rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .icon-group.attributes {
+    gap: 6px;
+  }
+
+  .icon-group.units {
+    gap: 4px;
+  }
+
+  .icon-group.attributes img {
+    width: 27px;
+    height: 27px;
+  }
+
+  .icon-group.units img {
+    width: 29px;
+    height: 29px;
+  }
+
+  .rarity-group {
+    gap: 6px;
+  }
+
+  .rarity-item {
+    padding: 2px 5px;
+  }
+
+  .star-img,
+  .birthday-img {
+    width: 14px;
+    height: 14px;
+  }
+
+  .chip-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+    gap: 3px;
+    width: 100%;
+  }
+
+  .char-chip {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    margin: 0 auto;
+    border-width: 1px;
+  }
+
+  .char-chip span {
+    display: none;
+  }
+
+  .chip-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    filter: grayscale(1) opacity(0.42);
+  }
+
+  .char-chip.is-selected .chip-img {
+    filter: grayscale(0) opacity(1);
+  }
+
+  .event-item {
+    display: grid;
+    grid-template-columns: 44px 52px minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "basic banner main vs attr"
+      "members members members members members";
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 8px;
+    padding: 10px;
+  }
+
+  .event-basic {
+    grid-area: basic;
+    width: auto;
+    gap: 2px;
+  }
+
+  .event-id {
+    font-size: 0.82rem;
+  }
+
+  .event-date {
+    font-size: 0.58rem;
+    line-height: 1.1;
+  }
+
+  .fest-tag {
+    font-size: 0.56rem;
+    padding: 1px 4px;
+  }
+
+  .banner-section {
+    grid-area: banner;
+    width: auto;
+    margin: 0;
+  }
+
+  .banner-avatar {
+    width: 46px;
+    height: 46px;
+    border-width: 2px;
+  }
+
+  .unit-logo-banner {
+    width: 48px;
+    height: 48px;
+  }
+
+  .banner-tag {
+    right: -4px;
+    bottom: 0;
+    font-size: 8px;
+    padding: 0 4px;
+  }
+
+  .event-main-content {
+    grid-area: main;
+    width: auto;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .event-title {
+    display: block;
+    width: 100%;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .type-indicator {
+    margin-top: 2px;
+    gap: 5px;
+  }
+
+  .type-tag {
+    font-size: 0.62rem;
+    padding: 1px 6px;
+  }
+
+  .series-text {
+    font-size: 0.68rem;
+  }
+
+  .vs-section {
+    grid-area: vs;
+    width: auto;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .vs-avatar {
+    width: 24px;
+    height: 24px;
+  }
+
+  .song-tooltip .info-icon {
+    font-size: 13px;
+  }
+
+  .attr-section {
+    grid-area: attr;
+    width: auto;
+    text-align: center;
+  }
+
+  .attr-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .event-members {
+    grid-area: members;
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #d6dde8;
+    padding: 8px 0 0;
+    gap: 8px;
+  }
+
+  .member-row {
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .member-row:not(.fes-row) {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    justify-items: center;
+    align-items: start;
+  }
+
+  .fes-row {
+    padding-top: 6px;
+  }
+
+  .fes-type-icon {
+    height: 44px;
+    margin-right: 2px;
+  }
+
+  .avatar-container {
+    width: var(--member-avatar-size);
+    height: var(--member-avatar-size);
+    border-width: 2px;
+  }
+
+  .card-attr-icon {
+    width: clamp(13px, calc(var(--member-avatar-size) * 0.34), 18px);
+    height: clamp(13px, calc(var(--member-avatar-size) * 0.34), 18px);
+    top: -3px;
+    right: -3px;
+  }
+
+  .sub-unit-logo {
+    width: clamp(14px, calc(var(--member-avatar-size) * 0.38), 20px);
+    height: clamp(14px, calc(var(--member-avatar-size) * 0.38), 20px);
+    right: -5px;
+    bottom: -4px;
+  }
+
+  .stars-overlay {
+    bottom: -2px;
+    left: -1px;
+    gap: 0;
+  }
+
+  .predict-delete-btn {
+    top: 6px;
+    right: 34px;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    font-size: 14px;
+  }
+
+  .predict-status-badge {
+    font-size: 0.54rem;
+    padding: 1px 5px;
+  }
+
+  .star-icon {
+    width: clamp(7px, calc(var(--member-avatar-size) * 0.17), 10px);
+    height: clamp(7px, calc(var(--member-avatar-size) * 0.17), 10px);
+  }
+
+  .lim-tag {
+    top: -2px;
+    right: 14px;
+    width: auto;
+    height: auto;
+    line-height: 1.1;
+    padding: 1px 4px;
+    font-size: 6px;
+    border-radius: 8px;
+    transform: none;
+    clip-path: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .event-history {
+    --member-avatar-size: clamp(38px, 10.8vw, 48px);
+  }
+
+  .event-item {
+    grid-template-columns: 40px 46px minmax(0, 1fr) auto auto;
+    column-gap: 6px;
+    row-gap: 6px;
+    padding: 8px;
+  }
+
+  .event-title {
+    font-size: 0.9rem;
+  }
+
+  .filter-panel {
+    max-height: 56vh;
+  }
+
+  .chip-group {
+    grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
+    gap: 2px;
+  }
+
+  .char-chip {
+    width: 28px;
+    height: 28px;
+  }
+
+  .type-tag {
+    font-size: 0.58rem;
+    padding: 1px 5px;
+  }
+
+  .series-text {
+    font-size: 0.62rem;
+  }
+
+  .lim-tag {
+    right: 12px;
+    font-size: 5px;
+    padding: 1px 3px;
+  }
+
+  .predict-delete-btn {
+    right: 30px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    font-size: 12px;
   }
 }
 </style>

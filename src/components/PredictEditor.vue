@@ -1,7 +1,16 @@
 <template>
   <transition name="slide">
-    <div v-if="isOpen" class="predict-drawer">
+    <div v-if="isOpen" class="predict-drawer" :class="{ 'is-mobile-sheet': isMobileViewport }" :style="drawerStyle">
       <div class="drawer-header">
+        <div
+          v-if="isMobileViewport"
+          class="drawer-grab-handle"
+          @mousedown.prevent="startSheetDragMouse"
+          @touchstart.prevent="startSheetDrag"
+          @touchmove.prevent="moveSheetDrag"
+          @touchend="endSheetDrag"
+          @touchcancel="endSheetDrag"
+        ></div>
         <div class="header-main">
           <h3>预测编辑器 <span class="ev-id">#{{ event.id }}</span></h3>
           <button class="close-btn" @click="$emit('close')">×</button>
@@ -118,7 +127,7 @@
 </template>
 
 <script setup>
-import { reactive, inject, watch, computed, ref } from 'vue';
+import { reactive, inject, watch, computed, ref, onMounted, onBeforeUnmount } from 'vue';
 
 const props = defineProps(['isOpen', 'event', 'charMap']);
 const emit = defineEmits(['close']);
@@ -144,6 +153,94 @@ const form = reactive({
   isGachaLocked: false,
   isTypeLocked: false
 });
+
+const MOBILE_BREAKPOINT = 900;
+const SHEET_MIN_VH = 26;
+const SHEET_MID_VH = 62;
+const SHEET_MAX_VH = 92;
+const isMobileViewport = ref(false);
+const sheetHeightVh = ref(SHEET_MID_VH);
+const sheetDragState = ref({ dragging: false, startY: 0, startVh: SHEET_MID_VH });
+
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+const setSheetDragStart = (clientY) => {
+  sheetDragState.value = {
+    dragging: true,
+    startY: clientY,
+    startVh: sheetHeightVh.value
+  };
+};
+
+const applySheetDragMove = (clientY) => {
+  const dy = sheetDragState.value.startY - clientY;
+  const deltaVh = (dy / Math.max(1, window.innerHeight)) * 100;
+  sheetHeightVh.value = clamp(sheetDragState.value.startVh + deltaVh, SHEET_MIN_VH, SHEET_MAX_VH);
+};
+
+function moveSheetDragMouse(event) {
+  if (!isMobileViewport.value || !sheetDragState.value.dragging) return;
+  applySheetDragMove(event.clientY);
+}
+
+function endSheetDragMouse() {
+  endSheetDrag();
+  detachSheetMouseListeners();
+}
+
+const detachSheetMouseListeners = () => {
+  window.removeEventListener('mousemove', moveSheetDragMouse);
+  window.removeEventListener('mouseup', endSheetDragMouse);
+};
+
+const updateMobileViewport = () => {
+  isMobileViewport.value = window.innerWidth <= MOBILE_BREAKPOINT;
+  if (!isMobileViewport.value) {
+    sheetHeightVh.value = SHEET_MAX_VH;
+    sheetDragState.value = { dragging: false, startY: 0, startVh: SHEET_MAX_VH };
+    detachSheetMouseListeners();
+  } else {
+    sheetHeightVh.value = clamp(sheetHeightVh.value || SHEET_MID_VH, SHEET_MIN_VH, SHEET_MAX_VH);
+  }
+};
+
+const drawerStyle = computed(() => {
+  if (!isMobileViewport.value) return {};
+  return {
+    height: `${sheetHeightVh.value}dvh`
+  };
+});
+
+const startSheetDrag = (event) => {
+  if (!isMobileViewport.value) return;
+  const t = event.touches?.[0];
+  if (!t) return;
+  setSheetDragStart(t.clientY);
+};
+
+const moveSheetDrag = (event) => {
+  if (!isMobileViewport.value || !sheetDragState.value.dragging) return;
+  const t = event.touches?.[0];
+  if (!t) return;
+  applySheetDragMove(t.clientY);
+};
+
+const endSheetDrag = () => {
+  if (!isMobileViewport.value || !sheetDragState.value.dragging) return;
+  const snaps = [SHEET_MIN_VH, SHEET_MID_VH, SHEET_MAX_VH];
+  const closest = snaps.reduce((prev, cur) => (
+    Math.abs(cur - sheetHeightVh.value) < Math.abs(prev - sheetHeightVh.value) ? cur : prev
+  ), SHEET_MID_VH);
+  sheetHeightVh.value = closest;
+  sheetDragState.value = { dragging: false, startY: 0, startVh: sheetHeightVh.value };
+};
+
+function startSheetDragMouse(event) {
+  if (!isMobileViewport.value) return;
+  setSheetDragStart(event.clientY);
+  window.addEventListener('mousemove', moveSheetDragMouse);
+  window.addEventListener('mouseup', endSheetDragMouse);
+}
 
 const renderTick = ref(0);
 const bumpRender = () => {
@@ -368,6 +465,21 @@ watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
   }
 }, { immediate: true });
 
+watch(() => props.isOpen, (open) => {
+  if (!open || !isMobileViewport.value) return;
+  sheetHeightVh.value = SHEET_MID_VH;
+});
+
+onMounted(() => {
+  updateMobileViewport();
+  window.addEventListener('resize', updateMobileViewport);
+});
+
+onBeforeUnmount(() => {
+  detachSheetMouseListeners();
+  window.removeEventListener('resize', updateMobileViewport);
+});
+
 watch(
   () => form.eventType,
   () => {
@@ -487,6 +599,27 @@ const submit = () => {
   display: flex; flex-direction: column; padding: 0;
 }
 
+.predict-drawer.is-mobile-sheet {
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 62dvh;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+  transition: height 0.16s ease;
+}
+
+.drawer-grab-handle {
+  width: 42px;
+  height: 5px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  margin: 0 auto 8px;
+  cursor: ns-resize;
+}
+
 .drawer-header { padding: 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
 .header-main { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .header-main h3 { margin: 0; font-size: 1.2rem; }
@@ -525,13 +658,23 @@ const submit = () => {
 .mini-select { padding: 3px; font-size: 11px; border-radius: 4px; border: 1px solid #cbd5e1; }
 .unit-tag { font-size: 10px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #64748b; }
 
-.pool-section { height: 145px; padding: 20px 20px; border-top: 1px solid #eee; background: #fff; }
+.pool-section {
+  height: auto;
+  padding: 10px 10px 12px;
+  box-sizing: border-box;
+  border-top: 1px solid #eee;
+  background: #fff;
+}
 .char-pool-grid { 
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(32px, 1fr)); 
-  gap: 4px; overflow-y: auto; max-height: 145px; 
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+  overflow: visible;
+  max-height: none;
+  align-content: start;
 }
 .pool-item { position: relative; cursor: pointer; }
-.pool-item img { width: 100%; border-radius: 6px; filter: grayscale(1); opacity: 0.4; }
+.pool-item img { width: 100%; display: block; border-radius: 6px; filter: grayscale(1); opacity: 0.4; }
 .pool-item.is_selected img { filter: grayscale(0); opacity: 1; border: 2px solid #33ccbb; }
 .pool-item.is_disabled { cursor: not-allowed; }
 .pool-item.is_disabled img { filter: grayscale(1); opacity: 0.2; }
@@ -552,4 +695,113 @@ const submit = () => {
 .slide-enter-from, .slide-leave-to { transform: translateX(100%); }
 
 .empty-hint { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 30px; }
+
+@media (max-width: 900px) {
+  .predict-drawer {
+    width: 100vw;
+    height: 62dvh;
+  }
+
+  .drawer-header {
+    padding: 10px;
+  }
+
+  .global-config-bar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .cfg-group label {
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+
+  .cfg-group select {
+    font-size: 11px;
+    padding: 4px;
+  }
+
+  .selected-section {
+    padding: 6px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+
+  .editor-card {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .editor-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .config-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .mini-select,
+  .unit-tag {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 10px;
+    padding: 2px 3px;
+  }
+
+  .pool-section {
+    height: auto;
+    padding: 6px;
+  }
+
+  .char-pool-grid {
+    grid-template-columns: repeat(auto-fill, minmax(26px, 1fr));
+    max-height: none;
+    gap: 3px;
+    overflow-y: visible;
+  }
+
+  .pool-item img {
+    border-radius: 4px;
+  }
+
+  .check-mark {
+    width: 10px;
+    height: 10px;
+    font-size: 8px;
+    right: -2px;
+    bottom: 1px;
+  }
+}
+
+@media (max-width: 520px) {
+  .header-main h3 {
+    font-size: 1rem;
+  }
+
+  .cfg-group label {
+    font-size: 10px;
+  }
+
+  .cfg-group select {
+    font-size: 10px;
+  }
+
+  .char-name {
+    font-size: 11px;
+  }
+
+  .config-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+  }
+
+  .save-all-btn {
+    padding: 8px;
+    font-size: 0.84rem;
+  }
+}
 </style>
