@@ -1,17 +1,17 @@
 <template>
-  <div class="event-history-wrapper" :class="{ 'with-editor': isEditorOpen }">
+  <div ref="historyWrapperRef" class="event-history-wrapper" :class="{ 'with-editor': isEditorOpen }">
     <transition name="float-stats-fade">
       <div
         v-if="isEditorOpen"
         class="predict-preview-floating"
         aria-live="polite"
       >
-        <div class="preview-config-panel" :class="{ 'is-collapsed': previewFloatingCollapsed }">
-          <div class="preview-config-head">
+        <div class="preview-config-panel" :class="{ 'is-collapsed': previewFloatingCollapsed }" :style="previewConfigPanelStyle" @mousedown="bringPreviewConfigToFront" @touchstart="bringPreviewConfigToFront">
+          <div class="preview-config-head" @mousedown.prevent="startDragPreviewConfig($event)" @touchstart.prevent="startDragPreviewConfigTouch($event)">
             <span>悬浮统计（最多5个）</span>
             <div class="preview-config-actions">
-              <button class="preview-config-reset" @click="previewFloatingCollapsed = !previewFloatingCollapsed">{{ previewFloatingCollapsed ? '展开统计' : '收起统计' }}</button>
-              <button v-if="!previewFloatingCollapsed" class="preview-config-reset" @click="resetPreviewPanelLayout">重置布局</button>
+              <button class="preview-config-reset" @mousedown.stop @touchstart.stop @click="previewFloatingCollapsed = !previewFloatingCollapsed">{{ previewFloatingCollapsed ? '展开统计' : '收起统计' }}</button>
+              <button v-if="!previewFloatingCollapsed" class="preview-config-reset" @mousedown.stop @touchstart.stop @click="resetPreviewPanelLayout">重置布局</button>
             </div>
           </div>
           <div v-show="!previewFloatingCollapsed" class="preview-config-options">
@@ -26,9 +26,12 @@
               {{ opt.title }}
             </button>
           </div>
-          <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('attr-five')" class="preview-char-select">
-            <div class="preview-char-select-title">属性统计人选（最多8人）</div>
-            <div class="preview-char-chips">
+          <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('attr-five')" class="preview-char-select" :class="{ 'is-collapsed': previewAttrCharCollapsed }">
+            <div class="preview-char-select-title">
+              <span>属性统计人选（最多8人）</span>
+              <button class="preview-char-select-toggle" @click="previewAttrCharCollapsed = !previewAttrCharCollapsed">{{ previewAttrCharCollapsed ? '展开' : '收起' }}</button>
+            </div>
+            <div v-show="!previewAttrCharCollapsed" class="preview-char-chips">
               <button
                 v-for="name in previewSelectableChars"
                 :key="`pick-${name}`"
@@ -111,16 +114,17 @@
             v-if="!isPreviewPanelCollapsed(panel.id)"
             class="preview-resize-handle"
             @mousedown.prevent.stop="startResizePreview(panel.id, $event)"
+            @touchstart.prevent.stop="startResizePreviewTouch(panel.id, $event)"
             title="拖动缩放"
           ></div>
         </div>
       </div>
     </transition>
     <div class="event-history" ref="historyContainer" @scroll.passive="handleHistoryScroll">
-      <div class="filter-sticky">
+      <div ref="filterStickyRef" class="filter-sticky">
         <div class="filter-bar">
           <button @click="sortDesc = !sortDesc" class="sort-btn" :title="sortDesc ? '最新在前' : '最早在前'">
-            {{ isCompactFilterBar ? (sortDesc ? '新前' : '旧前') : (sortDesc ? '最新在前 ↓' : '最早在前 ↑') }}
+            {{ sortDesc ? '最新在前' : '最早在前' }}
           </button>
           <button
             @click="hideBirthdayRows = !hideBirthdayRows"
@@ -128,12 +132,7 @@
             :title="hideBirthdayRows ? '已隐藏生日行' : '显示生日行'"
             data-tip="生日行"
           >
-            <template v-if="isCompactFilterBar">
-              <img src="/elements/birthday.png" class="compact-btn-icon" alt="生日" />
-            </template>
-            <template v-else>
-              {{ hideBirthdayRows ? '生日行: 隐藏' : '生日行: 显示' }}
-            </template>
+            <img src="/elements/birthday.png" class="compact-btn-icon" alt="生日" />
           </button>
           <button
             @click="hideCollabPools = !hideCollabPools"
@@ -141,16 +140,16 @@
             :title="hideCollabPools ? '已隐藏联动卡池' : '显示联动卡池'"
             data-tip="联动卡池"
           >
-            {{ isCompactFilterBar ? '联动' : (hideCollabPools ? '联动卡池: 隐藏' : '联动卡池: 显示') }}
+            {{ hideCollabPools ? '联动隐藏' : '联动显示' }}
           </button>
           <button @click="scrollTo('top')" class="nav-btn compact-tip" title="顶部" data-tip="回到顶部">
-            {{ isCompactFilterBar ? '↑' : '↑ 顶部' }}
+            顶部
           </button>
           <button @click="scrollTo('current')" class="nav-btn current-btn compact-tip" title="当前活动" data-tip="当前活动">
-            {{ isCompactFilterBar ? '当期' : '📍 当前活动' }}
+            当期
           </button>
           <button @click="scrollTo('bottom')" class="nav-btn compact-tip" title="底部" data-tip="前往底部">
-            {{ isCompactFilterBar ? '↓' : '↓ 底部' }}
+            底部
           </button>
           <button 
             @click="showFilter = !showFilter" 
@@ -502,10 +501,16 @@ const canOpenPredictEditor = (event) => {
 const isEditorOpen = ref(false);
 const currentEditingEvent = ref(null);
 const lastFocusedEventId = ref(null);
+const historyWrapperRef = ref(null);
+const filterStickyRef = ref(null);
 const previewLayerCursor = ref(0);
 const previewPanelLayers = ref({});
+const previewConfigLayer = ref(0);
 const previewPanelState = ref({});
 const previewFloatingCollapsed = ref(false);
+const previewAttrCharCollapsed = ref(false);
+const previewConfigDragState = ref({ dragging: false, offsetX: 0, offsetY: 0 });
+const previewConfigPanelPos = ref({ x: null, y: null });
 const previewDragState = ref({ dragging: false, panelId: '', offsetX: 0, offsetY: 0 });
 const previewResizeState = ref({ resizing: false, panelId: '', startX: 0, startY: 0, startScale: 1 });
 const PREVIEW_LAYER_BASE = 4200;
@@ -522,6 +527,95 @@ const PREVIEW_DRAG_MIN_VISIBLE_X = 80;
 const PREVIEW_DRAG_MIN_VISIBLE_Y = 44;
 const PREVIEW_PANEL_MIN_SCALE = 0.75;
 const PREVIEW_PANEL_MAX_SCALE = 1.8;
+
+const getPreviewDragMinY = () => {
+  const filterEl = filterStickyRef.value;
+  if (!filterEl) return PREVIEW_SCREEN_EDGE_GAP;
+  const rect = filterEl.getBoundingClientRect();
+  return Math.max(PREVIEW_SCREEN_EDGE_GAP, Math.round(rect.top + 2));
+};
+
+const previewConfigPanelStyle = computed(() => {
+  const x = previewConfigPanelPos.value.x;
+  const y = previewConfigPanelPos.value.y;
+  const z = previewConfigLayer.value || PREVIEW_LAYER_BASE;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return { zIndex: z };
+  return {
+    left: `${x}px`,
+    top: `${y}px`,
+    zIndex: z
+  };
+});
+
+const clampPreviewConfigPanelPos = (x, y) => {
+  const panelWidth = window.innerWidth <= 1000 ? 320 : 360;
+  const maxX = Math.max(0, window.innerWidth - panelWidth - 6);
+  const maxY = Math.max(0, window.innerHeight - 42);
+  const minY = getPreviewDragMinY();
+  return {
+    x: Math.min(maxX, Math.max(6, x)),
+    y: Math.min(maxY, Math.max(minY, y))
+  };
+};
+
+const stopDragPreviewConfig = () => {
+  previewConfigDragState.value = { dragging: false, offsetX: 0, offsetY: 0 };
+};
+
+const startDragPreviewConfig = (event) => {
+  if (event.target?.closest('button')) return;
+  bringPreviewConfigToFront();
+  const panelEl = event.currentTarget?.closest('.preview-config-panel');
+  const rect = panelEl?.getBoundingClientRect();
+  if (!rect) return;
+  const curX = Number.isFinite(previewConfigPanelPos.value.x) ? previewConfigPanelPos.value.x : rect.left;
+  const curY = Number.isFinite(previewConfigPanelPos.value.y) ? previewConfigPanelPos.value.y : rect.top;
+  previewConfigPanelPos.value = { x: curX, y: curY };
+  previewConfigDragState.value = {
+    dragging: true,
+    offsetX: event.clientX - curX,
+    offsetY: event.clientY - curY
+  };
+};
+
+const startDragPreviewConfigTouch = (event) => {
+  if (event.target?.closest('button')) return;
+  bringPreviewConfigToFront();
+  const t = event.touches?.[0] || event.changedTouches?.[0];
+  if (!t) return;
+  const panelEl = event.currentTarget?.closest('.preview-config-panel');
+  const rect = panelEl?.getBoundingClientRect();
+  if (!rect) return;
+  const curX = Number.isFinite(previewConfigPanelPos.value.x) ? previewConfigPanelPos.value.x : rect.left;
+  const curY = Number.isFinite(previewConfigPanelPos.value.y) ? previewConfigPanelPos.value.y : rect.top;
+  previewConfigPanelPos.value = { x: curX, y: curY };
+  previewConfigDragState.value = {
+    dragging: true,
+    offsetX: t.clientX - curX,
+    offsetY: t.clientY - curY
+  };
+};
+
+const handleDragPreviewConfig = (event) => {
+  if (!previewConfigDragState.value.dragging) return;
+  const next = clampPreviewConfigPanelPos(
+    event.clientX - previewConfigDragState.value.offsetX,
+    event.clientY - previewConfigDragState.value.offsetY
+  );
+  previewConfigPanelPos.value = next;
+};
+
+const handleDragPreviewConfigTouch = (event) => {
+  if (!previewConfigDragState.value.dragging) return;
+  const t = event.touches?.[0] || event.changedTouches?.[0];
+  if (!t) return;
+  event.preventDefault();
+  const next = clampPreviewConfigPanelPos(
+    t.clientX - previewConfigDragState.value.offsetX,
+    t.clientY - previewConfigDragState.value.offsetY
+  );
+  previewConfigPanelPos.value = next;
+};
 
 const getPreviewDefaultPanelPosition = (idx = 0, avoidEditorDrawer = true) => {
   const slot = Number.isFinite(idx) ? idx : 0;
@@ -551,6 +645,10 @@ const getPreviewDefaultState = (idx = 0) => ({
 });
 
 const resetPreviewPanelLayout = () => {
+  previewConfigPanelPos.value = { x: null, y: null };
+  nextTick(() => {
+    updatePreviewConfigOffset();
+  });
   const nextState = { ...previewPanelState.value };
   selectedPreviewPanelIds.value.forEach((panelId, idx) => {
     const cur = nextState[panelId] || getPreviewDefaultState(idx);
@@ -567,9 +665,14 @@ const resetPreviewPanelLayout = () => {
 };
 
 const getPreviewPanelBaseSize = (panelId) => {
-  if (panelId === 'attr-five') return { width: 168, height: 340 };
+  if (panelId === 'attr-five') return { width: 188, height: 340 };
   if (panelId === 'reward') return { width: 208, height: 260 };
   return { width: 208, height: 260 };
+};
+
+const bringPreviewConfigToFront = () => {
+  previewLayerCursor.value += 1;
+  previewConfigLayer.value = PREVIEW_LAYER_BASE + previewLayerCursor.value;
 };
 
 const bringPreviewPanelToFront = (panelId) => {
@@ -623,12 +726,13 @@ const clampPreviewPanelPosition = (panelId) => {
   const panelHeight = current.collapsed ? 44 : (base.height * scale);
   const maxX = Math.max(0, window.innerWidth - PREVIEW_DRAG_MIN_VISIBLE_X);
   const maxY = Math.max(0, window.innerHeight - PREVIEW_DRAG_MIN_VISIBLE_Y);
+  const minY = getPreviewDragMinY();
   previewPanelState.value = {
     ...previewPanelState.value,
     [panelId]: {
       ...current,
       x: Math.min(maxX, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelWidth, current.x)),
-      y: Math.min(maxY, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelHeight, current.y))
+      y: Math.min(maxY, Math.max(minY, current.y))
     }
   };
 };
@@ -677,6 +781,20 @@ const startResizePreview = (panelId, event) => {
   };
 };
 
+const startResizePreviewTouch = (panelId, event) => {
+  const t = event.touches?.[0] || event.changedTouches?.[0];
+  if (!t) return;
+  bringPreviewPanelToFront(panelId);
+  const current = previewPanelState.value[panelId] || { scale: 1 };
+  previewResizeState.value = {
+    resizing: true,
+    panelId,
+    startX: t.clientX,
+    startY: t.clientY,
+    startScale: Number.isFinite(current.scale) ? current.scale : 1
+  };
+};
+
 const handleDragPreview = (event) => {
   if (previewResizeState.value.resizing) return;
   if (!previewDragState.value.dragging) return;
@@ -688,6 +806,7 @@ const handleDragPreview = (event) => {
   const panelHeight = current.collapsed ? 44 : (base.height * (current.scale || 1));
   const maxX = Math.max(0, window.innerWidth - PREVIEW_DRAG_MIN_VISIBLE_X);
   const maxY = Math.max(0, window.innerHeight - PREVIEW_DRAG_MIN_VISIBLE_Y);
+  const minY = getPreviewDragMinY();
   const nextX = event.clientX - previewDragState.value.offsetX;
   const nextY = event.clientY - previewDragState.value.offsetY;
   previewPanelState.value = {
@@ -695,7 +814,7 @@ const handleDragPreview = (event) => {
     [panelId]: {
       ...current,
       x: Math.min(maxX, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelWidth, nextX)),
-      y: Math.min(maxY, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelHeight, nextY))
+      y: Math.min(maxY, Math.max(minY, nextY))
     }
   };
 };
@@ -714,6 +833,7 @@ const handleDragPreviewTouch = (event) => {
   const panelHeight = current.collapsed ? 44 : (base.height * (current.scale || 1));
   const maxX = Math.max(0, window.innerWidth - PREVIEW_DRAG_MIN_VISIBLE_X);
   const maxY = Math.max(0, window.innerHeight - PREVIEW_DRAG_MIN_VISIBLE_Y);
+  const minY = getPreviewDragMinY();
   const nextX = t.clientX - previewDragState.value.offsetX;
   const nextY = t.clientY - previewDragState.value.offsetY;
   previewPanelState.value = {
@@ -721,7 +841,7 @@ const handleDragPreviewTouch = (event) => {
     [panelId]: {
       ...current,
       x: Math.min(maxX, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelWidth, nextX)),
-      y: Math.min(maxY, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelHeight, nextY))
+      y: Math.min(maxY, Math.max(minY, nextY))
     }
   };
 };
@@ -735,6 +855,30 @@ const handleResizePreview = (event) => {
   const base = getPreviewPanelBaseSize(panelId);
   const dx = event.clientX - previewResizeState.value.startX;
   const dy = event.clientY - previewResizeState.value.startY;
+  const scaleDelta = Math.max(dx / Math.max(1, base.width), dy / Math.max(1, base.height));
+  const nextScale = Math.min(PREVIEW_PANEL_MAX_SCALE, Math.max(PREVIEW_PANEL_MIN_SCALE, previewResizeState.value.startScale + scaleDelta));
+  previewPanelState.value = {
+    ...previewPanelState.value,
+    [panelId]: {
+      ...current,
+      scale: nextScale
+    }
+  };
+  clampPreviewPanelPosition(panelId);
+};
+
+const handleResizePreviewTouch = (event) => {
+  if (!previewResizeState.value.resizing) return;
+  const t = event.touches?.[0] || event.changedTouches?.[0];
+  if (!t) return;
+  event.preventDefault();
+  const panelId = previewResizeState.value.panelId;
+  if (!panelId) return;
+  const current = previewPanelState.value[panelId] || getPreviewDefaultState(0);
+  if (current.collapsed) return;
+  const base = getPreviewPanelBaseSize(panelId);
+  const dx = t.clientX - previewResizeState.value.startX;
+  const dy = t.clientY - previewResizeState.value.startY;
   const scaleDelta = Math.max(dx / Math.max(1, base.width), dy / Math.max(1, base.height));
   const nextScale = Math.min(PREVIEW_PANEL_MAX_SCALE, Math.max(PREVIEW_PANEL_MIN_SCALE, previewResizeState.value.startScale + scaleDelta));
   previewPanelState.value = {
@@ -916,6 +1060,12 @@ const togglePreviewPanelType = (panelId) => {
   current.push(panelId);
   selectedPreviewPanelIds.value = current;
 };
+
+watch(selectedPreviewPanelIds, (ids) => {
+  if (!ids.includes('attr-five')) {
+    previewAttrCharCollapsed.value = false;
+  }
+});
 
 const isCollabPoolEvent = (event) => {
   const id = normalizeEventId(event?.id).toLowerCase();
@@ -1160,19 +1310,43 @@ const filterCriteria = ref({
   unit: null         // 'ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'
 });
 
+const sortedEvents = computed(() => {
+  return [...(props.allEvents || [])].sort((a, b) => (
+    sortDesc.value ? compareEventOrderAsc(b, a) : compareEventOrderAsc(a, b)
+  ));
+});
+
+const hasDetailFilters = computed(() => {
+  const f = filterCriteria.value || {};
+  return Boolean(
+    (f.selectedChars && f.selectedChars.length > 0) ||
+    f.rarity ||
+    f.attribute ||
+    f.skill ||
+    f.cardType ||
+    f.unit
+  );
+});
+
+const baseEvents = computed(() => {
+  if (!hideCollabPools.value) return sortedEvents.value;
+  return sortedEvents.value.filter((event) => !isCollabPoolEvent(event));
+});
+
+const baseEventRows = computed(() => {
+  return baseEvents.value.map((event) => ({
+    kind: 'event',
+    key: `event-${normalizeEventId(event?.id)}`,
+    event
+  }));
+});
+
 // 核心筛选逻辑
 // 3. 【重构】简化核心筛选逻辑的数据源
 const filteredData = computed(() => {
-  // 直接使用 props 传下来的数据进行排序
-  let data = [...(props.allEvents || [])].sort((a, b) =>
-    sortDesc.value ? compareEventOrderAsc(b, a) : compareEventOrderAsc(a, b)
-  );
+  let data = baseEvents.value;
 
-  if (hideCollabPools.value) {
-    data = data.filter((event) => !isCollabPoolEvent(event));
-  }
-
-  if (filterCriteria.value.selectedChars.length === 0) return data;
+  if (!hasDetailFilters.value) return data;
 
   return data.filter(event => {
     const selectedNames = filterCriteria.value.selectedChars;
@@ -1271,12 +1445,16 @@ const filteredBirthdayRows = computed(() => {
 });
 
 const displayRows = computed(() => {
-  const events = filteredData.value.map((event) => ({
-    kind: 'event',
-    key: `event-${normalizeEventId(event?.id)}`,
-    event
-  }));
+  const events = hasDetailFilters.value
+    ? filteredData.value.map((event) => ({
+      kind: 'event',
+      key: `event-${normalizeEventId(event?.id)}`,
+      event
+    }))
+    : baseEventRows.value;
   const birthdays = filteredBirthdayRows.value;
+  if (!hasDetailFilters.value && birthdays.length === 0) return events;
+  if (birthdays.length === 0) return events;
   const merged = [...events, ...birthdays];
 
   merged.sort((a, b) => {
@@ -1299,6 +1477,20 @@ const displayRows = computed(() => {
 
   return merged;
 });
+
+const updatePreviewConfigOffset = () => {
+  if (Number.isFinite(previewConfigPanelPos.value.x) && Number.isFinite(previewConfigPanelPos.value.y)) return;
+  const wrapper = historyWrapperRef.value;
+  if (!wrapper) return;
+  const filterEl = filterStickyRef.value;
+  if (!filterEl) {
+    wrapper.style.setProperty('--preview-config-top', '16px');
+    return;
+  }
+  const rect = filterEl.getBoundingClientRect();
+  const nextTop = Math.max(16, Math.round(rect.bottom + 6));
+  wrapper.style.setProperty('--preview-config-top', `${nextTop}px`);
+};
 
 const isJumpFilterActive = () => {
   const f = filterCriteria.value || {};
@@ -1419,11 +1611,21 @@ const handleWindowResize = () => {
   if (resizeRafId) cancelAnimationFrame(resizeRafId);
   resizeRafId = requestAnimationFrame(() => {
     updateCompactFilterState();
+    if (Number.isFinite(previewConfigPanelPos.value.x) && Number.isFinite(previewConfigPanelPos.value.y)) {
+      previewConfigPanelPos.value = clampPreviewConfigPanelPos(previewConfigPanelPos.value.x, previewConfigPanelPos.value.y);
+    }
+    updatePreviewConfigOffset();
     restoreViewportAnchor();
     Object.keys(previewPanelState.value).forEach((panelId) => clampPreviewPanelPosition(panelId));
     resizeRafId = 0;
   });
 };
+
+watch([showFilter, isEditorOpen], () => {
+  nextTick(() => {
+    updatePreviewConfigOffset();
+  });
+}, { flush: 'post' });
 
 const consumePendingJump = (behavior = 'auto', retry = 8) => {
   const idKey = pendingJumpEventId.value;
@@ -1503,14 +1705,23 @@ const restoreHistoryScroll = () => {
 };
 
 onMounted(() => {
+  window.addEventListener('mousemove', handleDragPreviewConfig);
+  window.addEventListener('mouseup', stopDragPreviewConfig);
+  window.addEventListener('touchmove', handleDragPreviewConfigTouch, { passive: false });
+  window.addEventListener('touchend', stopDragPreviewConfig);
+  window.addEventListener('touchcancel', stopDragPreviewConfig);
   window.addEventListener('mousemove', handleDragPreview);
   window.addEventListener('mousemove', handleResizePreview);
   window.addEventListener('mouseup', stopDragPreview);
   window.addEventListener('mouseup', stopResizePreview);
   window.addEventListener('touchmove', handleDragPreviewTouch, { passive: false });
+  window.addEventListener('touchmove', handleResizePreviewTouch, { passive: false });
   window.addEventListener('touchend', stopDragPreview);
+  window.addEventListener('touchend', stopResizePreview);
   window.addEventListener('touchcancel', stopDragPreview);
+  window.addEventListener('touchcancel', stopResizePreview);
   updateCompactFilterState();
+  updatePreviewConfigOffset();
   if (isReloadNavigation()) {
     historyScrollTop.value = 0;
     try {
@@ -1534,6 +1745,7 @@ onMounted(() => {
 });
 
 onDeactivated(() => {
+  stopDragPreviewConfig();
   emit('sync-preview-event-id', null);
   stopDragPreview();
   stopResizePreview();
@@ -1547,13 +1759,21 @@ onDeactivated(() => {
     cancelAnimationFrame(resizeRafId);
     resizeRafId = 0;
   }
+  window.removeEventListener('mousemove', handleDragPreviewConfig);
+  window.removeEventListener('mouseup', stopDragPreviewConfig);
+  window.removeEventListener('touchmove', handleDragPreviewConfigTouch);
+  window.removeEventListener('touchend', stopDragPreviewConfig);
+  window.removeEventListener('touchcancel', stopDragPreviewConfig);
   window.removeEventListener('mousemove', handleDragPreview);
   window.removeEventListener('mousemove', handleResizePreview);
   window.removeEventListener('mouseup', stopDragPreview);
   window.removeEventListener('mouseup', stopResizePreview);
   window.removeEventListener('touchmove', handleDragPreviewTouch);
+  window.removeEventListener('touchmove', handleResizePreviewTouch);
   window.removeEventListener('touchend', stopDragPreview);
+  window.removeEventListener('touchend', stopResizePreview);
   window.removeEventListener('touchcancel', stopDragPreview);
+  window.removeEventListener('touchcancel', stopResizePreview);
   window.removeEventListener('resize', handleWindowResize);
 });
 
@@ -1566,18 +1786,28 @@ onActivated(() => {
       restoreHistoryScroll();
     }
     updateViewportAnchor();
+    updatePreviewConfigOffset();
   });
+  window.addEventListener('mousemove', handleDragPreviewConfig);
+  window.addEventListener('mouseup', stopDragPreviewConfig);
+  window.addEventListener('touchmove', handleDragPreviewConfigTouch, { passive: false });
+  window.addEventListener('touchend', stopDragPreviewConfig);
+  window.addEventListener('touchcancel', stopDragPreviewConfig);
   window.addEventListener('mousemove', handleDragPreview);
   window.addEventListener('mousemove', handleResizePreview);
   window.addEventListener('mouseup', stopDragPreview);
   window.addEventListener('mouseup', stopResizePreview);
   window.addEventListener('touchmove', handleDragPreviewTouch, { passive: false });
+  window.addEventListener('touchmove', handleResizePreviewTouch, { passive: false });
   window.addEventListener('touchend', stopDragPreview);
+  window.addEventListener('touchend', stopResizePreview);
   window.addEventListener('touchcancel', stopDragPreview);
+  window.addEventListener('touchcancel', stopResizePreview);
   window.addEventListener('resize', handleWindowResize);
 });
 
 onBeforeUnmount(() => {
+  stopDragPreviewConfig();
   emit('sync-preview-event-id', null);
   stopDragPreview();
   stopResizePreview();
@@ -1589,13 +1819,21 @@ onBeforeUnmount(() => {
     cancelAnimationFrame(resizeRafId);
     resizeRafId = 0;
   }
+  window.removeEventListener('mousemove', handleDragPreviewConfig);
+  window.removeEventListener('mouseup', stopDragPreviewConfig);
+  window.removeEventListener('touchmove', handleDragPreviewConfigTouch);
+  window.removeEventListener('touchend', stopDragPreviewConfig);
+  window.removeEventListener('touchcancel', stopDragPreviewConfig);
   window.removeEventListener('mousemove', handleDragPreview);
   window.removeEventListener('mousemove', handleResizePreview);
   window.removeEventListener('mouseup', stopDragPreview);
   window.removeEventListener('mouseup', stopResizePreview);
   window.removeEventListener('touchmove', handleDragPreviewTouch);
+  window.removeEventListener('touchmove', handleResizePreviewTouch);
   window.removeEventListener('touchend', stopDragPreview);
+  window.removeEventListener('touchend', stopResizePreview);
   window.removeEventListener('touchcancel', stopDragPreview);
+  window.removeEventListener('touchcancel', stopResizePreview);
   window.removeEventListener('resize', handleWindowResize);
 });
 
@@ -1759,19 +1997,20 @@ const parseVS = (vsStr) => {
   left: 0;
   overflow: hidden;
   --editor-drawer-width: 380px;
+  --preview-config-top: 16px;
 }
 
 .predict-preview-floating {
   position: static;
-  z-index: 4200;
+  z-index: 6200;
   pointer-events: none;
 }
 
 .preview-config-panel {
   position: fixed;
   left: 14px;
-  top: 16px;
-  z-index: 4100;
+  top: var(--preview-config-top);
+  z-index: 6200;
   width: 360px;
   border: 1px solid rgba(148, 163, 184, 0.45);
   border-radius: 10px;
@@ -1791,6 +2030,13 @@ const parseVS = (vsStr) => {
   font-weight: 700;
   color: #334155;
   margin-bottom: 6px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.preview-config-head:active {
+  cursor: grabbing;
 }
 
 .preview-config-actions {
@@ -1853,10 +2099,27 @@ const parseVS = (vsStr) => {
 }
 
 .preview-char-select-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 0.72rem;
   font-weight: 600;
   color: #475569;
   margin-bottom: 6px;
+}
+
+.preview-char-select-toggle {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.64rem;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.preview-char-select.is-collapsed .preview-char-select-title {
+  margin-bottom: 0;
 }
 
 .preview-char-chips {
@@ -1902,6 +2165,7 @@ const parseVS = (vsStr) => {
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(4px);
   pointer-events: auto;
+  overflow: hidden;
 }
 
 .preview-panel.is-collapsed {
@@ -1962,7 +2226,8 @@ const parseVS = (vsStr) => {
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-  overflow: visible;
+  overflow: hidden;
+  width: 100%;
 }
 
 .preview-attr-head,
@@ -2017,10 +2282,12 @@ const parseVS = (vsStr) => {
   color: #065f46;
   font-size: 0.72rem;
   line-height: 1.2;
-  width: fit-content;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .preview-count {
+  flex: 0 0 26px;
   min-width: 26px;
   text-align: center;
   font-size: 0.84rem;
@@ -2032,10 +2299,11 @@ const parseVS = (vsStr) => {
 }
 
 .preview-avatars {
-  display: grid;
-  grid-template-columns: repeat(7, 21px);
+  display: flex;
+  flex-wrap: wrap;
   gap: 3px;
   align-items: start;
+  max-width: 100%;
 }
 
 .preview-avatar-box {
@@ -2088,11 +2356,14 @@ const parseVS = (vsStr) => {
   flex: 1; /* 占据剩余所有空间 */
   height: 100%;
   overflow-y: auto; /* 只有列表区可以滚动 */
+  overflow-x: hidden;
   padding: 0 20px 20px;
   box-sizing: border-box;
   background: #f4f7f6;
   transition: margin-right 0.18s ease;
   min-width: 0; /* 防止子元素撑开 flex */
+  touch-action: pan-y;
+  overscroll-behavior-x: contain;
 }
 
 .event-history > h1 {
@@ -2100,158 +2371,186 @@ const parseVS = (vsStr) => {
 }
 /* 如果你希望编辑器是覆盖式的（Overlapping），则维持 position: fixed 
    但给左侧列表增加 marginRight */
-.event-history-wrapper.with-editor .event-history {
-  margin-right: var(--editor-drawer-width); /* 强制拉开距离，绝不重叠 */
-}
+@media (min-width: 1001px) {
+  .event-history-wrapper.with-editor .event-history {
+    margin-right: var(--editor-drawer-width); /* 强制拉开距离，绝不重叠 */
+  }
 
-/* 预测抽屉打开时启用紧凑模式，直接压缩关键尺寸，保证肉眼可见。 */
-.event-history-wrapper.with-editor .history-list {
-  gap: 8px;
-  margin-top: 12px;
-}
+  /* 预测抽屉打开时启用紧凑模式，直接压缩关键尺寸，保证肉眼可见。 */
+  .event-history-wrapper.with-editor .history-list {
+    gap: 8px;
+    margin-top: 12px;
+  }
 
-.event-history-wrapper.with-editor .event-item {
-  padding: 8px 12px;
-  border-left-width: 4px;
-}
+  .event-history-wrapper.with-editor .event-item {
+    padding: 8px 12px;
+    border-left-width: 4px;
+  }
 
-.event-history-wrapper.with-editor .event-item,
-.event-history-wrapper.with-editor .event-item *,
-.event-history-wrapper.with-editor .birthday-row,
-.event-history-wrapper.with-editor .birthday-row * {
-  transition: none !important;
-}
+  .event-history-wrapper.with-editor .event-item,
+  .event-history-wrapper.with-editor .event-item *,
+  .event-history-wrapper.with-editor .birthday-row,
+  .event-history-wrapper.with-editor .birthday-row * {
+    transition: none !important;
+  }
 
-.event-history-wrapper.with-editor .event-basic {
-  width: 50px;
-  gap: 2px;
-}
+  .event-history-wrapper.with-editor .event-basic {
+    width: 50px;
+    gap: 2px;
+  }
 
-.event-history-wrapper.with-editor .event-id {
-  font-size: 0.96rem;
-}
+  .event-history-wrapper.with-editor .event-id {
+    font-size: 0.96rem;
+  }
 
-.event-history-wrapper.with-editor .event-date {
-  font-size: 0.66rem;
-}
+  .event-history-wrapper.with-editor .event-date {
+    font-size: 0.66rem;
+  }
 
-.event-history-wrapper.with-editor .banner-section {
-  width: 64px;
-  margin: 0 6px;
-}
+  .event-history-wrapper.with-editor .banner-section {
+    width: 64px;
+    margin: 0 6px;
+  }
 
-.event-history-wrapper.with-editor .banner-avatar {
-  width: 50px;
-  height: 50px;
-}
+  .event-history-wrapper.with-editor .banner-avatar {
+    width: 50px;
+    height: 50px;
+  }
 
-.event-history-wrapper.with-editor .unit-logo-banner {
-  width: 54px;
-  height: 54px;
-}
+  .event-history-wrapper.with-editor .unit-logo-banner {
+    width: 54px;
+    height: 54px;
+  }
 
-.event-history-wrapper.with-editor .event-main-content {
-  width: 132px;
-  padding: 0 4px;
-  min-width: 0;
-}
+  .event-history-wrapper.with-editor .event-main-content {
+    width: 132px;
+    padding: 0 4px;
+    min-width: 0;
+  }
 
-.event-history-wrapper.with-editor .event-title {
-  font-size: 0.9rem;
-  line-height: 1.2;
-}
+  .event-history-wrapper.with-editor .event-title {
+    font-size: 0.9rem;
+    line-height: 1.2;
+  }
 
-.event-history-wrapper.with-editor .type-tag {
-  font-size: clamp(0.52rem, 0.9vw, 0.62rem);
-  padding: 1px 6px;
-  white-space: nowrap;
-  flex: 0 0 auto;
-}
+  .event-history-wrapper.with-editor .type-tag {
+    font-size: clamp(0.52rem, 0.9vw, 0.62rem);
+    padding: 1px 6px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
 
-.event-history-wrapper.with-editor .series-text {
-  font-size: clamp(0.56rem, 1vw, 0.7rem);
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
-  min-width: 0;
-  flex: 1 1 auto;
-}
+  .event-history-wrapper.with-editor .series-text {
+    font-size: clamp(0.56rem, 1vw, 0.7rem);
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
 
-.event-history-wrapper.with-editor .fest-tag {
-  font-size: 0.62rem;
-  padding: 1px 5px;
-}
+  .event-history-wrapper.with-editor .fest-tag {
+    font-size: 0.62rem;
+    padding: 1px 5px;
+  }
 
-.event-history-wrapper.with-editor .type-indicator {
-  margin-top: 3px;
-  gap: 6px;
-  min-width: 0;
-  flex-wrap: nowrap;
-}
+  .event-history-wrapper.with-editor .type-indicator {
+    margin-top: 3px;
+    gap: 6px;
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
 
-.event-history-wrapper.with-editor .event-members {
-  gap: 6px;
-  padding: 0 10px;
-}
+  .event-history-wrapper.with-editor .event-members {
+    gap: 6px;
+    padding: 0 6px;
+  }
 
-.event-history-wrapper.with-editor .member-row {
-  gap: 8px;
-}
+  .event-history-wrapper.with-editor .member-row {
+    gap: 4px;
+  }
 
-.event-history-wrapper.with-editor .fes-type-icon {
-  height: 52px;
-}
+  .event-history-wrapper.with-editor .member-row:not(.fes-row) {
+    display: grid;
+    grid-template-columns: repeat(6, max-content);
+    column-gap: 4px;
+    row-gap: 5px;
+    justify-content: flex-start;
+    justify-items: start;
+    align-items: start;
+  }
 
-.event-history-wrapper.with-editor .avatar-container {
-  width: 54px;
-  height: 54px;
-  border-width: 2px;
-}
+  .event-history-wrapper.with-editor .fes-type-icon {
+    height: 52px;
+  }
 
-.event-history-wrapper.with-editor .lim-tag {
-  font-size: 7px;
-}
+  .event-history-wrapper.with-editor .avatar-container {
+    width: 56px;
+    height: 56px;
+    border-width: 2px;
+  }
 
-.event-history-wrapper.with-editor .vs-avatar {
-  width: 28px;
-  height: 28px;
-}
+  .event-history-wrapper.with-editor .lim-tag {
+    top: -2px;
+    right: 12px;
+    width: auto;
+    height: auto;
+    line-height: 1.1;
+    padding: 1px 4px;
+    font-size: 6px;
+    border-radius: 8px;
+    transform: none;
+    clip-path: none;
+  }
 
-.event-history-wrapper.with-editor .song-tooltip .info-icon {
-  font-size: 14px;
-}
+  .event-history-wrapper.with-editor .vs-section {
+    width: 48px;
+    gap: 4px;
+    justify-content: center;
+  }
 
-.event-history-wrapper.with-editor .card-attr-icon {
-  width: 18px;
-  height: 18px;
-}
+  .event-history-wrapper.with-editor .vs-avatar {
+    width: 22px;
+    height: 22px;
+  }
 
-.event-history-wrapper.with-editor .sub-unit-logo {
-  width: 22px;
-  height: 22px;
-  right: -8px;
-  bottom: -5px;
-}
+  .event-history-wrapper.with-editor .song-tooltip,
+  .event-history-wrapper.with-editor .attr-section {
+    display: none;
+  }
 
-.event-history-wrapper.with-editor .birthday-row {
-  min-height: 34px;
-  padding: 4px 10px;
-  gap: 10px;
-}
+  .event-history-wrapper.with-editor .card-attr-icon {
+    width: 16px;
+    height: 16px;
+  }
 
-.event-history-wrapper.with-editor .birthday-date {
-  width: 78px;
-  font-size: 0.72rem;
-}
+  .event-history-wrapper.with-editor .sub-unit-logo {
+    width: 20px;
+    height: 20px;
+    right: -7px;
+    bottom: -4px;
+  }
 
-.event-history-wrapper.with-editor .birthday-name {
-  min-width: 74px;
-  font-size: 0.9rem;
-}
+  .event-history-wrapper.with-editor .birthday-row {
+    min-height: 34px;
+    padding: 4px 10px;
+    gap: 10px;
+  }
 
-.event-history-wrapper.with-editor .birthday-row-icon {
-  width: 18px;
-  height: 18px;
+  .event-history-wrapper.with-editor .birthday-date {
+    width: 78px;
+    font-size: 0.72rem;
+  }
+
+  .event-history-wrapper.with-editor .birthday-name {
+    min-width: 74px;
+    font-size: 0.9rem;
+  }
+
+  .event-history-wrapper.with-editor .birthday-row-icon {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .filter-sticky {
@@ -2295,6 +2594,10 @@ const parseVS = (vsStr) => {
   height: 18px;
   object-fit: contain;
   vertical-align: middle;
+}
+
+.birthday-inline-icon {
+  margin-right: 4px;
 }
 
 .clear-btn {
@@ -2694,10 +2997,13 @@ const parseVS = (vsStr) => {
 .attr-icon { width: 35px; height: 35px; }
 
 @media (max-width: 1000px) {
+  .event-history-wrapper {
+    --preview-config-top: calc(env(safe-area-inset-top) + 66px);
+  }
+
   .preview-config-panel {
     width: 320px;
     left: 8px;
-    top: 12px;
     max-height: 46vh;
   }
 
@@ -2720,6 +3026,10 @@ const parseVS = (vsStr) => {
 }
 
 @media (max-width: 900px) {
+  .event-history-wrapper {
+    --preview-config-top: calc(env(safe-area-inset-top) + 62px);
+  }
+
   .event-history > h1 {
     display: none;
   }
@@ -2733,14 +3043,15 @@ const parseVS = (vsStr) => {
   .sort-btn,
   .nav-btn,
   .clear-btn {
-    min-width: 31px;
+    min-width: 0;
     height: 31px;
-    padding: 0 6px;
+    padding: 0 8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     line-height: 1;
+    white-space: nowrap;
   }
 
   .compact-btn-icon {

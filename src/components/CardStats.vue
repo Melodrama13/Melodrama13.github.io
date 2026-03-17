@@ -344,24 +344,49 @@
               <thead>
                 <tr>
                   <th>角色</th>
-                  <th v-for="(attr, idx) in ATTRS" :key="`head-${attr}`" :class="matrixGroupClass(idx, ATTRS.length)">{{ ATTR_LABELS[attr] }}</th>
-                  <th :class="matrixGroupClass(0, 4)">分卡数</th>
-                  <th>P分数</th>
-                  <th>判卡数</th>
-                  <th :class="matrixGroupClass(3, 4)">奶卡数</th>
-                  <th :class="matrixGroupClass(0, 4)">四星数</th>
-                  <th>三星数</th>
-                  <th>二星数</th>
-                  <th :class="matrixGroupClass(3, 4)">报酬数</th>
+                  <th v-for="(attr, idx) in ATTRS" :key="`head-${attr}`" :class="matrixGroupClass(idx, ATTRS.length)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort(attr)">
+                      <span>{{ ATTR_LABELS[attr] }}</span>
+                      <span class="matrix-sort-ind">{{ getMatrixSortIndicator(attr) }}</span>
+                    </button>
+                  </th>
+                  <th :class="matrixGroupClass(0, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pureScoreCount')"><span>分卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pureScoreCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pScoreCount')"><span>P 分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pScoreCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('accuracyCount')"><span>判卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('accuracyCount') }}</span></button>
+                  </th>
+                  <th :class="matrixGroupClass(3, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('recoveryCount')"><span>奶卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('recoveryCount') }}</span></button>
+                  </th>
+                  <th :class="matrixGroupClass(0, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('fourStarCount')"><span>四星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('fourStarCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('threeStarCount')"><span>三星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('threeStarCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('twoStarCount')"><span>二星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('twoStarCount') }}</span></button>
+                  </th>
+                  <th :class="matrixGroupClass(3, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('rewardTotalCount')"><span>报酬</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('rewardTotalCount') }}</span></button>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 <tr
                   v-for="row in attrMatrixRows"
                   :key="`attr-${row.name}`"
-                  :style="{ backgroundColor: getCharTint(row.name) }"
+                  :class="getMatrixUnitFrameClass(row.name)"
+                  :style="{
+                    backgroundColor: getCharTint(row.name),
+                    '--matrix-unit-border-color': getMatrixUnitColor(row.name)
+                  }"
                 >
-                  <td class="row-char">
+                  <td class="row-char" :style="{ backgroundColor: getUnitMatrixTint(row.name) }">
                     <img
                       :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
                       class="mini-avatar"
@@ -373,7 +398,7 @@
                     v-for="(attr, idx) in ATTRS"
                     :key="`${row.name}-${attr}`"
                     class="matrix-num"
-                    :class="[matrixGroupClass(idx, ATTRS.length), getAttrExtremeClass(attr, row[attr])]"
+                    :class="[matrixGroupClass(idx, ATTRS.length), getAttrExtremeClass(attr, row[attr], row.name)]"
                   >
                     {{ row[attr] }}
                   </td>
@@ -411,6 +436,8 @@ const emit = defineEmits(['jump-to-event', 'stats-preview-update']);
 const manualEventId = ref(null);
 const navCollapsed = ref(false);
 const activeNavId = ref('panel-dist');
+const matrixSortKey = ref('');
+const matrixSortOrder = ref('');
 let sectionObserver = null;
 
 const CHAR_MAP = {
@@ -535,8 +562,15 @@ const parseVS = (vsStr) => {
 };
 
 const getUnitByChar = (name) => {
-  if (VS_NAMES.includes(name)) return 'vs';
-  return CHAR_UNIT_MAP[name] || 'vs';
+  const raw = String(name || '').trim();
+  if (!raw) return 'vs';
+  const [baseName, suffixRaw] = raw.split(/\s+/);
+  const suffix = String(suffixRaw || '').toLowerCase();
+  if (VS_NAMES.includes(baseName)) {
+    if (suffix && UNIT_COLORS[suffix]) return suffix;
+    return 'vs';
+  }
+  return CHAR_UNIT_MAP[baseName] || 'vs';
 };
 
 const hexToRgba = (hex, alpha) => {
@@ -548,9 +582,75 @@ const hexToRgba = (hex, alpha) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+const hexToSoftSolid = (hex, mix = 0.78) => {
+  const h = String(hex || '').replace('#', '');
+  if (h.length !== 6) return 'rgb(229, 231, 235)';
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const rr = Math.round(r + (255 - r) * mix);
+  const gg = Math.round(g + (255 - g) * mix);
+  const bb = Math.round(b + (255 - b) * mix);
+  return `rgb(${rr}, ${gg}, ${bb})`;
+};
+
 const getCharTint = (name) => {
-  const unit = getUnitByChar(name);
-  return hexToRgba(UNIT_COLORS[unit] || '#111827', 0.2);
+  return hexToRgba(getCharColor(name), 0.2);
+};
+
+const getMatrixUnitColor = (name) => UNIT_COLORS[getUnitByChar(name)] || '#9ca3af';
+
+const getUnitMatrixTint = (name) => hexToSoftSolid(getMatrixUnitColor(name));
+
+const toggleMatrixSort = (key) => {
+  if (matrixSortKey.value !== key) {
+    matrixSortKey.value = key;
+    matrixSortOrder.value = 'desc';
+    return;
+  }
+  if (matrixSortOrder.value === 'desc') {
+    matrixSortOrder.value = 'asc';
+    return;
+  }
+  if (matrixSortOrder.value === 'asc') {
+    matrixSortKey.value = '';
+    matrixSortOrder.value = '';
+    return;
+  }
+  matrixSortOrder.value = 'desc';
+};
+
+const getMatrixSortIndicator = (key) => {
+  if (matrixSortKey.value !== key || !matrixSortOrder.value) return '↕';
+  return matrixSortOrder.value === 'desc' ? '↓' : '↑';
+};
+
+const isMatrixDefaultSort = computed(() => !matrixSortKey.value || !matrixSortOrder.value);
+
+const matrixUnitFrameMap = computed(() => {
+  const map = new Map();
+  if (!isMatrixDefaultSort.value) return map;
+  const rows = attrMatrixRows.value;
+  rows.forEach((row, idx) => {
+    const unit = getUnitByChar(row.name);
+    const prevUnit = idx > 0 ? getUnitByChar(rows[idx - 1].name) : null;
+    const nextUnit = idx < rows.length - 1 ? getUnitByChar(rows[idx + 1].name) : null;
+    map.set(row.name, {
+      start: unit !== prevUnit,
+      end: unit !== nextUnit
+    });
+  });
+  return map;
+});
+
+const getMatrixUnitFrameClass = (name) => {
+  const info = matrixUnitFrameMap.value.get(name);
+  if (!info) return [];
+  return [
+    'matrix-unit-framed',
+    info.start ? 'matrix-unit-group-start-row' : '',
+    info.end ? 'matrix-unit-group-end-row' : ''
+  ].filter(Boolean);
 };
 
 const getUnitTint = (unit) => hexToRgba(UNIT_COLORS[unit] || '#9ca3af', 0.3);
@@ -1059,7 +1159,7 @@ watch(statsPreviewPayload, (payload) => {
 }, { immediate: true });
 
 const attrMatrixRows = computed(() => {
-  return [...processedStats.value]
+  const rows = [...processedStats.value]
     .sort((a, b) => (CHAR_ORDER[a.name] || 999) - (CHAR_ORDER[b.name] || 999))
     .map((s) => ({
       name: s.name,
@@ -1077,21 +1177,43 @@ const attrMatrixRows = computed(() => {
       twoStarCount: s.twoStarCount,
       rewardTotalCount: s.rewardTotalCount
     }));
+
+  const key = matrixSortKey.value;
+  const order = matrixSortOrder.value;
+  if (!key || !order) return rows;
+
+  const orderFactor = order === 'desc' ? -1 : 1;
+  return [...rows].sort((a, b) => {
+    const av = Number(a?.[key] || 0);
+    const bv = Number(b?.[key] || 0);
+    if (av !== bv) return (av - bv) * orderFactor;
+    return (CHAR_ORDER[a.name] || 999) - (CHAR_ORDER[b.name] || 999);
+  });
 });
 
-const attrExtremes = computed(() => {
+const unitAttrExtremes = computed(() => {
   const result = {};
-  ATTRS.forEach((attr) => {
-    const values = attrMatrixRows.value.map((r) => Number(r[attr]) || 0);
+  const unitBuckets = {};
+  attrMatrixRows.value.forEach((row) => {
+    const unit = getUnitByChar(row.name);
+    if (!unitBuckets[unit]) unitBuckets[unit] = [];
+    unitBuckets[unit].push(row);
+  });
+
+  Object.entries(unitBuckets).forEach(([unit, rows]) => {
+    const values = rows.flatMap((r) => ATTRS.map((attr) => Number(r[attr]) || 0));
     const max = values.length ? Math.max(...values) : 0;
     const min = values.length ? Math.min(...values) : 0;
-    result[attr] = { max, min };
+    result[unit] = { max, min };
   });
+
   return result;
 });
 
-const getAttrExtremeClass = (attr, value) => {
-  const range = attrExtremes.value[attr];
+const getAttrExtremeClass = (attr, value, name) => {
+  void attr;
+  const unit = getUnitByChar(name);
+  const range = unitAttrExtremes.value?.[unit];
   if (!range) return '';
   if (range.max !== range.min && value === range.max) return 'matrix-max';
   if (range.max !== range.min && value === range.min) return 'matrix-min';
@@ -1441,7 +1563,7 @@ const banShortestIntervals = computed(() => {
   color: #1f2937;
   background: linear-gradient(45deg, rgba(253, 124, 193, 0.30) 0%, rgba(135, 192, 255, 0.30) 50%, rgba(248, 255, 135, 0.30) 100%);
   min-height: 100vh;
-  --matrix-sticky-top: -20px;
+  --matrix-sticky-top: 0px;
 }
 
 .stats-layout {
@@ -1708,7 +1830,10 @@ const banShortestIntervals = computed(() => {
 }
 
 .matrix-wrap {
-  overflow: visible;
+  position: relative;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 140px);
   border: 1px solid #e5e7eb;
   border-radius: 8px;
 }
@@ -1722,10 +1847,59 @@ const banShortestIntervals = computed(() => {
 
 .matrix-table thead th {
   position: sticky;
-  top: var(--matrix-sticky-top);
-  z-index: 1200;
+  top: 0;
+  z-index: 40;
   background: #f8fafc;
   box-shadow: 0 1px 0 #e5e7eb;
+}
+
+.matrix-table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 50;
+  background: #f8fafc;
+}
+
+.matrix-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 30;
+}
+
+.matrix-table tbody tr.matrix-unit-framed td:first-child {
+  border-left: 3px solid var(--matrix-unit-border-color);
+}
+
+.matrix-table tbody tr.matrix-unit-framed td:last-child {
+  border-right: 3px solid var(--matrix-unit-border-color);
+}
+
+.matrix-table tbody tr.matrix-unit-group-start-row td {
+  border-top: 3px solid var(--matrix-unit-border-color);
+}
+
+.matrix-table tbody tr.matrix-unit-group-end-row td {
+  border-bottom: 3px solid var(--matrix-unit-border-color);
+}
+
+.matrix-sort-btn {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: inherit;
+  font-weight: 700;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.matrix-sort-ind {
+  font-size: 0.72em;
+  color: #64748b;
 }
 
 .row-char {
@@ -2107,7 +2281,9 @@ const banShortestIntervals = computed(() => {
   }
 
   .matrix-wrap {
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 120px);
   }
 
   .matrix-table {

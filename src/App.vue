@@ -456,7 +456,8 @@ watch(predictiveEvents, (newVal) => {
   display: flex;
   flex-direction: column;
   height: 100vh;     /* 强制占满一屏高度 */
-  width: 100vw;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;  /* 锁定外层，防止整个网页滚动 */
 }
 
@@ -477,6 +478,7 @@ watch(predictiveEvents, (newVal) => {
   flex: 1;
   padding: 20px;
   overflow-y: auto; /* 默认允许滚动，拯救你的统计面板 */
+  overflow-x: hidden;
 }
 
 /* 当切换到历史页面时，去掉 padding 并锁定外层滚动 */
@@ -581,6 +583,7 @@ button.active {
 
   .content-area {
     padding: 10px;
+    overflow-x: hidden;
   }
 
   .content-area.history-mode {

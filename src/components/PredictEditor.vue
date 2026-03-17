@@ -7,9 +7,6 @@
           class="drawer-grab-handle"
           @mousedown.prevent="startSheetDragMouse"
           @touchstart.prevent="startSheetDrag"
-          @touchmove.prevent="moveSheetDrag"
-          @touchend="endSheetDrag"
-          @touchcancel="endSheetDrag"
         ></div>
         <div class="header-main">
           <h3>预测编辑器 <span class="ev-id">#{{ event.id }}</span></h3>
@@ -185,12 +182,34 @@ function moveSheetDragMouse(event) {
 
 function endSheetDragMouse() {
   endSheetDrag();
-  detachSheetMouseListeners();
+  detachSheetPointerListeners();
 }
 
-const detachSheetMouseListeners = () => {
+function moveSheetDragTouch(event) {
+  if (!isMobileViewport.value || !sheetDragState.value.dragging) return;
+  const t = event.touches?.[0];
+  if (!t) return;
+  event.preventDefault();
+  applySheetDragMove(t.clientY);
+}
+
+function endSheetDragTouch() {
+  endSheetDrag();
+  detachSheetPointerListeners();
+}
+
+const detachSheetPointerListeners = () => {
   window.removeEventListener('mousemove', moveSheetDragMouse);
   window.removeEventListener('mouseup', endSheetDragMouse);
+  window.removeEventListener('touchmove', moveSheetDragTouch);
+  window.removeEventListener('touchend', endSheetDragTouch);
+  window.removeEventListener('touchcancel', endSheetDragTouch);
+};
+
+const attachSheetTouchListeners = () => {
+  window.addEventListener('touchmove', moveSheetDragTouch, { passive: false });
+  window.addEventListener('touchend', endSheetDragTouch);
+  window.addEventListener('touchcancel', endSheetDragTouch);
 };
 
 const updateMobileViewport = () => {
@@ -198,7 +217,7 @@ const updateMobileViewport = () => {
   if (!isMobileViewport.value) {
     sheetHeightVh.value = SHEET_MAX_VH;
     sheetDragState.value = { dragging: false, startY: 0, startVh: SHEET_MAX_VH };
-    detachSheetMouseListeners();
+    detachSheetPointerListeners();
   } else {
     sheetHeightVh.value = clamp(sheetHeightVh.value || SHEET_MID_VH, SHEET_MIN_VH, SHEET_MAX_VH);
   }
@@ -210,20 +229,6 @@ const drawerStyle = computed(() => {
     height: `${sheetHeightVh.value}dvh`
   };
 });
-
-const startSheetDrag = (event) => {
-  if (!isMobileViewport.value) return;
-  const t = event.touches?.[0];
-  if (!t) return;
-  setSheetDragStart(t.clientY);
-};
-
-const moveSheetDrag = (event) => {
-  if (!isMobileViewport.value || !sheetDragState.value.dragging) return;
-  const t = event.touches?.[0];
-  if (!t) return;
-  applySheetDragMove(t.clientY);
-};
 
 const endSheetDrag = () => {
   if (!isMobileViewport.value || !sheetDragState.value.dragging) return;
@@ -240,6 +245,14 @@ function startSheetDragMouse(event) {
   setSheetDragStart(event.clientY);
   window.addEventListener('mousemove', moveSheetDragMouse);
   window.addEventListener('mouseup', endSheetDragMouse);
+}
+
+function startSheetDrag(event) {
+  if (!isMobileViewport.value) return;
+  const t = event.touches?.[0];
+  if (!t) return;
+  setSheetDragStart(t.clientY);
+  attachSheetTouchListeners();
 }
 
 const renderTick = ref(0);
@@ -476,7 +489,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  detachSheetMouseListeners();
+  detachSheetPointerListeners();
   window.removeEventListener('resize', updateMobileViewport);
 });
 
@@ -612,12 +625,24 @@ const submit = () => {
 }
 
 .drawer-grab-handle {
-  width: 42px;
+  width: 100%;
+  height: 22px;
+  margin: 0 0 6px;
+  position: relative;
+  touch-action: none;
+  cursor: ns-resize;
+}
+
+.drawer-grab-handle::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  width: 44px;
   height: 5px;
   border-radius: 999px;
   background: #cbd5e1;
-  margin: 0 auto 8px;
-  cursor: ns-resize;
 }
 
 .drawer-header { padding: 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
@@ -727,9 +752,22 @@ const submit = () => {
     overflow-y: auto;
   }
 
-  .editor-card {
+  .selected-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
-    padding: 6px;
+  }
+
+  .editor-card {
+    position: relative;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 6px 24px 6px 6px;
+  }
+
+  .card-left {
+    flex: 0 0 auto;
   }
 
   .editor-avatar {
@@ -737,9 +775,31 @@ const submit = () => {
     height: 38px;
   }
 
+  .card-right {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .char-name {
+    display: none;
+  }
+
+  .name-row {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    margin: 0;
+    justify-content: flex-end;
+  }
+
+  .remove-btn {
+    padding: 0 5px;
+    line-height: 1.2;
+  }
+
   .config-row {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 4px;
   }
 
@@ -795,7 +855,7 @@ const submit = () => {
   }
 
   .config-row {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 3px;
   }
 
