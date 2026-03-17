@@ -1393,11 +1393,15 @@ const festivalCharStats = computed(() => {
 const statsPreviewPayload = computed(() => {
   const fourPanel = groupPanels.value.find((p) => p.id === 'four');
   const limitedPanel = groupPanels.value.find((p) => p.id === 'limited');
+  const festivalGroups = Object.fromEntries(
+    (festivalCharStats.value || []).map((item) => [item.festival, item.rows || []])
+  );
   return {
     maxEventId: safeMaxEventId.value,
     groups: {
       fourStarCount: fourPanel?.groups || [],
-      limitedCount: limitedPanel?.groups || []
+      limitedCount: limitedPanel?.groups || [],
+      festival: festivalGroups
     }
   };
 });
@@ -2072,7 +2076,7 @@ const banShortestIntervals = computed(() => {
 
 .festival-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -2190,8 +2194,8 @@ const banShortestIntervals = computed(() => {
 
 .festival-unit-logo {
   position: absolute;
-  right: -1px;
-  bottom: -1px;
+  right: 1px;
+  bottom: 1px;
   width: 16px;
   height: 16px;
   object-fit: contain;
@@ -2680,8 +2684,6 @@ const banShortestIntervals = computed(() => {
   }
 
   .festival-unit-logo {
-    right: 3px;
-    bottom: 3px;
     width: 13px;
     height: 13px;
   }

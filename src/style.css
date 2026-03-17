@@ -31,10 +31,3 @@ body {
   background: #f4f7f6;
   color: #111827;
 }
-
-/* Keep mobile layout unchanged; apply design-time zoom on desktop only. */
-@media (min-width: 901px) and (pointer: fine) {
-  html {
-    zoom: 1.25;
-  }
-}

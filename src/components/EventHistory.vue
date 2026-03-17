@@ -20,7 +20,8 @@
               :key="`opt-${opt.id}`"
               class="preview-config-btn"
               :class="{ 'is-active': opt.selected }"
-              :disabled="!opt.selected && selectedPreviewPanelIds.length >= 5"
+              :disabled="opt.disabled || (!opt.selected && selectedPreviewPanelIds.length >= 5)"
+              :title="opt.tip || ''"
               @click="togglePreviewPanelType(opt.id)"
             >
               {{ opt.title }}
@@ -91,6 +92,28 @@
                 <span class="preview-meta">请先在上方选择最多8位角色</span>
               </div>
             </template>
+            <template v-else-if="panel.id === 'festival'">
+              <div v-if="panel.festivalName" class="preview-festival-head">当前节日：{{ panel.festivalName }}</div>
+              <div v-for="row in panel.festivalRows" :key="`festival-${row.key}`" class="preview-festival-row">
+                <span class="preview-festival-label">{{ row.label }}</span>
+                <div class="preview-avatars preview-festival-avatars">
+                  <div v-for="char in row.chars" :key="`festival-${row.key}-${char.name}`" class="preview-avatar-box preview-festival-avatar-box">
+                    <img
+                      :src="`/chibi_s/${getCharAbbr(char.name)}.webp`"
+                      class="preview-avatar"
+                      :title="char.name"
+                    />
+                    <img v-if="getFestivalPreviewUnitLogo(char.name)" :src="getFestivalPreviewUnitLogo(char.name)" class="preview-festival-unit-logo" />
+                    <span v-if="row.key !== 'none' && (char.count || 0) > 1" class="preview-festival-count">{{ char.count || 0 }}</span>
+                    <span v-if="char.isPermOnly" class="preview-festival-perm">普</span>
+                  </div>
+                  <div v-if="!row.chars || row.chars.length === 0" class="preview-meta">暂无</div>
+                </div>
+              </div>
+              <div v-if="!panel.festivalRows || panel.festivalRows.length === 0" class="preview-step preview-step-empty">
+                <span class="preview-meta">当前活动不在节日统计范围内</span>
+              </div>
+            </template>
             <template v-else>
             <div v-for="step in panel.steps" :key="`${panel.id}-${step.count}`" class="preview-step">
               <span class="preview-count">{{ step.count }}</span>
@@ -153,13 +176,13 @@
           </button>
           <button 
             @click="showFilter = !showFilter" 
-            :title="filterCriteria.selectedChars.length > 0 ? '已选筛选角色' : '筛选面板'"
-            :class="['nav-btn', 'compact-tip', { 'active-highlight': filterCriteria.selectedChars.length > 0 || showFilter }]"
+            :title="hasActiveFilters ? '已启用筛选' : '筛选面板'"
+            :class="['nav-btn', 'compact-tip', { 'active-highlight': hasActiveFilters || showFilter }]"
             data-tip="筛选面板"
           >
-            {{ isCompactFilterBar ? '🔍' : (filterCriteria.selectedChars.length > 0 ? `已选: ${filterCriteria.selectedChars[0]}${filterMode === 'multi' && filterCriteria.selectedChars.length > 1 ? '...' : ''}` : '🔍 筛选面板') }}
+            {{ isCompactFilterBar ? '🔍' : filterPanelSummaryText }}
           </button>
-          <button v-if="filterCriteria.selectedChars.length > 0" @click="resetFilters" class="clear-btn" :title="isCompactFilterBar ? '重置筛选' : ''">
+          <button v-if="hasActiveFilters" @click="resetFilters" class="clear-btn" :title="isCompactFilterBar ? '重置筛选' : ''">
             {{ isCompactFilterBar ? '✕' : '重置筛选' }}
           </button>
         </div>
@@ -170,10 +193,11 @@
             <div class="btn-group">
               <button :class="{active: filterMode === 'single'}" @click="filterMode = 'single'; resetFilters()">单人筛选</button>
               <button :class="{active: filterMode === 'multi'}" @click="filterMode = 'multi'; resetFilters()">多人组合</button>
+              <button :class="{active: filterMode === 'event'}" @click="filterMode = 'event'; resetFilters()">活动筛选</button>
             </div>
           </div>
 
-          <div class="filter-row">
+          <div v-if="filterMode !== 'event'" class="filter-row">
             <span class="row-label">角色</span>
             <div class="chip-group">
               <div v-for="(abbr, name) in CHAR_MAP" :key="name" 
@@ -185,6 +209,100 @@
               </div>
             </div>
           </div>
+
+          <template v-if="filterMode === 'event'">
+            <div class="filter-row">
+              <span class="row-label">角色</span>
+              <div class="chip-group">
+                <div v-for="(abbr, name) in CHAR_MAP" :key="`event-char-${name}`"
+                    :class="['char-chip', { 'is-selected': eventFilterCriteria.character === name }]"
+                    :title="name"
+                    @click="toggleEventFilterCharacter(name)">
+                  <img :src="`/chars/${getCharAbbr(name)}.png`" class="chip-img" />
+                  <span>{{ name }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <span class="row-label">是否Ban主</span>
+              <div class="btn-group-sm">
+                <button
+                  :class="{ active: eventFilterCriteria.isBan === 'yes' }"
+                  :disabled="!eventFilterCriteria.character"
+                  @click="setEventBanFilter('yes')"
+                >是</button>
+                <button
+                  :class="{ active: eventFilterCriteria.isBan === 'no' }"
+                  :disabled="!eventFilterCriteria.character"
+                  @click="setEventBanFilter('no')"
+                >否</button>
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <span class="row-label">活动类型</span>
+              <div class="btn-group-sm">
+                <button
+                  v-for="opt in EVENT_TYPE_FILTER_OPTIONS"
+                  :key="`event-type-${opt.value}`"
+                  :class="{ active: eventFilterCriteria.eventTypes.includes(opt.value) }"
+                  @click="toggleEventFilterArray('eventTypes', opt.value)"
+                >{{ opt.label }}</button>
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <span class="row-label">活动节日</span>
+              <div class="btn-group-sm">
+                <button
+                  v-for="fest in eventFestivalOptions"
+                  :key="`event-festival-${fest}`"
+                  :class="{ active: eventFilterCriteria.festivals.includes(fest) }"
+                  @click="toggleEventFilterArray('festivals', fest)"
+                >{{ fest }}</button>
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <span class="row-label">活动属性</span>
+              <div class="icon-group attributes">
+                <img
+                  v-for="attr in ['Happy', 'Mysterious', 'Cute', 'Cool', 'Pure']"
+                  :key="`event-attr-${attr}`"
+                  :src="`/elements/${attr.toLowerCase()}.png`"
+                  :class="{ 'icon-active': eventFilterCriteria.attributes.includes(attr) }"
+                  @click="toggleEventFilterArray('attributes', attr)"
+                />
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <span class="row-label">活动团体</span>
+              <div class="icon-group units" :class="{ 'is-disabled': isEventUnitFilterDisabledByMix }" :title="isEventUnitFilterDisabledByMix ? '选择混活时不可选活动团体' : ''">
+                <img
+                  v-for="unit in ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs']"
+                  :key="`event-unit-${unit}`"
+                  :src="`/elements/${unit}.png`"
+                  :class="{ 'icon-active': eventFilterCriteria.units.includes(unit), 'icon-disabled': isEventUnitFilterDisabledByMix }"
+                  @click="toggleEventFilterArray('units', unit)"
+                  :title="unit.toUpperCase()"
+                />
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <span class="row-label">卡池类型</span>
+              <div class="btn-group-sm">
+                <button
+                  v-for="opt in EVENT_GACHA_FILTER_OPTIONS"
+                  :key="`event-gacha-${opt.value}`"
+                  :class="{ active: eventFilterCriteria.gachaTypes.includes(opt.value) }"
+                  @click="toggleEventFilterArray('gachaTypes', opt.value)"
+                >{{ opt.label }}</button>
+              </div>
+            </div>
+          </template>
 
           <template v-if="filterMode === 'single' && filterCriteria.selectedChars.length > 0">
             <div class="filter-row">
@@ -280,6 +398,7 @@
           <div class="event-basic">
             <span class="event-id">#{{ row.event.id }}</span>
             <span class="event-date">{{ row.event.date }}</span>
+            <span v-if="getBoxTurnInRound(row.event)" class="box-turn-tag">轮{{ getBoxTurnInRound(row.event) }}</span>
             <span v-if="getPredictStatus(row.event) === 'todo'" class="predict-status-badge is-todo">待预测</span>
             <span v-if="getPredictStatus(row.event) === 'predicted'" class="predict-status-badge is-done">已预测</span>
             <div v-if="isSpecialFestival(row.event.festival)" class="fest-tag">
@@ -398,6 +517,7 @@
         :is-open="isEditorOpen" 
         :event="currentEditingEvent"
         :char-map="CHAR_MAP"
+        :box-locked-units="currentEditingBoxLockedUnits"
         @close="handleCloseEditor"
       />
     </div>
@@ -666,6 +786,7 @@ const resetPreviewPanelLayout = () => {
 
 const getPreviewPanelBaseSize = (panelId) => {
   if (panelId === 'attr-five') return { width: 188, height: 340 };
+  if (panelId === 'festival') return { width: 236, height: 350 };
   if (panelId === 'reward') return { width: 208, height: 260 };
   return { width: 208, height: 260 };
 };
@@ -1003,6 +1124,8 @@ const sortDesc = ref(false);
 const listRef = ref(null);
 const currentActiveId = ref(null);
 const PREVIEW_LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t']);
+const PREVIEW_FESTIVAL_TYPES = ['新年', '婚活', '情人节', '白情', '半周年', '周年'];
+const PREVIEW_BOX_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 const PREVIEW_PANEL_DEFS = [
   { id: 'four', title: '四星数', icon: '⭐', statKey: 'fourStarCount', externalKey: 'fourStarCount' },
   { id: 'limited', title: '限定数', icon: '🎀', statKey: 'limitedCount', externalKey: 'limitedCount' },
@@ -1013,7 +1136,8 @@ const PREVIEW_PANEL_DEFS = [
   { id: 'three', title: '三星数', icon: '3', statKey: 'threeStarCount' },
   { id: 'two', title: '二星数', icon: '2', statKey: 'twoStarCount' },
   { id: 'reward', title: '报酬', icon: '🎁', statKey: 'rewardTotalCount' },
-  { id: 'attr-five', title: '五属性', icon: '🧩', statKey: 'attrFive' }
+  { id: 'attr-five', title: '五属性', icon: '🧩', statKey: 'attrFive' },
+  { id: 'festival', title: '节日人选', icon: '🎊', statKey: 'festival', externalKey: 'festival' }
 ];
 const PREVIEW_CHAR_ORDER = {
   '星乃一歌': 1, '天马咲希': 2, '望月穗波': 3, '日野森志步': 4,
@@ -1025,6 +1149,17 @@ const PREVIEW_CHAR_ORDER = {
 };
 const selectedPreviewPanelIds = ref(['four', 'limited']);
 const selectedPreviewAttrChars = ref([]);
+
+const compareFestivalPreviewName = (a, b) => {
+  const aName = String(a || '').trim();
+  const bName = String(b || '').trim();
+  const aBase = aName.split(' ')[0] || aName;
+  const bBase = bName.split(' ')[0] || bName;
+  const ao = PREVIEW_CHAR_ORDER[aBase] || 999;
+  const bo = PREVIEW_CHAR_ORDER[bBase] || 999;
+  if (ao !== bo) return ao - bo;
+  return aName.localeCompare(bName, 'zh-Hans-CN');
+};
 
 const previewSelectableChars = computed(() => {
   return Object.keys(CHAR_MAP).sort((a, b) => (PREVIEW_CHAR_ORDER[a] || 999) - (PREVIEW_CHAR_ORDER[b] || 999));
@@ -1043,12 +1178,24 @@ const togglePreviewAttrChar = (name) => {
   selectedPreviewAttrChars.value = current;
 };
 
-const previewPanelOptions = computed(() => PREVIEW_PANEL_DEFS.map((def) => ({
-  ...def,
-  selected: selectedPreviewPanelIds.value.includes(def.id)
-})));
+const previewPanelOptions = computed(() => PREVIEW_PANEL_DEFS.map((def) => {
+  const selected = selectedPreviewPanelIds.value.includes(def.id);
+  const isFestival = def.id === 'festival';
+  const disabled = isFestival && !isFestivalPreviewAvailable.value;
+  const dynamicTitle = isFestival && activePreviewFestivalName.value
+    ? `节日人选·${activePreviewFestivalName.value}`
+    : def.title;
+  return {
+    ...def,
+    title: dynamicTitle,
+    selected,
+    disabled,
+    tip: disabled ? '仅在对应节日活动及其前后一期（共三期）可选' : ''
+  };
+}));
 
 const togglePreviewPanelType = (panelId) => {
+  if (panelId === 'festival' && !isFestivalPreviewAvailable.value) return;
   const current = [...selectedPreviewPanelIds.value];
   const idx = current.indexOf(panelId);
   if (idx >= 0) {
@@ -1089,6 +1236,75 @@ const compareEventOrderAsc = (a, b) => {
   return normalizeEventId(a?.id).localeCompare(normalizeEventId(b?.id));
 };
 
+const normalizeUnitKey = (unit) => String(unit || '').trim().toLowerCase();
+
+const isBoxEvent = (event) => {
+  if (String(event?.event_type || '').trim() !== '箱活') return false;
+  return PREVIEW_BOX_UNITS.includes(normalizeUnitKey(event?.unit));
+};
+
+const boxTurnByEventId = computed(() => {
+  const map = {};
+  let usedUnits = new Set();
+  let roundNo = 1;
+
+  [...(props.allEvents || [])]
+    .filter((event) => isNumericEventId(event?.id))
+    .sort(compareEventOrderAsc)
+    .forEach((event) => {
+      if (!isBoxEvent(event)) return;
+      const unit = normalizeUnitKey(event?.unit);
+      if (!unit) return;
+
+      if (usedUnits.size >= PREVIEW_BOX_UNITS.length || usedUnits.has(unit)) {
+        usedUnits = new Set();
+        roundNo += 1;
+      }
+
+      usedUnits.add(unit);
+      map[normalizeEventId(event.id)] = {
+        roundNo,
+        turnInRound: usedUnits.size
+      };
+    });
+
+  return map;
+});
+
+const getBoxTurnInRound = (event) => {
+  const idKey = normalizeEventId(event?.id);
+  const turn = boxTurnByEventId.value?.[idKey]?.turnInRound;
+  return Number.isFinite(turn) && turn >= 1 ? turn : null;
+};
+
+const getBoxLockedUnitsBeforeEvent = (targetEvent) => {
+  const targetId = Number(targetEvent?.id);
+  if (!Number.isFinite(targetId) || targetId <= 0) return [];
+
+  let usedUnits = new Set();
+  [...(props.allEvents || [])]
+    .filter((event) => isNumericEventId(event?.id))
+    .sort(compareEventOrderAsc)
+    .forEach((event) => {
+      const eventId = Number(event?.id);
+      if (!Number.isFinite(eventId) || eventId >= targetId) return;
+      if (!isBoxEvent(event)) return;
+      const unit = normalizeUnitKey(event?.unit);
+      if (!unit) return;
+
+      if (usedUnits.size >= PREVIEW_BOX_UNITS.length || usedUnits.has(unit)) {
+        usedUnits = new Set();
+      }
+      usedUnits.add(unit);
+    });
+
+  return [...usedUnits];
+};
+
+const currentEditingBoxLockedUnits = computed(() => {
+  return getBoxLockedUnitsBeforeEvent(currentEditingEvent.value);
+});
+
 const setActiveEventItem = (eventId) => {
   const idKey = normalizeEventId(eventId);
   if (!idKey) return;
@@ -1123,6 +1339,139 @@ const previewMaxEventId = computed(() => {
   if (Number.isFinite(editingId) && editingId > 0) return editingId;
   const currentId = Number(getCurrentEventId());
   return Number.isFinite(currentId) && currentId > 0 ? currentId : Number.MAX_SAFE_INTEGER;
+});
+
+const previewFestivalContext = computed(() => {
+  const targetId = Number(previewMaxEventId.value);
+  if (!Number.isFinite(targetId) || targetId <= 0) return null;
+
+  const candidates = (props.allEvents || [])
+    .filter((event) => {
+      if (!isNumericEventId(event?.id)) return false;
+      const festival = String(event?.festival || '').trim();
+      if (!PREVIEW_FESTIVAL_TYPES.includes(festival)) return false;
+      const diff = Math.abs(Number(event.id) - targetId);
+      return diff <= 1;
+    })
+    .map((event) => ({
+      festival: String(event.festival || '').trim(),
+      centerEventId: Number(event.id),
+      diff: Math.abs(Number(event.id) - targetId)
+    }))
+    .sort((a, b) => {
+      if (a.diff !== b.diff) return a.diff - b.diff;
+      return a.centerEventId - b.centerEventId;
+    });
+
+  return candidates[0] || null;
+});
+
+const isFestivalPreviewAvailable = computed(() => Boolean(previewFestivalContext.value));
+const activePreviewFestivalName = computed(() => previewFestivalContext.value?.festival || '');
+
+const previewFestivalRowsLocal = computed(() => {
+  const maxId = Number(previewMaxEventId.value);
+  if (!Number.isFinite(maxId) || maxId <= 0) return {};
+
+  const eventFestivalMap = {};
+  (props.allEvents || []).forEach((event) => {
+    if (!isNumericEventId(event?.id)) return;
+    const eid = Number(event.id);
+    if (eid > maxId) return;
+    const festival = String(event?.festival || '').trim();
+    if (!PREVIEW_FESTIVAL_TYPES.includes(festival)) return;
+    eventFestivalMap[eid] = festival;
+  });
+
+  const buckets = Object.fromEntries(
+    PREVIEW_FESTIVAL_TYPES.map((festival) => [
+      festival,
+      {
+        four: {},
+        three: {},
+        two: {},
+        seenBase: new Set()
+      }
+    ])
+  );
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinPreviewLimit(card, maxId)) return;
+    const eid = String(card?.EventID || '').trim();
+    if (!isNumericEventId(eid)) return;
+    const festival = eventFestivalMap[Number(eid)];
+    if (!festival || !buckets[festival]) return;
+
+    const fullName = String(card?.Name || '').trim();
+    if (!fullName || fullName === '-' || fullName === 'CardID') return;
+    const baseName = fullName.split(' ')[0] || fullName;
+    const rarity = String(card?.Rarity || '').trim();
+    const type = String(card?.Type || '').trim().toLowerCase();
+    const isFes = ['cfes', 'bfes'].includes(type);
+    const shouldCountFes = !['周年', '半周年'].includes(festival);
+    if (isFes && !shouldCountFes) return;
+
+    const bucket = buckets[festival];
+    if (rarity === '4' || isFes) {
+      bucket.four[fullName] = (bucket.four[fullName] || 0) + 1;
+      bucket.seenBase.add(baseName);
+      return;
+    }
+    if (rarity === '3') {
+      bucket.three[fullName] = (bucket.three[fullName] || 0) + 1;
+      bucket.seenBase.add(baseName);
+      return;
+    }
+    if (rarity === '2') {
+      bucket.two[fullName] = (bucket.two[fullName] || 0) + 1;
+      bucket.seenBase.add(baseName);
+    }
+  });
+
+  const allBaseNames = Object.keys(CHAR_MAP)
+    .sort((a, b) => (PREVIEW_CHAR_ORDER[a] || 999) - (PREVIEW_CHAR_ORDER[b] || 999));
+
+  const toRowList = (mapObj) => Object.entries(mapObj || {})
+    .map(([name, count]) => ({ name, count: Number(count || 0) }))
+    .filter((item) => item.count > 0)
+    .sort((a, b) => compareFestivalPreviewName(a.name, b.name));
+
+  const result = {};
+  PREVIEW_FESTIVAL_TYPES.forEach((festival) => {
+    const bucket = buckets[festival] || { four: {}, three: {}, two: {}, seenBase: new Set() };
+    result[festival] = [
+      { key: 'four', label: '4星', chars: toRowList(bucket.four) },
+      { key: 'three', label: '3星', chars: toRowList(bucket.three) },
+      { key: 'two', label: '2星', chars: toRowList(bucket.two) },
+      {
+        key: 'none',
+        label: '未出',
+        chars: allBaseNames
+          .filter((name) => !bucket.seenBase.has(name))
+          .map((name) => ({ name, count: 0 }))
+      }
+    ];
+  });
+  return result;
+});
+
+const previewFestivalRowsMap = computed(() => {
+  const external = props.statsPreviewData?.groups?.festival;
+  if (external && typeof external === 'object') return external;
+  return previewFestivalRowsLocal.value;
+});
+
+const currentPreviewFestivalRows = computed(() => {
+  const festival = activePreviewFestivalName.value;
+  if (!festival) return [];
+  const rows = previewFestivalRowsMap.value?.[festival];
+  return Array.isArray(rows) ? rows : [];
+});
+
+watch(isFestivalPreviewAvailable, (ok) => {
+  if (ok) return;
+  if (!selectedPreviewPanelIds.value.includes('festival')) return;
+  selectedPreviewPanelIds.value = selectedPreviewPanelIds.value.filter((id) => id !== 'festival');
 });
 
 const isCardWithinPreviewLimit = (card, maxId) => {
@@ -1268,9 +1617,13 @@ const previewFloatingPanels = computed(() => {
     .filter(Boolean)
     .map((def) => ({
       id: def.id,
-      title: def.title,
+      title: def.id === 'festival' && activePreviewFestivalName.value
+        ? `节日人选·${activePreviewFestivalName.value}`
+        : def.title,
       icon: def.icon,
-      steps: getPreviewStepsByKey(def.statKey)
+      steps: def.id === 'festival' ? [] : getPreviewStepsByKey(def.statKey),
+      festivalName: def.id === 'festival' ? activePreviewFestivalName.value : '',
+      festivalRows: def.id === 'festival' ? currentPreviewFestivalRows.value : []
     }));
 });
 
@@ -1300,6 +1653,20 @@ watch(() => [props.jumpEventSeq, props.jumpEventId], ([seqValue, idValue]) => {
 // 新增筛选相关的状态
 const showFilter = ref(false);
 const filterMode = ref('single'); // 'single' | 'multi'
+const EVENT_TYPE_FILTER_OPTIONS = [
+  { value: 'box', label: '箱活' },
+  { value: 'mix', label: '混活' },
+  { value: 'wl', label: 'WL' },
+  { value: 'collab', label: '联动' }
+];
+const EVENT_FESTIVAL_ORDER = ['新年', '情人节', '白情', '半周年', '五月', '婚活', '六月', '夏活', '八月', '九月', '周年', '十一月', '十二月'];
+const EVENT_FESTIVAL_EXCLUDE = new Set(['开服', '二月', '三月']);
+const EVENT_GACHA_FILTER_OPTIONS = [
+  { value: 'perm', label: '常驻' },
+  { value: 'limited', label: '普通限定' },
+  { value: 'ue', label: 'UE限定' },
+  { value: 'collab', label: '联动' }
+];
 
 const filterCriteria = ref({
   selectedChars: [], // 选中的角色名数组
@@ -1308,6 +1675,16 @@ const filterCriteria = ref({
   skill: null,       // 'score_up', 'accuracy', 'recovery', 'p_score'
   cardType: null,    // 'perm', 'limited', 'collab_t', 'cfes', 'bfes'
   unit: null         // 'ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'
+});
+
+const eventFilterCriteria = ref({
+  character: '',
+  isBan: null, // 'yes' | 'no' | null
+  eventTypes: [],
+  festivals: [],
+  attributes: [],
+  units: [],
+  gachaTypes: []
 });
 
 const sortedEvents = computed(() => {
@@ -1328,7 +1705,60 @@ const hasDetailFilters = computed(() => {
   );
 });
 
+const hasEventFilters = computed(() => {
+  const f = eventFilterCriteria.value || {};
+  return Boolean(
+    f.character ||
+    f.isBan ||
+    (f.eventTypes && f.eventTypes.length > 0) ||
+    (f.festivals && f.festivals.length > 0) ||
+    (f.attributes && f.attributes.length > 0) ||
+    (f.units && f.units.length > 0) ||
+    (f.gachaTypes && f.gachaTypes.length > 0)
+  );
+});
+
+const hasActiveFilters = computed(() => {
+  if (filterMode.value === 'event') return hasEventFilters.value;
+  return hasDetailFilters.value;
+});
+
+const filterPanelSummaryText = computed(() => {
+  if (!hasActiveFilters.value) return '🔍 筛选面板';
+  if (filterMode.value === 'event') {
+    const parts = [];
+    if (eventFilterCriteria.value.character) parts.push(eventFilterCriteria.value.character);
+    if (eventFilterCriteria.value.eventTypes.length > 0) parts.push(`类型${eventFilterCriteria.value.eventTypes.length}`);
+    if (eventFilterCriteria.value.festivals.length > 0) parts.push(`节日${eventFilterCriteria.value.festivals.length}`);
+    return `活动: ${parts.join(' · ') || '已启用'}`;
+  }
+  return filterCriteria.value.selectedChars.length > 0
+    ? `已选: ${filterCriteria.value.selectedChars[0]}${filterMode.value === 'multi' && filterCriteria.value.selectedChars.length > 1 ? '...' : ''}`
+    : '🔍 筛选面板';
+});
+
+const isEventUnitFilterDisabledByMix = computed(() => {
+  return eventFilterCriteria.value.eventTypes.includes('mix');
+});
+
+const eventFestivalOptions = computed(() => {
+  const set = new Set();
+  baseEvents.value.forEach((event) => {
+    const fest = String(event?.festival || '').trim();
+    if (!fest || EVENT_FESTIVAL_EXCLUDE.has(fest)) return;
+    set.add(fest);
+  });
+  const ordered = EVENT_FESTIVAL_ORDER.filter((fest) => set.has(fest));
+  const extra = [...set].filter((fest) => !EVENT_FESTIVAL_ORDER.includes(fest));
+  return [...ordered, ...extra];
+});
+
 const baseEvents = computed(() => {
+  const forceShowCollab = filterMode.value === 'event' && (
+    eventFilterCriteria.value.eventTypes.includes('collab')
+    || eventFilterCriteria.value.gachaTypes.includes('collab')
+  );
+  if (forceShowCollab) return sortedEvents.value;
   if (!hideCollabPools.value) return sortedEvents.value;
   return sortedEvents.value.filter((event) => !isCollabPoolEvent(event));
 });
@@ -1345,6 +1775,11 @@ const baseEventRows = computed(() => {
 // 3. 【重构】简化核心筛选逻辑的数据源
 const filteredData = computed(() => {
   let data = baseEvents.value;
+
+  if (filterMode.value === 'event') {
+    if (!hasEventFilters.value) return data;
+    return data.filter((event) => matchEventFilters(event));
+  }
 
   if (!hasDetailFilters.value) return data;
 
@@ -1424,6 +1859,7 @@ const birthdayRows = computed(() => {
 });
 
 const filteredBirthdayRows = computed(() => {
+  if (filterMode.value === 'event') return [];
   if (hideBirthdayRows.value) return [];
 
   const selected = filterCriteria.value.selectedChars || [];
@@ -1445,7 +1881,7 @@ const filteredBirthdayRows = computed(() => {
 });
 
 const displayRows = computed(() => {
-  const events = hasDetailFilters.value
+  const events = hasActiveFilters.value
     ? filteredData.value.map((event) => ({
       kind: 'event',
       key: `event-${normalizeEventId(event?.id)}`,
@@ -1453,7 +1889,7 @@ const displayRows = computed(() => {
     }))
     : baseEventRows.value;
   const birthdays = filteredBirthdayRows.value;
-  if (!hasDetailFilters.value && birthdays.length === 0) return events;
+  if (!hasActiveFilters.value && birthdays.length === 0) return events;
   if (birthdays.length === 0) return events;
   const merged = [...events, ...birthdays];
 
@@ -1493,15 +1929,7 @@ const updatePreviewConfigOffset = () => {
 };
 
 const isJumpFilterActive = () => {
-  const f = filterCriteria.value || {};
-  return Boolean(
-    (f.selectedChars && f.selectedChars.length > 0) ||
-    f.rarity ||
-    f.attribute ||
-    f.skill ||
-    f.cardType ||
-    f.unit
-  );
+  return hasActiveFilters.value;
 };
 
 const isEventVisibleInRows = (eventId) => {
@@ -1526,6 +1954,7 @@ const relaxFiltersForJump = (eventId) => {
 };
 // 处理角色点击
 const toggleChar = (name) => {
+  if (filterMode.value === 'event') return;
   if (filterMode.value === 'single') {
     // 单人模式：切换选中或清空
     filterCriteria.value.selectedChars = filterCriteria.value.selectedChars.includes(name) ? [] : [name];
@@ -1536,9 +1965,147 @@ const toggleChar = (name) => {
     else filterCriteria.value.selectedChars.push(name);
   }
 };
+
+const toggleEventFilterCharacter = (name) => {
+  eventFilterCriteria.value.character = eventFilterCriteria.value.character === name ? '' : name;
+  if (!eventFilterCriteria.value.character) {
+    eventFilterCriteria.value.isBan = null;
+  }
+};
+
+const setEventBanFilter = (value) => {
+  if (!eventFilterCriteria.value.character) {
+    eventFilterCriteria.value.isBan = null;
+    return;
+  }
+  eventFilterCriteria.value.isBan = eventFilterCriteria.value.isBan === value ? null : value;
+};
+
+const toggleEventFilterArray = (key, value) => {
+  if (key === 'units' && isEventUnitFilterDisabledByMix.value) return;
+  const current = [...(eventFilterCriteria.value[key] || [])];
+  const idx = current.indexOf(value);
+  if (idx >= 0) current.splice(idx, 1);
+  else current.push(value);
+  eventFilterCriteria.value[key] = current;
+  if (key === 'eventTypes' && eventFilterCriteria.value.eventTypes.includes('mix')) {
+    eventFilterCriteria.value.units = [];
+  }
+};
+
+const VS_TOKEN_TO_NAME = {
+  MIKU: '初音未来',
+  RIN: '镜音铃',
+  LEN: '镜音连',
+  LUKA: '巡音流歌',
+  MEIKO: 'MEIKO',
+  KAITO: 'KAITO'
+};
+
+const parseEventVsNames = (vsStr) => {
+  const names = parseVS(vsStr).map((raw) => {
+    const token = String(raw || '').trim();
+    if (!token) return '';
+    const upper = token.toUpperCase();
+    return VS_TOKEN_TO_NAME[upper] || token;
+  }).filter(Boolean);
+  return names;
+};
+
+const getEventCardNames = (event) => {
+  const names = new Set();
+  const fromEvent = Array.isArray(event?.memberCards) ? event.memberCards : [];
+  fromEvent.forEach((card) => {
+    const n = String(card?.Name || '').trim().split(' ')[0];
+    if (n && n !== '-' && n !== 'CardID') names.add(n);
+  });
+
+  const eid = normalizeEventId(event?.id);
+  if (eid) {
+    (props.allCards || []).forEach((card) => {
+      if (normalizeEventId(card?.EventID) !== eid) return;
+      const n = String(card?.Name || '').trim().split(' ')[0];
+      if (n && n !== '-' && n !== 'CardID') names.add(n);
+    });
+  }
+
+  return [...names];
+};
+
+const eventContainsCharacter = (event, name) => {
+  const target = String(name || '').trim();
+  if (!target) return true;
+  const banner = String(event?.banner || '').trim();
+  if (banner === target) return true;
+  const vsNames = parseEventVsNames(event?.virtual_singer);
+  if (vsNames.includes(target)) return true;
+  return getEventCardNames(event).includes(target);
+};
+
+const matchEventTypeFilter = (event, typeValue) => {
+  const eventType = String(event?.event_type || '').trim();
+  const gachaType = String(event?.gacha_type || '').trim();
+  const idRaw = String(event?.id || '').trim().toLowerCase();
+  if (typeValue === 'box') return eventType === '箱活';
+  if (typeValue === 'mix') return eventType === '混活';
+  if (typeValue === 'wl') return ['wl', 'world link', 'world link终章'].includes(eventType.toLowerCase());
+  if (typeValue === 'collab') {
+    return eventType.includes('联动') || gachaType.includes('联动') || /^c\d+$/.test(idRaw);
+  }
+  return false;
+};
+
+const matchEventGachaFilter = (event, gachaValue) => {
+  const gachaType = String(event?.gacha_type || '').trim();
+  if (gachaValue === 'perm') return gachaType === '常驻';
+  if (gachaValue === 'limited') return gachaType === '普通限定';
+  if (gachaValue === 'ue') return gachaType === 'UE限定';
+  if (gachaValue === 'collab') return gachaType.includes('联动');
+  return false;
+};
+
+const matchEventFilters = (event) => {
+  const f = eventFilterCriteria.value;
+  if (f.character && !eventContainsCharacter(event, f.character)) return false;
+
+  if (f.character && f.isBan) {
+    const isBan = String(event?.banner || '').trim() === f.character;
+    if (f.isBan === 'yes' && !isBan) return false;
+    if (f.isBan === 'no' && isBan) return false;
+  }
+
+  if (f.eventTypes.length > 0 && !f.eventTypes.some((typeValue) => matchEventTypeFilter(event, typeValue))) return false;
+
+  if (f.festivals.length > 0) {
+    const festival = String(event?.festival || '').trim();
+    if (!f.festivals.includes(festival)) return false;
+  }
+
+  if (f.attributes.length > 0) {
+    const attr = normalizeAttr(event?.event_attribute);
+    if (!f.attributes.includes(attr)) return false;
+  }
+
+  if (f.units.length > 0) {
+    const unit = String(event?.unit || '').trim().toLowerCase();
+    if (!f.units.includes(unit)) return false;
+  }
+
+  if (f.gachaTypes.length > 0 && !f.gachaTypes.some((g) => matchEventGachaFilter(event, g))) return false;
+  return true;
+};
 // 重置所有筛选
 const resetFilters = () => {
   filterCriteria.value = { selectedChars: [], rarity: null, attribute: null, skill: null, cardType: null, unit: null };
+  eventFilterCriteria.value = {
+    character: '',
+    isBan: null,
+    eventTypes: [],
+    festivals: [],
+    attributes: [],
+    units: [],
+    gachaTypes: []
+  };
 };
 
 const historyContainer = ref(null); // 声明 ref
@@ -1982,6 +2549,17 @@ const parseVS = (vsStr) => {
   return vsStr.split(/[,，/、\s]+/).filter(s => s);
 };
 
+const getFestivalPreviewUnitLogo = (name) => {
+  const raw = String(name || '').trim();
+  if (!raw) return '';
+  const parts = raw.split(' ');
+  const baseName = parts[0] || raw;
+  if (!isVirtualSinger(baseName)) return '';
+  const unit = String(parts[1] || '').trim().toLowerCase();
+  if (!unit || unit === 'vs') return '';
+  return `/elements/${unit}.png`;
+};
+
 
 </script>
 
@@ -2272,6 +2850,79 @@ const parseVS = (vsStr) => {
   object-fit: cover;
 }
 
+.preview-festival-head {
+  width: 100%;
+  font-size: 0.72rem;
+  color: #334155;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.preview-festival-row {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  border-radius: 6px;
+  padding: 2px 6px;
+  background: rgba(236, 253, 245, 0.9);
+  box-sizing: border-box;
+}
+
+.preview-festival-label {
+  flex: 0 0 30px;
+  min-width: 30px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #065f46;
+}
+
+.preview-festival-avatars {
+  flex: 1 1 auto;
+}
+
+.preview-festival-avatar-box {
+  position: relative;
+}
+
+.preview-festival-unit-logo {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 10px;
+  height: 10px;
+  object-fit: contain;
+  z-index: 2;
+}
+
+.preview-festival-count {
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  font-size: 7px;
+  line-height: 11px;
+  font-weight: 700;
+  text-align: center;
+  background: #ef4444;
+  color: #fff;
+}
+
+.preview-festival-perm {
+  position: absolute;
+  left: -4px;
+  bottom: -2px;
+  border-radius: 6px;
+  padding: 0 3px;
+  font-size: 8px;
+  line-height: 1.2;
+  background: rgba(15, 23, 42, 0.88);
+  color: #fff;
+}
+
 .preview-step {
   display: flex;
   align-items: flex-start;
@@ -2378,13 +3029,13 @@ const parseVS = (vsStr) => {
 
   /* 预测抽屉打开时启用紧凑模式，直接压缩关键尺寸，保证肉眼可见。 */
   .event-history-wrapper.with-editor .history-list {
-    gap: 8px;
-    margin-top: 12px;
+    gap: 10px;
+    margin-top: 16px;
   }
 
   .event-history-wrapper.with-editor .event-item {
-    padding: 8px 12px;
-    border-left-width: 4px;
+    padding: clamp(10px, 1vw, 14px) clamp(12px, 1.2vw, 20px);
+    border-left-width: 6px;
   }
 
   .event-history-wrapper.with-editor .event-item,
@@ -2395,56 +3046,61 @@ const parseVS = (vsStr) => {
   }
 
   .event-history-wrapper.with-editor .event-basic {
-    width: 50px;
-    gap: 2px;
+    width: clamp(48px, 4.4vw, 60px);
+    gap: 3px;
   }
 
   .event-history-wrapper.with-editor .event-id {
-    font-size: 0.96rem;
+    font-size: clamp(0.92rem, 0.98vw, 1.08rem);
   }
 
   .event-history-wrapper.with-editor .event-date {
-    font-size: 0.66rem;
+    font-size: clamp(0.64rem, 0.72vw, 0.74rem);
+  }
+
+  .event-history-wrapper.with-editor .box-turn-tag {
+    font-size: 0.56rem;
+    padding: 1px 5px;
   }
 
   .event-history-wrapper.with-editor .banner-section {
-    width: 64px;
-    margin: 0 6px;
+    width: clamp(66px, 6vw, 80px);
+    margin: 0 clamp(4px, 0.7vw, 8px);
   }
 
   .event-history-wrapper.with-editor .banner-avatar {
-    width: 50px;
-    height: 50px;
+    width: clamp(52px, 4.8vw, 64px);
+    height: clamp(52px, 4.8vw, 64px);
   }
 
   .event-history-wrapper.with-editor .unit-logo-banner {
-    width: 54px;
-    height: 54px;
+    width: clamp(56px, 5.2vw, 68px);
+    height: clamp(56px, 5.2vw, 68px);
   }
 
   .event-history-wrapper.with-editor .event-main-content {
-    width: 132px;
+    width: clamp(138px, 13.2vw, 176px);
     padding: 0 4px;
     min-width: 0;
   }
 
   .event-history-wrapper.with-editor .event-title {
-    font-size: 0.9rem;
-    line-height: 1.2;
+    font-size: clamp(0.9rem, 1.02vw, 1rem);
+    line-height: 1.26;
   }
 
   .event-history-wrapper.with-editor .type-tag {
-    font-size: clamp(0.52rem, 0.9vw, 0.62rem);
-    padding: 1px 6px;
+    font-size: clamp(0.66rem, 1vw, 0.74rem);
+    padding: 1px 7px;
     white-space: nowrap;
     flex: 0 0 auto;
   }
 
   .event-history-wrapper.with-editor .series-text {
-    font-size: clamp(0.56rem, 1vw, 0.7rem);
+    font-size: clamp(0.76rem, 1.05vw, 0.9rem);
     white-space: nowrap;
-    overflow: visible;
-    text-overflow: clip;
+    overflow: hidden;
+    text-overflow: ellipsis;
     min-width: 0;
     flex: 1 1 auto;
   }
@@ -2462,56 +3118,92 @@ const parseVS = (vsStr) => {
   }
 
   .event-history-wrapper.with-editor .event-members {
-    gap: 6px;
-    padding: 0 6px;
-  }
-
-  .event-history-wrapper.with-editor .member-row {
-    gap: 4px;
+    --with-editor-gap: 4px;
+    --with-editor-slot-size: clamp(64px, calc((100% - (var(--with-editor-gap) * 5)) / 6), 118px);
+    gap: 8px;
+    padding: 0 8px;
   }
 
   .event-history-wrapper.with-editor .member-row:not(.fes-row) {
-    display: grid;
-    grid-template-columns: repeat(6, max-content);
-    column-gap: 4px;
-    row-gap: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--with-editor-gap);
+    row-gap: 6px;
+    align-items: flex-start;
     justify-content: flex-start;
-    justify-items: start;
-    align-items: start;
+  }
+
+  .event-history-wrapper.with-editor .fes-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--with-editor-gap);
+    padding-left: 10px;
+  }
+
+  .event-history-wrapper.with-editor .member-row .member-card-box {
+    flex: 0 0 var(--with-editor-slot-size);
+    width: var(--with-editor-slot-size);
+    max-width: var(--with-editor-slot-size);
+    justify-self: start;
+  }
+
+  .event-history-wrapper.with-editor .fes-row .member-card-box {
+    flex: 0 0 var(--with-editor-slot-size);
+    width: var(--with-editor-slot-size);
+    max-width: var(--with-editor-slot-size);
   }
 
   .event-history-wrapper.with-editor .fes-type-icon {
     height: 52px;
+    flex: 0 0 auto;
+    margin-right: 8px;
   }
 
   .event-history-wrapper.with-editor .avatar-container {
-    width: 56px;
-    height: 56px;
-    border-width: 2px;
+    width: min(100%, var(--with-editor-slot-size));
+    height: min(100%, var(--with-editor-slot-size));
+    aspect-ratio: 1 / 1;
+    border-width: 3px;
+    box-sizing: border-box;
+    margin: 0 auto;
+  }
+
+  .event-history-wrapper.with-editor .avatar-container .star-icon {
+    width: clamp(8px, calc(var(--with-editor-slot-size) * 0.16), 11px);
+    height: clamp(8px, calc(var(--with-editor-slot-size) * 0.16), 11px);
   }
 
   .event-history-wrapper.with-editor .lim-tag {
     top: -2px;
-    right: 12px;
+    right: calc(var(--with-editor-slot-size) * 0.2);
     width: auto;
     height: auto;
     line-height: 1.1;
     padding: 1px 4px;
-    font-size: 6px;
+    font-size: clamp(6px, calc(var(--with-editor-slot-size) * 0.11), 8px);
     border-radius: 8px;
     transform: none;
     clip-path: none;
   }
 
   .event-history-wrapper.with-editor .vs-section {
-    width: 48px;
+    width: 56px;
+    max-width: 56px;
+    flex: 0 0 56px;
     gap: 4px;
     justify-content: center;
+    overflow: hidden;
   }
 
-  .event-history-wrapper.with-editor .vs-avatar {
-    width: 22px;
-    height: 22px;
+  .event-history-wrapper.with-editor .vs-avatar,
+  .event-history-wrapper.with-editor .vs-list img {
+    width: clamp(22px, calc(var(--with-editor-slot-size) * 0.4), 30px);
+    height: clamp(22px, calc(var(--with-editor-slot-size) * 0.4), 30px);
+    max-width: 30px;
+    max-height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
   }
 
   .event-history-wrapper.with-editor .song-tooltip,
@@ -2520,13 +3212,13 @@ const parseVS = (vsStr) => {
   }
 
   .event-history-wrapper.with-editor .card-attr-icon {
-    width: 16px;
-    height: 16px;
+    width: clamp(14px, calc(var(--with-editor-slot-size) * 0.28), 20px);
+    height: clamp(14px, calc(var(--with-editor-slot-size) * 0.28), 20px);
   }
 
   .event-history-wrapper.with-editor .sub-unit-logo {
-    width: 20px;
-    height: 20px;
+    width: clamp(18px, calc(var(--with-editor-slot-size) * 0.34), 24px);
+    height: clamp(18px, calc(var(--with-editor-slot-size) * 0.34), 24px);
     right: -7px;
     bottom: -4px;
   }
@@ -2701,6 +3393,20 @@ const parseVS = (vsStr) => {
   background: #10b981;
 }
 
+.box-turn-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  line-height: 1.2;
+  color: #fff;
+  background: #2563eb;
+  font-weight: 700;
+}
+
 
 /* 活跃状态基础样式 */
 .event-item.is-active {
@@ -2723,7 +3429,7 @@ const parseVS = (vsStr) => {
   bottom: -3px;
   
   /* 流光渐变 */
-  background: linear-gradient(90deg, #33CCBB, #FFBBCC, #FFCC11, #FFEE11, #33CCBB);
+  background: linear-gradient(90deg, #33CCBB, #FD7CC1, #FFEE11, #33CCBB);
   background-size: 300% 100%;
   
   /* 必须设置比父级稍大一点的圆角 */
@@ -2850,6 +3556,14 @@ const parseVS = (vsStr) => {
   transform: scale(1.1);
 }
 
+.icon-group.is-disabled {
+  opacity: 0.38;
+}
+
+.icon-group img.icon-disabled {
+  cursor: not-allowed;
+}
+
 /* 稀有度星星样式 */
 .rarity-group {
   display: flex;
@@ -2925,7 +3639,7 @@ const parseVS = (vsStr) => {
 .card-attr-icon { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; z-index: 3; }
 
 .avatar-container { 
-  position: relative; width: 68px; height: 68px; 
+  position: relative; width: 80px; height: 80px; 
   border-radius: 50%; border: 3px solid #eee; padding: 1px;
 }
 .member-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }

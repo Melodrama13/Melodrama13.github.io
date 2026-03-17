@@ -105,10 +105,14 @@
         <div class="char-pool-grid">
           <div v-for="(abbr, name) in charMap" :key="name" 
                class="pool-item" 
-               :class="{ is_selected: isCharInList(name), is_disabled: !isCharSelectable(name) && !isCharInList(name) }"
-               @click="toggleChar(name)">
+               :class="{ is_selected: isCharInList(name), is_disabled: !!getCharDisableReason(name) && !isCharInList(name) }"
+               :title="''"
+               @mouseenter="handlePoolItemMouseEnter(name)"
+               @mouseleave="handlePoolItemMouseLeave(name)"
+               @click="handlePoolItemClick(name)">
             <img :src="`/chars/${abbr}.png`" />
             <div v-if="isCharInList(name)" class="check-mark">✓</div>
+            <div v-if="shouldShowDisableReasonPopover(name)" class="pool-disable-popover">{{ getCharDisableReason(name) }}</div>
           </div>
         </div>
       </div>
@@ -126,12 +130,13 @@
 <script setup>
 import { reactive, inject, watch, computed, ref, onMounted, onBeforeUnmount } from 'vue';
 
-const props = defineProps(['isOpen', 'event', 'charMap']);
+const props = defineProps(['isOpen', 'event', 'charMap', 'boxLockedUnits']);
 const emit = defineEmits(['close']);
 const savePredictEvent = inject('savePredictEvent');
 
 const ATTRS = ['Pure','Cool','Cute','Happy','Mysterious'];
 const UNITS = ['vs','ln','mmj','vbs','ws','nc'];
+const BOX_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 const VS_NAMES = ["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"];
 const FES_FESTIVALS = ['周年', '半周年', '夏活', '新年'];
 const CHAR_UNIT_MAP = {
@@ -150,6 +155,13 @@ const form = reactive({
   isGachaLocked: false,
   isTypeLocked: false
 });
+
+const isWorldLinkTeamSeries = (eventLike) => {
+  const type = String(eventLike?.event_type || eventLike?.source_event_type || '').trim();
+  if (type !== 'World Link') return false;
+  const sid = Number(eventLike?.type_series_id);
+  return Number.isFinite(sid) && sid > 0 && sid <= 3;
+};
 
 const MOBILE_BREAKPOINT = 900;
 const SHEET_MIN_VH = 26;
@@ -264,11 +276,100 @@ const selectedRenderKey = computed(() => form.selectedChars
   .map(c => `${c.name}|${c.rarity}|${c.skillType}|${c.selectedUnit}|${c.attr}`)
   .join('||') + `::${renderTick.value}`);
 
-const isWorldLinkMode = computed(() => form.eventType === 'World Link');
+const disableReasonPopoverName = ref('');
+const disableReasonPopoverPinned = ref(false);
+let disableReasonHoverTimer = 0;
+let disableReasonAutoHideTimer = 0;
+
+const clearDisableReasonTimers = () => {
+  if (disableReasonHoverTimer) {
+    clearTimeout(disableReasonHoverTimer);
+    disableReasonHoverTimer = 0;
+  }
+  if (disableReasonAutoHideTimer) {
+    clearTimeout(disableReasonAutoHideTimer);
+    disableReasonAutoHideTimer = 0;
+  }
+};
+
+const hideDisableReasonPopover = (force = false) => {
+  clearDisableReasonTimers();
+  if (!force && disableReasonPopoverPinned.value) return;
+  disableReasonPopoverName.value = '';
+  disableReasonPopoverPinned.value = false;
+};
+
+const showDisableReasonPopover = (name, options = {}) => {
+  const reason = getCharDisableReason(name);
+  if (!reason) {
+    hideDisableReasonPopover(true);
+    return;
+  }
+  const { pinned = false, autoHideMs = 0 } = options;
+  disableReasonPopoverName.value = name;
+  disableReasonPopoverPinned.value = !!pinned;
+  if (autoHideMs > 0) {
+    disableReasonAutoHideTimer = setTimeout(() => {
+      disableReasonPopoverName.value = '';
+      disableReasonPopoverPinned.value = false;
+      disableReasonAutoHideTimer = 0;
+    }, autoHideMs);
+  }
+};
+
+const shouldShowDisableReasonPopover = (name) => {
+  return disableReasonPopoverName.value === name && !!getCharDisableReason(name) && !isCharInList(name);
+};
+
+const handlePoolItemMouseEnter = (name) => {
+  if (isCharInList(name)) return;
+  const reason = getCharDisableReason(name);
+  if (!reason) return;
+  clearDisableReasonTimers();
+  disableReasonHoverTimer = setTimeout(() => {
+    showDisableReasonPopover(name, { pinned: false });
+    disableReasonHoverTimer = 0;
+  }, 1000);
+};
+
+const handlePoolItemMouseLeave = (name) => {
+  const reason = getCharDisableReason(name);
+  if (!reason) return;
+  if (disableReasonHoverTimer) {
+    clearTimeout(disableReasonHoverTimer);
+    disableReasonHoverTimer = 0;
+  }
+  if (!disableReasonPopoverPinned.value && disableReasonPopoverName.value === name) {
+    disableReasonPopoverName.value = '';
+  }
+};
+
+const handlePoolItemClick = (name) => {
+  const reason = getCharDisableReason(name);
+  if (reason && !isCharInList(name)) {
+    clearDisableReasonTimers();
+    showDisableReasonPopover(name, { pinned: true, autoHideMs: 2200 });
+    return;
+  }
+  hideDisableReasonPopover(true);
+  toggleChar(name);
+};
+
+const isWorldLinkMode = computed(() => form.eventType === 'World Link' && isWorldLinkTeamSeries(props.event));
+const normalizedBoxLockedUnits = computed(() => {
+  const list = Array.isArray(props.boxLockedUnits) ? props.boxLockedUnits : [];
+  return list
+    .map((u) => String(u || '').trim().toLowerCase())
+    .filter((u) => BOX_UNITS.includes(u));
+});
 
 let isApplyingRules = false;
 
 const getOCUnit = (name) => CHAR_UNIT_MAP[name] || 'vs';
+const isUnitLockedInCurrentRound = (unit) => {
+  if (form.eventType !== '箱活') return false;
+  return normalizedBoxLockedUnits.value.includes(String(unit || '').trim().toLowerCase());
+};
 const isFesFestival = () => FES_FESTIVALS.includes(String(props.event?.festival || '').trim());
 const isBfesSkillAvailable = (char) => isFesFestival() && String(char?.rarity) === '4';
 const isPScoreAvailable = (char) => String(char?.rarity) === '4';
@@ -326,20 +427,36 @@ const isAttrLocked = (char) => {
 };
 
 const isCharSelectable = (name) => {
-  if (isWorldLinkMode.value) return false;
-  if (form.eventType !== '箱活') return true;
-  if (form.selectedChars.length === 0) {
-    return !VS_NAMES.includes(name);
+  return getCharDisableReason(name) === '';
+};
+
+const getCharDisableReason = (name) => {
+  if (isWorldLinkMode.value) return '';
+  if (form.eventType !== '箱活') return '';
+
+  if (!VS_NAMES.includes(name) && isUnitLockedInCurrentRound(getOCUnit(name))) {
+    return '本轮箱活已出';
   }
-  if (isFesFestival()) return true;
-  if (VS_NAMES.includes(name)) return true;
+
+  if (form.selectedChars.length === 0) {
+    return VS_NAMES.includes(name) ? '箱活ban主禁止选v' : '';
+  }
+
+  if (isFesFestival()) return '';
+  if (VS_NAMES.includes(name)) return '';
+
   const bannerUnit = getBannerUnit();
-  return getOCUnit(name) === bannerUnit;
+  return getOCUnit(name) === bannerUnit ? '' : '与箱活团队不一致';
 };
 
 const clearInvalidBoxBanner = () => {
   if (form.eventType !== '箱活') return;
-  while (form.selectedChars.length > 0 && VS_NAMES.includes(form.selectedChars[0].name)) {
+  while (
+    form.selectedChars.length > 0 && (
+      VS_NAMES.includes(form.selectedChars[0].name)
+      || isUnitLockedInCurrentRound(getOCUnit(form.selectedChars[0].name))
+    )
+  ) {
     form.selectedChars.splice(0, 1);
   }
 };
@@ -441,9 +558,18 @@ const normalizeAttr = (attr) => {
 watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
   if (newVal && isOpen) {
     const sourceType = String(newVal.source_event_type || '').trim();
-    const hasFixedType = sourceType.length > 0 || (!newVal.isPredict && !!String(newVal.event_type || '').trim());
+    const sourceIsTeamWorldLink = sourceType === 'World Link' && isWorldLinkTeamSeries({
+      source_event_type: sourceType,
+      type_series_id: newVal.type_series_id
+    });
+    const hasFixedType = sourceType.length > 0
+      ? sourceIsTeamWorldLink
+      : (!newVal.isPredict && !!String(newVal.event_type || '').trim());
+
     const hasValidType = !!(newVal.event_type && newVal.event_type.trim().length > 0);
-    form.eventType = hasFixedType ? sourceType : (hasValidType ? newVal.event_type : '混活');
+    const rawType = hasValidType ? String(newVal.event_type).trim() : '混活';
+    const defaultType = (rawType === 'World Link' && !isWorldLinkTeamSeries(newVal)) ? '混活' : rawType;
+    form.eventType = hasFixedType ? sourceType : defaultType;
     form.isTypeLocked = hasFixedType;
 
     const sourceGacha = String(newVal.source_gacha_type || '').trim();
@@ -456,7 +582,7 @@ watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
 
     form.predictAttr = normalizeAttr(newVal.event_attribute);
 
-    if (newVal.memberCards && (newVal.isPredict || form.eventType === 'World Link')) {
+    if (newVal.memberCards && (newVal.isPredict || isWorldLinkMode.value)) {
       form.selectedChars = newVal.memberCards.map(card => ({
         name: card.Name,
         attr: normalizeAttr(card.Attribute) || '-',
@@ -489,6 +615,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  clearDisableReasonTimers();
   detachSheetPointerListeners();
   window.removeEventListener('resize', updateMobileViewport);
 });
@@ -516,6 +643,13 @@ watch(
 
 watch(
   () => form.gachaType,
+  () => {
+    applyAllRules();
+  }
+);
+
+watch(
+  () => normalizedBoxLockedUnits.value.join('|'),
   () => {
     applyAllRules();
   }
@@ -703,6 +837,38 @@ const submit = () => {
 .pool-item.is_selected img { filter: grayscale(0); opacity: 1; border: 2px solid #33ccbb; }
 .pool-item.is_disabled { cursor: not-allowed; }
 .pool-item.is_disabled img { filter: grayscale(1); opacity: 0.2; }
+.pool-disable-popover {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  min-width: 86px;
+  max-width: 120px;
+  padding: 3px 5px;
+  border-radius: 6px;
+  font-size: 9px;
+  line-height: 1.25;
+  text-align: center;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.24);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.pool-disable-popover::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid rgba(15, 23, 42, 0.94);
+}
 .check-mark { 
   position: absolute; bottom: 3px; right: -4px; background: #33ccbb; 
   color: white; width: 12px; height: 12px; border-radius: 50%; font-size: 9px;
