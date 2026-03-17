@@ -1958,7 +1958,7 @@ const isUnitRelated = (ev) => {
   const isTypeMatch = ['箱活', 'WL', 'World Link'].includes(ev.event_type);
   return isTypeMatch && !!ev.unit; // !!ev.unit 确保 unit 不为空字符串或 null
 };
-const isSpecialFestival = (fest) => ['新年', '半周年', '情人节', '白情', '周年', '混活'].includes(fest);
+const isSpecialFestival = (fest) => ['新年', '半周年', '情人节', '白情', '周年', '婚活'].includes(fest);
 
 const getNormalCards = (cards) => cards.filter(c => !['cfes', 'bfes'].includes(c.Type?.toLowerCase()));
 const getFesCards = (cards) => cards.filter(c => ['cfes', 'bfes'].includes(c.Type?.toLowerCase()));
@@ -2723,7 +2723,7 @@ const parseVS = (vsStr) => {
   bottom: -3px;
   
   /* 流光渐变 */
-  background: linear-gradient(90deg, #33CCBB, #FD7CC1, #FFEE11, #33CCBB);
+  background: linear-gradient(90deg, #33CCBB, #FFBBCC, #FFCC11, #FFEE11, #33CCBB);
   background-size: 300% 100%;
   
   /* 必须设置比父级稍大一点的圆角 */

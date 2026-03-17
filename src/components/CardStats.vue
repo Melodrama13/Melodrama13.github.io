@@ -88,6 +88,70 @@
           </div>
         </div>
 
+        <div id="panel-festival" class="stats-section card-panel festival-panel">
+          <h2>节日人选</h2>
+          <div class="festival-grid">
+            <div
+              v-for="fest in festivalCharStats"
+              :key="fest.festival"
+              :id="fest.anchorId"
+              class="festival-card card-panel"
+            >
+              <div class="festival-card-head">
+                <h3>{{ fest.festival }}</h3>
+                <label v-if="canToggleFestivalFes(fest.festival)" class="festival-fes-toggle">
+                  <input v-model="festivalFesToggles[fest.festival]" type="checkbox" />
+                  显示FES
+                </label>
+              </div>
+              <table class="count-table">
+                <tbody>
+                  <tr v-for="row in fest.rows" :key="`${fest.festival}-${row.key}`">
+                    <td class="count-cell festival-tier-cell" :class="`festival-tier-${row.key}`">
+                      <div v-if="row.key !== 'none'" class="festival-star-stack">
+                        <img
+                          v-for="idx in getFestivalTierCount(row.key)"
+                          :key="`${fest.festival}-${row.key}-star-${idx}`"
+                          :src="getFestivalTierIcon(row.key)"
+                          class="festival-star-icon"
+                        />
+                      </div>
+                      <span v-else class="festival-none-text">无</span>
+                    </td>
+                    <td class="chars-cell">
+                      <template v-if="row.chars.length">
+                        <div
+                          v-for="char in row.chars"
+                          :key="`${fest.festival}-${row.key}-${char.name}`"
+                          class="char-avatar-box festival-avatar-box"
+                        >
+                          <div class="festival-avatar-wrap">
+                            <span v-if="char.count > 1" class="festival-count-badge">{{ char.count }}</span>
+                            <img
+                              :src="`/chibi_s/${getCharAbbr(char.name)}.webp`"
+                              :title="char.name"
+                              class="avatar-img"
+                              :style="{ borderColor: getCharColor(char.name) }"
+                            />
+                            <img
+                              v-if="getFestivalUnitLogoByName(char.name)"
+                              :src="getFestivalUnitLogoByName(char.name)"
+                              class="festival-unit-logo"
+                            />
+                            <span v-if="row.key === 'four' && char.isPermOnly" class="festival-perm-mark">普</span>
+                          </div>
+                          <span class="abbr-text">{{ getFestivalDisplayAbbr(char.name) }}</span>
+                        </div>
+                      </template>
+                      <span v-else class="festival-empty">-</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div id="panel-related" class="stats-section card-panel related-panel">
           <h2>相关记录</h2>
 
@@ -422,7 +486,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, reactive } from 'vue';
 // 1. 接收两个 Props
 const props = defineProps({
   allEvents: { type: Array, default: () => [] },
@@ -438,6 +502,10 @@ const navCollapsed = ref(false);
 const activeNavId = ref('panel-dist');
 const matrixSortKey = ref('');
 const matrixSortOrder = ref('');
+const festivalFesToggles = reactive({
+  半周年: false,
+  周年: false
+});
 let sectionObserver = null;
 
 const CHAR_MAP = {
@@ -535,6 +603,9 @@ const ATTR_LABELS = {
   Happy: '橙心',
   Mysterious: '紫月'
 };
+const SPECIAL_FESTIVALS = ['新年', '婚活', '情人节', '白情', '半周年', '周年'];
+const FESTIVAL_ANCHOR_IDS = Object.fromEntries(SPECIAL_FESTIVALS.map((fest, idx) => [fest, `festival-${idx + 1}`]));
+const FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
 
 const isVirtualSinger = (name) => VS_NAMES.includes(name);
 
@@ -572,6 +643,83 @@ const getUnitByChar = (name) => {
   }
   return CHAR_UNIT_MAP[baseName] || 'vs';
 };
+
+const normalizeFestivalCharName = (name) => {
+  const raw = String(name || '').trim();
+  if (!raw) return '';
+  const [baseName] = raw.split(/\s+/);
+  return CHAR_ORDER[baseName] ? baseName : '';
+};
+
+const parseFestivalCharKey = (charKey) => {
+  const raw = String(charKey || '').trim();
+  if (!raw) return { baseName: '', unit: '', isVs: false };
+  const [baseName, suffixRaw] = raw.split(/\s+/);
+  const unit = String(suffixRaw || '').toLowerCase();
+  return {
+    baseName,
+    unit,
+    isVs: isVirtualSinger(baseName)
+  };
+};
+
+const buildFestivalCharKey = (card) => {
+  const baseName = normalizeFestivalCharName(card?.Name);
+  if (!baseName) return '';
+  if (!isVirtualSinger(baseName)) return baseName;
+
+  const unit = String(card?.Affiliation || '').trim().toLowerCase();
+  if (unit && unit !== 'vs' && FESTIVAL_VS_UNIT_ORDER[unit]) {
+    return `${baseName} ${unit}`;
+  }
+  return baseName;
+};
+
+const compareFestivalCharKey = (aKey, bKey) => {
+  const a = parseFestivalCharKey(aKey);
+  const b = parseFestivalCharKey(bKey);
+  const baseDiff = (CHAR_ORDER[a.baseName] || 999) - (CHAR_ORDER[b.baseName] || 999);
+  if (baseDiff !== 0) return baseDiff;
+
+  if (a.isVs && b.isVs) {
+    const au = FESTIVAL_VS_UNIT_ORDER[a.unit || 'vs'] || 999;
+    const bu = FESTIVAL_VS_UNIT_ORDER[b.unit || 'vs'] || 999;
+    if (au !== bu) return au - bu;
+  }
+
+  return String(aKey).localeCompare(String(bKey), 'zh-Hans-CN');
+};
+
+const getFestivalUnitLogoByName = (charName) => {
+  const parsed = parseFestivalCharKey(charName);
+  if (!parsed.isVs) return '';
+  if (!parsed.unit || parsed.unit === 'vs') return '';
+  return unitLogoMap[parsed.unit] || '';
+};
+
+const getFestivalDisplayAbbr = (charName) => {
+  const parsed = parseFestivalCharKey(charName);
+  if (parsed?.isVs) {
+    return CHAR_MAP[parsed.baseName] || getCharAbbr(parsed.baseName);
+  }
+  return getCharAbbr(charName);
+};
+
+const canToggleFestivalFes = (festival) => ['半周年', '周年'].includes(String(festival || '').trim());
+
+const shouldCountFestivalFes = (festival) => {
+  if (!canToggleFestivalFes(festival)) return false;
+  return !!festivalFesToggles[String(festival || '').trim()];
+};
+
+const getFestivalTierCount = (tierKey) => {
+  if (tierKey === 'four') return 4;
+  if (tierKey === 'three') return 3;
+  if (tierKey === 'two') return 2;
+  return 0;
+};
+
+const getFestivalTierIcon = (tierKey) => (tierKey === 'four' ? '/elements/rstar.png' : '/elements/ystar.png');
 
 const hexToRgba = (hex, alpha) => {
   const h = String(hex || '').replace('#', '');
@@ -805,6 +953,14 @@ const navGroups = computed(() => {
       id: 'panel-dist',
       title: '阶梯分布',
       children: distChildren
+    },
+    {
+      id: 'panel-festival',
+      title: '节日人选',
+      children: SPECIAL_FESTIVALS.map((fest) => ({
+        id: FESTIVAL_ANCHOR_IDS[fest],
+        title: fest
+      }))
     },
     {
       id: 'panel-related',
@@ -1141,6 +1297,98 @@ const groupPanels = computed(() => [
   { id: 'two', title: '2星总数分布', cellClass: 'two-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'twoStarCount') },
   { id: 'reward', title: '报酬总数分布 (活动3★+2★)', cellClass: 'reward', showRewardBreakdown: true, groups: groupByCount(processedStats.value, 'rewardTotalCount') }
 ]);
+
+const festivalCharStats = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const allNames = Object.keys(CHAR_ORDER).sort((a, b) => (CHAR_ORDER[a] || 999) - (CHAR_ORDER[b] || 999));
+  const eventFestivalMap = {};
+
+  (props.allEvents || []).forEach((ev) => {
+    if (ev?.isPredict) return;
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (eid > maxEid) return;
+    const fest = String(ev?.festival || '').trim();
+    if (!SPECIAL_FESTIVALS.includes(fest)) return;
+    eventFestivalMap[eid] = fest;
+  });
+
+  const festCounts = Object.fromEntries(SPECIAL_FESTIVALS.map((fest) => [
+    fest,
+    {
+      four: {},
+      three: {},
+      two: {},
+      fourMeta: {},
+      seenBase: new Set()
+    }
+  ]));
+
+  (props.allCards || []).forEach((card) => {
+    const eid = String(card?.EventID || '').trim();
+    if (!isNumericEventId(eid)) return;
+    const fest = eventFestivalMap[Number(eid)];
+    if (!fest) return;
+
+    const charName = buildFestivalCharKey(card);
+    if (!charName) return;
+
+    const baseName = parseFestivalCharKey(charName).baseName;
+    if (!baseName) return;
+
+    const type = String(card?.Type || '').trim().toLowerCase();
+    const isFes = ['cfes', 'bfes'].includes(type);
+    if (isFes && !shouldCountFestivalFes(fest)) return;
+
+    const rarity = String(card?.Rarity || '').trim();
+    const festBucket = festCounts[fest];
+
+    if (rarity === '4' || isFes) {
+      festBucket.four[charName] = (festBucket.four[charName] || 0) + 1;
+      if (!festBucket.fourMeta[charName]) {
+        festBucket.fourMeta[charName] = { perm: 0, nonPerm: 0 };
+      }
+      if (type === 'perm') festBucket.fourMeta[charName].perm += 1;
+      else festBucket.fourMeta[charName].nonPerm += 1;
+      festBucket.seenBase.add(baseName);
+      return;
+    }
+    if (rarity === '3') {
+      festBucket.three[charName] = (festBucket.three[charName] || 0) + 1;
+      festBucket.seenBase.add(baseName);
+      return;
+    }
+    if (rarity === '2') {
+      festBucket.two[charName] = (festBucket.two[charName] || 0) + 1;
+      festBucket.seenBase.add(baseName);
+    }
+  });
+
+  const buildCountRow = (countMap, options = {}) => Object.entries(countMap || {})
+    .filter(([, count]) => Number(count) > 0)
+    .map(([name, count]) => {
+      const meta = options.fourMeta?.[name];
+      const isPermOnly = !!meta && meta.perm > 0 && meta.nonPerm === 0;
+      return { name, count: Number(count), isPermOnly };
+    })
+    .sort((a, b) => compareFestivalCharKey(a.name, b.name));
+
+  return SPECIAL_FESTIVALS.map((fest) => {
+    const festBucket = festCounts[fest];
+    const rows = [
+      { key: 'four', label: '4星', chars: buildCountRow(festBucket.four, { fourMeta: festBucket.fourMeta }) },
+      { key: 'three', label: '3星', chars: buildCountRow(festBucket.three) },
+      { key: 'two', label: '2星', chars: buildCountRow(festBucket.two) }
+    ];
+
+    const noneChars = allNames
+      .filter((name) => !festBucket.seenBase.has(name))
+      .map((name) => ({ name, count: 0 }));
+
+    rows.push({ key: 'none', label: '未出', chars: noneChars });
+    return { festival: fest, anchorId: FESTIVAL_ANCHOR_IDS[fest], rows };
+  });
+});
 
 const statsPreviewPayload = computed(() => {
   const fourPanel = groupPanels.value.find((p) => p.id === 'four');
@@ -1817,8 +2065,163 @@ const banShortestIntervals = computed(() => {
 
 .matrix-panel,
 .song-panel,
-.related-panel {
+.related-panel,
+.festival-panel {
   margin-top: 18px;
+}
+
+.festival-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.festival-card {
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+  padding: 10px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.festival-card h3 {
+  margin: 2px 0 8px;
+  font-size: 0.92rem;
+  color: #111827;
+}
+
+.festival-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.festival-fes-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.festival-fes-toggle input {
+  margin: 0;
+}
+
+.festival-tier-cell {
+  width: 40px;
+  min-width: 40px;
+  padding: 4px 2px !important;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.festival-star-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.festival-star-icon {
+  width: 11px;
+  height: 11px;
+  object-fit: contain;
+}
+
+.festival-none-text {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  color: #4b5563;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.festival-tier-four {
+  color: #dc2626;
+}
+
+.festival-tier-three {
+  color: #7c3aed;
+}
+
+.festival-tier-two {
+  color: #059669;
+}
+
+.festival-tier-none {
+  color: #4b5563;
+}
+
+.festival-avatar-box {
+  position: relative;
+}
+
+.festival-avatar-wrap {
+  width: 52px;
+  height: 52px;
+  position: relative;
+}
+
+.festival-count-badge {
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.58rem;
+  line-height: 14px;
+  text-align: center;
+  font-weight: 800;
+  border: 1px solid #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  z-index: 2;
+}
+
+.festival-unit-logo {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+  z-index: 2;
+}
+
+.festival-perm-mark {
+  position: absolute;
+  left: 1px;
+  bottom: 1px;
+  min-width: 14px;
+  height: 14px;
+  line-height: 14px;
+  text-align: center;
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: #111827;
+  border: 1px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+  z-index: 2;
+}
+
+.festival-empty {
+  color: #9ca3af;
+  font-size: 0.85rem;
 }
 
 .matrix-table {
@@ -2271,6 +2674,26 @@ const banShortestIntervals = computed(() => {
     height: 42px;
   }
 
+  .festival-avatar-wrap {
+    width: 42px;
+    height: 42px;
+  }
+
+  .festival-unit-logo {
+    right: 3px;
+    bottom: 3px;
+    width: 13px;
+    height: 13px;
+  }
+
+  .festival-perm-mark,
+  .festival-count-badge {
+    min-width: 12px;
+    height: 12px;
+    line-height: 12px;
+    font-size: 0.52rem;
+  }
+
   .chars-cell .abbr-text {
     display: none;
   }
@@ -2304,6 +2727,15 @@ const banShortestIntervals = computed(() => {
   .song-grid {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  .festival-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .festival-card {
+    padding: 8px;
   }
 
   .song-card {

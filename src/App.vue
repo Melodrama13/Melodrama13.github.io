@@ -12,6 +12,28 @@
       <div class="predict-info" v-if="predictiveEvents.length > 0">
         已添加 {{ predictiveEvents.length }} 条预测
       </div>
+      <div class="predict-cleanup-info" v-if="cleanedPatchNoticeCount > 0">
+        已自动清理 {{ cleanedPatchNoticeCount }} 条过期/冲突预测
+      </div>
+      <button @click="exportPredicts" class="io-btn" title="导出预测到文件">📤 导出</button>
+      <div
+        class="io-drop-zone"
+        :class="{ 'is-drag-over': isImportDragOver }"
+        @dragenter.prevent="onImportDragEnter"
+        @dragover.prevent="onImportDragOver"
+        @dragleave.prevent="onImportDragLeave"
+        @drop.prevent="onImportDrop"
+      >
+        <button @click="triggerImportPredicts" class="io-btn" title="从文件导入预测">📥 导入</button>
+        <span class="io-drop-hint">拖拽 JSON 到这里可直接导入</span>
+      </div>
+      <input
+        ref="predictImportInputRef"
+        type="file"
+        accept="application/json,.json"
+        class="predict-import-input"
+        @change="handleImportPredictsFile"
+      />
       <button v-if="predictiveEvents.length > 0" @click="clearPredicts" class="reset-btn"
       >🗑️ 清空所有预测</button>
     </div>
@@ -70,6 +92,8 @@ const tabComponentRef = ref(null);
 const contentAreaRef = ref(null);
 const statsScrollTop = ref(0);
 const showBackToTopBtn = ref(false);
+const predictImportInputRef = ref(null);
+const isImportDragOver = ref(false);
 
 const handleStatsPreviewUpdate = (payload) => {
   statsPreviewData.value = payload || null;
@@ -149,6 +173,220 @@ watch(currentTab, async (nextTab, prevTab) => {
 const historyData = ref([]);      // 既定的历史 JSON 数据
 const baseCards = ref([]); // 新增：存储基础卡片库
 const predictiveEvents = ref([]); // 用户填写的预测数据
+const cleanedPatchNoticeCount = ref(0);
+
+const hasValidEventTitle = (value) => String(value || '').trim().length > 0;
+
+const getCurrentOfficialEventId = () => {
+  const today = new Date();
+  const ids = (historyData.value || [])
+    .filter((ev) => {
+      const idNum = Number(ev?.id);
+      if (!Number.isFinite(idNum)) return false;
+      if (!hasValidEventTitle(ev?.event_title)) return false;
+      const d = new Date(String(ev?.date || '').replace(/\//g, '-'));
+      if (Number.isNaN(d.getTime())) return false;
+      return d <= today;
+    })
+    .map((ev) => Number(ev.id));
+  return ids.length ? Math.max(...ids) : -1;
+};
+
+const getSourceEventById = (eventId) => {
+  const idNum = Number(eventId);
+  if (!Number.isFinite(idNum)) return null;
+  return (historyData.value || []).find((ev) => Number(ev?.id) === idNum) || null;
+};
+
+const normalizeWorldLinkPatch = (patch) => {
+  if (!patch || typeof patch !== 'object') return patch;
+  const sourceEvent = getSourceEventById(patch.id);
+  const sourceType = String(sourceEvent?.event_type || '').trim();
+  const sourceSid = Number(sourceEvent?.type_series_id);
+  const isNonTeamWorldLink = sourceType === 'World Link' && (!Number.isFinite(sourceSid) || sourceSid > 2 || sourceSid <= 0);
+  if (!isNonTeamWorldLink) return patch;
+
+  return {
+    ...patch,
+    banner: '',
+    unit: ''
+  };
+};
+
+const filterOutdatedPredictiveEvents = (list) => {
+  const currentOfficialId = getCurrentOfficialEventId();
+  if (!Number.isFinite(currentOfficialId) || currentOfficialId < 0) return [...(list || [])];
+  return (list || []).filter((ev) => {
+    const idNum = Number(ev?.id);
+    if (!Number.isFinite(idNum)) return false;
+    // 当期及以前的 patch 一律视为过期冲突并清理。
+    return idNum > currentOfficialId;
+  });
+};
+
+const sanitizePredictiveEvents = (list) => {
+  return (list || []).map((ev) => normalizeWorldLinkPatch(ev));
+};
+
+const reconcilePredictiveEvents = (list) => {
+  const normalized = sanitizePredictiveEvents(list);
+  const filtered = filterOutdatedPredictiveEvents(normalized);
+  return filtered;
+};
+
+const buildPredictExportPayload = (list) => ({
+  version: 1,
+  exportedAt: new Date().toISOString(),
+  source: 'pjsk-planner',
+  predictiveEvents: Array.isArray(list) ? list : []
+});
+
+const sanitizeExportFileName = (name) => {
+  const raw = String(name || '').trim();
+  const cleaned = raw
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/[.\s]+$/g, '')
+    .trim();
+  return cleaned || 'pjsk_predict_backup';
+};
+
+const exportPredicts = () => {
+  try {
+    const payload = buildPredictExportPayload(predictiveEvents.value);
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const defaultBaseName = `pjsk_predict_backup_${y}${m}${d}`;
+    const customName = prompt('请输入导出文件名（无需 .json 后缀）', defaultBaseName);
+    if (customName === null) {
+      URL.revokeObjectURL(url);
+      return;
+    }
+    const finalBaseName = sanitizeExportFileName(customName || defaultBaseName);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${finalBaseName}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('导出预测失败', error);
+    alert('导出失败，请稍后重试。');
+  }
+};
+
+const triggerImportPredicts = () => {
+  if (!predictImportInputRef.value) return;
+  predictImportInputRef.value.value = '';
+  predictImportInputRef.value.click();
+};
+
+const parseImportedPredictList = (rawText) => {
+  const parsed = JSON.parse(rawText);
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && Array.isArray(parsed.predictiveEvents)) return parsed.predictiveEvents;
+  return null;
+};
+
+const validateImportedPredictList = (list) => {
+  if (!Array.isArray(list)) {
+    return { ok: false, message: '文件格式错误：顶层必须是数组，或包含 predictiveEvents 数组。' };
+  }
+
+  for (let i = 0; i < list.length; i += 1) {
+    const row = list[i];
+    if (!row || typeof row !== 'object') {
+      return { ok: false, message: `第 ${i + 1} 条记录不是对象。` };
+    }
+    const idNum = Number(row.id);
+    if (!Number.isFinite(idNum)) {
+      return { ok: false, message: `第 ${i + 1} 条记录缺少有效 id。` };
+    }
+    if (row.memberCards != null && !Array.isArray(row.memberCards)) {
+      return { ok: false, message: `第 ${i + 1} 条记录的 memberCards 不是数组。` };
+    }
+  }
+
+  return { ok: true };
+};
+
+const applyImportedPredicts = (importedRawList) => {
+  const normalizedImported = (importedRawList || []).map((item) => ({
+    ...(item || {}),
+    id: Number(item?.id)
+  })).filter((item) => Number.isFinite(item.id));
+
+  const reconciled = reconcilePredictiveEvents(normalizedImported);
+  const cleaned = Math.max(0, normalizedImported.length - reconciled.length);
+  predictiveEvents.value = reconciled;
+  cleanedPatchNoticeCount.value = cleaned;
+  alert(`导入完成：已覆盖本地预测 ${reconciled.length} 条，清理 ${cleaned} 条。`);
+};
+
+const importPredictsFromFile = async (file) => {
+  const text = await file.text();
+  const importedRawList = parseImportedPredictList(text);
+  if (!importedRawList) {
+    alert('导入失败：文件格式不正确。');
+    return;
+  }
+
+  const validation = validateImportedPredictList(importedRawList);
+  if (!validation.ok) {
+    alert(`导入失败：${validation.message}`);
+    return;
+  }
+
+  const ok = confirm('您确定要导入吗？这会覆盖掉您本地的预测，请务必备份好本地预测。');
+  if (!ok) return;
+
+  applyImportedPredicts(importedRawList);
+};
+
+const handleImportPredictsFile = async (event) => {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+  try {
+    await importPredictsFromFile(file);
+  } catch (error) {
+    console.error('导入预测失败', error);
+    alert('导入失败：请确认 JSON 文件内容有效。');
+  }
+};
+
+const onImportDragEnter = () => {
+  isImportDragOver.value = true;
+};
+
+const onImportDragOver = () => {
+  isImportDragOver.value = true;
+};
+
+const onImportDragLeave = (event) => {
+  const zone = event.currentTarget;
+  const nextTarget = event.relatedTarget;
+  if (zone && nextTarget && zone.contains(nextTarget)) return;
+  isImportDragOver.value = false;
+};
+
+const onImportDrop = async (event) => {
+  isImportDragOver.value = false;
+  const file = event?.dataTransfer?.files?.[0];
+  if (!file) return;
+  try {
+    await importPredictsFromFile(file);
+  } catch (error) {
+    console.error('拖拽导入失败', error);
+    alert('导入失败：请确认 JSON 文件内容有效。');
+  }
+};
+
+const effectivePredictiveEvents = computed(() => reconcilePredictiveEvents(predictiveEvents.value));
 
 const clearPredicts = () => {
   if (confirm("确定要删除所有本地预测记录吗？这不会影响你的 JSON 文件。")) {
@@ -172,6 +410,10 @@ onMounted(async () => {
     
     historyData.value = await resEvents.json();
     baseCards.value = await resCards.json();
+    const beforeCount = predictiveEvents.value.length;
+    const reconciled = reconcilePredictiveEvents(predictiveEvents.value);
+    predictiveEvents.value = reconciled;
+    cleanedPatchNoticeCount.value = Math.max(0, beforeCount - reconciled.length);
     
     console.log("数据加载成功:", historyData.value.length, "条活动,", baseCards.value.length, "张卡片");
   } catch (e) {
@@ -223,7 +465,7 @@ const totalEventData = computed(() => {
   // 1. 遍历所有的历史活动（包括你填好的 218 以前的坑）
   return historyData.value.map(jsonEvent => {
     // 2. 看看预测数组里有没有对这个 ID 的“填坑记录”
-    const patch = predictiveEvents.value.find(p => p.id === jsonEvent.id);
+    const patch = effectivePredictiveEvents.value.find(p => Number(p.id) === Number(jsonEvent.id));
     
     // 3. 如果有补丁，合并它；如果没有，用原件
     const event = patch ? { ...jsonEvent, ...patch, isPredict: true } : jsonEvent;
@@ -356,9 +598,20 @@ function sortPredictedCardsForDisplay(cards, bannerName) {
   return [bannerCard, ...sortedFourStars, ...unsortedBfesFourStars, ...unsortedLowStars];
 }
 
+const isTeamWorldLink = (eventType, typeSeriesId) => {
+  if (String(eventType || '').trim() !== 'World Link') return false;
+  const sid = Number(typeSeriesId);
+  return Number.isFinite(sid) && sid > 0 && sid <= 2;
+};
+
 // App.vue 约第 135 行 savePredictEvent 替换为：
 provide('savePredictEvent', (payload) => {
   const { eventId, eventType, gachaType, predictAttr, selectedChars, event_title } = payload;
+  const currentOfficialId = getCurrentOfficialEventId();
+  if (Number(eventId) <= currentOfficialId) {
+    console.warn(`[predict] ignore save for event ${eventId}, current official id is ${currentOfficialId}`);
+    return;
+  }
   
   const nextSid = getNextSeriesId();
   const bannerName = selectedChars[0]?.name || '';
@@ -366,6 +619,7 @@ provide('savePredictEvent', (payload) => {
   const nextTypeSeriesId = eventType === 'World Link'
     ? (sourceEvent?.type_series_id ?? null)
     : getNextTypeSeriesId({ eventId, eventType, bannerName });
+  const teamWorldLink = isTeamWorldLink(eventType, nextTypeSeriesId ?? sourceEvent?.type_series_id);
 
   // 1. 内部卡片生成逻辑
   const generatedCardsRaw = selectedChars.map((char, index) => {
@@ -404,6 +658,10 @@ provide('savePredictEvent', (payload) => {
   const predictedUnit = String(generatedCards?.[0]?.Affiliation || '').trim().toLowerCase();
   const sourceUnit = String(sourceEvent?.unit || '').trim().toLowerCase();
   const finalUnit = predictedUnit || sourceUnit;
+  const worldLinkUnit = teamWorldLink ? finalUnit : '';
+  const finalBanner = eventType === 'World Link'
+    ? ''
+    : bannerName;
 
   const newPredictEvent = {
     id: Number(eventId),
@@ -413,8 +671,8 @@ provide('savePredictEvent', (payload) => {
     type_series_id: nextTypeSeriesId,
     event_attribute: normalizeAttr(predictAttr),
     memberCards: generatedCards,
-    banner: eventType === 'World Link' ? '' : bannerName,
-    unit: finalUnit,
+    banner: finalBanner,
+    unit: eventType === 'World Link' ? worldLinkUnit : finalUnit,
     isPredict: true // 必须标记，用于 PredictEditor 判断是否回显
   };
 
@@ -428,7 +686,10 @@ provide('savePredictEvent', (payload) => {
     updatedList.push(newPredictEvent);
   }
   
-  predictiveEvents.value = updatedList;
+  const beforeCount = updatedList.length;
+  const reconciled = reconcilePredictiveEvents(updatedList);
+  predictiveEvents.value = reconciled;
+  cleanedPatchNoticeCount.value = Math.max(0, beforeCount - reconciled.length);
 });
 
 // 删除预测活动
@@ -512,6 +773,47 @@ button.active {
   border: 1px solid #ffadd2;
 }
 
+.predict-cleanup-info {
+  font-size: 0.8rem;
+  color: #065f46;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.io-btn {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+}
+
+.io-drop-zone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 3px 6px;
+}
+
+.io-drop-zone.is-drag-over {
+  border-color: #14b8a6;
+  background: #ecfeff;
+}
+
+.io-drop-hint {
+  font-size: 0.72rem;
+  color: #64748b;
+  user-select: none;
+}
+
+.predict-import-input {
+  display: none;
+}
+
 .content-area {
   padding: 20px;
 }
@@ -581,6 +883,33 @@ button.active {
     flex: 0 0 auto;
   }
 
+  .predict-cleanup-info {
+    order: 1;
+    font-size: 0.66rem;
+    padding: 3px 7px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .io-btn {
+    order: 2;
+    font-size: 0.68rem;
+    padding: 4px 8px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .io-drop-zone {
+    order: 2;
+    gap: 4px;
+    padding: 2px 4px;
+    border-style: solid;
+  }
+
+  .io-drop-hint {
+    display: none;
+  }
+
   .content-area {
     padding: 10px;
     overflow-x: hidden;
@@ -617,6 +946,22 @@ button.active {
   .predict-info {
     font-size: 0.65rem;
     padding: 3px 6px;
+  }
+
+  .predict-cleanup-info {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+  }
+
+  .io-btn {
+    font-size: 0.62rem;
+    padding: 3px 6px;
+  }
+
+  .io-drop-zone {
+    padding: 2px;
+    border: none;
+    background: transparent;
   }
 }
 </style>

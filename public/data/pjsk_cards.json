@@ -4412,7 +4412,7 @@
    "Affiliation": "vs",
    "CardName": "",
    "Rarity": "2",
-   "Type": "collab_t",
+   "Type": "collab",
    "Attribute": "Happy",
    "Skill": "score_up",
    "EventID": "c1",
