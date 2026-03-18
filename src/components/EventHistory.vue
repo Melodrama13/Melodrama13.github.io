@@ -30,7 +30,10 @@
           <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('attr-five')" class="preview-char-select" :class="{ 'is-collapsed': previewAttrCharCollapsed }">
             <div class="preview-char-select-title">
               <span>属性统计人选（最多8人）</span>
-              <button class="preview-char-select-toggle" @click="previewAttrCharCollapsed = !previewAttrCharCollapsed">{{ previewAttrCharCollapsed ? '展开' : '收起' }}</button>
+              <div class="preview-char-select-actions">
+                <button class="preview-char-select-toggle" @click="clearPreviewAttrChars" :disabled="selectedPreviewAttrChars.length === 0">清空</button>
+                <button class="preview-char-select-toggle" @click="previewAttrCharCollapsed = !previewAttrCharCollapsed">{{ previewAttrCharCollapsed ? '展开' : '收起' }}</button>
+              </div>
             </div>
             <div v-show="!previewAttrCharCollapsed" class="preview-char-chips">
               <button
@@ -45,6 +48,26 @@
                 <img :src="`/chibi_s/${getCharAbbr(name)}.webp`" class="preview-char-chip-avatar" />
               </button>
             </div>
+          </div>
+          <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('festival')" class="preview-char-select preview-festival-select">
+            <div class="preview-char-select-title">
+              <span>节日（单选）</span>
+            </div>
+            <div class="preview-festival-chips">
+              <button
+                v-for="fest in PREVIEW_FESTIVAL_TYPES"
+                :key="`preview-festival-${fest}`"
+                class="preview-festival-chip"
+                :class="{ 'is-active': selectedPreviewFestival === fest }"
+                @click="setSelectedPreviewFestival(fest)"
+              >
+                {{ fest }}
+              </button>
+            </div>
+            <label v-if="canTogglePreviewFestivalFes(activePreviewFestivalName)" class="preview-festival-fes-toggle">
+              <input v-model="previewFestivalFesToggles[activePreviewFestivalName]" type="checkbox" />
+              <span>统计FES</span>
+            </label>
           </div>
         </div>
         <div
@@ -93,7 +116,10 @@
               </div>
             </template>
             <template v-else-if="panel.id === 'festival'">
-              <div v-if="panel.festivalName" class="preview-festival-head">当前节日：{{ panel.festivalName }}</div>
+              <div v-if="panel.festivalName" class="preview-festival-head">
+                当前节日：{{ panel.festivalName }}
+                <span v-if="panel.festivalShowFes" class="preview-festival-fes-state">（统计FES：{{ panel.festivalIncludeFes ? '开' : '关' }}）</span>
+              </div>
               <div v-for="row in panel.festivalRows" :key="`festival-${row.key}`" class="preview-festival-row">
                 <span class="preview-festival-label">{{ row.label }}</span>
                 <div class="preview-avatars preview-festival-avatars">
@@ -113,6 +139,59 @@
               <div v-if="!panel.festivalRows || panel.festivalRows.length === 0" class="preview-step preview-step-empty">
                 <span class="preview-meta">当前活动不在节日统计范围内</span>
               </div>
+            </template>
+            <template v-else-if="panel.id === 'vs-last-four'">
+              <table class="preview-vs-mini-table">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th v-for="u in PREVIEW_BOX_UNITS" :key="`pv-vs-head-${u}`">
+                      <img :src="`/elements/${u}.png`" class="preview-vs-mini-unit-logo" :title="u.toUpperCase()" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in previewVsLastFourCompactRows" :key="`pv-vs-row-${row.name}`">
+                    <th>
+                      <img :src="`/chars/${getCharAbbr(row.name)}.png`" class="preview-vs-mini-avatar" :title="row.name" />
+                    </th>
+                    <td v-for="u in PREVIEW_BOX_UNITS" :key="`pv-vs-cell-${row.name}-${u}`" :style="getPreviewVsMiniDataCellStyle(row.daysByUnit[u])">
+                      {{ row.daysByUnit[u] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </template>
+            <template v-else-if="panel.id === 'vs-unit-score'">
+              <table class="preview-vs-score-table">
+                <thead>
+                  <tr>
+                    <th>V\团</th>
+                    <th v-for="u in PREVIEW_BOX_UNITS" :key="`pv-score-head-${u}`">
+                      <img :src="`/elements/${u}.png`" class="preview-vs-mini-unit-logo" :title="u.toUpperCase()" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in previewVsUnitScoreRows" :key="`pv-score-row-${row.name}`">
+                    <th>
+                      <img :src="`/chars/${getCharAbbr(row.name)}.png`" class="preview-vs-mini-avatar" :title="row.name" />
+                    </th>
+                    <td v-for="u in PREVIEW_BOX_UNITS" :key="`pv-score-cell-${row.name}-${u}`">
+                      <div v-if="row.attrsByUnit[u]?.length" class="preview-vs-score-icons">
+                        <img
+                          v-for="(attr, idx) in row.attrsByUnit[u]"
+                          :key="`pv-score-attr-${row.name}-${u}-${idx}`"
+                          :src="`/elements/${String(attr).toLowerCase()}.png`"
+                          class="preview-vs-score-attr"
+                          :title="attr"
+                        />
+                      </div>
+                      <span v-else class="preview-vs-score-empty">-</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </template>
             <template v-else>
             <div v-for="step in panel.steps" :key="`${panel.id}-${step.count}`" class="preview-step">
@@ -191,8 +270,7 @@
           <div class="filter-row">
             <span class="row-label">模式</span>
             <div class="btn-group">
-              <button :class="{active: filterMode === 'single'}" @click="filterMode = 'single'; resetFilters()">单人筛选</button>
-              <button :class="{active: filterMode === 'multi'}" @click="filterMode = 'multi'; resetFilters()">多人组合</button>
+              <button :class="{active: filterMode === 'single'}" @click="filterMode = 'single'; resetFilters()">卡片筛选</button>
               <button :class="{active: filterMode === 'event'}" @click="filterMode = 'event'; resetFilters()">活动筛选</button>
             </div>
           </div>
@@ -215,7 +293,7 @@
               <span class="row-label">角色</span>
               <div class="chip-group">
                 <div v-for="(abbr, name) in CHAR_MAP" :key="`event-char-${name}`"
-                    :class="['char-chip', { 'is-selected': eventFilterCriteria.character === name }]"
+                    :class="['char-chip', { 'is-selected': eventFilterCriteria.characters.includes(name) }]"
                     :title="name"
                     @click="toggleEventFilterCharacter(name)">
                   <img :src="`/chars/${getCharAbbr(name)}.png`" class="chip-img" />
@@ -225,16 +303,16 @@
             </div>
 
             <div class="filter-row">
-              <span class="row-label">是否Ban主</span>
+              <span class="row-label">是否Ban</span>
               <div class="btn-group-sm">
                 <button
                   :class="{ active: eventFilterCriteria.isBan === 'yes' }"
-                  :disabled="!eventFilterCriteria.character"
+                  :disabled="!canUseEventBanFilter"
                   @click="setEventBanFilter('yes')"
                 >是</button>
                 <button
                   :class="{ active: eventFilterCriteria.isBan === 'no' }"
-                  :disabled="!eventFilterCriteria.character"
+                  :disabled="!canUseEventBanFilter"
                   @click="setEventBanFilter('no')"
                 >否</button>
               </div>
@@ -248,6 +326,18 @@
                   :key="`event-type-${opt.value}`"
                   :class="{ active: eventFilterCriteria.eventTypes.includes(opt.value) }"
                   @click="toggleEventFilterArray('eventTypes', opt.value)"
+                >{{ opt.label }}</button>
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <span class="row-label">卡池类型</span>
+              <div class="btn-group-sm">
+                <button
+                  v-for="opt in EVENT_GACHA_FILTER_OPTIONS"
+                  :key="`event-gacha-${opt.value}`"
+                  :class="{ active: eventFilterCriteria.gachaTypes.includes(opt.value) }"
+                  @click="toggleEventFilterArray('gachaTypes', opt.value)"
                 >{{ opt.label }}</button>
               </div>
             </div>
@@ -288,18 +378,6 @@
                   @click="toggleEventFilterArray('units', unit)"
                   :title="unit.toUpperCase()"
                 />
-              </div>
-            </div>
-
-            <div class="filter-row">
-              <span class="row-label">卡池类型</span>
-              <div class="btn-group-sm">
-                <button
-                  v-for="opt in EVENT_GACHA_FILTER_OPTIONS"
-                  :key="`event-gacha-${opt.value}`"
-                  :class="{ active: eventFilterCriteria.gachaTypes.includes(opt.value) }"
-                  @click="toggleEventFilterArray('gachaTypes', opt.value)"
-                >{{ opt.label }}</button>
               </div>
             </div>
           </template>
@@ -787,6 +865,7 @@ const resetPreviewPanelLayout = () => {
 const getPreviewPanelBaseSize = (panelId) => {
   if (panelId === 'attr-five') return { width: 188, height: 340 };
   if (panelId === 'festival') return { width: 236, height: 350 };
+  if (panelId === 'vs-last-four') return { width: 236, height: 242 };
   if (panelId === 'reward') return { width: 208, height: 260 };
   return { width: 208, height: 260 };
 };
@@ -1129,6 +1208,8 @@ const PREVIEW_BOX_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 const PREVIEW_PANEL_DEFS = [
   { id: 'four', title: '四星数', icon: '⭐', statKey: 'fourStarCount', externalKey: 'fourStarCount' },
   { id: 'limited', title: '限定数', icon: '🎀', statKey: 'limitedCount', externalKey: 'limitedCount' },
+  { id: 'vs-last-four', title: 'V上次四星', icon: 'V', statKey: 'vsLastFour' },
+  { id: 'vs-unit-score', title: '团分', icon: 'U', statKey: 'vsUnitScore' },
   { id: 'p-score', title: 'P分', icon: 'P', statKey: 'pScoreCount' },
   { id: 'pure-score', title: '分卡', icon: 'S', statKey: 'pureScoreCount' },
   { id: 'recovery', title: '奶卡', icon: '❤', statKey: 'recoveryCount' },
@@ -1147,8 +1228,14 @@ const PREVIEW_CHAR_ORDER = {
   '宵崎奏': 17, '朝比奈真冬': 18, '东云绘名': 19, '晓山瑞希': 20,
   '初音未来': 21, '镜音铃': 22, '镜音连': 23, '巡音流歌': 24, 'MEIKO': 25, 'KAITO': 26
 };
+const PREVIEW_FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
 const selectedPreviewPanelIds = ref(['four', 'limited']);
 const selectedPreviewAttrChars = ref([]);
+const selectedPreviewFestival = ref(PREVIEW_FESTIVAL_TYPES[0]);
+const previewFestivalFesToggles = ref({
+  '半周年': false,
+  '周年': false
+});
 
 const compareFestivalPreviewName = (a, b) => {
   const aName = String(a || '').trim();
@@ -1178,10 +1265,66 @@ const togglePreviewAttrChar = (name) => {
   selectedPreviewAttrChars.value = current;
 };
 
+const clearPreviewAttrChars = () => {
+  selectedPreviewAttrChars.value = [];
+};
+
+const setSelectedPreviewFestival = (festival) => {
+  if (!PREVIEW_FESTIVAL_TYPES.includes(festival)) return;
+  selectedPreviewFestival.value = festival;
+};
+
+const parseFestivalPreviewCharKey = (charKey) => {
+  const raw = String(charKey || '').trim();
+  if (!raw) return { baseName: '', unit: '', isVs: false };
+  const [baseName, suffixRaw] = raw.split(/\s+/);
+  const unit = String(suffixRaw || '').toLowerCase();
+  return {
+    baseName,
+    unit,
+    isVs: isVirtualSinger(baseName)
+  };
+};
+
+const buildFestivalPreviewCharKey = (card) => {
+  const fullName = String(card?.Name || '').trim();
+  const [baseName] = fullName.split(/\s+/);
+  if (!baseName || !PREVIEW_CHAR_ORDER[baseName]) return '';
+  if (!isVirtualSinger(baseName)) return baseName;
+
+  const unit = String(card?.Affiliation || '').trim().toLowerCase();
+  if (unit && unit !== 'vs' && PREVIEW_FESTIVAL_VS_UNIT_ORDER[unit]) {
+    return `${baseName} ${unit}`;
+  }
+  return baseName;
+};
+
+const compareFestivalPreviewCharKey = (aKey, bKey) => {
+  const a = parseFestivalPreviewCharKey(aKey);
+  const b = parseFestivalPreviewCharKey(bKey);
+  const baseDiff = (PREVIEW_CHAR_ORDER[a.baseName] || 999) - (PREVIEW_CHAR_ORDER[b.baseName] || 999);
+  if (baseDiff !== 0) return baseDiff;
+
+  if (a.isVs && b.isVs) {
+    const au = PREVIEW_FESTIVAL_VS_UNIT_ORDER[a.unit || 'vs'] || 999;
+    const bu = PREVIEW_FESTIVAL_VS_UNIT_ORDER[b.unit || 'vs'] || 999;
+    if (au !== bu) return au - bu;
+  }
+
+  return String(aKey).localeCompare(String(bKey), 'zh-Hans-CN');
+};
+
+const canTogglePreviewFestivalFes = (festival) => ['半周年', '周年'].includes(String(festival || '').trim());
+
+const shouldCountPreviewFestivalFes = (festival) => {
+  const fest = String(festival || '').trim();
+  if (!canTogglePreviewFestivalFes(fest)) return false;
+  return !!previewFestivalFesToggles.value[fest];
+};
+
 const previewPanelOptions = computed(() => PREVIEW_PANEL_DEFS.map((def) => {
   const selected = selectedPreviewPanelIds.value.includes(def.id);
   const isFestival = def.id === 'festival';
-  const disabled = isFestival && !isFestivalPreviewAvailable.value;
   const dynamicTitle = isFestival && activePreviewFestivalName.value
     ? `节日人选·${activePreviewFestivalName.value}`
     : def.title;
@@ -1189,13 +1332,12 @@ const previewPanelOptions = computed(() => PREVIEW_PANEL_DEFS.map((def) => {
     ...def,
     title: dynamicTitle,
     selected,
-    disabled,
-    tip: disabled ? '仅在对应节日活动及其前后一期（共三期）可选' : ''
+    disabled: false,
+    tip: ''
   };
 }));
 
 const togglePreviewPanelType = (panelId) => {
-  if (panelId === 'festival' && !isFestivalPreviewAvailable.value) return;
   const current = [...selectedPreviewPanelIds.value];
   const idx = current.indexOf(panelId);
   if (idx >= 0) {
@@ -1298,6 +1440,11 @@ const getBoxLockedUnitsBeforeEvent = (targetEvent) => {
       usedUnits.add(unit);
     });
 
+  // One full round completed (5 unique units) means the next box event starts a new round.
+  if (usedUnits.size >= PREVIEW_BOX_UNITS.length) {
+    usedUnits = new Set();
+  }
+
   return [...usedUnits];
 };
 
@@ -1342,31 +1489,12 @@ const previewMaxEventId = computed(() => {
 });
 
 const previewFestivalContext = computed(() => {
-  const targetId = Number(previewMaxEventId.value);
-  if (!Number.isFinite(targetId) || targetId <= 0) return null;
-
-  const candidates = (props.allEvents || [])
-    .filter((event) => {
-      if (!isNumericEventId(event?.id)) return false;
-      const festival = String(event?.festival || '').trim();
-      if (!PREVIEW_FESTIVAL_TYPES.includes(festival)) return false;
-      const diff = Math.abs(Number(event.id) - targetId);
-      return diff <= 1;
-    })
-    .map((event) => ({
-      festival: String(event.festival || '').trim(),
-      centerEventId: Number(event.id),
-      diff: Math.abs(Number(event.id) - targetId)
-    }))
-    .sort((a, b) => {
-      if (a.diff !== b.diff) return a.diff - b.diff;
-      return a.centerEventId - b.centerEventId;
-    });
-
-  return candidates[0] || null;
+  const fest = String(selectedPreviewFestival.value || '').trim();
+  if (!PREVIEW_FESTIVAL_TYPES.includes(fest)) return null;
+  return { festival: fest };
 });
 
-const isFestivalPreviewAvailable = computed(() => Boolean(previewFestivalContext.value));
+const isFestivalPreviewAvailable = computed(() => true);
 const activePreviewFestivalName = computed(() => previewFestivalContext.value?.festival || '');
 
 const previewFestivalRowsLocal = computed(() => {
@@ -1390,6 +1518,7 @@ const previewFestivalRowsLocal = computed(() => {
         four: {},
         three: {},
         two: {},
+        fourMeta: {},
         seenBase: new Set()
       }
     ])
@@ -1402,28 +1531,33 @@ const previewFestivalRowsLocal = computed(() => {
     const festival = eventFestivalMap[Number(eid)];
     if (!festival || !buckets[festival]) return;
 
-    const fullName = String(card?.Name || '').trim();
-    if (!fullName || fullName === '-' || fullName === 'CardID') return;
-    const baseName = fullName.split(' ')[0] || fullName;
+    const charName = buildFestivalPreviewCharKey(card);
+    if (!charName) return;
+    const baseName = parseFestivalPreviewCharKey(charName).baseName;
+    if (!baseName) return;
     const rarity = String(card?.Rarity || '').trim();
     const type = String(card?.Type || '').trim().toLowerCase();
     const isFes = ['cfes', 'bfes'].includes(type);
-    const shouldCountFes = !['周年', '半周年'].includes(festival);
-    if (isFes && !shouldCountFes) return;
+    if (isFes && !shouldCountPreviewFestivalFes(festival)) return;
 
     const bucket = buckets[festival];
     if (rarity === '4' || isFes) {
-      bucket.four[fullName] = (bucket.four[fullName] || 0) + 1;
+      bucket.four[charName] = (bucket.four[charName] || 0) + 1;
+      if (!bucket.fourMeta[charName]) {
+        bucket.fourMeta[charName] = { perm: 0, nonPerm: 0 };
+      }
+      if (type === 'perm') bucket.fourMeta[charName].perm += 1;
+      else bucket.fourMeta[charName].nonPerm += 1;
       bucket.seenBase.add(baseName);
       return;
     }
     if (rarity === '3') {
-      bucket.three[fullName] = (bucket.three[fullName] || 0) + 1;
+      bucket.three[charName] = (bucket.three[charName] || 0) + 1;
       bucket.seenBase.add(baseName);
       return;
     }
     if (rarity === '2') {
-      bucket.two[fullName] = (bucket.two[fullName] || 0) + 1;
+      bucket.two[charName] = (bucket.two[charName] || 0) + 1;
       bucket.seenBase.add(baseName);
     }
   });
@@ -1431,16 +1565,20 @@ const previewFestivalRowsLocal = computed(() => {
   const allBaseNames = Object.keys(CHAR_MAP)
     .sort((a, b) => (PREVIEW_CHAR_ORDER[a] || 999) - (PREVIEW_CHAR_ORDER[b] || 999));
 
-  const toRowList = (mapObj) => Object.entries(mapObj || {})
-    .map(([name, count]) => ({ name, count: Number(count || 0) }))
+  const toRowList = (mapObj, options = {}) => Object.entries(mapObj || {})
+    .map(([name, count]) => {
+      const meta = options.fourMeta?.[name];
+      const isPermOnly = !!meta && meta.perm > 0 && meta.nonPerm === 0;
+      return { name, count: Number(count || 0), isPermOnly };
+    })
     .filter((item) => item.count > 0)
-    .sort((a, b) => compareFestivalPreviewName(a.name, b.name));
+    .sort((a, b) => compareFestivalPreviewCharKey(a.name, b.name));
 
   const result = {};
   PREVIEW_FESTIVAL_TYPES.forEach((festival) => {
-    const bucket = buckets[festival] || { four: {}, three: {}, two: {}, seenBase: new Set() };
+    const bucket = buckets[festival] || { four: {}, three: {}, two: {}, fourMeta: {}, seenBase: new Set() };
     result[festival] = [
-      { key: 'four', label: '4星', chars: toRowList(bucket.four) },
+      { key: 'four', label: '4星', chars: toRowList(bucket.four, { fourMeta: bucket.fourMeta }) },
       { key: 'three', label: '3星', chars: toRowList(bucket.three) },
       { key: 'two', label: '2星', chars: toRowList(bucket.two) },
       {
@@ -1456,8 +1594,6 @@ const previewFestivalRowsLocal = computed(() => {
 });
 
 const previewFestivalRowsMap = computed(() => {
-  const external = props.statsPreviewData?.groups?.festival;
-  if (external && typeof external === 'object') return external;
   return previewFestivalRowsLocal.value;
 });
 
@@ -1468,11 +1604,138 @@ const currentPreviewFestivalRows = computed(() => {
   return Array.isArray(rows) ? rows : [];
 });
 
-watch(isFestivalPreviewAvailable, (ok) => {
-  if (ok) return;
-  if (!selectedPreviewPanelIds.value.includes('festival')) return;
-  selectedPreviewPanelIds.value = selectedPreviewPanelIds.value.filter((id) => id !== 'festival');
+const previewFestivalIncludeFes = computed(() => {
+  const fest = activePreviewFestivalName.value;
+  return !!previewFestivalFesToggles.value[String(fest || '').trim()];
 });
+
+const previewFestivalShowFes = computed(() => canTogglePreviewFestivalFes(activePreviewFestivalName.value));
+
+const PREVIEW_VS_NAMES = ['初音未来', '镜音铃', '镜音连', '巡音流歌', 'MEIKO', 'KAITO'];
+
+const previewVsLastFourMap = computed(() => {
+  const result = {};
+  PREVIEW_VS_NAMES.forEach((vs) => {
+    result[vs] = Object.fromEntries(PREVIEW_BOX_UNITS.map((u) => [u, null]));
+  });
+
+  const maxId = Number(previewMaxEventId.value);
+  if (!Number.isFinite(maxId) || maxId <= 0) return result;
+
+  const eventDateById = {};
+  (props.allEvents || []).forEach((event) => {
+    const eid = String(event?.id || '').trim();
+    if (!/^\d+$/.test(eid)) return;
+    if (Number(eid) > maxId) return;
+    eventDateById[eid] = getDateValue(event?.date);
+  });
+
+  (props.allCards || []).forEach((card) => {
+    const eid = String(card?.EventID || '').trim();
+    if (!/^\d+$/.test(eid)) return;
+    if (Number(eid) > maxId) return;
+    const rarity = String(card?.Rarity || '').trim();
+    if (rarity !== '4') return;
+    const name = String(card?.Name || '').trim().split(' ')[0];
+    if (!PREVIEW_VS_NAMES.includes(name)) return;
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (!PREVIEW_BOX_UNITS.includes(unit)) return;
+    const dateValue = Number(eventDateById[eid] || 0);
+    if (!dateValue) return;
+    const current = result[name][unit];
+    if (current === null || dateValue > current) {
+      result[name][unit] = dateValue;
+    }
+  });
+
+  return result;
+});
+
+const previewReferenceDateValue = computed(() => {
+  const targetId = Number(previewMaxEventId.value);
+  if (!Number.isFinite(targetId) || targetId <= 0) return Date.now();
+  const target = (props.allEvents || []).find((event) => Number(event?.id) === targetId);
+  const t = getDateValue(target?.date);
+  return t > 0 ? t : Date.now();
+});
+
+const previewVsLastFourCompactRows = computed(() => {
+  const anchor = Number(previewReferenceDateValue.value || Date.now());
+  return PREVIEW_VS_NAMES.map((name) => {
+    const unitMap = previewVsLastFourMap.value[name] || {};
+    const daysByUnit = {};
+    PREVIEW_BOX_UNITS.forEach((unit) => {
+      const t = Number(unitMap[unit] || 0);
+      daysByUnit[unit] = t > 0 ? Math.max(0, Math.floor((anchor - t) / 86400000)) : '-';
+    });
+    return { name, daysByUnit };
+  });
+});
+
+const previewVsUnitScoreRows = computed(() => {
+  const maxId = Number(previewMaxEventId.value);
+  const rows = Object.fromEntries(
+    PREVIEW_VS_NAMES.map((name) => [
+      name,
+      {
+        name,
+        attrsByUnit: Object.fromEntries(PREVIEW_BOX_UNITS.map((u) => [u, []]))
+      }
+    ])
+  );
+
+  if (!Number.isFinite(maxId) || maxId <= 0) {
+    return PREVIEW_VS_NAMES.map((name) => rows[name]);
+  }
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinPreviewLimit(card, maxId)) return;
+    const skill = String(card?.Skill || '').trim().toLowerCase();
+    if (skill !== 'unit_score') return;
+
+    const baseName = String(card?.Name || '').trim().split(/\s+/)[0] || '';
+    if (!PREVIEW_VS_NAMES.includes(baseName)) return;
+
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (!PREVIEW_BOX_UNITS.includes(unit)) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    if (!['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'].includes(attr)) return;
+
+    rows[baseName].attrsByUnit[unit].push(attr);
+  });
+
+  return PREVIEW_VS_NAMES.map((name) => rows[name]);
+});
+
+const previewVsLastFourMaxDays = computed(() => {
+  let max = 0;
+  previewVsLastFourCompactRows.value.forEach((row) => {
+    PREVIEW_BOX_UNITS.forEach((unit) => {
+      const v = Number(row?.daysByUnit?.[unit]);
+      if (Number.isFinite(v) && v > max) max = v;
+    });
+  });
+  return Math.max(1, max);
+});
+
+const getPreviewVsMiniDataCellStyle = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) {
+    return {
+      backgroundColor: 'rgba(148, 163, 184, 0.12)',
+      color: '#64748b'
+    };
+  }
+  const ratio = Math.min(1, Math.max(0, n / previewVsLastFourMaxDays.value));
+  const shade = Math.round(240 - (ratio * 110));
+  const text = shade <= 165 ? '#f8fafc' : '#0f172a';
+  return {
+    backgroundColor: `rgb(${shade}, ${shade}, ${shade})`,
+    color: text,
+    fontWeight: 600
+  };
+};
 
 const isCardWithinPreviewLimit = (card, maxId) => {
   const eidRaw = String(card?.EventID || '').trim();
@@ -1621,9 +1884,11 @@ const previewFloatingPanels = computed(() => {
         ? `节日人选·${activePreviewFestivalName.value}`
         : def.title,
       icon: def.icon,
-      steps: def.id === 'festival' ? [] : getPreviewStepsByKey(def.statKey),
+      steps: (def.id === 'festival' || def.id === 'vs-last-four' || def.id === 'vs-unit-score') ? [] : getPreviewStepsByKey(def.statKey),
       festivalName: def.id === 'festival' ? activePreviewFestivalName.value : '',
-      festivalRows: def.id === 'festival' ? currentPreviewFestivalRows.value : []
+      festivalRows: def.id === 'festival' ? currentPreviewFestivalRows.value : [],
+      festivalIncludeFes: def.id === 'festival' ? previewFestivalIncludeFes.value : false,
+      festivalShowFes: def.id === 'festival' ? previewFestivalShowFes.value : false
     }));
 });
 
@@ -1652,7 +1917,7 @@ watch(() => [props.jumpEventSeq, props.jumpEventId], ([seqValue, idValue]) => {
 }, { flush: 'post' });
 // 新增筛选相关的状态
 const showFilter = ref(false);
-const filterMode = ref('single'); // 'single' | 'multi'
+const filterMode = ref('single'); // 'single' | 'event'
 const EVENT_TYPE_FILTER_OPTIONS = [
   { value: 'box', label: '箱活' },
   { value: 'mix', label: '混活' },
@@ -1678,7 +1943,7 @@ const filterCriteria = ref({
 });
 
 const eventFilterCriteria = ref({
-  character: '',
+  characters: [],
   isBan: null, // 'yes' | 'no' | null
   eventTypes: [],
   festivals: [],
@@ -1686,6 +1951,8 @@ const eventFilterCriteria = ref({
   units: [],
   gachaTypes: []
 });
+
+const canUseEventBanFilter = computed(() => eventFilterCriteria.value.characters.length === 1);
 
 const sortedEvents = computed(() => {
   return [...(props.allEvents || [])].sort((a, b) => (
@@ -1708,7 +1975,7 @@ const hasDetailFilters = computed(() => {
 const hasEventFilters = computed(() => {
   const f = eventFilterCriteria.value || {};
   return Boolean(
-    f.character ||
+    (f.characters && f.characters.length > 0) ||
     f.isBan ||
     (f.eventTypes && f.eventTypes.length > 0) ||
     (f.festivals && f.festivals.length > 0) ||
@@ -1727,13 +1994,15 @@ const filterPanelSummaryText = computed(() => {
   if (!hasActiveFilters.value) return '🔍 筛选面板';
   if (filterMode.value === 'event') {
     const parts = [];
-    if (eventFilterCriteria.value.character) parts.push(eventFilterCriteria.value.character);
+    if (eventFilterCriteria.value.characters.length > 0) {
+      parts.push(`角色${eventFilterCriteria.value.characters.length}`);
+    }
     if (eventFilterCriteria.value.eventTypes.length > 0) parts.push(`类型${eventFilterCriteria.value.eventTypes.length}`);
     if (eventFilterCriteria.value.festivals.length > 0) parts.push(`节日${eventFilterCriteria.value.festivals.length}`);
     return `活动: ${parts.join(' · ') || '已启用'}`;
   }
   return filterCriteria.value.selectedChars.length > 0
-    ? `已选: ${filterCriteria.value.selectedChars[0]}${filterMode.value === 'multi' && filterCriteria.value.selectedChars.length > 1 ? '...' : ''}`
+    ? `已选: ${filterCriteria.value.selectedChars[0]}`
     : '🔍 筛选面板';
 });
 
@@ -1785,15 +2054,6 @@ const filteredData = computed(() => {
 
   return data.filter(event => {
     const selectedNames = filterCriteria.value.selectedChars;
-
-    if (filterMode.value === 'multi') {
-      const eventAllChars = new Set([
-        event.banner,
-        ...(event.memberCards || []).map(c => c.Name.split(' ')[0]),
-        ...parseVS(event.virtual_singer).map(v => v.split(' ')[0])
-      ]);
-      return selectedNames.every(name => eventAllChars.has(name));
-    }
 
     const targetChar = selectedNames[0];
     return (event.memberCards || []).some(card => {
@@ -1865,8 +2125,6 @@ const filteredBirthdayRows = computed(() => {
   const selected = filterCriteria.value.selectedChars || [];
   return birthdayRows.value.filter((row) => {
     if (selected.length > 0 && !selected.includes(row.name)) return false;
-
-    if (filterMode.value === 'multi' && selected.length > 1) return false;
 
     if (filterCriteria.value.rarity && filterCriteria.value.rarity !== 'birthday') return false;
 
@@ -1955,26 +2213,23 @@ const relaxFiltersForJump = (eventId) => {
 // 处理角色点击
 const toggleChar = (name) => {
   if (filterMode.value === 'event') return;
-  if (filterMode.value === 'single') {
-    // 单人模式：切换选中或清空
-    filterCriteria.value.selectedChars = filterCriteria.value.selectedChars.includes(name) ? [] : [name];
-  } else {
-    // 多人模式：多选逻辑
-    const index = filterCriteria.value.selectedChars.indexOf(name);
-    if (index > -1) filterCriteria.value.selectedChars.splice(index, 1);
-    else filterCriteria.value.selectedChars.push(name);
-  }
+  // 单人模式：切换选中或清空
+  filterCriteria.value.selectedChars = filterCriteria.value.selectedChars.includes(name) ? [] : [name];
 };
 
 const toggleEventFilterCharacter = (name) => {
-  eventFilterCriteria.value.character = eventFilterCriteria.value.character === name ? '' : name;
-  if (!eventFilterCriteria.value.character) {
+  const current = [...eventFilterCriteria.value.characters];
+  const idx = current.indexOf(name);
+  if (idx >= 0) current.splice(idx, 1);
+  else current.push(name);
+  eventFilterCriteria.value.characters = current;
+  if (!canUseEventBanFilter.value) {
     eventFilterCriteria.value.isBan = null;
   }
 };
 
 const setEventBanFilter = (value) => {
-  if (!eventFilterCriteria.value.character) {
+  if (!canUseEventBanFilter.value) {
     eventFilterCriteria.value.isBan = null;
     return;
   }
@@ -2066,10 +2321,14 @@ const matchEventGachaFilter = (event, gachaValue) => {
 
 const matchEventFilters = (event) => {
   const f = eventFilterCriteria.value;
-  if (f.character && !eventContainsCharacter(event, f.character)) return false;
+  if (f.characters.length > 0) {
+    const hasAllSelected = f.characters.every((name) => eventContainsCharacter(event, name));
+    if (!hasAllSelected) return false;
+  }
 
-  if (f.character && f.isBan) {
-    const isBan = String(event?.banner || '').trim() === f.character;
+  if (canUseEventBanFilter.value && f.isBan) {
+    const targetChar = f.characters[0];
+    const isBan = String(event?.banner || '').trim() === targetChar;
     if (f.isBan === 'yes' && !isBan) return false;
     if (f.isBan === 'no' && isBan) return false;
   }
@@ -2098,7 +2357,7 @@ const matchEventFilters = (event) => {
 const resetFilters = () => {
   filterCriteria.value = { selectedChars: [], rarity: null, attribute: null, skill: null, cardType: null, unit: null };
   eventFilterCriteria.value = {
-    character: '',
+    characters: [],
     isBan: null,
     eventTypes: [],
     festivals: [],
@@ -2686,6 +2945,12 @@ const getFestivalPreviewUnitLogo = (name) => {
   margin-bottom: 6px;
 }
 
+.preview-char-select-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .preview-char-select-toggle {
   border: 1px solid #cbd5e1;
   border-radius: 999px;
@@ -2694,6 +2959,11 @@ const getFestivalPreviewUnitLogo = (name) => {
   font-size: 0.64rem;
   padding: 2px 8px;
   cursor: pointer;
+}
+
+.preview-char-select-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .preview-char-select.is-collapsed .preview-char-select-title {
@@ -2731,6 +3001,48 @@ const getFestivalPreviewUnitLogo = (name) => {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+}
+
+.preview-festival-select {
+  margin-top: 6px;
+}
+
+.preview-festival-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preview-festival-chip {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
+.preview-festival-chip.is-active {
+  border-color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.14);
+  color: #0f172a;
+}
+
+.preview-festival-fes-toggle {
+  margin-top: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  color: #475569;
+  user-select: none;
+}
+
+.preview-festival-fes-toggle input {
+  width: 14px;
+  height: 14px;
 }
 
 .preview-panel {
@@ -2858,6 +3170,12 @@ const getFestivalPreviewUnitLogo = (name) => {
   margin-bottom: 2px;
 }
 
+.preview-festival-fes-state {
+  margin-left: 6px;
+  font-weight: 600;
+  color: #0f766e;
+}
+
 .preview-festival-row {
   width: 100%;
   display: flex;
@@ -2921,6 +3239,79 @@ const getFestivalPreviewUnitLogo = (name) => {
   line-height: 1.2;
   background: rgba(15, 23, 42, 0.88);
   color: #fff;
+}
+
+.preview-vs-mini-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  table-layout: fixed;
+}
+
+.preview-vs-mini-table th,
+.preview-vs-mini-table td {
+  text-align: center;
+  font-size: 0.68rem;
+  color: #0f172a;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.12);
+  padding: 3px 0;
+}
+
+.preview-vs-mini-table thead th {
+  background: rgba(148, 163, 184, 0.12);
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.preview-vs-mini-unit-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.preview-vs-mini-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  vertical-align: middle;
+}
+
+.preview-vs-score-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  table-layout: fixed;
+}
+
+.preview-vs-score-table th,
+.preview-vs-score-table td {
+  text-align: center;
+  font-size: 0.68rem;
+  color: #0f172a;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.12);
+  padding: 3px 2px;
+  vertical-align: middle;
+}
+
+.preview-vs-score-icons {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+}
+
+.preview-vs-score-attr {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
+.preview-vs-score-empty {
+  color: #94a3b8;
 }
 
 .preview-step {

@@ -50,10 +50,15 @@
       </aside>
 
       <div class="stats-main">
-        <h1>角色卡片统计</h1>
+        <div class="stats-main-head">
+          <h1>角色卡片统计</h1>
+        </div>
 
         <div id="panel-dist" class="stats-section card-panel section-main">
-          <h2>阶梯分布</h2>
+          <div class="section-head">
+            <h2>阶梯分布</h2>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-dist', '阶梯分布')">PNG</button>
+          </div>
           <div class="stats-grid">
             <div
               v-for="panel in groupPanels"
@@ -61,7 +66,10 @@
               class="stats-section card-panel"
               :id="`panel-${panel.id}`"
             >
-              <h2>{{ panel.title }}</h2>
+              <div class="section-head section-head-sub">
+                <h2>{{ panel.title }}</h2>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(`panel-${panel.id}`, `阶梯分布_${panel.title}`)">PNG</button>
+              </div>
               <table class="count-table">
                 <thead>
                   <tr><th width="50">数量</th><th>持有角色</th></tr>
@@ -89,7 +97,10 @@
         </div>
 
         <div id="panel-festival" class="stats-section card-panel festival-panel">
-          <h2>节日人选</h2>
+          <div class="section-head">
+            <h2>节日人选</h2>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-festival', '节日人选')">PNG</button>
+          </div>
           <div class="festival-grid">
             <div
               v-for="fest in festivalCharStats"
@@ -98,11 +109,14 @@
               class="festival-card card-panel"
             >
               <div class="festival-card-head">
-                <h3>{{ fest.festival }}</h3>
-                <label v-if="canToggleFestivalFes(fest.festival)" class="festival-fes-toggle">
-                  <input v-model="festivalFesToggles[fest.festival]" type="checkbox" />
-                  显示FES
-                </label>
+                <div class="festival-head-left">
+                  <h3>{{ fest.festival }}</h3>
+                  <label v-if="canToggleFestivalFes(fest.festival)" class="festival-fes-toggle">
+                    <input v-model="festivalFesToggles[fest.festival]" type="checkbox" />
+                    显示FES
+                  </label>
+                </div>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(fest.anchorId, `节日人选_${fest.festival}`)">PNG</button>
               </div>
               <table class="count-table">
                 <tbody>
@@ -153,11 +167,17 @@
         </div>
 
         <div id="panel-related" class="stats-section card-panel related-panel">
-          <h2>相关记录</h2>
+          <div class="section-head">
+            <h2>相关记录</h2>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-related', '相关记录')">PNG</button>
+          </div>
 
           <div class="record-grid">
             <div id="rel-last-four" class="record-block">
-              <h3>上一次四星（按时间）</h3>
+              <div class="block-head">
+                <h3>上一次四星（按时间）</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-four', '相关记录_上一次四星')">PNG</button>
+              </div>
               <table class="record-table">
                 <thead>
                   <tr>
@@ -184,7 +204,10 @@
             </div>
 
             <div id="rel-last-limited" class="record-block">
-              <h3>上一次限定（按时间）</h3>
+              <div class="block-head">
+                <h3>上一次限定（按时间）</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-limited', '相关记录_上一次限定')">PNG</button>
+              </div>
               <table class="record-table">
                 <thead>
                   <tr>
@@ -211,7 +234,10 @@
             </div>
 
             <div id="rel-four-long" class="record-block">
-              <h3>四星最长间隔（长→短）</h3>
+              <div class="block-head">
+                <h3>四星最长间隔（长→短）</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-long', '相关记录_四星最长间隔')">PNG</button>
+              </div>
               <table class="record-table">
                 <thead>
                   <tr>
@@ -238,7 +264,10 @@
             </div>
 
             <div id="rel-four-short" class="record-block">
-              <h3>四星最短间隔（短→长）</h3>
+              <div class="block-head">
+                <h3>四星最短间隔（短→长）</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-short', '相关记录_四星最短间隔')">PNG</button>
+              </div>
               <table class="record-table">
                 <thead>
                   <tr>
@@ -265,7 +294,10 @@
             </div>
 
             <div id="rel-limited-long" class="record-block">
-              <h3>限定最长间隔（长→短）</h3>
+              <div class="block-head">
+                <h3>限定最长间隔（长→短）</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-long', '相关记录_限定最长间隔')">PNG</button>
+              </div>
               <table class="record-table">
                 <thead>
                   <tr>
@@ -292,7 +324,10 @@
             </div>
 
             <div id="rel-limited-short" class="record-block">
-              <h3>限定最短间隔（短→长）</h3>
+              <div class="block-head">
+                <h3>限定最短间隔（短→长）</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-short', '相关记录_限定最短间隔')">PNG</button>
+              </div>
               <table class="record-table">
                 <thead>
                   <tr>
@@ -319,7 +354,10 @@
             </div>
 
             <div id="rel-ban-long" class="record-block">
-              <h3>Ban 最长间隔（长→短）</h3>
+              <div class="block-head">
+                <h3>Ban 最长间隔（长→短）</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-ban-long', '相关记录_Ban最长间隔')">PNG</button>
+              </div>
               <table class="record-table">
                 <thead>
                   <tr>
@@ -346,7 +384,10 @@
             </div>
 
             <div id="rel-ban-short" class="record-block">
-              <h3>Ban 最短间隔（短→长）</h3>
+              <div class="block-head">
+                <h3>Ban 最短间隔（短→长）</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-ban-short', '相关记录_Ban最短间隔')">PNG</button>
+              </div>
               <table class="record-table">
                 <thead>
                   <tr>
@@ -371,19 +412,128 @@
                 </tbody>
               </table>
             </div>
+
+            <div id="rel-vs-unit-last-four" class="record-block">
+              <div class="record-head-row">
+                <div class="record-head-left">
+                  <h3>OC团虚拟歌手上次四星</h3>
+                  <div class="record-head-controls">
+                    <label class="record-compact-toggle">
+                      <input v-model="vsUnitLastFourCompact" type="checkbox" />
+                      简略版本
+                    </label>
+                    <button
+                      v-if="!vsUnitLastFourCompact"
+                      class="record-sort-btn"
+                      :class="{ active: vsUnitLastFourSort !== 'char' }"
+                      @click="toggleVsUnitLastFourSort"
+                    >
+                      {{ vsUnitLastFourSortLabel }}
+                    </button>
+                  </div>
+                </div>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-last-four', '相关记录_OC团虚拟歌手上次四星')">PNG</button>
+              </div>
+
+              <table v-if="!vsUnitLastFourCompact" class="record-table">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>活动</th>
+                    <th>日期</th>
+                    <th>距今</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in vsUnitLastFourRecordsSorted" :key="`vs-unit-last-four-${row.key}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                    <td class="record-char">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                      <img v-if="getVsUnitLogoByKey(row.key)" :src="getVsUnitLogoByKey(row.key)" class="record-unit-avatar" />
+                      <span>{{ row.label }}</span>
+                    </td>
+                    <td>
+                      <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ row.eventLabel }}</button>
+                    </td>
+                    <td>{{ row.date }}</td>
+                    <td>{{ row.days }}天 | {{ row.periods }}期</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <table v-else class="record-table vs-unit-score-table vs-unit-last-four-mini-table">
+                <thead>
+                  <tr>
+                    <th>V\团</th>
+                    <th v-for="u in VS_UNIT_SORT_ORDER" :key="`mini-head-${u}`" :style="getVsMiniUnitHeadStyle(u)">
+                      <img :src="unitLogoMap[u]" class="mini-unit-logo" :alt="u" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in vsUnitLastFourCompactRows" :key="`mini-row-${row.name}`">
+                    <td class="record-char" :style="getVsMiniVsHeadStyle(row.name)">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                    </td>
+                    <td v-for="u in VS_UNIT_SORT_ORDER" :key="`mini-cell-${row.name}-${u}`" class="vs-mini-days-cell" :style="getVsMiniDataCellStyle(row.daysByUnit[u])">{{ row.daysByUnit[u] > 0 ? row.daysByUnit[u] : '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-vs-unit-score" class="record-block">
+              <div class="block-head">
+                <h3>团分统计</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-score', '相关记录_团分统计')">PNG</button>
+              </div>
+              <table class="record-table vs-unit-score-table">
+                <thead>
+                  <tr>
+                    <th>V\团</th>
+                    <th v-for="u in VS_UNIT_SORT_ORDER" :key="`score-head-${u}`" :style="getVsScoreUnitHeadStyle(u)">
+                      <img :src="unitLogoMap[u]" class="mini-unit-logo" :alt="u" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in vsUnitScoreAttrRows" :key="`score-row-${row.name}`">
+                    <td class="record-char" :style="getVsScoreVsHeadStyle(row.name)">
+                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                    </td>
+                    <td v-for="u in VS_UNIT_SORT_ORDER" :key="`score-cell-${row.name}-${u}`" :style="getVsScoreCellStyle(row.name, u)">
+                      <div v-if="row.attrsByUnit[u]?.length" class="score-attr-wrap">
+                        <img
+                          v-for="(attr, idx) in row.attrsByUnit[u]"
+                          :key="`score-attr-${row.name}-${u}-${idx}`"
+                          :src="`/elements/${String(attr).toLowerCase()}.png`"
+                          :title="attr"
+                          class="score-attr-icon"
+                        />
+                      </div>
+                      <span v-else class="score-empty">-</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
         <div id="panel-vs-song" class="stats-section card-panel song-panel">
-          <h2>虚拟歌手参与书下</h2>
+          <div class="section-head">
+            <h2>虚拟歌手参与书下</h2>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-vs-song', '虚拟歌手参与书下')">PNG</button>
+          </div>
           <div class="song-grid">
-            <div v-for="vs in virtualSingerSongStats" :key="`song-${vs.name}`" class="song-card" :style="{ backgroundColor: getRecordTint(vs.name, 0.2) }">
+            <div v-for="vs in virtualSingerSongStats" :key="`song-${vs.name}`" :id="`song-${getCharAbbr(vs.name).toLowerCase()}`" class="song-card" :style="{ backgroundColor: getRecordTint(vs.name, 0.2) }">
               <div class="song-head">
-                <img :src="`/chibi_s/${getCharAbbr(vs.name)}.webp`" class="song-avatar" :style="{ borderColor: getCharColor(vs.name) }" />
-                <div>
-                  <div class="song-name">{{ vs.name }}</div>
-                  <div class="song-count">{{ vs.count }} 首</div>
+                <div class="song-head-main">
+                  <img :src="`/chibi_s/${getCharAbbr(vs.name)}.webp`" class="song-avatar" :style="{ borderColor: getCharColor(vs.name) }" />
+                  <div>
+                    <div class="song-name">{{ vs.name }}</div>
+                    <div class="song-count">{{ vs.count }} 首</div>
+                  </div>
                 </div>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(`song-${getCharAbbr(vs.name).toLowerCase()}`, `虚拟歌手参与书下_${vs.name}`)">PNG</button>
               </div>
               <div class="unit-counts">
                 <span v-for="u in ['ln','mmj','vbs','ws','nc']" :key="`${vs.name}-${u}`" class="unit-chip" :style="{ backgroundColor: getUnitTint(u) }">
@@ -402,7 +552,10 @@
         </div>
 
         <div id="panel-matrix" class="stats-section card-panel matrix-panel">
-          <h2>角色矩阵</h2>
+          <div class="section-head">
+            <h2>角色矩阵</h2>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-matrix', '角色矩阵')">PNG</button>
+          </div>
           <div class="matrix-wrap">
             <table class="matrix-table">
               <thead>
@@ -487,6 +640,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, reactive } from 'vue';
+import html2canvas from 'html2canvas';
 // 1. 接收两个 Props
 const props = defineProps({
   allEvents: { type: Array, default: () => [] },
@@ -502,11 +656,15 @@ const navCollapsed = ref(false);
 const activeNavId = ref('panel-dist');
 const matrixSortKey = ref('');
 const matrixSortOrder = ref('');
+const vsUnitLastFourSort = ref('char');
+const vsUnitLastFourCompact = ref(true);
+const isMobileNav = ref(false);
 const festivalFesToggles = reactive({
   半周年: false,
   周年: false
 });
 let sectionObserver = null;
+const isExportingPng = ref(false);
 
 const CHAR_MAP = {
   "星乃一歌": "ICK", "天马咲希": "SAKI", "望月穗波": "HNM", "日野森志步": "SHIHO",
@@ -606,6 +764,7 @@ const ATTR_LABELS = {
 const SPECIAL_FESTIVALS = ['新年', '婚活', '情人节', '白情', '半周年', '周年'];
 const FESTIVAL_ANCHOR_IDS = Object.fromEntries(SPECIAL_FESTIVALS.map((fest, idx) => [fest, `festival-${idx + 1}`]));
 const FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
+const VS_UNIT_SORT_ORDER = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 
 const isVirtualSinger = (name) => VS_NAMES.includes(name);
 
@@ -818,6 +977,24 @@ const getSongTagColor = (ev) => {
   return UNIT_COLORS[unit] || '#111827';
 };
 
+const toggleVsUnitLastFourSort = () => {
+  if (vsUnitLastFourSort.value === 'char') {
+    vsUnitLastFourSort.value = 'date-desc';
+    return;
+  }
+  if (vsUnitLastFourSort.value === 'date-desc') {
+    vsUnitLastFourSort.value = 'date-asc';
+    return;
+  }
+  vsUnitLastFourSort.value = 'char';
+};
+
+const vsUnitLastFourSortLabel = computed(() => {
+  if (vsUnitLastFourSort.value === 'date-desc') return '日期↓';
+  if (vsUnitLastFourSort.value === 'date-asc') return '日期↑';
+  return '日期';
+});
+
 const getRecordTint = (name, alpha = 0.3) => hexToRgba(getCharColor(name), alpha);
 
 const parseDateSafe = (dateStr) => {
@@ -973,7 +1150,9 @@ const navGroups = computed(() => {
         { id: 'rel-limited-long', title: '限定最长间隔' },
         { id: 'rel-limited-short', title: '限定最短间隔' },
         { id: 'rel-ban-long', title: 'Ban最长间隔' },
-        { id: 'rel-ban-short', title: 'Ban最短间隔' }
+        { id: 'rel-ban-short', title: 'Ban最短间隔' },
+        { id: 'rel-vs-unit-last-four', title: 'OC团虚拟歌手上次四星' },
+        { id: 'rel-vs-unit-score', title: '团分统计' }
       ]
     },
     {
@@ -1003,13 +1182,155 @@ const isGroupActive = (group) => {
   return (group.children || []).some((c) => c.id === activeNavId.value);
 };
 
-const isGroupExpanded = (group) => isGroupActive(group);
+const isGroupExpanded = (group) => isMobileNav.value || isGroupActive(group);
+
+const updateMobileNavState = () => {
+  if (typeof window === 'undefined') return;
+  isMobileNav.value = window.innerWidth <= 900;
+};
 
 const scrollToSection = (id) => {
   const el = document.getElementById(id);
   if (!el) return;
   activeNavId.value = id;
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+const sanitizeExportFileName = (name) => {
+  const raw = String(name || '').trim();
+  const cleaned = raw
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/[.\s]+$/g, '')
+    .trim();
+  return cleaned || 'pjsk_stats';
+};
+
+const formatExportTimestamp = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  return `${y}${m}${d}_${hh}${mm}`;
+};
+
+const triggerDownloadPng = (canvas, fileName) => {
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = `${fileName}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const waitNextPaint = () => new Promise((resolve) => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(resolve);
+  });
+});
+
+const prepareExportClone = async (targetEl) => {
+  if (!targetEl) return null;
+
+  const rect = targetEl.getBoundingClientRect();
+  const clone = targetEl.cloneNode(true);
+  clone.classList.add('export-clone-root');
+  clone.style.position = 'fixed';
+  clone.style.left = '-20000px';
+  clone.style.top = '0';
+  clone.style.margin = '0';
+  clone.style.pointerEvents = 'none';
+  clone.style.zIndex = '-1';
+  clone.style.background = '#ffffff';
+  clone.style.width = `${Math.max(1, Math.ceil(rect.width))}px`;
+  clone.style.maxHeight = 'none';
+  clone.style.overflow = 'visible';
+
+  clone.querySelectorAll('.card-export-btn').forEach((btn) => {
+    btn.style.display = 'none';
+  });
+
+  const originalMatrixWrap = targetEl.querySelector('.matrix-wrap');
+  const cloneMatrixWrap = clone.querySelector('.matrix-wrap');
+  if (originalMatrixWrap && cloneMatrixWrap) {
+    const fullMatrixWidth = Math.max(originalMatrixWrap.scrollWidth, originalMatrixWrap.clientWidth);
+    const fullMatrixHeight = Math.max(originalMatrixWrap.scrollHeight, originalMatrixWrap.clientHeight);
+    cloneMatrixWrap.style.maxHeight = 'none';
+    cloneMatrixWrap.style.height = `${fullMatrixHeight}px`;
+    cloneMatrixWrap.style.width = `${fullMatrixWidth}px`;
+    cloneMatrixWrap.style.overflow = 'visible';
+
+    const cloneMatrixHeadCells = clone.querySelectorAll('.matrix-table thead th, .matrix-table th:first-child, .matrix-table td:first-child');
+    cloneMatrixHeadCells.forEach((cell) => {
+      cell.style.position = 'static';
+      cell.style.left = 'auto';
+      cell.style.top = 'auto';
+    });
+
+    const panelPadding = 28;
+    clone.style.width = `${Math.max(Math.ceil(rect.width), fullMatrixWidth + panelPadding)}px`;
+  }
+
+  const originalSongLists = targetEl.querySelectorAll('.song-list');
+  const cloneSongLists = clone.querySelectorAll('.song-list');
+  cloneSongLists.forEach((listEl, idx) => {
+    const source = originalSongLists[idx];
+    const fullHeight = source ? Math.max(source.scrollHeight, source.clientHeight) : listEl.scrollHeight;
+    listEl.style.maxHeight = 'none';
+    listEl.style.height = `${fullHeight}px`;
+    listEl.style.overflow = 'visible';
+  });
+
+  document.body.appendChild(clone);
+  await waitNextPaint();
+  return clone;
+};
+
+const resolveExportElementById = (id) => {
+  const targetId = String(id || '').trim();
+  if (!targetId) return null;
+
+  const exact = document.getElementById(targetId);
+  if (!exact) return null;
+  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('festival-card') || exact.classList.contains('song-card')) {
+    return exact;
+  }
+  return exact.closest('.record-block, .festival-card, .song-card, .card-panel');
+};
+
+const exportElementPng = async (id, title) => {
+  if (isExportingPng.value) return;
+  const targetEl = resolveExportElementById(id);
+  if (!targetEl) {
+    alert('未找到可导出的模块区域。');
+    return;
+  }
+
+  isExportingPng.value = true;
+  let cloneEl = null;
+  try {
+    cloneEl = await prepareExportClone(targetEl);
+    const renderEl = cloneEl || targetEl;
+    const canvas = await html2canvas(renderEl, {
+      backgroundColor: '#ffffff',
+      scale: Math.max(2, window.devicePixelRatio || 1),
+      useCORS: true,
+      logging: false,
+      width: Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0),
+      height: Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0)
+    });
+    const fileName = sanitizeExportFileName(`pjsk_${title || id}_${formatExportTimestamp()}`);
+    triggerDownloadPng(canvas, fileName);
+  } catch (error) {
+    console.error('导出模块PNG失败', error);
+    alert('导出PNG失败，请稍后重试。');
+  } finally {
+    if (cloneEl && cloneEl.parentNode) {
+      cloneEl.parentNode.removeChild(cloneEl);
+    }
+    isExportingPng.value = false;
+  }
 };
 
 const matrixGroupClass = (idx, len) => ({
@@ -1046,10 +1367,13 @@ const bindSectionObserver = async () => {
 };
 
 onMounted(() => {
+  updateMobileNavState();
+  window.addEventListener('resize', updateMobileNavState);
   bindSectionObserver();
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateMobileNavState);
   if (sectionObserver) sectionObserver.disconnect();
 });
 
@@ -1622,6 +1946,238 @@ const lastFourStarRecords = computed(() => {
     });
 });
 
+const buildVsUnitKey = (baseName, unit) => `${baseName} ${unit}`;
+
+const parseVsUnitKey = (key) => {
+  const [baseName, unitRaw] = String(key || '').trim().split(/\s+/);
+  const unit = String(unitRaw || '').toLowerCase();
+  return { baseName, unit };
+};
+
+const getVsUnitLogoByKey = (key) => {
+  const { unit } = parseVsUnitKey(key);
+  return unitLogoMap[unit] || '';
+};
+
+const VS_UNIT_ROW_KEYS = VS_NAMES.flatMap((vsName) =>
+  VS_UNIT_SORT_ORDER.map((unit) => buildVsUnitKey(vsName, unit))
+);
+
+const getVsUnitRecordLabel = (nameWithUnit) => {
+  const [baseName, unitRaw] = String(nameWithUnit || '').trim().split(/\s+/);
+  const baseAbbr = CHAR_MAP[baseName] || getCharAbbr(baseName);
+  const unit = String(unitRaw || '').toUpperCase();
+  return `${baseAbbr} ${unit}`;
+};
+
+const vsUnitLastFourRecords = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const latestByKey = {};
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+
+    const fullName = String(card?.Name || '').trim();
+    const baseName = fullName.split(/\s+/)[0] || fullName;
+    if (!VS_NAMES.includes(baseName)) return;
+
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (!VS_UNIT_SORT_ORDER.includes(unit)) return;
+
+    const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
+    if (!sourceKey) return;
+
+    const isNum = isNumericEventId(sourceKey);
+    const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
+    const eventDateStr = String(ev?.date || card?.Date || '').trim();
+    const eventDate = parseDateSafe(eventDateStr);
+    if (!eventDate) return;
+    if (!isNum && maxEventDate && eventDate > maxEventDate) return;
+
+    const recordKey = buildVsUnitKey(baseName, unit);
+    const prev = latestByKey[recordKey];
+    const nextRecord = {
+      key: recordKey,
+      name: recordKey,
+      label: getVsUnitRecordLabel(recordKey),
+      eventRef: ev
+        ? {
+            id: Number(ev.id),
+            date: ev.date,
+            typeSeriesId: ev.type_series_id,
+            eventType: String(ev.event_type || '').trim(),
+            banner: String(ev.banner || '').trim(),
+            unit: String(ev.unit || '').trim(),
+            sourceKey: String(ev.id)
+          }
+        : null,
+      eventLabel: ev
+        ? getNonBanEventMark({
+            id: Number(ev.id),
+            typeSeriesId: ev.type_series_id,
+            eventType: String(ev.event_type || '').trim(),
+            banner: String(ev.banner || '').trim(),
+            unit: String(ev.unit || '').trim(),
+            sourceKey: String(ev.id)
+          })
+        : `ID ${sourceKey}`,
+      date: eventDateStr,
+      dateValue: eventDate.getTime(),
+      days: daysBetween(eventDateStr, now.toISOString().slice(0, 10).replace(/-/g, '/')),
+      periods: ev ? countPeriodsSince({ id: Number(ev.id), date: ev.date }) : 0
+    };
+
+    if (!prev || nextRecord.dateValue > prev.dateValue) {
+      latestByKey[recordKey] = nextRecord;
+    }
+  });
+
+  return VS_UNIT_ROW_KEYS.map((key) => {
+    const hit = latestByKey[key];
+    if (hit) return hit;
+    return {
+      key,
+      name: key,
+      label: getVsUnitRecordLabel(key),
+      eventRef: null,
+      eventLabel: '-',
+      date: '-',
+      dateValue: 0,
+      days: 0,
+      periods: 0
+    };
+  });
+});
+
+const vsUnitLastFourRecordsSorted = computed(() => {
+  const rows = [...vsUnitLastFourRecords.value];
+  if (vsUnitLastFourSort.value === 'date-desc') {
+    return rows.sort((a, b) => {
+      const av = a.dateValue || 0;
+      const bv = b.dateValue || 0;
+      if (bv !== av) return bv - av;
+      return VS_UNIT_ROW_KEYS.indexOf(a.key) - VS_UNIT_ROW_KEYS.indexOf(b.key);
+    });
+  }
+  if (vsUnitLastFourSort.value === 'date-asc') {
+    return rows.sort((a, b) => {
+      const aMiss = !a.dateValue;
+      const bMiss = !b.dateValue;
+      if (aMiss !== bMiss) return aMiss ? 1 : -1;
+      const av = a.dateValue || 0;
+      const bv = b.dateValue || 0;
+      if (av !== bv) return av - bv;
+      return VS_UNIT_ROW_KEYS.indexOf(a.key) - VS_UNIT_ROW_KEYS.indexOf(b.key);
+    });
+  }
+  return rows;
+});
+
+const vsUnitLastFourCompactRows = computed(() => {
+  const rowMap = Object.fromEntries(
+    VS_NAMES.map((name) => [name, { name, daysByUnit: Object.fromEntries(VS_UNIT_SORT_ORDER.map((u) => [u, 0])) }])
+  );
+
+  vsUnitLastFourRecords.value.forEach((item) => {
+    const { baseName, unit } = parseVsUnitKey(item.key);
+    if (!rowMap[baseName] || !VS_UNIT_SORT_ORDER.includes(unit)) return;
+    rowMap[baseName].daysByUnit[unit] = Number(item.days || 0);
+  });
+
+  return VS_NAMES.map((name) => rowMap[name]);
+});
+
+const vsUnitScoreAttrRows = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const rowMap = Object.fromEntries(
+    VS_NAMES.map((name) => [
+      name,
+      {
+        name,
+        attrsByUnit: Object.fromEntries(VS_UNIT_SORT_ORDER.map((u) => [u, []]))
+      }
+    ])
+  );
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    const skill = String(card?.Skill || '').trim().toLowerCase();
+    if (skill !== 'unit_score') return;
+
+    const fullName = String(card?.Name || '').trim();
+    const baseName = fullName.split(/\s+/)[0] || fullName;
+    if (!VS_NAMES.includes(baseName)) return;
+
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (!VS_UNIT_SORT_ORDER.includes(unit)) return;
+
+    const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
+    if (!sourceKey) return;
+    const isNum = isNumericEventId(sourceKey);
+    const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
+    const eventDate = parseDateSafe(String(ev?.date || card?.Date || '').trim());
+    if (!eventDate) return;
+    if (!isNum && maxEventDate && eventDate > maxEventDate) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    if (!ATTRS.includes(attr)) return;
+    rowMap[baseName].attrsByUnit[unit].push(attr);
+  });
+
+  return VS_NAMES.map((name) => rowMap[name]);
+});
+
+const vsUnitLastFourMaxDays = computed(() => {
+  const values = vsUnitLastFourCompactRows.value
+    .flatMap((row) => VS_UNIT_SORT_ORDER.map((u) => Number(row?.daysByUnit?.[u] || 0)))
+    .filter((v) => v > 0);
+  return values.length ? Math.max(...values) : 0;
+});
+
+const getVsMiniUnitHeadStyle = (unit) => ({
+  backgroundColor: hexToRgba(UNIT_COLORS[unit] || '#9ca3af', 0.28)
+});
+
+const getVsMiniVsHeadStyle = (name) => ({
+  backgroundColor: hexToRgba(getCharColor(name), 0.28)
+});
+
+const getVsScoreUnitHeadStyle = (unit) => ({
+  backgroundColor: hexToRgba(UNIT_COLORS[unit] || '#9ca3af', 0.28)
+});
+
+const getVsScoreVsHeadStyle = (name) => ({
+  backgroundColor: hexToRgba(getCharColor(name), 0.26)
+});
+
+const getVsScoreCellStyle = (name, unit) => ({
+  backgroundImage: `linear-gradient(${hexToRgba(getCharColor(name), 0.12)}, ${hexToRgba(getCharColor(name), 0.12)}), linear-gradient(${hexToRgba(UNIT_COLORS[unit] || '#9ca3af', 0.12)}, ${hexToRgba(UNIT_COLORS[unit] || '#9ca3af', 0.12)})`,
+  backgroundColor: '#f8fafc'
+});
+
+const getVsMiniDataCellStyle = (days) => {
+  const d = Number(days || 0);
+  if (d <= 0) {
+    return {
+      backgroundColor: 'rgb(245, 247, 250)',
+      color: '#94a3b8'
+    };
+  }
+  const maxDays = Math.max(1, Number(vsUnitLastFourMaxDays.value || 1));
+  const ratio = Math.min(1, d / maxDays);
+  const shade = Math.round(245 - (ratio * 95));
+  const bg = `rgb(${shade}, ${shade}, ${shade})`;
+  const fg = shade < 175 ? '#ffffff' : '#1f2937';
+  return {
+    backgroundColor: bg,
+    color: fg,
+    fontWeight: 700
+  };
+};
+
 const lastLimitedRecords = computed(() => {
   return Object.keys(charEventBuckets.value)
     .map((name) => {
@@ -1940,6 +2496,51 @@ const banShortestIntervals = computed(() => {
   min-width: 0;
 }
 
+.stats-main-head {
+  margin-bottom: 6px;
+}
+
+.section-head,
+.block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.card-export-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.card-export-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.card-export-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.stats-main-head h1,
+.section-head h2,
+.block-head h3 {
+  margin: 0;
+}
+
+.section-head-sub h2 {
+  font-size: 1.02rem;
+}
+
 .section-main {
   margin-bottom: 18px;
 }
@@ -1970,8 +2571,8 @@ const banShortestIntervals = computed(() => {
 }
 
 .card-panel h2 {
-  margin-top: 2px;
-  margin-bottom: 10px;
+  margin-top: 0;
+  margin-bottom: 0;
   font-size: 1.05rem;
 }
 
@@ -2089,16 +2690,24 @@ const banShortestIntervals = computed(() => {
 }
 
 .festival-card h3 {
-  margin: 2px 0 8px;
+  margin: 0;
   font-size: 0.92rem;
   color: #111827;
 }
 
 .festival-card-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
+  margin-bottom: 8px;
+}
+
+.festival-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .festival-fes-toggle {
@@ -2363,8 +2972,16 @@ const banShortestIntervals = computed(() => {
 .song-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   margin-bottom: 8px;
+}
+
+.song-head-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .song-avatar {
@@ -2458,9 +3075,59 @@ const banShortestIntervals = computed(() => {
 }
 
 .record-block h3 {
-  margin: 2px 0 8px;
-  font-size: 0.92rem;
+  margin: 0;
+  font-size: 0.98rem;
   color: #111827;
+}
+
+.record-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.record-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.record-head-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.record-compact-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.record-compact-toggle input {
+  margin: 0;
+}
+
+.record-sort-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+.record-sort-btn.active {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #fff;
 }
 
 .record-table {
@@ -2471,9 +3138,9 @@ const banShortestIntervals = computed(() => {
 .record-table th,
 .record-table td {
   border: 1px solid #e5e7eb;
-  padding: 6px 8px;
+  padding: 7px 9px;
   text-align: center;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   white-space: nowrap;
 }
 
@@ -2485,7 +3152,7 @@ const banShortestIntervals = computed(() => {
 .record-char {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   justify-content: flex-start;
 }
 
@@ -2497,11 +3164,78 @@ const banShortestIntervals = computed(() => {
 }
 
 .record-avatar {
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 1.6px solid #d1d5db;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+}
+
+.record-unit-avatar {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+}
+
+.mini-unit-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.vs-unit-last-four-mini-table .vs-mini-days-cell {
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+
+.vs-unit-score-table .record-char {
+  justify-content: center;
+  width: 100%;
+  gap: 0;
+}
+
+.vs-unit-score-table .record-avatar {
+  width: 34px;
+  height: 34px;
+}
+
+.vs-unit-score-table {
+  table-layout: fixed;
+}
+
+.vs-unit-score-table th:first-child,
+.vs-unit-score-table td:first-child {
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.vs-unit-score-table th,
+.vs-unit-score-table td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 9px 8px;
+}
+
+.score-attr-wrap {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+}
+
+.score-attr-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.score-empty {
+  color: #94a3b8;
 }
 
 .record-table th {
@@ -2522,8 +3256,8 @@ const banShortestIntervals = computed(() => {
   -webkit-appearance: none;
   border: 1px solid rgba(15, 23, 42, 0.18);
   border-radius: 6px;
-  padding: 1px 6px;
-  font-size: 0.68rem;
+  padding: 2px 7px;
+  font-size: 0.72rem;
   line-height: 1.35;
   font-weight: 700;
   color: #1f2937;
@@ -2539,6 +3273,27 @@ const banShortestIntervals = computed(() => {
 .jump-link:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+@media (min-width: 901px) {
+  .vs-unit-score-table th,
+  .vs-unit-score-table td {
+    padding: 12px 10px;
+  }
+
+  .vs-unit-last-four-mini-table .vs-mini-days-cell {
+    font-size: 1.16rem;
+    font-weight: 800;
+  }
+
+  .score-attr-wrap {
+    gap: 4px;
+  }
+
+  .score-attr-icon {
+    width: 28px;
+    height: 28px;
+  }
 }
 
 @media (max-width: 1200px) {
@@ -2623,6 +3378,15 @@ const banShortestIntervals = computed(() => {
   .stats-main h1 {
     margin-bottom: 8px;
     font-size: 1.1rem;
+  }
+
+  .stats-main-head {
+    margin-bottom: 8px;
+  }
+
+  .card-export-btn {
+    font-size: 0.64rem;
+    padding: 3px 6px;
   }
 
   .card-panel {
@@ -2762,6 +3526,54 @@ const banShortestIntervals = computed(() => {
     overflow-x: visible;
   }
 
+  .record-head-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .record-head-left {
+    width: auto;
+    min-width: 0;
+    gap: 4px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .record-head-left h3 {
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  .record-head-controls {
+    width: auto;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .record-compact-toggle {
+    font-size: 0.66rem;
+    white-space: nowrap;
+  }
+
+  .record-sort-btn {
+    font-size: 0.62rem;
+    padding: 1px 6px;
+  }
+
+  .vs-unit-score-table .record-avatar {
+    width: 24px;
+    height: 24px;
+  }
+
+  .mini-unit-logo {
+    width: 24px;
+    height: 24px;
+  }
+
   .record-table {
     min-width: 0;
     table-layout: fixed;
@@ -2774,8 +3586,22 @@ const banShortestIntervals = computed(() => {
     word-break: break-word;
   }
 
+  .related-panel .record-table th:first-child,
+  .related-panel .record-table td:first-child {
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
   .record-char {
     gap: 4px;
+    justify-content: center;
+  }
+
+  .related-panel .record-char > span {
+    display: none;
   }
 
   .record-char > span {
@@ -2786,8 +3612,8 @@ const banShortestIntervals = computed(() => {
   }
 
   .record-avatar {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
   }
 
   .jump-link {
