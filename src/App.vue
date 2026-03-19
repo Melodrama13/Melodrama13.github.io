@@ -4,29 +4,99 @@
       <button 
         :class="{ active: currentTab === 'stats' }" 
         @click="setCurrentTab('stats')"
-      >📊 统计面板</button>
+      >{{ isCompactTopNav ? '📊 统计' : '📊 统计面板' }}</button>
       <button 
         :class="{ active: currentTab === 'history' }" 
         @click="setCurrentTab('history')"
-      >📅 历史活动一览</button>
+      >{{ isCompactTopNav ? '📅 活动' : '📅 历史活动一览' }}</button>
+      <div class="username-wrap" title="导出文件命名与本地数据源命名使用该用户名">
+        <span class="username-label">用户名</span>
+        <input
+          v-model="predictUserName"
+          class="username-input"
+          type="text"
+          maxlength="24"
+          placeholder="user"
+          @focus="onPredictUserFocus"
+          @blur="onPredictUserBlur"
+        />
+      </div>
+      <div class="nav-tabs-spacer"></div>
       <div class="predict-info" v-if="predictiveEvents.length > 0">
-        已添加 {{ predictiveEvents.length }} 条预测
+        {{ isCompactTopNav ? `${predictiveEvents.length}条预测` : `${activePredictSourceName}：${predictiveEvents.length} 条预测` }}
       </div>
       <div class="predict-cleanup-info" v-if="cleanedPatchNoticeCount > 0">
-        已自动清理 {{ cleanedPatchNoticeCount }} 条过期/冲突预测
+        {{ isCompactTopNav ? `已清理 ${cleanedPatchNoticeCount} 条` : `已自动清理 ${cleanedPatchNoticeCount} 条过期/冲突预测` }}
       </div>
-      <button @click="exportPredicts" class="io-btn" title="导出预测到文件">📤 导出</button>
-      <div
-        class="io-drop-zone"
-        :class="{ 'is-drag-over': isImportDragOver }"
-        @dragenter.prevent="onImportDragEnter"
-        @dragover.prevent="onImportDragOver"
-        @dragleave.prevent="onImportDragLeave"
-        @drop.prevent="onImportDrop"
-      >
-        <button @click="triggerImportPredicts" class="io-btn" title="从文件导入预测">📥 导入</button>
-        <span class="io-drop-hint">拖拽 JSON 到这里可直接导入</span>
+      <button @click="addPredictSourceBranch" class="io-btn nav-create-btn" title="新增一个空白预测分支">{{ isCompactTopNav ? '➕ 新建' : '➕ 新建预测分支' }}</button>
+      <div class="source-dropdown" ref="sourceDropdownRef">
+        <button
+          ref="sourceTriggerRef"
+          class="io-btn source-trigger"
+          :class="{ active: sourceMenuOpen }"
+          @pointerdown.stop
+          @click.stop="toggleSourceMenu"
+          :title="`当前数据源：${activePredictSourceName}`"
+        >
+          {{ isCompactTopNav ? '数据源' : `数据源：${activePredictSourceName}` }}
+        </button>
       </div>
+      <Teleport to="body">
+        <div
+          v-if="sourceMenuOpen"
+          ref="sourceMenuPanelRef"
+          class="source-menu source-menu-floating"
+          :style="sourceMenuStyle"
+          @pointerdown.stop
+        >
+          <div class="source-menu-title">切换数据源</div>
+          <div class="source-list">
+            <div
+              v-for="source in predictSources"
+              :key="source.id"
+              class="source-item-row"
+              :class="{ 'is-drag-over': dragOverSourceId === source.id }"
+              draggable="true"
+              @dragstart="onSourceDragStart(source.id, $event)"
+              @dragover.prevent="onSourceDragOver(source.id, $event)"
+              @dragleave="onSourceDragLeave(source.id, $event)"
+              @drop.prevent="onSourceDrop(source.id, $event)"
+              @dragend="onSourceDragEnd"
+            >
+              <button
+                class="source-item"
+                :class="{ active: source.id === activePredictSourceId }"
+                @click="switchPredictSource(source.id)"
+              >
+                <span class="source-item-name">{{ source.name }}</span>
+                <span class="source-item-count">{{ Array.isArray(source.predictiveEvents) ? source.predictiveEvents.length : 0 }}</span>
+              </button>
+              <button class="source-mini-btn" title="重命名此数据源" @click="renamePredictSource(source.id)">✏️</button>
+              <button class="source-order-btn" title="上移" @click.stop="movePredictSource(source.id, -1)">↑</button>
+              <button class="source-order-btn" title="下移" @click.stop="movePredictSource(source.id, 1)">↓</button>
+              <span class="source-drag-handle" title="拖拽排序">⋮⋮</span>
+            </div>
+          </div>
+
+          <div class="source-menu-title">数据源操作</div>
+          <div class="source-actions">
+            <button @click="triggerImportPredicts" class="io-btn" title="导入 JSON 并创建新数据源">📥 导入</button>
+            <button @click="exportPredicts" class="io-btn" title="导出当前数据源预测">📤 导出</button>
+            <button @click="deleteActivePredictSource" class="io-btn" :disabled="predictSources.length <= 1" title="删除当前数据源">🗑️ 删除当前源</button>
+          </div>
+
+          <div
+            class="io-drop-zone source-drop-zone"
+            :class="{ 'is-drag-over': isImportDragOver }"
+            @dragenter.prevent="onImportDragEnter"
+            @dragover.prevent="onImportDragOver"
+            @dragleave.prevent="onImportDragLeave"
+            @drop.prevent="onImportDrop"
+          >
+            <span class="io-drop-hint">拖拽 JSON 到此处可导入为新数据源</span>
+          </div>
+        </div>
+      </Teleport>
       <input
         ref="predictImportInputRef"
         type="file"
@@ -34,8 +104,6 @@
         class="predict-import-input"
         @change="handleImportPredictsFile"
       />
-      <button v-if="predictiveEvents.length > 0" @click="clearPredicts" class="reset-btn"
-      >🗑️ 清空所有预测</button>
     </div>
 
     <div
@@ -74,7 +142,7 @@
 </template>
 
 <script setup>
-import { ref, computed, provide, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, provide, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import CardStats from './components/CardStats.vue';
 import EventHistory from './components/EventHistory.vue';
 
@@ -94,6 +162,23 @@ const statsScrollTop = ref(0);
 const showBackToTopBtn = ref(false);
 const predictImportInputRef = ref(null);
 const isImportDragOver = ref(false);
+const sourceMenuOpen = ref(false);
+const sourceDropdownRef = ref(null);
+const sourceTriggerRef = ref(null);
+const sourceMenuPanelRef = ref(null);
+const sourceMenuStyle = ref({});
+const predictUserName = ref('user');
+const draggedSourceId = ref('');
+const dragOverSourceId = ref('');
+const isEditingPredictUserName = ref(false);
+const isCompactTopNav = ref(false);
+let cleanupNoticeTimer = null;
+
+const PREDICT_SOURCES_KEY = 'pjsk_predict_sources_v1';
+const PREDICT_ACTIVE_KEY = 'pjsk_predict_active_source_v1';
+const LEGACY_PREDICT_KEY = 'pjsk_predict_data';
+const PREDICT_USERNAME_KEY = 'pjsk_predict_user_name_v1';
+const PREDICT_SOURCE_LIMIT = 30;
 
 const handleStatsPreviewUpdate = (payload) => {
   statsPreviewData.value = payload || null;
@@ -174,8 +259,359 @@ const historyData = ref([]);      // 既定的历史 JSON 数据
 const baseCards = ref([]); // 新增：存储基础卡片库
 const predictiveEvents = ref([]); // 用户填写的预测数据
 const cleanedPatchNoticeCount = ref(0);
+const predictSources = ref([]);
+const activePredictSourceId = ref('');
+
+const clonePredictList = (list) => JSON.parse(JSON.stringify(Array.isArray(list) ? list : []));
+
+const buildPredictSourceId = () => {
+  const rand = Math.random().toString(36).slice(2, 8);
+  return `src_${Date.now()}_${rand}`;
+};
+
+const normalizeUserName = (name) => {
+  const compact = String(name || '').trim().replace(/\s+/g, '');
+  return compact || 'user';
+};
+
+const escapeRegExp = (text) => String(text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const detectSourceKind = (kindRaw, nameRaw) => {
+  const kind = String(kindRaw || '').trim();
+  if (kind === 'import' || kind === 'local') return kind;
+  const name = String(nameRaw || '').trim();
+  if (name.startsWith('导入预测-')) return 'import';
+  return 'local';
+};
+
+const SOURCE_PREFIX_MAP = {
+  local: '我的预测',
+  import: '导入预测'
+};
+
+const getSourceNamePrefix = (kind) => SOURCE_PREFIX_MAP[kind] || SOURCE_PREFIX_MAP.local;
+
+const getNextSourceSerial = (kind, ownerName) => {
+  const prefix = getSourceNamePrefix(kind);
+  const owner = normalizeUserName(ownerName);
+  const pattern = new RegExp(`^${escapeRegExp(prefix)}-${escapeRegExp(owner)}-(\\d+)$`);
+  let maxNo = 0;
+  for (const source of (predictSources.value || [])) {
+    const match = String(source?.name || '').trim().match(pattern);
+    if (!match) continue;
+    const seq = Number(match[1]);
+    if (Number.isFinite(seq)) maxNo = Math.max(maxNo, seq);
+  }
+  return maxNo + 1;
+};
+
+const buildAutoSourceName = (kind, ownerName) => {
+  const prefix = getSourceNamePrefix(kind);
+  const owner = normalizeUserName(ownerName);
+  const serial = getNextSourceSerial(kind, owner);
+  return `${prefix}-${owner}-${serial}`;
+};
+
+const normalizeSourceName = (name) => String(name || '').trim() || '我的预测';
+
+const makeUniqueSourceName = (desiredName) => {
+  const base = normalizeSourceName(desiredName);
+  const existing = new Set((predictSources.value || []).map((s) => String(s?.name || '').trim()));
+  if (!existing.has(base)) return base;
+  for (let i = 2; i <= 999; i += 1) {
+    const nextName = `${base} ${i}`;
+    if (!existing.has(nextName)) return nextName;
+  }
+  return `${base} ${Date.now()}`;
+};
+
+const normalizePredictSource = (source, index = 0) => {
+  const id = String(source?.id || '').trim() || buildPredictSourceId();
+  const kind = detectSourceKind(source?.kind, source?.name);
+  const ownerName = normalizeUserName(source?.ownerName || predictUserName.value);
+  const fallbackName = `${getSourceNamePrefix(kind)}-${ownerName}-${index + 1}`;
+  const nameRaw = normalizeSourceName(source?.name || fallbackName);
+  return {
+    id,
+    name: nameRaw,
+    kind,
+    ownerName,
+    predictiveEvents: clonePredictList(source?.predictiveEvents),
+    createdAt: String(source?.createdAt || new Date().toISOString()),
+    updatedAt: String(source?.updatedAt || new Date().toISOString())
+  };
+};
+
+const persistPredictSources = () => {
+  localStorage.setItem(PREDICT_SOURCES_KEY, JSON.stringify(predictSources.value));
+  localStorage.setItem(PREDICT_ACTIVE_KEY, String(activePredictSourceId.value || ''));
+};
+
+const activePredictSource = computed(() => {
+  return (predictSources.value || []).find((s) => s.id === activePredictSourceId.value) || null;
+});
+
+const activePredictSourceName = computed(() => activePredictSource.value?.name || '未命名数据源');
+
+const setCleanedPatchNoticeCount = (count, autoHideMs = 0) => {
+  cleanedPatchNoticeCount.value = Math.max(0, Number(count) || 0);
+  if (cleanupNoticeTimer) {
+    clearTimeout(cleanupNoticeTimer);
+    cleanupNoticeTimer = null;
+  }
+  if (cleanedPatchNoticeCount.value > 0 && autoHideMs > 0) {
+    cleanupNoticeTimer = setTimeout(() => {
+      cleanedPatchNoticeCount.value = 0;
+      cleanupNoticeTimer = null;
+    }, autoHideMs);
+  }
+};
+
+const isLocalSource = (source) => detectSourceKind(source?.kind, source?.name) === 'local';
+
+const relabelLocalSourcesByUser = (userName) => {
+  const normalizedUser = normalizeUserName(userName);
+  let localSeq = 0;
+  predictSources.value = (predictSources.value || []).map((source) => {
+    if (!isLocalSource(source)) return source;
+    localSeq += 1;
+    return {
+      ...source,
+      ownerName: normalizedUser,
+      name: `${SOURCE_PREFIX_MAP.local}-${normalizedUser}-${localSeq}`,
+      updatedAt: new Date().toISOString()
+    };
+  });
+};
+
+const syncCurrentPredictsToActiveSource = () => {
+  const target = activePredictSource.value;
+  if (!target) return;
+  target.predictiveEvents = clonePredictList(predictiveEvents.value);
+  target.updatedAt = new Date().toISOString();
+  persistPredictSources();
+};
+
+const switchPredictSource = (sourceId) => {
+  const next = (predictSources.value || []).find((s) => s.id === sourceId);
+  if (!next) return;
+  syncCurrentPredictsToActiveSource();
+  activePredictSourceId.value = next.id;
+  predictiveEvents.value = clonePredictList(next.predictiveEvents);
+  setCleanedPatchNoticeCount(0);
+  persistPredictSources();
+};
+
+const createPredictSource = ({ name, predictiveList = [], kind = 'local', ownerName = '', switchTo = true }) => {
+  if ((predictSources.value || []).length >= PREDICT_SOURCE_LIMIT) {
+    alert(`数据源数量已达到上限（${PREDICT_SOURCE_LIMIT}）。请先删除不需要的数据源。`);
+    return null;
+  }
+
+  const normalizedKind = detectSourceKind(kind, name);
+  const normalizedOwner = normalizeUserName(ownerName || predictUserName.value);
+  const nowIso = new Date().toISOString();
+  const source = {
+    id: buildPredictSourceId(),
+    name: makeUniqueSourceName(name || buildAutoSourceName(normalizedKind, normalizedOwner)),
+    kind: normalizedKind,
+    ownerName: normalizedOwner,
+    predictiveEvents: clonePredictList(predictiveList),
+    createdAt: nowIso,
+    updatedAt: nowIso
+  };
+  predictSources.value = [...predictSources.value, source];
+  if (switchTo) {
+    activePredictSourceId.value = source.id;
+    predictiveEvents.value = clonePredictList(source.predictiveEvents);
+  }
+  persistPredictSources();
+  return source;
+};
+
+const addPredictSourceBranch = () => {
+  const owner = normalizeUserName(predictUserName.value);
+  const created = createPredictSource({
+    kind: 'local',
+    ownerName: owner,
+    predictiveList: [],
+    switchTo: true
+  });
+  if (created) {
+    setCleanedPatchNoticeCount(0);
+    alert(`已创建并切换到空白数据源：${created.name}`);
+  }
+};
+
+const deleteActivePredictSource = () => {
+  if (predictSources.value.length <= 1) {
+    alert('至少保留一个数据源。');
+    return;
+  }
+  const current = activePredictSource.value;
+  if (!current) return;
+  const ok = confirm(`确定删除数据源「${current.name}」吗？`);
+  if (!ok) return;
+
+  const remain = predictSources.value.filter((s) => s.id !== current.id);
+  predictSources.value = remain;
+  const fallback = remain[0] || null;
+  activePredictSourceId.value = fallback?.id || '';
+  predictiveEvents.value = clonePredictList(fallback?.predictiveEvents);
+  setCleanedPatchNoticeCount(0);
+  persistPredictSources();
+};
+
+const toggleSourceMenu = () => {
+  sourceMenuOpen.value = !sourceMenuOpen.value;
+};
+
+const renamePredictSource = (sourceId) => {
+  const target = (predictSources.value || []).find((s) => s.id === sourceId);
+  if (!target) return;
+  const baseSuggestion = String(target.name || '').trim() || '未命名数据源';
+  const input = prompt('请输入新的数据源名称', baseSuggestion);
+  if (input === null) return;
+  const nextNameRaw = String(input || '').trim();
+  if (!nextNameRaw) {
+    alert('名称不能为空。');
+    return;
+  }
+
+  const duplicate = (predictSources.value || []).some((s) => s.id !== target.id && String(s?.name || '').trim() === nextNameRaw);
+  if (duplicate) {
+    alert('名称已存在，请使用其他名称。');
+    return;
+  }
+
+  predictSources.value = (predictSources.value || []).map((s) => {
+    if (s.id !== target.id) return s;
+    return {
+      ...s,
+      name: nextNameRaw,
+      updatedAt: new Date().toISOString()
+    };
+  });
+  persistPredictSources();
+};
+
+const onSourceDragStart = (sourceId, event) => {
+  draggedSourceId.value = String(sourceId || '');
+  dragOverSourceId.value = '';
+  if (event?.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', draggedSourceId.value);
+  }
+};
+
+const onSourceDragOver = (sourceId, event) => {
+  if (!draggedSourceId.value || draggedSourceId.value === sourceId) return;
+  dragOverSourceId.value = String(sourceId || '');
+  if (event?.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+};
+
+const onSourceDragLeave = (sourceId, event) => {
+  const currentTarget = event?.currentTarget;
+  const nextTarget = event?.relatedTarget;
+  if (currentTarget && nextTarget && currentTarget.contains(nextTarget)) return;
+  if (dragOverSourceId.value === sourceId) {
+    dragOverSourceId.value = '';
+  }
+};
+
+const onSourceDrop = (targetSourceId, event) => {
+  const fromId = String(draggedSourceId.value || event?.dataTransfer?.getData('text/plain') || '').trim();
+  const toId = String(targetSourceId || '').trim();
+  dragOverSourceId.value = '';
+  draggedSourceId.value = '';
+  if (!fromId || !toId || fromId === toId) return;
+
+  const list = [...(predictSources.value || [])];
+  const fromIndex = list.findIndex((s) => s.id === fromId);
+  const toIndex = list.findIndex((s) => s.id === toId);
+  if (fromIndex < 0 || toIndex < 0) return;
+
+  const [moved] = list.splice(fromIndex, 1);
+  list.splice(toIndex, 0, moved);
+  predictSources.value = list;
+  persistPredictSources();
+};
+
+const onSourceDragEnd = () => {
+  draggedSourceId.value = '';
+  dragOverSourceId.value = '';
+};
+
+const movePredictSource = (sourceId, delta) => {
+  const list = [...(predictSources.value || [])];
+  const fromIndex = list.findIndex((s) => s.id === sourceId);
+  if (fromIndex < 0) return;
+  const toIndex = fromIndex + Number(delta || 0);
+  if (toIndex < 0 || toIndex >= list.length) return;
+  const [moved] = list.splice(fromIndex, 1);
+  list.splice(toIndex, 0, moved);
+  predictSources.value = list;
+  persistPredictSources();
+};
+
+const updateCompactTopNav = () => {
+  if (typeof window === 'undefined') return;
+  isCompactTopNav.value = window.innerWidth <= 768;
+};
+
+const updateSourceMenuPosition = () => {
+  if (typeof window === 'undefined') return;
+  if (!sourceMenuOpen.value) return;
+  const trigger = sourceTriggerRef.value;
+  if (!trigger) return;
+  const rect = trigger.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const compact = vw <= 768;
+  const minWidth = compact ? 250 : 320;
+  const maxWidth = compact ? 360 : 420;
+  const width = Math.max(Math.min(maxWidth, vw - 12), Math.min(minWidth, vw - 12));
+  const left = Math.max(6, Math.min(vw - width - 6, rect.right - width));
+  const top = Math.max(6, rect.bottom + 6);
+  const maxHeight = Math.max(180, vh - top - 8);
+
+  sourceMenuStyle.value = {
+    position: 'fixed',
+    left: `${Math.round(left)}px`,
+    top: `${Math.round(top)}px`,
+    width: `${Math.round(width)}px`,
+    maxHeight: `${Math.round(maxHeight)}px`,
+    overflowY: 'auto',
+    zIndex: 4200
+  };
+};
+
+const onPredictUserFocus = () => {
+  isEditingPredictUserName.value = true;
+};
+
+const onPredictUserBlur = () => {
+  isEditingPredictUserName.value = false;
+  const raw = String(predictUserName.value || '').replace(/\s+/g, '');
+  if (raw !== predictUserName.value) {
+    predictUserName.value = raw;
+    return;
+  }
+  if (!raw) return;
+  const normalized = normalizeUserName(raw);
+  if (normalized !== raw) {
+    predictUserName.value = normalized;
+  }
+};
 
 const hasValidEventTitle = (value) => String(value || '').trim().length > 0;
+const hasValidGachaName = (value) => String(value || '').trim().length > 0;
+const isJsonEventOfficialRevealed = (event) => {
+  if (!event || typeof event !== 'object') return false;
+  return hasValidEventTitle(event.event_title) && hasValidGachaName(event.gacha_title);
+};
 
 const getCurrentOfficialEventId = () => {
   const today = new Date();
@@ -190,6 +626,23 @@ const getCurrentOfficialEventId = () => {
     })
     .map((ev) => Number(ev.id));
   return ids.length ? Math.max(...ids) : -1;
+};
+
+const getCurrentJsonRevealedEventId = () => {
+  const ids = (historyData.value || [])
+    .filter((ev) => {
+      const idNum = Number(ev?.id);
+      if (!Number.isFinite(idNum)) return false;
+      return isJsonEventOfficialRevealed(ev);
+    })
+    .map((ev) => Number(ev.id));
+  return ids.length ? Math.max(...ids) : -1;
+};
+
+const getCurrentPredictLockEventId = () => {
+  const byDate = getCurrentOfficialEventId();
+  const byReveal = getCurrentJsonRevealedEventId();
+  return Math.max(byDate, byReveal);
 };
 
 const getSourceEventById = (eventId) => {
@@ -214,7 +667,7 @@ const normalizeWorldLinkPatch = (patch) => {
 };
 
 const filterOutdatedPredictiveEvents = (list) => {
-  const currentOfficialId = getCurrentOfficialEventId();
+  const currentOfficialId = getCurrentPredictLockEventId();
   if (!Number.isFinite(currentOfficialId) || currentOfficialId < 0) return [...(list || [])];
   return (list || []).filter((ev) => {
     const idNum = Number(ev?.id);
@@ -238,6 +691,7 @@ const buildPredictExportPayload = (list) => ({
   version: 1,
   exportedAt: new Date().toISOString(),
   source: 'pjsk-planner',
+  owner: normalizeUserName(predictUserName.value),
   predictiveEvents: Array.isArray(list) ? list : []
 });
 
@@ -260,13 +714,8 @@ const exportPredicts = () => {
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, '0');
     const d = String(today.getDate()).padStart(2, '0');
-    const defaultBaseName = `pjsk_predict_backup_${y}${m}${d}`;
-    const customName = prompt('请输入导出文件名（无需 .json 后缀）', defaultBaseName);
-    if (customName === null) {
-      URL.revokeObjectURL(url);
-      return;
-    }
-    const finalBaseName = sanitizeExportFileName(customName || defaultBaseName);
+    const userName = sanitizeExportFileName(normalizeUserName(predictUserName.value));
+    const finalBaseName = sanitizeExportFileName(`pjsk-${userName}-${y}${m}${d}`);
     const link = document.createElement('a');
     link.href = url;
     link.download = `${finalBaseName}.json`;
@@ -293,6 +742,13 @@ const parseImportedPredictList = (rawText) => {
   return null;
 };
 
+const parseOwnerFromImportFileName = (fileName) => {
+  const base = String(fileName || '').trim().replace(/\.[^.]+$/, '');
+  const match = base.match(/^pjsk-(.+)-(\d{8})$/i);
+  if (!match) return null;
+  return normalizeUserName(match[1]);
+};
+
 const validateImportedPredictList = (list) => {
   if (!Array.isArray(list)) {
     return { ok: false, message: '文件格式错误：顶层必须是数组，或包含 predictiveEvents 数组。' };
@@ -315,7 +771,7 @@ const validateImportedPredictList = (list) => {
   return { ok: true };
 };
 
-const applyImportedPredicts = (importedRawList) => {
+const applyImportedPredicts = (importedRawList, fileName = '') => {
   const normalizedImported = (importedRawList || []).map((item) => ({
     ...(item || {}),
     id: Number(item?.id)
@@ -323,9 +779,22 @@ const applyImportedPredicts = (importedRawList) => {
 
   const reconciled = reconcilePredictiveEvents(normalizedImported);
   const cleaned = Math.max(0, normalizedImported.length - reconciled.length);
-  predictiveEvents.value = reconciled;
-  cleanedPatchNoticeCount.value = cleaned;
-  alert(`导入完成：已覆盖本地预测 ${reconciled.length} 条，清理 ${cleaned} 条。`);
+  if (reconciled.length === 0) {
+    alert('导入结果没有有效预测（可能已被自动清理为过期/冲突，或原文件本就为空），不会创建数据源。');
+    return;
+  }
+
+  const parsedOwner = parseOwnerFromImportFileName(fileName);
+  const owner = normalizeUserName(parsedOwner || predictUserName.value);
+  const source = createPredictSource({
+    kind: 'import',
+    ownerName: owner,
+    predictiveList: reconciled,
+    switchTo: true
+  });
+  if (!source) return;
+  setCleanedPatchNoticeCount(cleaned, 4200);
+  alert(`导入完成：已创建数据源「${source.name}」，有效预测 ${reconciled.length} 条，清理 ${cleaned} 条。`);
 };
 
 const importPredictsFromFile = async (file) => {
@@ -342,10 +811,10 @@ const importPredictsFromFile = async (file) => {
     return;
   }
 
-  const ok = confirm('您确定要导入吗？这会覆盖掉您本地的预测，请务必备份好本地预测。');
+  const ok = confirm('确认导入吗？将基于文件创建一个新的预测数据源，不会覆盖现有数据源。');
   if (!ok) return;
 
-  applyImportedPredicts(importedRawList);
+  applyImportedPredicts(importedRawList, file?.name || '');
 };
 
 const handleImportPredictsFile = async (event) => {
@@ -388,19 +857,62 @@ const onImportDrop = async (event) => {
 
 const effectivePredictiveEvents = computed(() => reconcilePredictiveEvents(predictiveEvents.value));
 
-const clearPredicts = () => {
-  if (confirm("确定要删除所有本地预测记录吗？这不会影响你的 JSON 文件。")) {
-    predictiveEvents.value = [];
-    localStorage.removeItem('pjsk_predict_data');
-  }
-};
-
 onMounted(async () => {
   try {
-    const cache = localStorage.getItem('pjsk_predict_data');
-    if (cache) {
-      predictiveEvents.value = JSON.parse(cache);
+    predictUserName.value = normalizeUserName(localStorage.getItem(PREDICT_USERNAME_KEY) || 'user');
+    const rawSources = localStorage.getItem(PREDICT_SOURCES_KEY);
+    const rawActive = localStorage.getItem(PREDICT_ACTIVE_KEY);
+    let loadedSources = [];
+
+    if (rawSources) {
+      const parsed = JSON.parse(rawSources);
+      if (Array.isArray(parsed)) {
+        loadedSources = parsed.map((item, idx) => normalizePredictSource(item, idx));
+      }
     }
+
+    // 兼容旧版单数据源缓存
+    if (!loadedSources.length) {
+      const legacyRaw = localStorage.getItem(LEGACY_PREDICT_KEY);
+      let legacyList = [];
+      if (legacyRaw) {
+        try {
+          const parsedLegacy = JSON.parse(legacyRaw);
+          legacyList = Array.isArray(parsedLegacy) ? parsedLegacy : [];
+        } catch {
+          legacyList = [];
+        }
+      }
+      const nowIso = new Date().toISOString();
+      loadedSources = [{
+        id: buildPredictSourceId(),
+        name: `我的预测-${predictUserName.value}-1`,
+        kind: 'local',
+        ownerName: predictUserName.value,
+        predictiveEvents: clonePredictList(legacyList),
+        createdAt: nowIso,
+        updatedAt: nowIso
+      }];
+    }
+
+    // 名称去重
+    const dedupNameSet = new Set();
+    loadedSources = loadedSources.map((source, idx) => {
+      let name = normalizeSourceName(source.name || `我的预测 ${idx + 1}`);
+      if (dedupNameSet.has(name)) {
+        let i = 2;
+        while (dedupNameSet.has(`${name} ${i}`)) i += 1;
+        name = `${name} ${i}`;
+      }
+      dedupNameSet.add(name);
+      return { ...source, name };
+    });
+
+    predictSources.value = loadedSources;
+    const activeId = loadedSources.some((s) => s.id === rawActive) ? rawActive : loadedSources[0].id;
+    activePredictSourceId.value = activeId;
+    predictiveEvents.value = clonePredictList((loadedSources.find((s) => s.id === activeId) || loadedSources[0]).predictiveEvents);
+    persistPredictSources();
 
     // 同时请求活动和卡片数据
     const [resEvents, resCards] = await Promise.all([
@@ -413,7 +925,8 @@ onMounted(async () => {
     const beforeCount = predictiveEvents.value.length;
     const reconciled = reconcilePredictiveEvents(predictiveEvents.value);
     predictiveEvents.value = reconciled;
-    cleanedPatchNoticeCount.value = Math.max(0, beforeCount - reconciled.length);
+    syncCurrentPredictsToActiveSource();
+    setCleanedPatchNoticeCount(Math.max(0, beforeCount - reconciled.length), 4200);
     
     console.log("数据加载成功:", historyData.value.length, "条活动,", baseCards.value.length, "张卡片");
   } catch (e) {
@@ -466,18 +979,20 @@ const totalEventData = computed(() => {
   return historyData.value.map(jsonEvent => {
     // 2. 看看预测数组里有没有对这个 ID 的“填坑记录”
     const patch = effectivePredictiveEvents.value.find(p => Number(p.id) === Number(jsonEvent.id));
+    const forceOfficial = isJsonEventOfficialRevealed(jsonEvent);
+    const effectivePatch = forceOfficial ? null : patch;
     
     // 3. 如果有补丁，合并它；如果没有，用原件
-    const event = patch ? { ...jsonEvent, ...patch, isPredict: true } : jsonEvent;
+    const event = effectivePatch ? { ...jsonEvent, ...effectivePatch, isPredict: true } : jsonEvent;
     
     // 4. 关联卡片逻辑：
     // 既搜 JSON 里的基础卡，也加上预测补丁里的卡
     const baseCardsForThisEvent = baseCards.value.filter(c => String(c.EventID) === String(event.id));
-    const predictCardsForThisEvent = patch ? (patch.memberCards || []) : [];
+    const predictCardsForThisEvent = effectivePatch ? (effectivePatch.memberCards || []) : [];
     
     const isWorldLinkEvent = String(event?.event_type || '').trim() === 'World Link';
     const combinedRawCards = [...baseCardsForThisEvent, ...predictCardsForThisEvent];
-    const combinedCards = (patch && predictCardsForThisEvent.length > 0)
+    const combinedCards = (effectivePatch && predictCardsForThisEvent.length > 0)
       ? (isWorldLinkEvent
         ? mergeWorldLinkCards(baseCardsForThisEvent, predictCardsForThisEvent)
         : sortPredictedCardsForDisplay(combinedRawCards, event.banner))
@@ -486,7 +1001,9 @@ const totalEventData = computed(() => {
     return {
       ...event,
       memberCards: combinedCards,
+      source_event_title: jsonEvent.event_title || '',
       source_event_type: jsonEvent.event_type || '',
+      source_gacha_title: jsonEvent.gacha_title || '',
       source_gacha_type: jsonEvent.gacha_type || ''
     };
   });
@@ -607,7 +1124,7 @@ const isTeamWorldLink = (eventType, typeSeriesId) => {
 // App.vue 约第 135 行 savePredictEvent 替换为：
 provide('savePredictEvent', (payload) => {
   const { eventId, eventType, gachaType, predictAttr, selectedChars, event_title } = payload;
-  const currentOfficialId = getCurrentOfficialEventId();
+  const currentOfficialId = getCurrentPredictLockEventId();
   if (Number(eventId) <= currentOfficialId) {
     console.warn(`[predict] ignore save for event ${eventId}, current official id is ${currentOfficialId}`);
     return;
@@ -689,7 +1206,7 @@ provide('savePredictEvent', (payload) => {
   const beforeCount = updatedList.length;
   const reconciled = reconcilePredictiveEvents(updatedList);
   predictiveEvents.value = reconciled;
-  cleanedPatchNoticeCount.value = Math.max(0, beforeCount - reconciled.length);
+  setCleanedPatchNoticeCount(Math.max(0, beforeCount - reconciled.length), 4200);
 });
 
 // 删除预测活动
@@ -697,10 +1214,54 @@ provide('deletePredictEvent', (id) => {
   predictiveEvents.value = predictiveEvents.value.filter(e => e.id !== id);
 });
 
-// 监听预测变化并持久化到本地
+const handleGlobalPointerDown = (event) => {
+  if (!sourceMenuOpen.value) return;
+  const triggerWrap = sourceDropdownRef.value;
+  const menuPanel = sourceMenuPanelRef.value;
+  const target = event.target;
+  if (triggerWrap && triggerWrap.contains(target)) return;
+  if (menuPanel && menuPanel.contains(target)) return;
+  sourceMenuOpen.value = false;
+};
+
+onMounted(() => {
+  updateCompactTopNav();
+  document.addEventListener('pointerdown', handleGlobalPointerDown);
+  window.addEventListener('resize', updateCompactTopNav);
+  window.addEventListener('resize', updateSourceMenuPosition);
+  window.addEventListener('scroll', updateSourceMenuPosition, true);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleGlobalPointerDown);
+  window.removeEventListener('resize', updateCompactTopNav);
+  window.removeEventListener('resize', updateSourceMenuPosition);
+  window.removeEventListener('scroll', updateSourceMenuPosition, true);
+  if (cleanupNoticeTimer) {
+    clearTimeout(cleanupNoticeTimer);
+    cleanupNoticeTimer = null;
+  }
+});
+
+// 监听预测变化并持久化到当前数据源
 watch(predictiveEvents, (newVal) => {
-  localStorage.setItem('pjsk_predict_data', JSON.stringify(newVal));
+  void newVal;
+  syncCurrentPredictsToActiveSource();
 }, { deep: true });
+
+watch(predictUserName, (newVal) => {
+  const compact = String(newVal || '').replace(/\s+/g, '');
+  localStorage.setItem(PREDICT_USERNAME_KEY, compact);
+  if (!compact || isEditingPredictUserName.value) return;
+  relabelLocalSourcesByUser(compact);
+  persistPredictSources();
+});
+
+watch(sourceMenuOpen, async (open) => {
+  if (!open) return;
+  await nextTick();
+  updateSourceMenuPosition();
+});
 </script>
 
 <style scoped>
@@ -734,6 +1295,51 @@ watch(predictiveEvents, (newVal) => {
   /* 移除 sticky，因为外层已经是 flex 布局，它自然就在最顶部 */
 }
 
+.username-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.username-label {
+  font-size: 0.75rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.username-input {
+  width: 92px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 3px 7px;
+  font-size: 0.78rem;
+  color: #0f172a;
+  background: #ffffff;
+  outline: none;
+}
+
+.username-input:focus {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.15);
+}
+
+.nav-tabs-spacer {
+  flex: 1 1 auto;
+  min-width: 8px;
+}
+
+.nav-create-btn {
+  order: 98;
+}
+
+.source-dropdown {
+  order: 99;
+}
+
 /* 修改并替换 App.vue 中的 .content-area 相关样式 */
 .content-area {
   flex: 1;
@@ -764,7 +1370,6 @@ button.active {
 }
 
 .predict-info {
-  margin-left: auto;
   font-size: 0.85rem;
   color: #eb2f96;
   background: #fff0f6;
@@ -790,6 +1395,146 @@ button.active {
   border: 1px solid #cbd5e1;
 }
 
+.source-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.source-trigger {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 320px;
+  max-width: min(92vw, 420px);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.16);
+  z-index: 2800;
+}
+
+.source-menu-floating {
+  box-sizing: border-box;
+}
+
+.source-menu-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #475569;
+  margin: 2px 0 6px;
+}
+
+.source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+
+.source-item {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #dbe4ef;
+  border-radius: 9px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+}
+
+.source-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 10px;
+}
+
+.source-item-row.is-drag-over {
+  background: #e0f2fe;
+  box-shadow: inset 0 0 0 1px #38bdf8;
+}
+
+.source-mini-btn {
+  flex: 0 0 auto;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.source-order-btn {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.source-drag-handle {
+  flex: 0 0 auto;
+  width: 16px;
+  color: #64748b;
+  font-size: 0.9rem;
+  text-align: center;
+  user-select: none;
+  cursor: move;
+}
+
+.source-item-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.source-item-count {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: #64748b;
+  background: #e2e8f0;
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.source-item.active {
+  border-color: #14b8a6;
+  background: #ecfeff;
+  color: #0f172a;
+}
+
+.source-item.active .source-item-count {
+  color: #155e75;
+  background: #cffafe;
+}
+
+.source-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
 .io-drop-zone {
   display: inline-flex;
   align-items: center;
@@ -808,6 +1553,12 @@ button.active {
   font-size: 0.72rem;
   color: #64748b;
   user-select: none;
+}
+
+.source-drop-zone {
+  width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .predict-import-input {
@@ -849,18 +1600,18 @@ button.active {
   background: #0d9488;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .main-app {
     width: 100%;
     height: 100dvh;
   }
 
   .nav-tabs {
-    gap: 6px;
+    gap: 5px;
     padding: 8px 10px;
     flex-wrap: nowrap;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: visible;
   }
 
   .nav-tabs button,
@@ -871,9 +1622,28 @@ button.active {
     white-space: nowrap;
   }
 
+  .username-wrap {
+    order: 3;
+    gap: 4px;
+    padding: 3px 6px;
+  }
+
+  .username-label {
+    font-size: 0.66rem;
+  }
+
+  .username-input {
+    width: 78px;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+
+  .nav-tabs-spacer {
+    min-width: 2px;
+  }
+
   .predict-info {
-    margin-left: auto;
-    order: 0;
+    order: 4;
     width: auto;
     min-width: fit-content;
     border-radius: 999px;
@@ -884,19 +1654,41 @@ button.active {
   }
 
   .predict-cleanup-info {
-    order: 1;
+    order: 5;
     font-size: 0.66rem;
     padding: 3px 7px;
     white-space: nowrap;
     flex: 0 0 auto;
   }
 
-  .io-btn {
-    order: 2;
+  .nav-tabs > .io-btn {
+    order: 6;
     font-size: 0.68rem;
     padding: 4px 8px;
     white-space: nowrap;
     flex: 0 0 auto;
+  }
+
+  .nav-tabs > .nav-create-btn {
+    order: 7;
+  }
+
+  .nav-tabs > .source-dropdown {
+    order: 8;
+    margin-left: auto;
+  }
+
+  .source-trigger {
+    max-width: 88px;
+  }
+
+  .source-item {
+    font-size: 0.72rem;
+    padding: 5px 7px;
+  }
+
+  .source-item-count {
+    font-size: 0.66rem;
   }
 
   .io-drop-zone {
@@ -929,12 +1721,24 @@ button.active {
   .floating-top-btn-icon {
     font-size: 0.95rem;
   }
+
+  .source-drag-handle {
+    display: none;
+  }
 }
 
 @media (max-width: 520px) {
   .nav-tabs {
     gap: 5px;
     padding: 6px 8px;
+  }
+
+  .username-wrap {
+    padding: 2px 5px;
+  }
+
+  .username-input {
+    width: 68px;
   }
 
   .nav-tabs button,
@@ -953,9 +1757,27 @@ button.active {
     padding: 2px 6px;
   }
 
-  .io-btn {
+  .nav-tabs > .io-btn {
     font-size: 0.62rem;
     padding: 3px 6px;
+  }
+
+  .source-trigger {
+    max-width: 76px;
+  }
+
+  .source-actions {
+    gap: 4px;
+  }
+
+  .source-item {
+    font-size: 0.68rem;
+  }
+
+  .source-order-btn {
+    width: 22px;
+    height: 22px;
+    font-size: 0.66rem;
   }
 
   .io-drop-zone {

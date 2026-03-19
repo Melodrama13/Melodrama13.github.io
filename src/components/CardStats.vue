@@ -9,7 +9,10 @@
             <div class="nav-cutoff-controls">
               <input
                 type="number"
-                v-model.number="displayEventId"
+                :value="displayEventIdDraft"
+                @focus="onDisplayEventIdFocus"
+                @input="onDisplayEventIdInput($event.target.value)"
+                @blur="onDisplayEventIdBlur"
                 class="id-input"
                 placeholder="输入活动 ID"
               />
@@ -416,7 +419,7 @@
             <div id="rel-vs-unit-last-four" class="record-block">
               <div class="record-head-row">
                 <div class="record-head-left">
-                  <h3>OC团虚拟歌手上次四星</h3>
+                  <h3>OC团VS上次四星</h3>
                   <div class="record-head-controls">
                     <label class="record-compact-toggle">
                       <input v-model="vsUnitLastFourCompact" type="checkbox" />
@@ -652,6 +655,8 @@ const emit = defineEmits(['jump-to-event', 'stats-preview-update']);
 
 // 2. 新增：用户自定义的截止 ID 状态
 const manualEventId = ref(null);
+const displayEventIdDraft = ref('');
+const isEditingDisplayEventId = ref(false);
 const navCollapsed = ref(false);
 const activeNavId = ref('panel-dist');
 const matrixSortKey = ref('');
@@ -1007,8 +1012,9 @@ const normalizeBannerName = (banner) => String(banner || '').trim().split(/\s+/)
 const monthsSince = (dateStr) => {
   const d = parseDateSafe(dateStr);
   if (!d) return 0;
-  let m = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
-  if (now.getDate() < d.getDate()) m -= 1;
+  const ref = referenceDateObj.value;
+  let m = (ref.getFullYear() - d.getFullYear()) * 12 + (ref.getMonth() - d.getMonth());
+  if (ref.getDate() < d.getDate()) m -= 1;
   return Math.max(0, m);
 };
 
@@ -1234,6 +1240,9 @@ const prepareExportClone = async (targetEl) => {
   if (!targetEl) return null;
 
   const rect = targetEl.getBoundingClientRect();
+  const sourceStyle = window.getComputedStyle(targetEl);
+  const sourceBgColor = String(sourceStyle.backgroundColor || '').trim();
+  const hasVisibleBg = sourceBgColor && sourceBgColor !== 'transparent' && sourceBgColor !== 'rgba(0, 0, 0, 0)';
   const clone = targetEl.cloneNode(true);
   clone.classList.add('export-clone-root');
   clone.style.position = 'fixed';
@@ -1242,7 +1251,7 @@ const prepareExportClone = async (targetEl) => {
   clone.style.margin = '0';
   clone.style.pointerEvents = 'none';
   clone.style.zIndex = '-1';
-  clone.style.background = '#ffffff';
+  clone.style.background = hasVisibleBg ? sourceBgColor : '#ffffff';
   clone.style.width = `${Math.max(1, Math.ceil(rect.width))}px`;
   clone.style.maxHeight = 'none';
   clone.style.overflow = 'visible';
@@ -1445,9 +1454,64 @@ const displayEventId = computed({
   }
 });
 
+const updateDisplayEventIdDraft = () => {
+  if (isEditingDisplayEventId.value) return;
+  const n = toFiniteEventId(displayEventId.value);
+  displayEventIdDraft.value = n == null ? '' : String(n);
+};
+
+const onDisplayEventIdFocus = () => {
+  isEditingDisplayEventId.value = true;
+};
+
+const onDisplayEventIdInput = (rawVal) => {
+  displayEventIdDraft.value = String(rawVal ?? '');
+  const n = toFiniteEventId(displayEventIdDraft.value);
+  manualEventId.value = n ?? null;
+};
+
+const onDisplayEventIdBlur = () => {
+  isEditingDisplayEventId.value = false;
+  const n = toFiniteEventId(displayEventIdDraft.value);
+  manualEventId.value = n ?? null;
+  updateDisplayEventIdDraft();
+};
+
+watch(displayEventId, () => {
+  updateDisplayEventIdDraft();
+}, { immediate: true });
+
 const safeMaxEventId = computed(() => {
   const n = toFiniteEventId(displayEventId.value);
   return n ?? 0;
+});
+
+const allEventsById = computed(() => {
+  const map = {};
+  (props.allEvents || []).forEach((ev) => {
+    if (!isNumericEventId(ev?.id)) return;
+    map[Number(ev.id)] = ev;
+  });
+  return map;
+});
+
+const referenceDateObj = computed(() => {
+  const fallback = new Date();
+  const maxEid = Number(safeMaxEventId.value);
+  if (!Number.isFinite(maxEid) || maxEid <= 0) return fallback;
+  if (maxEid === Number(autoCurrentId.value)) return fallback;
+
+  const refEvent = allEventsById.value[maxEid];
+  const refDate = parseDateSafe(refEvent?.date);
+  return refDate || fallback;
+});
+
+const referenceDateStr = computed(() => {
+  const d = referenceDateObj.value;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}/${m}/${day}`;
 });
 
 const eventsById = computed(() => {
@@ -2025,7 +2089,7 @@ const vsUnitLastFourRecords = computed(() => {
         : `ID ${sourceKey}`,
       date: eventDateStr,
       dateValue: eventDate.getTime(),
-      days: daysBetween(eventDateStr, now.toISOString().slice(0, 10).replace(/-/g, '/')),
+      days: daysBetween(eventDateStr, referenceDateStr.value),
       periods: ev ? countPeriodsSince({ id: Number(ev.id), date: ev.date }) : 0
     };
 
@@ -2204,7 +2268,7 @@ const lastLimitedRecords = computed(() => {
 });
 
 const fourStarIntervalRecords = computed(() => {
-  const nowGapDate = now.toISOString().slice(0, 10).replace(/-/g, '/');
+  const nowGapDate = referenceDateStr.value;
   return Object.keys(charEventBuckets.value)
     .map((name) => {
       const arr = charEventBuckets.value[name].four;
@@ -2234,7 +2298,7 @@ const fourStarIntervalRecords = computed(() => {
 });
 
 const limitedIntervalRecords = computed(() => {
-  const nowGapDate = now.toISOString().slice(0, 10).replace(/-/g, '/');
+  const nowGapDate = referenceDateStr.value;
   return Object.keys(charEventBuckets.value)
     .map((name) => {
       const arr = charEventBuckets.value[name].limited;
@@ -3172,8 +3236,8 @@ const banShortestIntervals = computed(() => {
 }
 
 .record-unit-avatar {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
@@ -3612,8 +3676,8 @@ const banShortestIntervals = computed(() => {
   }
 
   .record-avatar {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
   }
 
   .jump-link {
@@ -3649,7 +3713,7 @@ const banShortestIntervals = computed(() => {
   }
 
   .char-avatar-box {
-    width: 40px;
+    width: 38px;
   }
 
   .avatar-img {

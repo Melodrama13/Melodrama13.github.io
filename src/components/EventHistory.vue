@@ -665,7 +665,15 @@ const BIRTHDAY_ORDER = {
   '镜音连': 23
 };
 
+const hasNonEmptyText = (value) => String(value || '').trim().length > 0;
+const isEventOfficialRevealedByJson = (event) => {
+  const sourceTitle = String(event?.source_event_title || '').trim();
+  const sourceGacha = String(event?.source_gacha_title || '').trim();
+  return hasNonEmptyText(sourceTitle) && hasNonEmptyText(sourceGacha);
+};
+
 const getPredictStatus = (event) => {
+  if (isEventOfficialRevealedByJson(event)) return 'past';
   const today = new Date();
   const eventDate = new Date(event.date.replace(/\//g, '-'));
   
@@ -692,6 +700,7 @@ const getCurrentEventId = () => {
 const canOpenPredictEditor = (event) => {
   if (!event) return false;
   if (!isNumericEventId(event?.id)) return false;
+  if (isEventOfficialRevealedByJson(event)) return false;
   const currentId = getCurrentEventId();
   return Number(event.id) > Number(currentId);
 };
@@ -4189,7 +4198,7 @@ const getFestivalPreviewUnitLogo = (name) => {
 
 @media (max-width: 768px) {
   .event-history {
-    --member-avatar-size: clamp(42px, 10.2vw, 54px);
+    --member-avatar-size: clamp(62px, 10.2vw, 54px);
   }
 
   .event-history {
@@ -4335,8 +4344,8 @@ const getFestivalPreviewUnitLogo = (name) => {
   }
 
   .banner-avatar {
-    width: 46px;
-    height: 46px;
+    width: 42px;
+    height: 42px;
     border-width: 2px;
   }
 
@@ -4346,9 +4355,9 @@ const getFestivalPreviewUnitLogo = (name) => {
   }
 
   .banner-tag {
-    right: -4px;
-    bottom: 0;
-    font-size: 8px;
+    right: -6px;
+    bottom: 4px;
+    font-size: 6px;
     padding: 0 4px;
   }
 
@@ -4391,12 +4400,12 @@ const getFestivalPreviewUnitLogo = (name) => {
   }
 
   .vs-avatar {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
   }
 
   .song-tooltip .info-icon {
-    font-size: 13px;
+    font-size: 10px;
   }
 
   .attr-section {
@@ -4420,7 +4429,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   }
 
   .member-row {
-    gap: 8px;
+    gap: 10px;
     align-items: flex-start;
   }
 
@@ -4448,8 +4457,8 @@ const getFestivalPreviewUnitLogo = (name) => {
   }
 
   .card-attr-icon {
-    width: clamp(13px, calc(var(--member-avatar-size) * 0.34), 18px);
-    height: clamp(13px, calc(var(--member-avatar-size) * 0.34), 18px);
+    width: clamp(13px, calc(var(--member-avatar-size) * 0.32), 18px);
+    height: clamp(13px, calc(var(--member-avatar-size) * 0.32), 18px);
     top: -3px;
     right: -3px;
   }
@@ -4462,8 +4471,8 @@ const getFestivalPreviewUnitLogo = (name) => {
   }
 
   .stars-overlay {
-    bottom: -2px;
-    left: -1px;
+    bottom: -1px;
+    left: -3px;
     gap: 0;
   }
 
@@ -4502,7 +4511,7 @@ const getFestivalPreviewUnitLogo = (name) => {
 
 @media (max-width: 520px) {
   .event-history {
-    --member-avatar-size: clamp(38px, 10.8vw, 48px);
+    --member-avatar-size: clamp(52px, 10.8vw, 48px);
   }
 
   .event-item {
@@ -4513,7 +4522,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   }
 
   .event-title {
-    font-size: 0.9rem;
+    font-size: 0.86rem;
   }
 
   .filter-panel {
