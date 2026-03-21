@@ -8,7 +8,7 @@
       >
         <div class="preview-config-panel" :class="{ 'is-collapsed': previewFloatingCollapsed }" :style="previewConfigPanelStyle" @mousedown="bringPreviewConfigToFront" @touchstart="bringPreviewConfigToFront">
           <div class="preview-config-head" @mousedown.prevent="startDragPreviewConfig($event)" @touchstart.prevent="startDragPreviewConfigTouch($event)">
-            <span>悬浮统计（最多5个）</span>
+            <span>悬浮统计（最多6个）</span>
             <div class="preview-config-actions">
               <button class="preview-config-reset" @mousedown.stop @touchstart.stop @click="previewFloatingCollapsed = !previewFloatingCollapsed">{{ previewFloatingCollapsed ? '展开统计' : '收起统计' }}</button>
               <button v-if="!previewFloatingCollapsed" class="preview-config-reset" @mousedown.stop @touchstart.stop @click="resetPreviewPanelLayout">重置布局</button>
@@ -20,7 +20,7 @@
               :key="`opt-${opt.id}`"
               class="preview-config-btn"
               :class="{ 'is-active': opt.selected }"
-              :disabled="opt.disabled || (!opt.selected && selectedPreviewPanelIds.length >= 5)"
+              :disabled="opt.disabled || (!opt.selected && selectedPreviewPanelIds.length >= 6)"
               :title="opt.tip || ''"
               @click="togglePreviewPanelType(opt.id)"
             >
@@ -31,6 +31,11 @@
             <div class="preview-char-select-title">
               <span>属性统计人选（最多8人）</span>
               <div class="preview-char-select-actions">
+                <button
+                  class="preview-char-select-toggle"
+                  @click="appendPreviewAttrCharsFromCurrentLineup"
+                  :disabled="!canAppendCurrentLineupToPreviewAttr"
+                >获取列表</button>
                 <button class="preview-char-select-toggle" @click="clearPreviewAttrChars" :disabled="selectedPreviewAttrChars.length === 0">清空</button>
                 <button class="preview-char-select-toggle" @click="previewAttrCharCollapsed = !previewAttrCharCollapsed">{{ previewAttrCharCollapsed ? '展开' : '收起' }}</button>
               </div>
@@ -230,19 +235,29 @@
           </button>
           <button
             @click="hideBirthdayRows = !hideBirthdayRows"
-            :class="['nav-btn', 'compact-tip', { 'active-highlight': !hideBirthdayRows }]"
+            :class="['nav-btn', { 'compact-tip': isCompactFilterBar, 'active-highlight': !hideBirthdayRows }]"
             :title="hideBirthdayRows ? '已隐藏生日行' : '显示生日行'"
-            data-tip="生日行"
+            :data-tip="isCompactFilterBar ? '生日行' : null"
           >
-            <img src="/elements/birthday.png" class="compact-btn-icon" alt="生日" />
+            <img v-if="isCompactFilterBar" src="/elements/birthday.png" class="compact-btn-icon" alt="生日" />
+            <span v-else>生日行：{{ hideBirthdayRows ? '隐藏' : '显示' }}</span>
+          </button>
+          <button
+            @click="hidePreviewRows = !hidePreviewRows"
+            :class="['nav-btn', { 'compact-tip': isCompactFilterBar, 'active-highlight': !hidePreviewRows }]"
+            :title="hidePreviewRows ? '已隐藏生放送行' : '显示生放送行'"
+            :data-tip="isCompactFilterBar ? '生放送' : null"
+          >
+            <span v-if="isCompactFilterBar">📺</span>
+            <span v-else>生放送：{{ hidePreviewRows ? '隐藏' : '显示' }}</span>
           </button>
           <button
             @click="hideCollabPools = !hideCollabPools"
-            :class="['nav-btn', 'compact-tip', { 'active-highlight': !hideCollabPools }]"
+            :class="['nav-btn', { 'compact-tip': isCompactFilterBar, 'active-highlight': !hideCollabPools }]"
             :title="hideCollabPools ? '已隐藏联动卡池' : '显示联动卡池'"
-            data-tip="联动卡池"
+            :data-tip="isCompactFilterBar ? '联动卡池' : null"
           >
-            {{ hideCollabPools ? '联动隐藏' : '联动显示' }}
+            {{ isCompactFilterBar ? (hideCollabPools ? '联动隐藏' : '联动显示') : `联动卡池：${hideCollabPools ? '隐藏' : '显示'}` }}
           </button>
           <button @click="scrollTo('top')" class="nav-btn compact-tip" title="顶部" data-tip="回到顶部">
             顶部
@@ -569,6 +584,23 @@
           </div>
         </div>
         <div
+          v-else-if="row.kind === 'preview'"
+          :id="row.id"
+          class="preview-row"
+        >
+          <div class="preview-label">生放送</div>
+          <div class="preview-date">{{ row.date }} {{ row.week }}</div>
+          <div class="preview-members">
+            <img
+              v-for="member in row.members"
+              :key="`preview-${row.key}-${member}`"
+              :src="`/chibi_s/${getCharAbbr(member)}.webp`"
+              class="preview-member-avatar"
+              :title="member"
+            />
+          </div>
+        </div>
+        <div
           v-else
           :id="row.id"
           class="birthday-row"
@@ -596,6 +628,7 @@
         :event="currentEditingEvent"
         :char-map="CHAR_MAP"
         :box-locked-units="currentEditingBoxLockedUnits"
+        @selection-change="handlePredictSelectionChange"
         @close="handleCloseEditor"
       />
     </div>
@@ -605,6 +638,7 @@
 <script setup>
 import { ref, computed, inject, nextTick, watch, onMounted, onActivated, onDeactivated, onBeforeUnmount } from 'vue';
 import PredictEditor from './PredictEditor.vue';
+import html2canvas from 'html2canvas';
 
 
 // 2. 【新增】接收从 App.vue 传下来的总表（包含历史+预测）
@@ -624,6 +658,8 @@ const normalizeEventId = (value) => String(value ?? '').trim();
 const isNumericEventId = (value) => /^\d+$/.test(normalizeEventId(value));
 const hideCollabPools = ref(true);
 const hideBirthdayRows = ref(false);
+const hidePreviewRows = ref(false);
+const previewDataRows = ref([]);
 
 const normalizeAttr = (attr) => {
   const map = {
@@ -1111,23 +1147,30 @@ const findEventElementInContainer = (eventId) => {
 const findRowElementInContainer = (rowId) => {
   const container = historyContainer.value;
   if (!container || !rowId) return null;
-  return Array.from(container.querySelectorAll('.event-item, .birthday-row')).find((item) => item.id === rowId) || null;
+  return Array.from(container.querySelectorAll('.event-item, .birthday-row, .preview-row')).find((item) => item.id === rowId) || null;
 };
 
 const preserveAnchorWhileLayoutChanges = (eventId, mutator) => {
   const container = historyContainer.value;
+  if (!container) {
+    mutator();
+    return;
+  }
+
   const anchorElBefore = findEventElementInContainer(eventId);
-  const beforeTop = anchorElBefore?.getBoundingClientRect().top;
+  const beforeTop = anchorElBefore
+    ? (anchorElBefore.getBoundingClientRect().top - container.getBoundingClientRect().top)
+    : null;
 
   mutator();
 
-  if (!container || typeof beforeTop !== 'number') return;
+  if (typeof beforeTop !== 'number') return;
 
   // 多帧校正，覆盖抽屉动画与紧凑样式切换期间的连续重排。
   const correctAnchor = () => {
     const anchorElAfter = findEventElementInContainer(eventId);
     if (!anchorElAfter) return;
-    const afterTop = anchorElAfter.getBoundingClientRect().top;
+    const afterTop = anchorElAfter.getBoundingClientRect().top - container.getBoundingClientRect().top;
     const delta = afterTop - beforeTop;
     if (Math.abs(delta) > 0.5) {
       container.scrollTop += delta;
@@ -1135,7 +1178,7 @@ const preserveAnchorWhileLayoutChanges = (eventId, mutator) => {
   };
 
   nextTick(() => {
-    let frames = 6;
+    let frames = 12;
     const tick = () => {
       correctAnchor();
       frames -= 1;
@@ -1143,6 +1186,7 @@ const preserveAnchorWhileLayoutChanges = (eventId, mutator) => {
     };
     requestAnimationFrame(tick);
     setTimeout(correctAnchor, 220);
+    setTimeout(correctAnchor, 420);
   });
 };
 
@@ -1180,6 +1224,9 @@ const openPredictEditor = (event) => {
 
   lastFocusedEventId.value = event.id;
   currentEditingEvent.value = event;
+  currentEditingSelectionNames.value = Array.isArray(event?.memberCards)
+    ? [...new Set(event.memberCards.map((card) => normalizeCharName(card?.Name)).filter((name) => !!CHAR_MAP[name]))]
+    : [];
   emit('sync-preview-event-id', Number(event.id));
   preserveAnchorWhileLayoutChanges(event.id, () => {
     isEditorOpen.value = true;
@@ -1190,12 +1237,14 @@ const handleCloseEditor = () => {
   const anchorId = currentEditingEvent.value?.id || lastFocusedEventId.value;
   if (!anchorId) {
     isEditorOpen.value = false;
+    currentEditingSelectionNames.value = [];
     return;
   }
 
   preserveAnchorWhileLayoutChanges(anchorId, () => {
     isEditorOpen.value = false;
   });
+  currentEditingSelectionNames.value = [];
   emit('sync-preview-event-id', null);
 };
 
@@ -1238,8 +1287,9 @@ const PREVIEW_CHAR_ORDER = {
   '初音未来': 21, '镜音铃': 22, '镜音连': 23, '巡音流歌': 24, 'MEIKO': 25, 'KAITO': 26
 };
 const PREVIEW_FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
-const selectedPreviewPanelIds = ref(['four', 'limited']);
+const selectedPreviewPanelIds = ref([]);
 const selectedPreviewAttrChars = ref([]);
+const currentEditingSelectionNames = ref([]);
 const selectedPreviewFestival = ref(PREVIEW_FESTIVAL_TYPES[0]);
 const previewFestivalFesToggles = ref({
   '半周年': false,
@@ -1276,6 +1326,56 @@ const togglePreviewAttrChar = (name) => {
 
 const clearPreviewAttrChars = () => {
   selectedPreviewAttrChars.value = [];
+};
+
+const normalizeCharName = (value) => String(value || '').trim().split(/\s+/)[0] || '';
+
+const getCurrentLineupCharNames = () => {
+  const names = [];
+  const seen = new Set();
+
+  const pushName = (raw) => {
+    const name = normalizeCharName(raw);
+    if (!name || !CHAR_MAP[name] || seen.has(name)) return;
+    seen.add(name);
+    names.push(name);
+  };
+
+  (currentEditingSelectionNames.value || []).forEach((name) => pushName(name));
+  if (names.length > 0) return names;
+
+  const cards = Array.isArray(currentEditingEvent.value?.memberCards)
+    ? currentEditingEvent.value.memberCards
+    : [];
+  cards.forEach((card) => pushName(card?.Name));
+  return names;
+};
+
+const canAppendCurrentLineupToPreviewAttr = computed(() => {
+  const source = getCurrentLineupCharNames();
+  if (source.length === 0) return false;
+  if (selectedPreviewAttrChars.value.length >= 8) return false;
+  return source.some((name) => !selectedPreviewAttrChars.value.includes(name));
+});
+
+const appendPreviewAttrCharsFromCurrentLineup = () => {
+  const source = getCurrentLineupCharNames();
+  if (source.length === 0) return;
+
+  const next = [...selectedPreviewAttrChars.value];
+  source.forEach((name) => {
+    if (next.length >= 8) return;
+    if (next.includes(name)) return;
+    next.push(name);
+  });
+  selectedPreviewAttrChars.value = next;
+};
+
+const handlePredictSelectionChange = (names) => {
+  const list = Array.isArray(names)
+    ? names.map((name) => normalizeCharName(name)).filter((name) => !!CHAR_MAP[name])
+    : [];
+  currentEditingSelectionNames.value = [...new Set(list)];
 };
 
 const setSelectedPreviewFestival = (festival) => {
@@ -1354,7 +1454,7 @@ const togglePreviewPanelType = (panelId) => {
     selectedPreviewPanelIds.value = current;
     return;
   }
-  if (current.length >= 5) return;
+  if (current.length >= 6) return;
   current.push(panelId);
   selectedPreviewPanelIds.value = current;
 };
@@ -1969,6 +2069,12 @@ const sortedEvents = computed(() => {
   ));
 });
 
+const normalLimitedEventsAsc = computed(() => {
+  return [...(props.allEvents || [])]
+    .filter((event) => String(event?.gacha_type || '').trim() === '普通限定')
+    .sort(compareEventOrderAsc);
+});
+
 const hasDetailFilters = computed(() => {
   const f = filterCriteria.value || {};
   return Boolean(
@@ -2127,6 +2233,43 @@ const birthdayRows = computed(() => {
   return rows;
 });
 
+const previewRows = computed(() => {
+  return (previewDataRows.value || []).map((item) => {
+    const idNum = Number(item?.id);
+    const date = String(item?.date || '').trim();
+    const week = String(item?.week || '').trim();
+    const members = Array.isArray(item?.members)
+      ? item.members.map((name) => String(name || '').trim()).filter((name) => !!CHAR_MAP[name]).slice(0, 4)
+      : [];
+    const safeId = Number.isFinite(idNum) ? idNum : `x${Math.random().toString(36).slice(2, 8)}`;
+    return {
+      kind: 'preview',
+      key: `preview-${safeId}`,
+      id: `preview-${safeId}`,
+      date,
+      week,
+      members
+    };
+  }).filter((row) => row.date && row.members.length > 0);
+});
+
+const previewRowsWithAnchor = computed(() => {
+  const limited = normalLimitedEventsAsc.value;
+  return previewRows.value.map((row) => {
+    const rowTime = getDateValue(row.date);
+    const anchorEvent = limited.find((event) => {
+      const t = getDateValue(event?.date);
+      if (!t || !rowTime) return false;
+      return t >= rowTime;
+    }) || null;
+    const anchorEventKey = anchorEvent ? `event-${normalizeEventId(anchorEvent.id)}` : '';
+    return {
+      ...row,
+      anchorEventKey
+    };
+  });
+});
+
 const filteredBirthdayRows = computed(() => {
   if (filterMode.value === 'event') return [];
   if (hideBirthdayRows.value) return [];
@@ -2147,6 +2290,18 @@ const filteredBirthdayRows = computed(() => {
   });
 });
 
+const filteredPreviewRows = computed(() => {
+  if (hidePreviewRows.value) return [];
+  if (hasActiveFilters.value) return [];
+  return previewRowsWithAnchor.value;
+});
+
+const rowTypePriority = (row) => {
+  if (row.kind === 'preview') return 0;
+  if (row.kind === 'birthday') return 1;
+  return 2;
+};
+
 const displayRows = computed(() => {
   const events = hasActiveFilters.value
     ? filteredData.value.map((event) => ({
@@ -2156,16 +2311,17 @@ const displayRows = computed(() => {
     }))
     : baseEventRows.value;
   const birthdays = filteredBirthdayRows.value;
-  if (!hasActiveFilters.value && birthdays.length === 0) return events;
-  if (birthdays.length === 0) return events;
-  const merged = [...events, ...birthdays];
+  const previews = filteredPreviewRows.value;
+  const merged = birthdays.length > 0 ? [...events, ...birthdays] : [...events];
 
   merged.sort((a, b) => {
     const ta = a.kind === 'event' ? getDateValue(a.event?.date) : getDateValue(a.date);
     const tb = b.kind === 'event' ? getDateValue(b.event?.date) : getDateValue(b.date);
     if (ta !== tb) return sortDesc.value ? tb - ta : ta - tb;
 
-    if (a.kind !== b.kind) return a.kind === 'event' ? -1 : 1;
+    const pa = rowTypePriority(a);
+    const pb = rowTypePriority(b);
+    if (pa !== pb) return pa - pb;
 
     if (a.kind === 'birthday' && b.kind === 'birthday') {
       const ao = BIRTHDAY_ORDER[a.name] ?? 999;
@@ -2178,7 +2334,46 @@ const displayRows = computed(() => {
     return ak.localeCompare(bk);
   });
 
-  return merged;
+  if (previews.length === 0) return merged;
+
+  const previewBucket = new Map();
+  const unAnchored = [];
+  previews.forEach((row) => {
+    if (!row.anchorEventKey) {
+      unAnchored.push(row);
+      return;
+    }
+    if (!previewBucket.has(row.anchorEventKey)) previewBucket.set(row.anchorEventKey, []);
+    previewBucket.get(row.anchorEventKey).push(row);
+  });
+
+  previewBucket.forEach((rows) => {
+    rows.sort((a, b) => {
+      const ta = getDateValue(a.date);
+      const tb = getDateValue(b.date);
+      return sortDesc.value ? tb - ta : ta - tb;
+    });
+  });
+
+  const withPreview = [];
+  merged.forEach((row) => {
+    if (row.kind === 'event') {
+      const bucket = previewBucket.get(row.key);
+      if (bucket && bucket.length > 0) withPreview.push(...bucket);
+    }
+    withPreview.push(row);
+  });
+
+  if (unAnchored.length > 0) {
+    unAnchored.sort((a, b) => {
+      const ta = getDateValue(a.date);
+      const tb = getDateValue(b.date);
+      return sortDesc.value ? tb - ta : ta - tb;
+    });
+    return sortDesc.value ? [...unAnchored, ...withPreview] : [...withPreview, ...unAnchored];
+  }
+
+  return withPreview;
 });
 
 const updatePreviewConfigOffset = () => {
@@ -2387,7 +2582,7 @@ let resizeRafId = 0;
 let jumpRetryTimer = 0;
 
 const updateCompactFilterState = () => {
-  isCompactFilterBar.value = window.innerWidth <= 900;
+  isCompactFilterBar.value = window.innerWidth <= 768;
 };
 
 const saveHistoryScroll = () => {
@@ -2408,7 +2603,7 @@ const getViewportAnchor = () => {
   if (!container) return null;
 
   const containerTop = container.getBoundingClientRect().top;
-  const nodes = container.querySelectorAll('.event-item, .birthday-row');
+  const nodes = container.querySelectorAll('.event-item, .birthday-row, .preview-row');
   for (const node of nodes) {
     const rect = node.getBoundingClientRect();
     if (rect.bottom > containerTop + 24) {
@@ -2501,8 +2696,290 @@ const jumpToEventById = (eventId, behavior = 'auto') => {
   return consumePendingJump(behavior, 30);
 };
 
+const sanitizeExportBaseName = (name) => {
+  const raw = String(name || '').trim();
+  const cleaned = raw.replace(/[\\/:*?"<>|]/g, '_').replace(/[.\s]+$/g, '').trim();
+  return cleaned || 'pjsk-predict-snapshot';
+};
+
+const parseEventIdFromDomId = (domId) => {
+  const raw = String(domId || '').trim();
+  if (!raw.startsWith('event-')) return '';
+  return raw.slice(6);
+};
+
+const getExportRowsInRange = (includeBirthdayRows = true) => {
+  const listEl = listRef.value;
+  if (!listEl) return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '历史列表尚未渲染完成。' };
+
+  const rows = Array.from(listEl.querySelectorAll(':scope > .event-item, :scope > .birthday-row, :scope > .preview-row'));
+  if (rows.length === 0) return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '当前历史列表为空。' };
+
+  const predicted = rows.filter((node) => node.classList.contains('event-item') && node.classList.contains('predicted'));
+  if (predicted.length === 0) return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '当前数据源没有已预测活动。' };
+
+  const firstPred = predicted[0];
+  const lastPred = predicted[predicted.length - 1];
+  const firstIndex = rows.indexOf(firstPred);
+  const lastIndex = rows.indexOf(lastPred);
+  if (firstIndex < 0 || lastIndex < 0 || lastIndex < firstIndex) {
+    return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '预测区间定位失败，请重试。' };
+  }
+
+  const rowsAllInRange = rows.slice(firstIndex, lastIndex + 1);
+
+  const exportRows = rowsAllInRange.filter((node) => {
+    if (node.classList.contains('preview-row')) return false;
+    if (!includeBirthdayRows && node.classList.contains('birthday-row')) return false;
+    return true;
+  });
+
+  if (exportRows.length === 0) {
+    return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '导出区间没有可导出的行。' };
+  }
+
+  return {
+    rows: exportRows,
+    rowsAllInRange,
+    firstEventId: parseEventIdFromDomId(firstPred.id),
+    lastEventId: parseEventIdFromDomId(lastPred.id),
+    error: ''
+  };
+};
+
+const getPredictedExportRangeInfo = (includeBirthdayRows = true) => {
+  const { firstEventId, lastEventId, error } = getExportRowsInRange(includeBirthdayRows);
+  if (error) return { ok: false, firstEventId: '', lastEventId: '', message: error };
+  return { ok: true, firstEventId, lastEventId, message: '' };
+};
+
+const withTemporaryScreenshotOverrides = (rowsAllInRange, includeBirthdayRows, isMobile, runner) => {
+  const hiddenNodes = [];
+  const deleteButtons = [];
+  const predictBadges = [];
+  const limTags = [];
+
+  rowsAllInRange.forEach((node) => {
+    const isPreview = node.classList.contains('preview-row');
+    const isBirthday = node.classList.contains('birthday-row');
+    if (isPreview || (!includeBirthdayRows && isBirthday)) {
+      hiddenNodes.push({ node, display: node.style.display });
+      node.style.display = 'none';
+      return;
+    }
+
+    node.querySelectorAll('.predict-delete-btn').forEach((btn) => {
+      deleteButtons.push({ node: btn, visibility: btn.style.visibility });
+      btn.style.visibility = 'hidden';
+    });
+
+    node.querySelectorAll('.predict-status-badge').forEach((badge) => {
+      predictBadges.push({ node: badge, visibility: badge.style.visibility });
+      badge.style.visibility = 'hidden';
+    });
+
+    if (!isMobile) {
+      node.querySelectorAll('.lim-tag').forEach((tag) => {
+      limTags.push({
+        node: tag,
+        clipPath: tag.style.clipPath,
+        webkitClipPath: tag.style.webkitClipPath,
+        transform: tag.style.transform,
+        borderRadius: tag.style.borderRadius,
+        width: tag.style.width,
+        height: tag.style.height,
+        lineHeight: tag.style.lineHeight,
+        fontSize: tag.style.fontSize,
+        padding: tag.style.padding,
+        display: tag.style.display,
+        alignItems: tag.style.alignItems,
+        justifyContent: tag.style.justifyContent,
+        html: tag.innerHTML,
+        text: tag.style.textAlign,
+        whiteSpace: tag.style.whiteSpace,
+        position: tag.style.position,
+        top: tag.style.top,
+        right: tag.style.right,
+        left: tag.style.left,
+        zIndex: tag.style.zIndex
+      });
+
+      // 导出时统一成移动端的圆角标签样式，避免 PC 端切角在截图引擎上失真。
+      const rawText = String(tag.textContent || '').trim() || '期间限定';
+      tag.innerHTML = rawText;
+      tag.style.setProperty('clip-path', 'none', 'important');
+      tag.style.setProperty('-webkit-clip-path', 'none', 'important');
+      tag.style.display = 'inline-flex';
+      tag.style.alignItems = 'center';
+      tag.style.justifyContent = 'center';
+      tag.style.borderRadius = '6px';
+      tag.style.width = 'auto';
+      tag.style.height = 'auto';
+      tag.style.lineHeight = '1.1';
+      tag.style.padding = '1px 6px';
+      tag.style.fontSize = '9px';
+      tag.style.whiteSpace = 'nowrap';
+      tag.style.textAlign = 'center';
+      tag.style.position = 'absolute';
+      tag.style.top = '-3px';
+      tag.style.left = 'calc(50% - 8px)';
+      tag.style.right = 'auto';
+      tag.style.transform = 'translateX(-50%)';
+      tag.style.zIndex = '9';
+      });
+    }
+  });
+
+  const restore = () => {
+    hiddenNodes.forEach(({ node, display }) => {
+      node.style.display = display;
+    });
+    deleteButtons.forEach(({ node, visibility }) => {
+      node.style.visibility = visibility;
+    });
+    predictBadges.forEach(({ node, visibility }) => {
+      node.style.visibility = visibility;
+    });
+    limTags.forEach((snapshot) => {
+      const { node, clipPath, webkitClipPath } = snapshot;
+      node.style.clipPath = clipPath;
+      node.style.webkitClipPath = webkitClipPath;
+      node.style.transform = snapshot.transform;
+      node.style.borderRadius = snapshot.borderRadius;
+      node.style.width = snapshot.width;
+      node.style.height = snapshot.height;
+      node.style.lineHeight = snapshot.lineHeight;
+      node.style.fontSize = snapshot.fontSize;
+      node.style.padding = snapshot.padding;
+      node.style.display = snapshot.display;
+      node.style.alignItems = snapshot.alignItems;
+      node.style.justifyContent = snapshot.justifyContent;
+      node.style.textAlign = snapshot.text;
+      node.style.whiteSpace = snapshot.whiteSpace;
+      node.style.position = snapshot.position;
+      node.style.top = snapshot.top;
+      node.style.right = snapshot.right;
+      node.style.left = snapshot.left;
+      node.style.zIndex = snapshot.zIndex;
+      node.innerHTML = snapshot.html;
+    });
+  };
+
+  return Promise.resolve()
+    .then(runner)
+    .finally(restore);
+};
+
+const getCaptureBoundsFromRows = (listEl, rows) => {
+  if (!listEl || !Array.isArray(rows) || rows.length === 0) {
+    return { top: 0, height: 1, width: Math.max(320, Number(listEl?.clientWidth || 0)) };
+  }
+
+  const visibleRows = rows.filter((node) => {
+    const style = window.getComputedStyle(node);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  });
+  const targetRows = visibleRows.length > 0 ? visibleRows : rows;
+
+  const firstRect = targetRows[0].getBoundingClientRect();
+  const lastRect = targetRows[targetRows.length - 1].getBoundingClientRect();
+  const listRect = listEl.getBoundingClientRect();
+  const top = Math.max(0, Math.floor(firstRect.top - listRect.top - 1));
+  const bottom = Math.max(top + 1, Math.ceil(lastRect.bottom - listRect.top + 1));
+  return {
+    top,
+    height: Math.max(1, bottom - top),
+    width: Math.max(320, Math.ceil(listEl.clientWidth || listRect.width || 320))
+  };
+};
+
+const exportPredictedRangePng = async (options = {}) => {
+  const includeBirthdayRows = options?.includeBirthdayRows !== false;
+  const { rows, rowsAllInRange, error } = getExportRowsInRange(includeBirthdayRows);
+  if (error) return { ok: false, message: error };
+
+  const listEl = listRef.value;
+  if (!listEl) return { ok: false, message: '历史列表尚未渲染完成。' };
+
+  try {
+    const isMobile = window.innerWidth <= 768;
+    const canvas = await withTemporaryScreenshotOverrides(rowsAllInRange, includeBirthdayRows, isMobile, async () => {
+      await nextTick();
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+      const bounds = getCaptureBoundsFromRows(listEl, rows);
+      const deviceScale = Number(window.devicePixelRatio || 1);
+      const useExperimentalHQ = !!options?.experimentalHQ;
+      const budgets = isMobile
+        ? (useExperimentalHQ
+          ? [13_000_000, 9_000_000, 6_800_000, 4_800_000, 3_000_000]
+          : [9_000_000, 6_200_000, 4_200_000, 3_000_000])
+        : [18_000_000];
+
+      let lastErr = null;
+      for (const pixelBudget of budgets) {
+        const rawScale = Math.sqrt(pixelBudget / Math.max(1, bounds.width * bounds.height));
+        const scale = isMobile
+          ? (useExperimentalHQ
+            ? Math.max(0.42, Math.min(deviceScale, rawScale, 2.0))
+            : Math.max(0.38, Math.min(deviceScale, rawScale, 1.6)))
+          : Math.max(0.45, Math.min(deviceScale, rawScale, 2));
+
+        try {
+          return await html2canvas(listEl, {
+            backgroundColor: '#f4f7f6',
+            scale,
+            useCORS: true,
+            logging: false,
+            imageTimeout: 12000,
+            x: 0,
+            y: bounds.top,
+            width: bounds.width,
+            height: bounds.height,
+            scrollX: 0,
+            scrollY: 0
+          });
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+
+      throw lastErr || new Error('capture failed');
+    });
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const fallback = `pjsk-predict-snapshot-${y}${m}${d}`;
+    const fileBaseName = sanitizeExportBaseName(options?.fileBaseName || fallback);
+
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => {
+        if (b) resolve(b);
+        else reject(new Error('toBlob failed'));
+      }, 'image/png');
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${fileBaseName}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    return { ok: true, message: '预测截图导出成功。' };
+  } catch (err) {
+    console.error('导出预测截图失败', err);
+    return { ok: false, message: '导出失败，请重试。' };
+  }
+};
+
 defineExpose({
-  jumpToEventById
+  jumpToEventById,
+  getPredictedExportRangeInfo,
+  exportPredictedRangePng
 });
 
 const isReloadNavigation = () => {
@@ -2540,6 +3017,15 @@ const restoreHistoryScroll = () => {
 };
 
 onMounted(() => {
+  fetch('/data/pjsk_preview.json')
+    .then((res) => (res.ok ? res.json() : []))
+    .then((rows) => {
+      previewDataRows.value = Array.isArray(rows) ? rows : [];
+    })
+    .catch(() => {
+      previewDataRows.value = [];
+    });
+
   window.addEventListener('mousemove', handleDragPreviewConfig);
   window.addEventListener('mouseup', stopDragPreviewConfig);
   window.addEventListener('touchmove', handleDragPreviewConfigTouch, { passive: false });
@@ -3440,6 +3926,8 @@ const getFestivalPreviewUnitLogo = (name) => {
 
   .event-history-wrapper.with-editor .event-item,
   .event-history-wrapper.with-editor .event-item *,
+  .event-history-wrapper.with-editor .preview-row,
+  .event-history-wrapper.with-editor .preview-row *,
   .event-history-wrapper.with-editor .birthday-row,
   .event-history-wrapper.with-editor .birthday-row * {
     transition: none !important;
@@ -3643,6 +4131,34 @@ const getFestivalPreviewUnitLogo = (name) => {
     width: 18px;
     height: 18px;
   }
+
+  .event-history-wrapper.with-editor .preview-row {
+    min-height: 36px;
+    padding: 4px 10px;
+    gap: 8px;
+  }
+
+  .event-history-wrapper.with-editor .preview-label {
+    min-width: 56px;
+    font-size: 0.68rem;
+    padding: 1px 6px;
+  }
+
+  .event-history-wrapper.with-editor .preview-date {
+    font-size: 0.72rem;
+  }
+
+  .event-history-wrapper.with-editor .preview-members {
+    margin-left: 0;
+    justify-content: center;
+    flex: 1 1 auto;
+    gap: 6px;
+  }
+
+  .event-history-wrapper.with-editor .preview-member-avatar {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 .filter-sticky {
@@ -3748,6 +4264,56 @@ const getFestivalPreviewUnitLogo = (name) => {
   width: 22px;
   height: 22px;
   object-fit: contain;
+}
+
+.preview-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  border-radius: 12px;
+  padding: 6px 14px;
+  border: 1px dashed rgba(15, 23, 42, 0.16);
+  background: rgba(15, 23, 42, 0.03);
+  box-sizing: border-box;
+}
+
+.preview-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 66px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: rgba(15, 23, 42, 0.12);
+  color: #111827;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.preview-date {
+  font-size: 0.76rem;
+  color: #4b5563;
+  white-space: nowrap;
+}
+
+.preview-members {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  margin-left: 0;
+  min-width: 0;
+  gap: 9px;
+  flex-wrap: nowrap;
+}
+
+.preview-member-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .predict-delete-btn {
@@ -4317,6 +4883,33 @@ const getFestivalPreviewUnitLogo = (name) => {
     padding: 10px;
   }
 
+  .preview-row {
+    gap: 8px;
+    min-height: 38px;
+    padding: 4px 8px;
+  }
+
+  .preview-label {
+    min-width: 54px;
+    font-size: 0.66rem;
+    padding: 1px 6px;
+  }
+
+  .preview-date {
+    font-size: 0.68rem;
+  }
+
+  .preview-members {
+    justify-content: flex-start;
+    margin-left: 8px;
+    gap: 7px;
+  }
+
+  .preview-member-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
   .event-basic {
     grid-area: basic;
     width: auto;
@@ -4519,6 +5112,27 @@ const getFestivalPreviewUnitLogo = (name) => {
     column-gap: 6px;
     row-gap: 6px;
     padding: 8px;
+  }
+
+  .preview-row {
+    padding: 4px 7px;
+    gap: 6px;
+    min-height: 34px;
+  }
+
+  .preview-label {
+    min-width: 48px;
+    font-size: 0.62rem;
+    padding: 1px 5px;
+  }
+
+  .preview-date {
+    font-size: 0.64rem;
+  }
+
+  .preview-member-avatar {
+    width: 36px;
+    height: 36px;
   }
 
   .event-title {

@@ -131,7 +131,7 @@
 import { reactive, inject, watch, computed, ref, onMounted, onBeforeUnmount } from 'vue';
 
 const props = defineProps(['isOpen', 'event', 'charMap', 'boxLockedUnits']);
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'selection-change']);
 const savePredictEvent = inject('savePredictEvent');
 
 const ATTRS = ['Pure','Cool','Cute','Happy','Mysterious'];
@@ -660,6 +660,18 @@ watch(
   () => {
     applyAllRules();
   }
+);
+
+watch(
+  () => [props.isOpen, form.selectedChars.map((c) => c.name).join('|')],
+  ([open]) => {
+    if (!open) {
+      emit('selection-change', []);
+      return;
+    }
+    emit('selection-change', form.selectedChars.map((c) => c.name));
+  },
+  { immediate: true }
 );
 
 const isCharInList = (name) => form.selectedChars.some(c => c.name === name);

@@ -33,10 +33,11 @@
         <button
           ref="sourceTriggerRef"
           class="io-btn source-trigger"
-          :class="{ active: sourceMenuOpen }"
+          :class="{ active: sourceMenuOpen, 'is-disabled': isHistoryPredictEditorOpen }"
+          :disabled="isHistoryPredictEditorOpen"
           @pointerdown.stop
           @click.stop="toggleSourceMenu"
-          :title="`当前数据源：${activePredictSourceName}`"
+          :title="isHistoryPredictEditorOpen ? '预测面板打开时不可操作数据源' : `当前数据源：${activePredictSourceName}`"
         >
           {{ isCompactTopNav ? '数据源' : `数据源：${activePredictSourceName}` }}
         </button>
@@ -82,8 +83,34 @@
           <div class="source-actions">
             <button @click="triggerImportPredicts" class="io-btn" title="导入 JSON 并创建新数据源">📥 导入</button>
             <button @click="exportPredicts" class="io-btn" title="导出当前数据源预测">📤 导出</button>
+            <button
+              @click="openScreenshotExportConfirm"
+              class="io-btn"
+              :disabled="isScreenshotExporting"
+              :title="isScreenshotExporting ? '正在截图，请等待' : '导出已预测活动区间PNG（生放送不导出）'"
+            >{{ isScreenshotExporting ? '🖼️ 截图中…' : '🖼️ 导出预测截图' }}</button>
             <button @click="deleteActivePredictSource" class="io-btn" :disabled="predictSources.length <= 1" title="删除当前数据源">🗑️ 删除当前源</button>
           </div>
+          <label class="source-export-option">
+            <input v-model="exportBirthdayRowsInPng" type="checkbox" />
+            <span>导出生日行</span>
+          </label>
+          <label v-if="isCompactTopNav" class="source-export-option">
+            <input v-model="experimentalHighQualityPng" type="checkbox" />
+            <span>实验：移动端高清导出（更慢，可能失败后自动降级）</span>
+          </label>
+          <div v-if="showScreenshotConfirmPanel" class="source-export-confirm">
+            <div class="source-export-confirm-title">将要导出{{ screenshotConfirmRangeText }}期活动</div>
+            <div class="source-export-confirm-row">
+              <span>文件名</span>
+              <input v-model="screenshotExportFileName" class="source-export-name-input" type="text" maxlength="80" />
+            </div>
+            <div class="source-export-confirm-actions">
+              <button class="io-btn" @click="cancelScreenshotExport" :disabled="isScreenshotExporting">取消</button>
+              <button class="io-btn" @click="confirmScreenshotExport" :disabled="isScreenshotExporting">确认导出PNG</button>
+            </div>
+          </div>
+          <div v-if="screenshotStatusText" class="source-export-status">{{ screenshotStatusText }}</div>
 
           <div
             class="io-drop-zone source-drop-zone"
@@ -172,7 +199,27 @@ const draggedSourceId = ref('');
 const dragOverSourceId = ref('');
 const isEditingPredictUserName = ref(false);
 const isCompactTopNav = ref(false);
+const exportBirthdayRowsInPng = ref(true);
+const experimentalHighQualityPng = ref(false);
+const isScreenshotExporting = ref(false);
+const screenshotStatusText = ref('');
+const showScreenshotConfirmPanel = ref(false);
+const screenshotExportFileName = ref('');
+const screenshotConfirmRange = ref({ firstId: '', lastId: '' });
 let cleanupNoticeTimer = null;
+
+const screenshotConfirmRangeText = computed(() => {
+  const firstId = String(screenshotConfirmRange.value.firstId || '').trim();
+  const lastId = String(screenshotConfirmRange.value.lastId || '').trim();
+  if (!firstId || !lastId) return '';
+  return `${firstId}~${lastId}`;
+});
+
+const isHistoryPredictEditorOpen = computed(() => {
+  if (currentTab.value !== 'history') return false;
+  const id = Number(previewSyncEventId.value);
+  return Number.isFinite(id) && id > 0;
+});
 
 const PREDICT_SOURCES_KEY = 'pjsk_predict_sources_v1';
 const PREDICT_ACTIVE_KEY = 'pjsk_predict_active_source_v1';
@@ -463,6 +510,7 @@ const deleteActivePredictSource = () => {
 };
 
 const toggleSourceMenu = () => {
+  if (isHistoryPredictEditorOpen.value) return;
   sourceMenuOpen.value = !sourceMenuOpen.value;
 };
 
@@ -726,6 +774,119 @@ const exportPredicts = () => {
   } catch (error) {
     console.error('导出预测失败', error);
     alert('导出失败，请稍后重试。');
+  }
+};
+
+const prepareScreenshotExport = async () => {
+  const sourceName = String(activePredictSourceName.value || '').trim() || '预测数据源';
+  const userName = sanitizeExportFileName(normalizeUserName(predictUserName.value));
+  const defaultBaseName = sanitizeExportFileName(`pjsk-${userName}-${sourceName}-预测截图`);
+
+  if (currentTab.value !== 'history') {
+    setCurrentTab('history');
+    await nextTick();
+  }
+
+  await nextTick();
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+  const instance = tabComponentRef.value;
+  if (!instance || typeof instance.exportPredictedRangePng !== 'function') {
+    return { ok: false, message: '历史页面尚未准备完成，请稍后重试。' };
+  }
+  if (typeof instance.getPredictedExportRangeInfo !== 'function') {
+    return { ok: false, message: '历史页面尚未准备完成，请稍后重试。' };
+  }
+
+  const rangeInfo = instance.getPredictedExportRangeInfo(!!exportBirthdayRowsInPng.value);
+  if (!rangeInfo?.ok) {
+    return { ok: false, message: rangeInfo?.message || '导出失败，请稍后重试。' };
+  }
+
+  return {
+    ok: true,
+    defaultBaseName,
+    firstId: String(rangeInfo.firstEventId || '').trim(),
+    lastId: String(rangeInfo.lastEventId || '').trim()
+  };
+};
+
+const openScreenshotExportConfirm = async () => {
+  if (isScreenshotExporting.value) return;
+  screenshotStatusText.value = '正在准备截图范围...';
+  try {
+    const prepared = await prepareScreenshotExport();
+    if (!prepared.ok) {
+      alert(prepared.message || '导出失败，请稍后重试。');
+      showScreenshotConfirmPanel.value = false;
+      return;
+    }
+    screenshotConfirmRange.value = { firstId: prepared.firstId, lastId: prepared.lastId };
+    screenshotExportFileName.value = prepared.defaultBaseName;
+    showScreenshotConfirmPanel.value = true;
+    screenshotStatusText.value = '';
+  } catch (error) {
+    console.error('准备截图导出失败', error);
+    alert('导出失败，请稍后重试。');
+    showScreenshotConfirmPanel.value = false;
+    screenshotStatusText.value = '';
+  }
+};
+
+const cancelScreenshotExport = () => {
+  if (isScreenshotExporting.value) return;
+  showScreenshotConfirmPanel.value = false;
+};
+
+const confirmScreenshotExport = async () => {
+  if (isScreenshotExporting.value) return;
+  try {
+    const sourceName = String(activePredictSourceName.value || '').trim() || '预测数据源';
+    const userName = sanitizeExportFileName(normalizeUserName(predictUserName.value));
+    const defaultBaseName = sanitizeExportFileName(`pjsk-${userName}-${sourceName}-预测截图`);
+
+    isScreenshotExporting.value = true;
+    screenshotStatusText.value = '正在截图，请等待...';
+
+    if (currentTab.value !== 'history') {
+      setCurrentTab('history');
+      await nextTick();
+    }
+
+    await nextTick();
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const instance = tabComponentRef.value;
+    if (!instance || typeof instance.exportPredictedRangePng !== 'function') {
+      alert('历史页面尚未准备完成，请稍后重试。');
+      return;
+    }
+
+    const fileBaseName = sanitizeExportFileName(String(screenshotExportFileName.value || '').trim() || defaultBaseName);
+
+    const result = await instance.exportPredictedRangePng({
+      includeBirthdayRows: !!exportBirthdayRowsInPng.value,
+      fileBaseName,
+      experimentalHQ: !!experimentalHighQualityPng.value
+    });
+
+    if (!result?.ok) {
+      alert(result?.message || '导出失败，请稍后重试。');
+    } else {
+      showScreenshotConfirmPanel.value = false;
+      screenshotStatusText.value = '截图导出完成。';
+      setTimeout(() => {
+        screenshotStatusText.value = '';
+      }, 1800);
+    }
+  } catch (error) {
+    console.error('导出预测截图失败', error);
+    alert('导出失败，请稍后重试。');
+  } finally {
+    isScreenshotExporting.value = false;
+    if (screenshotStatusText.value && screenshotStatusText.value !== '截图导出完成。') {
+      screenshotStatusText.value = '';
+    }
   }
 };
 
@@ -1258,9 +1419,18 @@ watch(predictUserName, (newVal) => {
 });
 
 watch(sourceMenuOpen, async (open) => {
-  if (!open) return;
+  if (!open) {
+    showScreenshotConfirmPanel.value = false;
+    return;
+  }
   await nextTick();
   updateSourceMenuPosition();
+});
+
+watch(isHistoryPredictEditorOpen, (open) => {
+  if (open) {
+    sourceMenuOpen.value = false;
+  }
 });
 </script>
 
@@ -1408,6 +1578,12 @@ button.active {
   white-space: nowrap;
 }
 
+.source-trigger.is-disabled,
+.source-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .source-menu {
   position: absolute;
   right: 0;
@@ -1535,6 +1711,73 @@ button.active {
   margin-bottom: 8px;
 }
 
+.source-export-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: #475569;
+  margin-bottom: 8px;
+  user-select: none;
+}
+
+.source-export-option input {
+  margin: 0;
+}
+
+.source-export-status {
+  font-size: 0.72rem;
+  color: #0f766e;
+  background: #ecfeff;
+  border: 1px solid #99f6e4;
+  border-radius: 8px;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+}
+
+.source-export-confirm {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 8px;
+  background: #f8fafc;
+  margin-bottom: 8px;
+}
+
+.source-export-confirm-title {
+  font-size: 0.75rem;
+  color: #334155;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.source-export-confirm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.source-export-confirm-row > span {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: #475569;
+}
+
+.source-export-name-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 5px 7px;
+  font-size: 0.74rem;
+}
+
+.source-export-confirm-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
 .io-drop-zone {
   display: inline-flex;
   align-items: center;
@@ -1623,6 +1866,43 @@ button.active {
   }
 
   .username-wrap {
+  .source-export-confirm {
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 8px;
+    background: #f8fafc;
+    margin-bottom: 8px;
+  }
+  .source-export-confirm-title {
+    font-size: 0.75rem;
+    color: #334155;
+    font-weight: 700;
+    margin-bottom: 7px;
+  }
+  .source-export-confirm-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .source-export-confirm-row > span {
+    flex: 0 0 auto;
+    font-size: 0.72rem;
+    color: #475569;
+  }
+  .source-export-name-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 5px 7px;
+    font-size: 0.74rem;
+  }
+  .source-export-confirm-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+  }
     order: 3;
     gap: 4px;
     padding: 3px 6px;
@@ -1630,6 +1910,22 @@ button.active {
 
   .username-label {
     font-size: 0.66rem;
+  }
+  .source-export-confirm {
+    padding: 6px;
+  }
+  .source-export-confirm-title {
+    font-size: 0.68rem;
+  }
+  .source-export-confirm-row {
+    gap: 6px;
+  }
+  .source-export-confirm-row > span {
+    font-size: 0.66rem;
+  }
+  .source-export-name-input {
+    font-size: 0.68rem;
+    padding: 4px 6px;
   }
 
   .username-input {
@@ -1768,6 +2064,16 @@ button.active {
 
   .source-actions {
     gap: 4px;
+  }
+
+  .source-export-option {
+    font-size: 0.68rem;
+    gap: 4px;
+  }
+
+  .source-export-status {
+    font-size: 0.64rem;
+    padding: 3px 6px;
   }
 
   .source-item {
