@@ -69,10 +69,6 @@
                 {{ fest }}
               </button>
             </div>
-            <label v-if="canTogglePreviewFestivalFes(activePreviewFestivalName)" class="preview-festival-fes-toggle">
-              <input v-model="previewFestivalFesToggles[activePreviewFestivalName]" type="checkbox" />
-              <span>统计FES</span>
-            </label>
           </div>
         </div>
         <div
@@ -87,6 +83,27 @@
           <div class="preview-panel-head" @mousedown.prevent="startDragPreview(panel.id, $event)" @touchstart.prevent="startDragPreviewTouch(panel.id, $event)">
             <span class="preview-icon">{{ panel.icon }}</span>
             <span class="preview-title">{{ panel.title }}</span>
+            <label
+              v-if="panel.id === 'festival'"
+              class="preview-head-toggle"
+              @mousedown.stop
+              @touchstart.stop
+              @click.stop
+            >
+              <input v-model="previewFestivalMergeHigherRanks" type="checkbox" />
+              <span>高星合并</span>
+            </label>
+            <label
+              v-if="panel.id === 'reward'"
+              class="preview-head-toggle"
+              title="勾选后，报酬统计会额外计入联动的二/三星卡。"
+              @mousedown.stop
+              @touchstart.stop
+              @click.stop
+            >
+              <input v-model="previewIncludeCollabReward" type="checkbox" />
+              <span>联动</span>
+            </label>
             <button
               class="preview-collapse-btn"
               :title="isPreviewPanelCollapsed(panel.id) ? '展开' : '收起'"
@@ -122,8 +139,17 @@
             </template>
             <template v-else-if="panel.id === 'festival'">
               <div v-if="panel.festivalName" class="preview-festival-head">
-                当前节日：{{ panel.festivalName }}
-                <span v-if="panel.festivalShowFes" class="preview-festival-fes-state">（统计FES：{{ panel.festivalIncludeFes ? '开' : '关' }}）</span>
+                <span>当前节日：{{ panel.festivalName }}</span>
+                <label
+                  v-if="panel.festivalShowFes"
+                  class="preview-festival-inline-toggle"
+                  @mousedown.stop
+                  @touchstart.stop
+                  @click.stop
+                >
+                  <input v-model="previewFestivalFesToggles[activePreviewFestivalName]" type="checkbox" />
+                  <span>统计FES：{{ panel.festivalIncludeFes ? '开' : '关' }}</span>
+                </label>
               </div>
               <div v-for="row in panel.festivalRows" :key="`festival-${row.key}`" class="preview-festival-row">
                 <span class="preview-festival-label">{{ row.label }}</span>
@@ -138,7 +164,7 @@
                     <span v-if="row.key !== 'none' && (char.count || 0) > 1" class="preview-festival-count">{{ char.count || 0 }}</span>
                     <span v-if="char.isPermOnly" class="preview-festival-perm">普</span>
                   </div>
-                  <div v-if="!row.chars || row.chars.length === 0" class="preview-meta">暂无</div>
+                  <div v-if="!row.chars || row.chars.length === 0" class="preview-meta">-</div>
                 </div>
               </div>
               <div v-if="!panel.festivalRows || panel.festivalRows.length === 0" class="preview-step preview-step-empty">
@@ -318,6 +344,22 @@
             </div>
 
             <div class="filter-row">
+              <span class="row-label">多人规则</span>
+              <div class="btn-group-sm">
+                <button
+                  :class="{ active: eventFilterCriteria.multiPersonRule === 'same-event' }"
+                  :disabled="!canUseMultiPersonRule"
+                  @click="setEventMultiPersonRule('same-event')"
+                >同活</button>
+                <button
+                  :class="{ active: eventFilterCriteria.multiPersonRule === 'same-pool' }"
+                  :disabled="!canUseMultiPersonRule"
+                  @click="setEventMultiPersonRule('same-pool')"
+                >同池</button>
+              </div>
+            </div>
+
+            <div class="filter-row">
               <span class="row-label">是否Ban</span>
               <div class="btn-group-sm">
                 <button
@@ -397,14 +439,14 @@
             </div>
           </template>
 
-          <template v-if="filterMode === 'single' && filterCriteria.selectedChars.length > 0">
+          <template v-if="filterMode === 'single'">
             <div class="filter-row">
               <span class="row-label">组合</span>
               <div class="icon-group units">
                 <img v-for="(color, unit) in UNIT_COLORS" :key="unit" 
                     :src="`/elements/${unit}.png`" 
-                    :class="{ 'icon-active': filterCriteria.unit === unit }"
-                    @click="filterCriteria.unit = (filterCriteria.unit === unit ? null : unit)"
+                    :class="{ 'icon-active': filterCriteria.units.includes(unit) }"
+                    @click="toggleDetailFilterArray('units', unit)"
                     :title="unit.toUpperCase()" />
               </div>
             </div>
@@ -414,8 +456,8 @@
               <div class="icon-group attributes">
                 <img v-for="attr in ['Happy', 'Mysterious', 'Cute', 'Cool', 'Pure']" 
                     :key="attr" :src="`/elements/${attr.toLowerCase()}.png`"
-                    :class="{ 'icon-active': filterCriteria.attribute === attr }"
-                    @click="filterCriteria.attribute = (filterCriteria.attribute === attr ? null : attr)" />
+                    :class="{ 'icon-active': filterCriteria.attributes.includes(attr) }"
+                    @click="toggleDetailFilterArray('attributes', attr)" />
               </div>
             </div>
 
@@ -423,8 +465,8 @@
               <span class="row-label">技能</span>
               <div class="btn-group-sm">
                 <button v-for="(label, key) in { score_up:'分卡', accuracy:'判卡', recovery:'奶卡', p_score:'P分', unit_score: '团分', cfes_l: 'CFES血分', cfes_j: 'CFES判分', bfes_up: 'BFES' }" 
-                        :key="key" :class="{ active: filterCriteria.skill === key }"
-                        @click="filterCriteria.skill = (filterCriteria.skill === key ? null : key)">
+                        :key="key" :class="{ active: filterCriteria.skills.includes(key) }"
+                        @click="toggleDetailFilterArray('skills', key)">
                   {{ label }}
                 </button>
               </div>
@@ -434,12 +476,12 @@
               <span class="row-label">稀有度</span>
               <div class="rarity-group">
                 <div v-for="r in [1,2,3,4]" :key="r" 
-                    :class="['rarity-item', { 'active': filterCriteria.rarity === r }]"
-                    @click="filterCriteria.rarity = (filterCriteria.rarity === r ? null : r)">
+                    :class="['rarity-item', { 'active': filterCriteria.rarities.includes(r) }]"
+                    @click="toggleDetailFilterArray('rarities', r)">
                   <img v-for="n in r" :key="n" :src="`/elements/${r === 4 ? 'rstar' : 'ystar'}.png`" class="star-img" />
                 </div>
-                <div :class="['rarity-item', { 'active': filterCriteria.rarity === 'birthday' }]"
-                    @click="filterCriteria.rarity = (filterCriteria.rarity === 'birthday' ? null : 'birthday')">
+                <div :class="['rarity-item', { 'active': filterCriteria.rarities.includes('birthday') }]"
+                    @click="toggleDetailFilterArray('rarities', 'birthday')">
                   <img src="/elements/birthday.png" class="birthday-img" />
                 </div>
               </div>
@@ -453,8 +495,8 @@
                     perm: '常驻', limited: '普通限定', ue: 'UE限定', cfes: 'CFES', bfes: 'BFES', collab: '联动限定', movie: '剧场版' 
                   }" 
                   :key="key"
-                  :class="{ active: filterCriteria.cardType === key }"
-                  @click="filterCriteria.cardType = (filterCriteria.cardType === key ? null : key)"
+                  :class="{ active: filterCriteria.cardTypes.includes(key) }"
+                  @click="toggleDetailFilterArray('cardTypes', key)"
                 >
                   {{ label }}
                 </button>
@@ -1290,6 +1332,8 @@ const PREVIEW_FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs
 const selectedPreviewPanelIds = ref([]);
 const selectedPreviewAttrChars = ref([]);
 const currentEditingSelectionNames = ref([]);
+const previewIncludeCollabReward = ref(false);
+const previewFestivalMergeHigherRanks = ref(false);
 const selectedPreviewFestival = ref(PREVIEW_FESTIVAL_TYPES[0]);
 const previewFestivalFesToggles = ref({
   '半周年': false,
@@ -1710,7 +1754,28 @@ const currentPreviewFestivalRows = computed(() => {
   const festival = activePreviewFestivalName.value;
   if (!festival) return [];
   const rows = previewFestivalRowsMap.value?.[festival];
-  return Array.isArray(rows) ? rows : [];
+  if (!Array.isArray(rows)) return [];
+  if (!previewFestivalMergeHigherRanks.value) return rows;
+
+  const getBaseName = (charName) => parseFestivalPreviewCharKey(charName).baseName;
+  const fourRow = rows.find((row) => row.key === 'four') || { chars: [] };
+  const threeRow = rows.find((row) => row.key === 'three') || { chars: [] };
+  const twoRow = rows.find((row) => row.key === 'two') || { chars: [] };
+
+  const fourBaseSet = new Set((fourRow.chars || []).map((item) => getBaseName(item.name)).filter(Boolean));
+  const mergedThreeChars = (threeRow.chars || []).filter((item) => !fourBaseSet.has(getBaseName(item.name)));
+  const threeBaseSet = new Set(mergedThreeChars.map((item) => getBaseName(item.name)).filter(Boolean));
+  const mergedTwoChars = (twoRow.chars || []).filter((item) => {
+    const base = getBaseName(item.name);
+    if (!base) return false;
+    return !fourBaseSet.has(base) && !threeBaseSet.has(base);
+  });
+
+  return rows.map((row) => {
+    if (row.key === 'three') return { ...row, chars: mergedThreeChars };
+    if (row.key === 'two') return { ...row, chars: mergedTwoChars };
+    return row;
+  });
 });
 
 const previewFestivalIncludeFes = computed(() => {
@@ -1855,7 +1920,10 @@ const isCardWithinPreviewLimit = (card, maxId) => {
 
 const isPreviewEventRewardCard = (card) => {
   const rarity = String(card?.Rarity || '').trim();
-  return isNumericEventId(card?.EventID) && ['2', '3'].includes(rarity);
+  if (!['2', '3'].includes(rarity)) return false;
+  if (isNumericEventId(card?.EventID)) return true;
+  if (!previewIncludeCollabReward.value) return false;
+  return String(card?.Type || '').trim().toLowerCase() === 'collab';
 };
 
 const previewCharStats = computed(() => {
@@ -1989,9 +2057,7 @@ const previewFloatingPanels = computed(() => {
     .filter(Boolean)
     .map((def) => ({
       id: def.id,
-      title: def.id === 'festival' && activePreviewFestivalName.value
-        ? `节日人选·${activePreviewFestivalName.value}`
-        : def.title,
+      title: def.title,
       icon: def.icon,
       steps: (def.id === 'festival' || def.id === 'vs-last-four' || def.id === 'vs-unit-score') ? [] : getPreviewStepsByKey(def.statKey),
       festivalName: def.id === 'festival' ? activePreviewFestivalName.value : '',
@@ -2039,20 +2105,23 @@ const EVENT_GACHA_FILTER_OPTIONS = [
   { value: 'perm', label: '常驻' },
   { value: 'limited', label: '普通限定' },
   { value: 'ue', label: 'UE限定' },
+  { value: 'cfes', label: 'CFES' },
+  { value: 'bfes', label: 'BFES' },
   { value: 'collab', label: '联动' }
 ];
 
 const filterCriteria = ref({
   selectedChars: [], // 选中的角色名数组
-  rarity: null,      // 1, 2, 3, 4, 'birthday'
-  attribute: null,   // 'Happy', 'Mysterious', 'Cute', 'Cool', 'Pure'
-  skill: null,       // 'score_up', 'accuracy', 'recovery', 'p_score'
-  cardType: null,    // 'perm', 'limited', 'collab_t', 'cfes', 'bfes'
-  unit: null         // 'ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'
+  rarities: [],      // [1, 2, 3, 4, 'birthday']
+  attributes: [],    // ['Happy', 'Mysterious', 'Cute', 'Cool', 'Pure']
+  skills: [],        // ['score_up', 'accuracy', ...]
+  cardTypes: [],     // ['perm', 'limited', ...]
+  units: []          // ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs']
 });
 
 const eventFilterCriteria = ref({
   characters: [],
+  multiPersonRule: 'same-event', // 'same-event' | 'same-pool'
   isBan: null, // 'yes' | 'no' | null
   eventTypes: [],
   festivals: [],
@@ -2062,6 +2131,7 @@ const eventFilterCriteria = ref({
 });
 
 const canUseEventBanFilter = computed(() => eventFilterCriteria.value.characters.length === 1);
+const canUseMultiPersonRule = computed(() => eventFilterCriteria.value.characters.length >= 2);
 
 const sortedEvents = computed(() => {
   return [...(props.allEvents || [])].sort((a, b) => (
@@ -2079,11 +2149,11 @@ const hasDetailFilters = computed(() => {
   const f = filterCriteria.value || {};
   return Boolean(
     (f.selectedChars && f.selectedChars.length > 0) ||
-    f.rarity ||
-    f.attribute ||
-    f.skill ||
-    f.cardType ||
-    f.unit
+    (f.rarities && f.rarities.length > 0) ||
+    (f.attributes && f.attributes.length > 0) ||
+    (f.skills && f.skills.length > 0) ||
+    (f.cardTypes && f.cardTypes.length > 0) ||
+    (f.units && f.units.length > 0)
   );
 });
 
@@ -2167,37 +2237,53 @@ const filteredData = computed(() => {
 
   if (!hasDetailFilters.value) return data;
 
-  return data.filter(event => {
-    const selectedNames = filterCriteria.value.selectedChars;
+  const matchDetailCardType = (card, typeValue) => {
+    const cType = String(card?.Type || '').toLowerCase();
+    if (typeValue === 'collab') return cType === 'collab' || cType === 'collab_t';
+    if (typeValue === 'ue') return ['wl1', 'wl2', 'wl3'].includes(cType);
+    return cType === String(typeValue || '').toLowerCase();
+  };
 
-    const targetChar = selectedNames[0];
-    return (event.memberCards || []).some(card => {
-      const cardMainName = card.Name.split(' ')[0];
-      if (cardMainName !== targetChar) return false;
+  const getEventCardsForFilter = (event) => {
+    const cardsInEvent = Array.isArray(event?.memberCards) ? event.memberCards.filter(Boolean) : [];
+    if (cardsInEvent.length > 0) return cardsInEvent;
+    const eid = normalizeEventId(event?.id);
+    if (!eid) return [];
+    return (props.allCards || []).filter((card) => normalizeEventId(card?.EventID) === eid);
+  };
 
-      let matchType = true;
-      if (filterCriteria.value.cardType) {
-        const cType = card.Type?.toLowerCase();
-        if (filterCriteria.value.cardType === 'collab') {
-          matchType = (cType === 'collab' || cType === 'collab_t');
-        } else if (filterCriteria.value.cardType === 'ue') {
-          matchType = ['wl1', 'wl2', 'wl3'].includes(cType);
-        } else {
-          matchType = (cType === filterCriteria.value.cardType);
-        }
-      }
-      const matchRarity = !filterCriteria.value.rarity || 
-                         (filterCriteria.value.rarity === 'birthday' 
-                            ? card.Type === 'birthday' 
-                            : parseInt(card.Rarity) === filterCriteria.value.rarity);      
-      const matchAttr = !filterCriteria.value.attribute || 
-             (card.Attribute && normalizeAttr(card.Attribute) === normalizeAttr(filterCriteria.value.attribute)); 
+  return data.filter((event) => {
+    const selectedNames = filterCriteria.value.selectedChars || [];
+    const cards = getEventCardsForFilter(event);
+    return cards.some((card) => {
+      const cardMainName = String(card?.Name || '').trim().split(' ')[0];
+      if (!cardMainName || cardMainName === '-' || cardMainName === 'CardID') return false;
 
-      const matchSkill = !filterCriteria.value.skill || 
-                 (card.Skill && card.Skill.toLowerCase() === filterCriteria.value.skill.toLowerCase());
+      if (selectedNames.length > 0 && !selectedNames.includes(cardMainName)) return false;
 
-      const matchUnit = !filterCriteria.value.unit || 
-                 (card.Affiliation && card.Affiliation.toLowerCase() === filterCriteria.value.unit.toLowerCase());
+      const matchType = !filterCriteria.value.cardTypes.length
+        || filterCriteria.value.cardTypes.some((t) => matchDetailCardType(card, t));
+
+      const rarityRaw = String(card?.Rarity || '').trim();
+      const cardTypeRaw = String(card?.Type || '').trim().toLowerCase();
+      const matchRarity = !filterCriteria.value.rarities.length
+        || filterCriteria.value.rarities.some((r) => {
+          if (r === 'birthday') return cardTypeRaw === 'birthday';
+          return Number(rarityRaw) === Number(r);
+        });
+
+      const attr = normalizeAttr(card?.Attribute);
+      const matchAttr = !filterCriteria.value.attributes.length
+        || filterCriteria.value.attributes.includes(attr);
+
+      const skill = String(card?.Skill || '').toLowerCase();
+      const matchSkill = !filterCriteria.value.skills.length
+        || filterCriteria.value.skills.includes(skill);
+
+      const unit = String(card?.Affiliation || '').toLowerCase();
+      const matchUnit = !filterCriteria.value.units.length
+        || filterCriteria.value.units.includes(unit);
+
       return matchRarity && matchAttr && matchSkill && matchType && matchUnit;
     });
   });
@@ -2278,13 +2364,13 @@ const filteredBirthdayRows = computed(() => {
   return birthdayRows.value.filter((row) => {
     if (selected.length > 0 && !selected.includes(row.name)) return false;
 
-    if (filterCriteria.value.rarity && filterCriteria.value.rarity !== 'birthday') return false;
+    if (filterCriteria.value.rarities.length > 0 && !filterCriteria.value.rarities.includes('birthday')) return false;
 
-    if (filterCriteria.value.attribute && normalizeAttr(filterCriteria.value.attribute) !== normalizeAttr(row.attribute)) return false;
+    if (filterCriteria.value.attributes.length > 0 && !filterCriteria.value.attributes.includes(normalizeAttr(row.attribute))) return false;
 
-    if (filterCriteria.value.skill) return false;
-    if (filterCriteria.value.unit) return false;
-    if (filterCriteria.value.cardType) return false;
+    if (filterCriteria.value.skills.length > 0) return false;
+    if (filterCriteria.value.units.length > 0) return false;
+    if (filterCriteria.value.cardTypes.length > 0) return false;
 
     return true;
   });
@@ -2417,8 +2503,11 @@ const relaxFiltersForJump = (eventId) => {
 // 处理角色点击
 const toggleChar = (name) => {
   if (filterMode.value === 'event') return;
-  // 单人模式：切换选中或清空
-  filterCriteria.value.selectedChars = filterCriteria.value.selectedChars.includes(name) ? [] : [name];
+  const current = [...(filterCriteria.value.selectedChars || [])];
+  const idx = current.indexOf(name);
+  if (idx >= 0) current.splice(idx, 1);
+  else current.push(name);
+  filterCriteria.value.selectedChars = current;
 };
 
 const toggleEventFilterCharacter = (name) => {
@@ -2430,6 +2519,23 @@ const toggleEventFilterCharacter = (name) => {
   if (!canUseEventBanFilter.value) {
     eventFilterCriteria.value.isBan = null;
   }
+  if (!canUseMultiPersonRule.value) {
+    eventFilterCriteria.value.multiPersonRule = 'same-event';
+  }
+};
+
+const setEventMultiPersonRule = (rule) => {
+  if (!canUseMultiPersonRule.value) return;
+  if (!['same-event', 'same-pool'].includes(rule)) return;
+  eventFilterCriteria.value.multiPersonRule = rule;
+};
+
+const toggleDetailFilterArray = (key, value) => {
+  const current = [...(filterCriteria.value[key] || [])];
+  const idx = current.indexOf(value);
+  if (idx >= 0) current.splice(idx, 1);
+  else current.push(value);
+  filterCriteria.value[key] = current;
 };
 
 const setEventBanFilter = (value) => {
@@ -2516,9 +2622,32 @@ const matchEventTypeFilter = (event, typeValue) => {
 
 const matchEventGachaFilter = (event, gachaValue) => {
   const gachaType = String(event?.gacha_type || '').trim();
+
+  const getEventCardTypeSet = () => {
+    const typeSet = new Set();
+    const eventCards = Array.isArray(event?.memberCards) ? event.memberCards : [];
+    eventCards.forEach((card) => {
+      const t = String(card?.Type || '').trim().toLowerCase();
+      if (t) typeSet.add(t);
+    });
+
+    const eid = normalizeEventId(event?.id);
+    if (eid) {
+      (props.allCards || []).forEach((card) => {
+        if (normalizeEventId(card?.EventID) !== eid) return;
+        const t = String(card?.Type || '').trim().toLowerCase();
+        if (t) typeSet.add(t);
+      });
+    }
+
+    return typeSet;
+  };
+
   if (gachaValue === 'perm') return gachaType === '常驻';
   if (gachaValue === 'limited') return gachaType === '普通限定';
   if (gachaValue === 'ue') return gachaType === 'UE限定';
+  if (gachaValue === 'cfes') return getEventCardTypeSet().has('cfes');
+  if (gachaValue === 'bfes') return getEventCardTypeSet().has('bfes');
   if (gachaValue === 'collab') return gachaType.includes('联动');
   return false;
 };
@@ -2528,6 +2657,19 @@ const matchEventFilters = (event) => {
   if (f.characters.length > 0) {
     const hasAllSelected = f.characters.every((name) => eventContainsCharacter(event, name));
     if (!hasAllSelected) return false;
+
+    if (f.characters.length >= 2 && f.multiPersonRule === 'same-pool') {
+      const cards = Array.isArray(event?.memberCards) ? event.memberCards : [];
+      const hasAllFourStar = f.characters.every((name) => {
+        const target = String(name || '').trim();
+        return cards.some((card) => {
+          const cardName = String(card?.Name || '').trim().split(' ')[0];
+          const rarity = String(card?.Rarity || '').trim();
+          return cardName === target && rarity === '4';
+        });
+      });
+      if (!hasAllFourStar) return false;
+    }
   }
 
   if (canUseEventBanFilter.value && f.isBan) {
@@ -2559,9 +2701,10 @@ const matchEventFilters = (event) => {
 };
 // 重置所有筛选
 const resetFilters = () => {
-  filterCriteria.value = { selectedChars: [], rarity: null, attribute: null, skill: null, cardType: null, unit: null };
+  filterCriteria.value = { selectedChars: [], rarities: [], attributes: [], skills: [], cardTypes: [], units: [] };
   eventFilterCriteria.value = {
     characters: [],
+    multiPersonRule: 'same-event',
     isBan: null,
     eventTypes: [],
     festivals: [],
@@ -2708,7 +2851,13 @@ const parseEventIdFromDomId = (domId) => {
   return raw.slice(6);
 };
 
-const getExportRowsInRange = (includeBirthdayRows = true) => {
+const normalizeRangeEventId = (value) => {
+  const n = Number(String(value || '').trim());
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return String(Math.trunc(n));
+};
+
+const getExportRowsInRange = (includeBirthdayRows = true, options = {}) => {
   const listEl = listRef.value;
   if (!listEl) return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '历史列表尚未渲染完成。' };
 
@@ -2718,8 +2867,38 @@ const getExportRowsInRange = (includeBirthdayRows = true) => {
   const predicted = rows.filter((node) => node.classList.contains('event-item') && node.classList.contains('predicted'));
   if (predicted.length === 0) return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '当前数据源没有已预测活动。' };
 
-  const firstPred = predicted[0];
-  const lastPred = predicted[predicted.length - 1];
+  const defaultFirstPred = predicted[0];
+  const defaultLastPred = predicted[predicted.length - 1];
+
+  let firstPred = defaultFirstPred;
+  let lastPred = defaultLastPred;
+
+  const requestedStart = normalizeRangeEventId(options?.rangeStartId);
+  const requestedEnd = normalizeRangeEventId(options?.rangeEndId);
+
+  if (requestedStart || requestedEnd) {
+    if (!requestedStart || !requestedEnd) {
+      return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '自选范围需要同时填写起始和结束活动ID。' };
+    }
+
+    const startNum = Number(requestedStart);
+    const endNum = Number(requestedEnd);
+    const normalizedFrom = String(Math.min(startNum, endNum));
+    const normalizedTo = String(Math.max(startNum, endNum));
+
+    const findEventNodeById = (eventId) => rows.find((node) => node.classList.contains('event-item') && parseEventIdFromDomId(node.id) === eventId);
+
+    const startNode = findEventNodeById(normalizedFrom);
+    const endNode = findEventNodeById(normalizedTo);
+
+    if (!startNode || !endNode) {
+      return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '自选范围中的活动ID不在当前列表中，请检查筛选条件或ID。' };
+    }
+
+    firstPred = startNode;
+    lastPred = endNode;
+  }
+
   const firstIndex = rows.indexOf(firstPred);
   const lastIndex = rows.indexOf(lastPred);
   if (firstIndex < 0 || lastIndex < 0 || lastIndex < firstIndex) {
@@ -2895,7 +3074,10 @@ const getCaptureBoundsFromRows = (listEl, rows) => {
 
 const exportPredictedRangePng = async (options = {}) => {
   const includeBirthdayRows = options?.includeBirthdayRows !== false;
-  const { rows, rowsAllInRange, error } = getExportRowsInRange(includeBirthdayRows);
+  const { rows, rowsAllInRange, error } = getExportRowsInRange(includeBirthdayRows, {
+    rangeStartId: options?.rangeStartId,
+    rangeEndId: options?.rangeEndId
+  });
   if (error) return { ok: false, message: error };
 
   const listEl = listRef.value;
@@ -3525,21 +3707,6 @@ const getFestivalPreviewUnitLogo = (name) => {
   color: #0f172a;
 }
 
-.preview-festival-fes-toggle {
-  margin-top: 7px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.68rem;
-  color: #475569;
-  user-select: none;
-}
-
-.preview-festival-fes-toggle input {
-  width: 14px;
-  height: 14px;
-}
-
 .preview-panel {
   position: fixed;
   min-width: 0;
@@ -3580,6 +3747,21 @@ const getFestivalPreviewUnitLogo = (name) => {
 .preview-title {
   font-size: 0.86rem;
   font-weight: 700;
+}
+
+.preview-head-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  font-size: 0.68rem;
+  color: #475569;
+  user-select: none;
+}
+
+.preview-head-toggle input {
+  width: 12px;
+  height: 12px;
 }
 
 .preview-collapse-btn {
@@ -3659,16 +3841,30 @@ const getFestivalPreviewUnitLogo = (name) => {
 
 .preview-festival-head {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
   font-size: 0.72rem;
   color: #334155;
   font-weight: 700;
   margin-bottom: 2px;
 }
 
-.preview-festival-fes-state {
-  margin-left: 6px;
+.preview-festival-inline-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
   font-weight: 600;
   color: #0f766e;
+  white-space: nowrap;
+}
+
+.preview-festival-inline-toggle input {
+  width: 12px;
+  height: 12px;
 }
 
 .preview-festival-row {
@@ -3899,7 +4095,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   background: #f4f7f6;
   transition: margin-right 0.18s ease;
   min-width: 0; /* 防止子元素撑开 flex */
-  touch-action: pan-y;
+  touch-action: pan-y pinch-zoom;
   overscroll-behavior-x: contain;
 }
 

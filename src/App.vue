@@ -93,14 +93,36 @@
           </div>
           <label class="source-export-option">
             <input v-model="exportBirthdayRowsInPng" type="checkbox" />
-            <span>导出生日行</span>
+            <span>截图导出生日行</span>
           </label>
           <label v-if="isCompactTopNav" class="source-export-option">
             <input v-model="experimentalHighQualityPng" type="checkbox" />
-            <span>实验：移动端高清导出（更慢，可能失败后自动降级）</span>
+            <span>实验：高清导出（更慢，失败后可能自动降级）</span>
           </label>
           <div v-if="showScreenshotConfirmPanel" class="source-export-confirm">
             <div class="source-export-confirm-title">将要导出{{ screenshotConfirmRangeText }}期活动</div>
+            <div class="source-export-confirm-row source-export-range-row">
+              <span>活动范围</span>
+              <input
+                v-model="screenshotRangeStartId"
+                class="source-export-range-input"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="8"
+                placeholder="起始ID"
+              />
+              <span class="source-export-range-sep">~</span>
+              <input
+                v-model="screenshotRangeEndId"
+                class="source-export-range-input"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="8"
+                placeholder="结束ID"
+              />
+            </div>
             <div class="source-export-confirm-row">
               <span>文件名</span>
               <input v-model="screenshotExportFileName" class="source-export-name-input" type="text" maxlength="80" />
@@ -206,14 +228,18 @@ const screenshotStatusText = ref('');
 const showScreenshotConfirmPanel = ref(false);
 const screenshotExportFileName = ref('');
 const screenshotConfirmRange = ref({ firstId: '', lastId: '' });
+const screenshotRangeStartId = ref('');
+const screenshotRangeEndId = ref('');
 let cleanupNoticeTimer = null;
 
 const screenshotConfirmRangeText = computed(() => {
-  const firstId = String(screenshotConfirmRange.value.firstId || '').trim();
-  const lastId = String(screenshotConfirmRange.value.lastId || '').trim();
+  const firstId = String(screenshotRangeStartId.value || screenshotConfirmRange.value.firstId || '').trim();
+  const lastId = String(screenshotRangeEndId.value || screenshotConfirmRange.value.lastId || '').trim();
   if (!firstId || !lastId) return '';
   return `${firstId}~${lastId}`;
 });
+
+const normalizeRangeEventIdInput = (value) => String(value || '').replace(/\D+/g, '').trim();
 
 const isHistoryPredictEditorOpen = computed(() => {
   if (currentTab.value !== 'history') return false;
@@ -693,6 +719,25 @@ const getCurrentPredictLockEventId = () => {
   return Math.max(byDate, byReveal);
 };
 
+const getPredictableEventIdRange = () => {
+  const lockId = getCurrentPredictLockEventId();
+  const ids = (historyData.value || [])
+    .map((ev) => Number(ev?.id))
+    .filter((id) => Number.isFinite(id) && id > lockId)
+    .sort((a, b) => a - b);
+
+  if (!ids.length) {
+    return { ok: false, minId: 0, maxId: 0, lockId };
+  }
+
+  return {
+    ok: true,
+    minId: ids[0],
+    maxId: ids[ids.length - 1],
+    lockId
+  };
+};
+
 const getSourceEventById = (eventId) => {
   const idNum = Number(eventId);
   if (!Number.isFinite(idNum)) return null;
@@ -822,6 +867,8 @@ const openScreenshotExportConfirm = async () => {
       return;
     }
     screenshotConfirmRange.value = { firstId: prepared.firstId, lastId: prepared.lastId };
+    screenshotRangeStartId.value = prepared.firstId;
+    screenshotRangeEndId.value = prepared.lastId;
     screenshotExportFileName.value = prepared.defaultBaseName;
     showScreenshotConfirmPanel.value = true;
     screenshotStatusText.value = '';
@@ -836,6 +883,8 @@ const openScreenshotExportConfirm = async () => {
 const cancelScreenshotExport = () => {
   if (isScreenshotExporting.value) return;
   showScreenshotConfirmPanel.value = false;
+  screenshotRangeStartId.value = '';
+  screenshotRangeEndId.value = '';
 };
 
 const confirmScreenshotExport = async () => {
@@ -863,17 +912,43 @@ const confirmScreenshotExport = async () => {
     }
 
     const fileBaseName = sanitizeExportFileName(String(screenshotExportFileName.value || '').trim() || defaultBaseName);
+    const rangeStartId = normalizeRangeEventIdInput(screenshotRangeStartId.value || screenshotConfirmRange.value.firstId);
+    const rangeEndId = normalizeRangeEventIdInput(screenshotRangeEndId.value || screenshotConfirmRange.value.lastId);
+
+    if (!rangeStartId || !rangeEndId) {
+      alert('请输入有效的起止活动ID。');
+      return;
+    }
+
+    const predictableRange = getPredictableEventIdRange();
+    if (!predictableRange.ok) {
+      alert('当前没有可预测活动，无法导出截图。');
+      return;
+    }
+
+    const startNum = Number(rangeStartId);
+    const endNum = Number(rangeEndId);
+    const minSelected = Math.min(startNum, endNum);
+    const maxSelected = Math.max(startNum, endNum);
+    if (minSelected < predictableRange.minId || maxSelected > predictableRange.maxId) {
+      alert(`活动ID需在可预测范围内：${predictableRange.minId}~${predictableRange.maxId}`);
+      return;
+    }
 
     const result = await instance.exportPredictedRangePng({
       includeBirthdayRows: !!exportBirthdayRowsInPng.value,
       fileBaseName,
-      experimentalHQ: !!experimentalHighQualityPng.value
+      experimentalHQ: !!experimentalHighQualityPng.value,
+      rangeStartId,
+      rangeEndId
     });
 
     if (!result?.ok) {
       alert(result?.message || '导出失败，请稍后重试。');
     } else {
       showScreenshotConfirmPanel.value = false;
+      screenshotRangeStartId.value = '';
+      screenshotRangeEndId.value = '';
       screenshotStatusText.value = '截图导出完成。';
       setTimeout(() => {
         screenshotStatusText.value = '';
@@ -1757,6 +1832,10 @@ button.active {
   margin-bottom: 8px;
 }
 
+.source-export-range-row {
+  gap: 6px;
+}
+
 .source-export-confirm-row > span {
   flex: 0 0 auto;
   font-size: 0.72rem;
@@ -1770,6 +1849,21 @@ button.active {
   border-radius: 8px;
   padding: 5px 7px;
   font-size: 0.74rem;
+}
+
+.source-export-range-input {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 5px 7px;
+  font-size: 0.74rem;
+}
+
+.source-export-range-sep {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: #64748b;
 }
 
 .source-export-confirm-actions {
@@ -1866,43 +1960,6 @@ button.active {
   }
 
   .username-wrap {
-  .source-export-confirm {
-    border: 1px solid #cbd5e1;
-    border-radius: 10px;
-    padding: 8px;
-    background: #f8fafc;
-    margin-bottom: 8px;
-  }
-  .source-export-confirm-title {
-    font-size: 0.75rem;
-    color: #334155;
-    font-weight: 700;
-    margin-bottom: 7px;
-  }
-  .source-export-confirm-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-  .source-export-confirm-row > span {
-    flex: 0 0 auto;
-    font-size: 0.72rem;
-    color: #475569;
-  }
-  .source-export-name-input {
-    flex: 1 1 auto;
-    min-width: 0;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 5px 7px;
-    font-size: 0.74rem;
-  }
-  .source-export-confirm-actions {
-    display: flex;
-    gap: 6px;
-    justify-content: flex-end;
-  }
     order: 3;
     gap: 4px;
     padding: 3px 6px;
@@ -1927,11 +1984,22 @@ button.active {
     font-size: 0.68rem;
     padding: 4px 6px;
   }
+  .source-export-range-input {
+    font-size: 0.68rem;
+    padding: 4px 6px;
+  }
 
   .username-input {
     width: 78px;
     font-size: 0.7rem;
     padding: 2px 6px;
+  }
+
+  /* iOS/Safari 聚焦输入框会自动放大页面，移动端统一将关键输入字号提升到 16px 以避免锁定放大态。 */
+  .username-input,
+  .source-export-name-input,
+  .source-export-range-input {
+    font-size: 16px;
   }
 
   .nav-tabs-spacer {

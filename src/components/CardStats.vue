@@ -70,7 +70,35 @@
               :id="`panel-${panel.id}`"
             >
               <div class="section-head section-head-sub">
-                <h2>{{ panel.title }}</h2>
+                <div class="section-head-left">
+                  <h2>{{ panel.title }}</h2>
+                  <label
+                    v-if="panel.id === 'reward'"
+                    class="reward-collab-toggle"
+                    title="勾选后，报酬统计会额外计入联动的二/三星卡。"
+                  >
+                    <input v-model="includeCollabRewardCards" type="checkbox" />
+                    统计联动
+                  </label>
+                  <div v-if="panel.id === 'limited-ban'" class="head-inline-filters">
+                    <label class="head-filter-toggle" title="只统计箱限ban个数。">
+                      <input
+                        type="checkbox"
+                        :checked="limitedBanEventTypeFilter === '箱活'"
+                        @change="setLimitedBanEventTypeFilter('箱活', $event.target.checked)"
+                      />
+                      只看箱活
+                    </label>
+                    <label class="head-filter-toggle" title="只统计混限ban个数。">
+                      <input
+                        type="checkbox"
+                        :checked="limitedBanEventTypeFilter === '混活'"
+                        @change="setLimitedBanEventTypeFilter('混活', $event.target.checked)"
+                      />
+                      只看混活
+                    </label>
+                  </div>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(`panel-${panel.id}`, `阶梯分布_${panel.title}`)">PNG</button>
               </div>
               <table class="count-table">
@@ -101,7 +129,13 @@
 
         <div id="panel-festival" class="stats-section card-panel festival-panel">
           <div class="section-head">
-            <h2>节日人选</h2>
+            <div class="section-head-left">
+              <h2>节日人选</h2>
+              <label class="festival-merge-toggle" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
+                <input v-model="festivalMergeHigherRanks" type="checkbox" />
+                高星合并低星
+              </label>
+            </div>
             <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-festival', '节日人选')">PNG</button>
           </div>
           <div class="festival-grid">
@@ -116,7 +150,7 @@
                   <h3>{{ fest.festival }}</h3>
                   <label v-if="canToggleFestivalFes(fest.festival)" class="festival-fes-toggle">
                     <input v-model="festivalFesToggles[fest.festival]" type="checkbox" />
-                    显示FES
+                    统计FES
                   </label>
                 </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(fest.anchorId, `节日人选_${fest.festival}`)">PNG</button>
@@ -178,7 +212,7 @@
           <div class="record-grid">
             <div id="rel-last-four" class="record-block">
               <div class="block-head">
-                <h3>上一次四星（按时间）</h3>
+                <h3>{{ getRelatedRecordTitle('rel-last-four') }}</h3>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-four', '相关记录_上一次四星')">PNG</button>
               </div>
               <table class="record-table">
@@ -208,7 +242,7 @@
 
             <div id="rel-last-limited" class="record-block">
               <div class="block-head">
-                <h3>上一次限定（按时间）</h3>
+                <h3>{{ getRelatedRecordTitle('rel-last-limited') }}</h3>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-limited', '相关记录_上一次限定')">PNG</button>
               </div>
               <table class="record-table">
@@ -238,7 +272,7 @@
 
             <div id="rel-four-long" class="record-block">
               <div class="block-head">
-                <h3>四星最长间隔（长→短）</h3>
+                <h3>{{ getRelatedRecordTitle('rel-four-long') }}</h3>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-long', '相关记录_四星最长间隔')">PNG</button>
               </div>
               <table class="record-table">
@@ -268,7 +302,7 @@
 
             <div id="rel-four-short" class="record-block">
               <div class="block-head">
-                <h3>四星最短间隔（短→长）</h3>
+                <h3>{{ getRelatedRecordTitle('rel-four-short') }}</h3>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-short', '相关记录_四星最短间隔')">PNG</button>
               </div>
               <table class="record-table">
@@ -298,7 +332,7 @@
 
             <div id="rel-limited-long" class="record-block">
               <div class="block-head">
-                <h3>限定最长间隔（长→短）</h3>
+                <h3>{{ getRelatedRecordTitle('rel-limited-long') }}</h3>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-long', '相关记录_限定最长间隔')">PNG</button>
               </div>
               <table class="record-table">
@@ -328,7 +362,7 @@
 
             <div id="rel-limited-short" class="record-block">
               <div class="block-head">
-                <h3>限定最短间隔（短→长）</h3>
+                <h3>{{ getRelatedRecordTitle('rel-limited-short') }}</h3>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-short', '相关记录_限定最短间隔')">PNG</button>
               </div>
               <table class="record-table">
@@ -358,7 +392,27 @@
 
             <div id="rel-ban-long" class="record-block">
               <div class="block-head">
-                <h3>Ban 最长间隔（长→短）</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-ban-long') }}</h3>
+                  <div class="head-inline-filters">
+                    <label class="head-filter-toggle" title="只统计箱活的Ban间隔。">
+                      <input
+                        type="checkbox"
+                        :checked="banEventTypeFilter === '箱活'"
+                        @change="setBanEventTypeFilter('箱活', $event.target.checked)"
+                      />
+                      只看箱活
+                    </label>
+                    <label class="head-filter-toggle" title="只统计混活的Ban间隔。">
+                      <input
+                        type="checkbox"
+                        :checked="banEventTypeFilter === '混活'"
+                        @change="setBanEventTypeFilter('混活', $event.target.checked)"
+                      />
+                      只看混活
+                    </label>
+                  </div>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-ban-long', '相关记录_Ban最长间隔')">PNG</button>
               </div>
               <table class="record-table">
@@ -388,7 +442,27 @@
 
             <div id="rel-ban-short" class="record-block">
               <div class="block-head">
-                <h3>Ban 最短间隔（短→长）</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-ban-short') }}</h3>
+                  <div class="head-inline-filters">
+                    <label class="head-filter-toggle" title="只统计箱活的Ban间隔。">
+                      <input
+                        type="checkbox"
+                        :checked="banEventTypeFilter === '箱活'"
+                        @change="setBanEventTypeFilter('箱活', $event.target.checked)"
+                      />
+                      只看箱活
+                    </label>
+                    <label class="head-filter-toggle" title="只统计混活的Ban间隔。">
+                      <input
+                        type="checkbox"
+                        :checked="banEventTypeFilter === '混活'"
+                        @change="setBanEventTypeFilter('混活', $event.target.checked)"
+                      />
+                      只看混活
+                    </label>
+                  </div>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-ban-short', '相关记录_Ban最短间隔')">PNG</button>
               </div>
               <table class="record-table">
@@ -419,7 +493,7 @@
             <div id="rel-vs-unit-last-four" class="record-block">
               <div class="record-head-row">
                 <div class="record-head-left">
-                  <h3>OC团VS上次四星</h3>
+                  <h3>{{ getRelatedRecordTitle('rel-vs-unit-last-four') }}</h3>
                   <div class="record-head-controls">
                     <label class="record-compact-toggle">
                       <input v-model="vsUnitLastFourCompact" type="checkbox" />
@@ -435,7 +509,7 @@
                     </button>
                   </div>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-last-four', '相关记录_OC团虚拟歌手上次四星')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-last-four', '相关记录_各团虚拟歌手上次四星')">PNG</button>
               </div>
 
               <table v-if="!vsUnitLastFourCompact" class="record-table">
@@ -474,10 +548,10 @@
                 </thead>
                 <tbody>
                   <tr v-for="row in vsUnitLastFourCompactRows" :key="`mini-row-${row.name}`">
-                    <td class="record-char" :style="getVsMiniVsHeadStyle(row.name)">
+                    <td class="record-char vs-score-char-cell" :style="getVsMiniVsHeadStyle(row.name)">
                       <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
                     </td>
-                    <td v-for="u in VS_UNIT_SORT_ORDER" :key="`mini-cell-${row.name}-${u}`" class="vs-mini-days-cell" :style="getVsMiniDataCellStyle(row.daysByUnit[u])">{{ row.daysByUnit[u] > 0 ? row.daysByUnit[u] : '-' }}</td>
+                    <td v-for="u in VS_UNIT_SORT_ORDER" :key="`mini-cell-${row.name}-${u}`" class="vs-mini-days-cell" :style="getVsMiniDataCellStyle(row.daysByUnit[u])">{{ row.daysByUnit[u] }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -485,7 +559,7 @@
 
             <div id="rel-vs-unit-score" class="record-block">
               <div class="block-head">
-                <h3>团分统计</h3>
+                <h3>{{ getRelatedRecordTitle('rel-vs-unit-score') }}</h3>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-score', '相关记录_团分统计')">PNG</button>
               </div>
               <table class="record-table vs-unit-score-table">
@@ -499,7 +573,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="row in vsUnitScoreAttrRows" :key="`score-row-${row.name}`">
-                    <td class="record-char" :style="getVsScoreVsHeadStyle(row.name)">
+                    <td class="record-char vs-score-char-cell" :style="getVsScoreVsHeadStyle(row.name)">
                       <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
                     </td>
                     <td v-for="u in VS_UNIT_SORT_ORDER" :key="`score-cell-${row.name}-${u}`" :style="getVsScoreCellStyle(row.name, u)">
@@ -663,6 +737,10 @@ const matrixSortKey = ref('');
 const matrixSortOrder = ref('');
 const vsUnitLastFourSort = ref('char');
 const vsUnitLastFourCompact = ref(true);
+const includeCollabRewardCards = ref(false);
+const banEventTypeFilter = ref('all');
+const limitedBanEventTypeFilter = ref('all');
+const festivalMergeHigherRanks = ref(false);
 const isMobileNav = ref(false);
 const festivalFesToggles = reactive({
   半周年: false,
@@ -1087,6 +1165,30 @@ const getEventTypeShort = (eventType) => {
   return t || '?';
 };
 
+const getWl3PartSuffix = (ev) => {
+  const eventType = String(ev?.eventType || '').trim();
+  const typeSeries = Number(getTypeSeriesText(ev?.typeSeriesId));
+  if (eventType !== 'World Link' || typeSeries !== 3) return '';
+
+  const currentId = Number(ev?.id ?? ev?.sourceKey);
+  if (!Number.isFinite(currentId)) return '';
+
+  const wl3Ids = (props.allEvents || [])
+    .filter((item) => {
+      if (shouldSkipPredictEvent(item)) return false;
+      if (!isNumericEventId(item?.id)) return false;
+      if (Number(item.id) > Number(safeMaxEventId.value)) return false;
+      if (String(item?.event_type || '').trim() !== 'World Link') return false;
+      return Number(getTypeSeriesText(item?.type_series_id)) === 3;
+    })
+    .map((item) => Number(item.id))
+    .sort((a, b) => a - b);
+
+  const idx = wl3Ids.indexOf(currentId);
+  if (idx < 0) return '';
+  return ` p${idx + 1}`;
+};
+
 const getNonBanEventMark = (ev) => {
   if (!ev) return '?';
   const sourceKey = String(ev.sourceKey || ev.id || '').trim();
@@ -1099,6 +1201,10 @@ const getNonBanEventMark = (ev) => {
   const collabLabel = SPECIAL_EVENT_KEY_LABELS[sourceKey] || '';
 
   if (eventType === 'World Link' || eventType === 'World Link终章') {
+    if (eventType === 'World Link' && Number(typeSeries) === 3) {
+      const base = `wl3${getWl3PartSuffix(ev)}`;
+      return ev.isFesCard ? `${base}(fes)` : base;
+    }
     const wlHead = bannerMark || unitMark || 'vs';
     const base = typeSeries ? `${wlHead} wl${typeSeries}` : `${wlHead} wl`;
     return ev.isFesCard ? `${base}(fes)` : base;
@@ -1125,6 +1231,25 @@ const formatBanRangeLabel = (gap) => {
   return `${left}→${right}`;
 };
 
+const RELATED_RECORD_ITEMS = [
+  { id: 'rel-last-four', title: '上一次四星' },
+  { id: 'rel-last-limited', title: '上一次限定' },
+  { id: 'rel-four-long', title: '四星最长间隔' },
+  { id: 'rel-four-short', title: '四星最短间隔' },
+  { id: 'rel-limited-long', title: '限定最长间隔' },
+  { id: 'rel-limited-short', title: '限定最短间隔' },
+  { id: 'rel-ban-long', title: 'Ban最长间隔' },
+  { id: 'rel-ban-short', title: 'Ban最短间隔' },
+  { id: 'rel-vs-unit-last-four', title: '各团VS上次四星' },
+  { id: 'rel-vs-unit-score', title: '团分统计' }
+];
+
+const RELATED_RECORD_TITLE_MAP = Object.fromEntries(
+  RELATED_RECORD_ITEMS.map((item) => [item.id, item.title])
+);
+
+const getRelatedRecordTitle = (id) => RELATED_RECORD_TITLE_MAP[id] || id;
+
 const navGroups = computed(() => {
   const distChildren = groupPanels.value.map((p) => ({
     id: `panel-${p.id}`,
@@ -1148,18 +1273,7 @@ const navGroups = computed(() => {
     {
       id: 'panel-related',
       title: '相关记录',
-      children: [
-        { id: 'rel-last-four', title: '上一次四星' },
-        { id: 'rel-last-limited', title: '上一次限定' },
-        { id: 'rel-four-long', title: '四星最长间隔' },
-        { id: 'rel-four-short', title: '四星最短间隔' },
-        { id: 'rel-limited-long', title: '限定最长间隔' },
-        { id: 'rel-limited-short', title: '限定最短间隔' },
-        { id: 'rel-ban-long', title: 'Ban最长间隔' },
-        { id: 'rel-ban-short', title: 'Ban最短间隔' },
-        { id: 'rel-vs-unit-last-four', title: 'OC团虚拟歌手上次四星' },
-        { id: 'rel-vs-unit-score', title: '团分统计' }
-      ]
+      children: RELATED_RECORD_ITEMS.map((item) => ({ id: item.id, title: item.title }))
     },
     {
       id: 'panel-vs-song',
@@ -1408,9 +1522,57 @@ const isCardWithinLimit = (card, maxEid) => {
 
 const isEventRewardCard = (card) => {
   const rarity = String(card?.Rarity || '').trim();
-  // 当前数据中活动报酬 2/3 星普遍是 perm，因此以“活动卡 + 2/3星”识别报酬。
-  return isNumericEventId(card?.EventID) && ['2', '3'].includes(rarity);
+  if (!['2', '3'].includes(rarity)) return false;
+  // 默认按活动卡计算报酬；勾选后额外计入联动二/三星。
+  if (isNumericEventId(card?.EventID)) return true;
+  if (!includeCollabRewardCards.value) return false;
+  return String(card?.Type || '').trim().toLowerCase() === 'collab';
 };
+
+const setBanEventTypeFilter = (targetType, checked) => {
+  if (checked) {
+    banEventTypeFilter.value = targetType;
+    return;
+  }
+  if (banEventTypeFilter.value === targetType) {
+    banEventTypeFilter.value = 'all';
+  }
+};
+
+const setLimitedBanEventTypeFilter = (targetType, checked) => {
+  if (checked) {
+    limitedBanEventTypeFilter.value = targetType;
+    return;
+  }
+  if (limitedBanEventTypeFilter.value === targetType) {
+    limitedBanEventTypeFilter.value = 'all';
+  }
+};
+
+const limitedBanCountMap = computed(() => {
+  const map = {};
+  const maxEid = safeMaxEventId.value;
+  const typeFilter = limitedBanEventTypeFilter.value;
+
+  (props.allEvents || []).forEach((ev) => {
+    if (ev?.isPredict) return;
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (eid > maxEid) return;
+
+    const eventType = String(ev?.event_type || '').trim();
+    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+
+    if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
+
+    const bannerName = normalizeBannerName(ev?.banner);
+    if (!CHAR_ORDER[bannerName]) return;
+    if (VS_NAMES.includes(bannerName)) return;
+    map[bannerName] = (map[bannerName] || 0) + 1;
+  });
+
+  return map;
+});
 
 const now = new Date();
 const nowStr = now.toLocaleDateString();
@@ -1486,6 +1648,10 @@ const safeMaxEventId = computed(() => {
   return n ?? 0;
 });
 
+const includePredictEventsInStats = computed(() => Number(safeMaxEventId.value) > Number(autoCurrentId.value));
+
+const shouldSkipPredictEvent = (ev) => !!(ev?.isPredict && !includePredictEventsInStats.value);
+
 const allEventsById = computed(() => {
   const map = {};
   (props.allEvents || []).forEach((ev) => {
@@ -1517,7 +1683,7 @@ const referenceDateStr = computed(() => {
 const eventsById = computed(() => {
   const map = {};
   (props.allEvents || []).forEach((ev) => {
-    if (ev?.isPredict) return;
+    if (shouldSkipPredictEvent(ev)) return;
     if (!isNumericEventId(ev?.id)) return;
     map[Number(ev.id)] = ev;
   });
@@ -1528,7 +1694,7 @@ const validPeriodEventIds = computed(() => {
   const maxEid = safeMaxEventId.value;
   return (props.allEvents || [])
     .filter((ev) => {
-      if (ev?.isPredict) return false;
+      if (shouldSkipPredictEvent(ev)) return false;
       if (!isNumericEventId(ev?.id)) return false;
       if (Number(ev.id) > maxEid) return false;
       return !EXCLUDED_PERIOD_EVENT_TYPES.has(String(ev?.event_type || '').trim());
@@ -1541,7 +1707,7 @@ const validPeriodEvents = computed(() => {
   const idSet = new Set(validPeriodEventIds.value);
   return (props.allEvents || [])
     .filter((ev) => {
-      if (ev?.isPredict) return false;
+      if (shouldSkipPredictEvent(ev)) return false;
       if (!isNumericEventId(ev?.id)) return false;
       return idSet.has(Number(ev.id));
     })
@@ -1608,6 +1774,7 @@ const processedStats = computed(() => {
         threeStarCount: 0,
         rewardTwoCount: 0,
         rewardThreeCount: 0,
+        limitedBanCount: 0,
         accuracyCount: 0,
         recoveryCount: 0,
         unitScoreCount: 0,
@@ -1654,6 +1821,7 @@ const processedStats = computed(() => {
     // 这样剩下的就是 100% / 110% / 120% / 130% 等纯分卡
     s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount;
     s.rewardTotalCount = s.rewardThreeCount + s.rewardTwoCount;
+    s.limitedBanCount = limitedBanCountMap.value[normalizeBannerName(s.name)] || 0;
     s.attrTotalCount = ATTRS.reduce((sum, a) => sum + s.attrCounts[a], 0);
     return s;
   });
@@ -1683,7 +1851,23 @@ const groupPanels = computed(() => [
   { id: 'accuracy', title: '4星判卡数量分布', cellClass: 'accuracy', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'accuracyCount') },
   { id: 'three', title: '3星总数分布', cellClass: 'three-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'threeStarCount') },
   { id: 'two', title: '2星总数分布', cellClass: 'two-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'twoStarCount') },
-  { id: 'reward', title: '报酬总数分布 (活动3★+2★)', cellClass: 'reward', showRewardBreakdown: true, groups: groupByCount(processedStats.value, 'rewardTotalCount') }
+  {
+    id: 'reward',
+    title: '报酬总数分布',
+    cellClass: 'reward',
+    showRewardBreakdown: true,
+    groups: groupByCount(processedStats.value, 'rewardTotalCount')
+  },
+  {
+    id: 'limited-ban',
+    title: '限ban数量分布',
+    cellClass: 'limited-ban',
+    showRewardBreakdown: false,
+    groups: groupByCount(
+      processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
+      'limitedBanCount'
+    )
+  }
 ]);
 
 const festivalCharStats = computed(() => {
@@ -1692,7 +1876,7 @@ const festivalCharStats = computed(() => {
   const eventFestivalMap = {};
 
   (props.allEvents || []).forEach((ev) => {
-    if (ev?.isPredict) return;
+    if (shouldSkipPredictEvent(ev)) return;
     if (!isNumericEventId(ev?.id)) return;
     const eid = Number(ev.id);
     if (eid > maxEid) return;
@@ -1760,6 +1944,29 @@ const festivalCharStats = computed(() => {
       return { name, count: Number(count), isPermOnly };
     })
     .sort((a, b) => compareFestivalCharKey(a.name, b.name));
+  const getFestivalBaseName = (charName) => parseFestivalCharKey(charName).baseName;
+
+  const applyFestivalMerge = (rows) => {
+    if (!festivalMergeHigherRanks.value) return rows;
+    const fourRow = rows.find((row) => row.key === 'four') || { chars: [] };
+    const threeRow = rows.find((row) => row.key === 'three') || { chars: [] };
+    const twoRow = rows.find((row) => row.key === 'two') || { chars: [] };
+
+    const fourBaseSet = new Set((fourRow.chars || []).map((item) => getFestivalBaseName(item.name)).filter(Boolean));
+    const mergedThreeChars = (threeRow.chars || []).filter((item) => !fourBaseSet.has(getFestivalBaseName(item.name)));
+    const threeBaseSet = new Set(mergedThreeChars.map((item) => getFestivalBaseName(item.name)).filter(Boolean));
+    const mergedTwoChars = (twoRow.chars || []).filter((item) => {
+      const base = getFestivalBaseName(item.name);
+      if (!base) return false;
+      return !fourBaseSet.has(base) && !threeBaseSet.has(base);
+    });
+
+    return rows.map((row) => {
+      if (row.key === 'three') return { ...row, chars: mergedThreeChars };
+      if (row.key === 'two') return { ...row, chars: mergedTwoChars };
+      return row;
+    });
+  };
 
   return SPECIAL_FESTIVALS.map((fest) => {
     const festBucket = festCounts[fest];
@@ -1774,7 +1981,7 @@ const festivalCharStats = computed(() => {
       .map((name) => ({ name, count: 0 }));
 
     rows.push({ key: 'none', label: '未出', chars: noneChars });
-    return { festival: fest, anchorId: FESTIVAL_ANCHOR_IDS[fest], rows };
+    return { festival: fest, anchorId: FESTIVAL_ANCHOR_IDS[fest], rows: applyFestivalMerge(rows) };
   });
 });
 
@@ -2373,14 +2580,17 @@ const limitedShortestIntervals = computed(() => {
 
 const banIntervalRecords = computed(() => {
   const maxEid = safeMaxEventId.value;
+  const typeFilter = banEventTypeFilter.value;
   const bucket = {};
 
   (props.allEvents || []).forEach((ev) => {
-    if (ev?.isPredict) return;
+    if (shouldSkipPredictEvent(ev)) return;
     if (!isNumericEventId(ev?.id)) return;
     const eid = Number(ev.id);
     if (eid > maxEid) return;
-    if (EXCLUDED_PERIOD_EVENT_TYPES.has(String(ev?.event_type || '').trim())) return;
+    const eventType = String(ev?.event_type || '').trim();
+    if (EXCLUDED_PERIOD_EVENT_TYPES.has(eventType)) return;
+    if (typeFilter !== 'all' && eventType !== typeFilter) return;
     const name = normalizeBannerName(ev?.banner);
     if (!CHAR_ORDER[name]) return;
     if (VS_NAMES.includes(name)) return;
@@ -2390,7 +2600,7 @@ const banIntervalRecords = computed(() => {
       id: eid,
       date: String(ev?.date || ''),
       typeSeriesId: ev?.type_series_id,
-      eventType: String(ev?.event_type || '').trim()
+      eventType
     });
   });
 
@@ -2605,6 +2815,80 @@ const banShortestIntervals = computed(() => {
   font-size: 1.02rem;
 }
 
+.section-head.section-head-sub {
+  margin-bottom: 8px;
+  align-items: flex-start;
+}
+
+.section-head.section-head-sub .card-export-btn {
+  align-self: flex-start;
+}
+
+.section-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.block-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.head-inline-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.head-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1;
+}
+
+.head-filter-toggle input {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  position: relative;
+  top: -1px;
+}
+
+@media (max-width: 760px) {
+  .section-head.section-head-sub {
+    align-items: center;
+    margin-bottom: 8px;
+    padding-top: 2px;
+  }
+
+  .section-head.section-head-sub .card-export-btn {
+    align-self: center;
+  }
+
+  .section-head-left,
+  .head-inline-filters {
+    gap: 6px;
+  }
+
+  .head-filter-toggle,
+  .reward-collab-toggle,
+  .festival-merge-toggle {
+    font-size: 0.7rem;
+  }
+}
+
 .section-main {
   margin-bottom: 18px;
 }
@@ -2667,6 +2951,7 @@ const banShortestIntervals = computed(() => {
 .count-cell.p-score { color: #eb2f96; } /* P分粉色 */
 .count-cell.pure-score { color: #f5222d; } /* 分卡红色 */
 .count-cell.reward { color: #f97316; }
+.count-cell.limited-ban { color: #0f766e; }
 .count-cell.three-star { color: #7c3aed; }
 .count-cell.two-star { color: #059669; }
 .count-cell.accuracy { color: #2563eb; }
@@ -2772,6 +3057,26 @@ const banShortestIntervals = computed(() => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.festival-merge-toggle {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.festival-merge-toggle input {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  position: relative;
+  top: -1px;
 }
 
 .festival-fes-toggle {
@@ -3220,6 +3525,43 @@ const banShortestIntervals = computed(() => {
   justify-content: flex-start;
 }
 
+.vs-unit-score-table .vs-score-char-cell {
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.vs-unit-score-table .vs-score-char-cell .record-avatar {
+  display: block;
+  margin: 0 auto;
+}
+
+.reward-collab-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.reward-collab-toggle input {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  position: relative;
+  top: -1px;
+}
+
+.section-head.section-head-sub + .count-table {
+  margin-top: 0;
+}
+
 .record-char > span {
   min-width: 0;
   overflow: hidden;
@@ -3461,6 +3803,16 @@ const banShortestIntervals = computed(() => {
   .card-panel h2 {
     margin-bottom: 8px;
     font-size: 0.96rem;
+  }
+
+  /* Keep header-row titles aligned with inline controls; avoid extra gap before tables. */
+  .section-head h2 {
+    margin-bottom: 0;
+    line-height: 1.1;
+  }
+
+  .section-head-left {
+    align-items: center;
   }
 
   .stats-grid {
