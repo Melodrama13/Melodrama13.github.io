@@ -4,11 +4,21 @@
       <button 
         :class="{ active: currentTab === 'stats' }" 
         @click="setCurrentTab('stats')"
-      >{{ isCompactTopNav ? '📊 统计' : '📊 统计面板' }}</button>
+      >
+        <span class="btn-with-icon">
+          <img src="/data/icon/statistics.png" class="btn-icon" alt="统计" />
+          <span>{{ isCompactTopNav ? '统计' : '统计面板' }}</span>
+        </span>
+      </button>
       <button 
         :class="{ active: currentTab === 'history' }" 
         @click="setCurrentTab('history')"
-      >{{ isCompactTopNav ? '📅 活动' : '📅 历史活动一览' }}</button>
+      >
+        <span class="btn-with-icon">
+          <img src="/data/icon/event.png" class="btn-icon" alt="活动" />
+          <span>{{ isCompactTopNav ? '活动' : '历史活动一览' }}</span>
+        </span>
+      </button>
       <div class="username-wrap" title="导出文件命名与本地数据源命名使用该用户名">
         <span class="username-label">用户名</span>
         <input
@@ -28,7 +38,12 @@
       <div class="predict-cleanup-info" v-if="cleanedPatchNoticeCount > 0">
         {{ isCompactTopNav ? `已清理 ${cleanedPatchNoticeCount} 条` : `已自动清理 ${cleanedPatchNoticeCount} 条过期/冲突预测` }}
       </div>
-      <button @click="addPredictSourceBranch" class="io-btn nav-create-btn" title="新增一个空白预测分支">{{ isCompactTopNav ? '➕ 新建' : '➕ 新建预测分支' }}</button>
+      <button @click="addPredictSourceBranch" class="io-btn nav-create-btn" title="新增一个空白预测分支">
+        <span class="btn-with-icon">
+          <img src="/data/icon/circle_add.png" class="btn-icon" alt="新建" />
+          <span>{{ isCompactTopNav ? '新建' : '新建预测分支' }}</span>
+        </span>
+      </button>
       <div class="source-dropdown" ref="sourceDropdownRef">
         <button
           ref="sourceTriggerRef"
@@ -72,7 +87,9 @@
                 <span class="source-item-name">{{ source.name }}</span>
                 <span class="source-item-count">{{ Array.isArray(source.predictiveEvents) ? source.predictiveEvents.length : 0 }}</span>
               </button>
-              <button class="source-mini-btn" title="重命名此数据源" @click="renamePredictSource(source.id)">✏️</button>
+              <button class="source-mini-btn" title="重命名此数据源" @click="renamePredictSource(source.id)">
+                <img src="/data/icon/edit.png" class="mini-btn-icon" alt="重命名" />
+              </button>
               <button class="source-order-btn" title="上移" @click.stop="movePredictSource(source.id, -1)">↑</button>
               <button class="source-order-btn" title="下移" @click.stop="movePredictSource(source.id, 1)">↓</button>
               <span class="source-drag-handle" title="拖拽排序">⋮⋮</span>
@@ -81,15 +98,35 @@
 
           <div class="source-menu-title">数据源操作</div>
           <div class="source-actions">
-            <button @click="triggerImportPredicts" class="io-btn" title="导入 JSON 并创建新数据源">📥 导入</button>
-            <button @click="exportPredicts" class="io-btn" title="导出当前数据源预测">📤 导出</button>
+            <button @click="triggerImportPredicts" class="io-btn" title="导入 JSON 并创建新数据源">
+              <span class="btn-with-icon">
+                <img src="/data/icon/import.png" class="btn-icon" alt="导入" />
+                <span>导入</span>
+              </span>
+            </button>
+            <button @click="exportPredicts" class="io-btn" title="导出当前数据源预测">
+              <span class="btn-with-icon">
+                <img src="/data/icon/export.png" class="btn-icon" alt="导出" />
+                <span>导出</span>
+              </span>
+            </button>
             <button
               @click="openScreenshotExportConfirm"
               class="io-btn"
               :disabled="isScreenshotExporting"
               :title="isScreenshotExporting ? '正在截图，请等待' : '导出已预测活动区间PNG（生放送不导出）'"
-            >{{ isScreenshotExporting ? '🖼️ 截图中…' : '🖼️ 导出预测截图' }}</button>
-            <button @click="deleteActivePredictSource" class="io-btn" :disabled="predictSources.length <= 1" title="删除当前数据源">🗑️ 删除当前源</button>
+            >
+              <span class="btn-with-icon">
+                <img src="/data/icon/camera.png" class="btn-icon" alt="截图" />
+                <span>{{ isScreenshotExporting ? '截图中…' : '导出预测截图' }}</span>
+              </span>
+            </button>
+            <button @click="deleteActivePredictSource" class="io-btn" :disabled="predictSources.length <= 1" title="删除当前数据源">
+              <span class="btn-with-icon">
+                <img src="/data/icon/delete.png" class="btn-icon" alt="删除" />
+                <span>删除当前源</span>
+              </span>
+            </button>
           </div>
           <label class="source-export-option">
             <input v-model="exportBirthdayRowsInPng" type="checkbox" />
@@ -1640,6 +1677,30 @@ button.active {
   border: 1px solid #cbd5e1;
 }
 
+.btn-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1;
+}
+
+.btn-icon {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  flex: 0 0 15px;
+  display: block;
+}
+
+/* Optional PNG tinting: keep default dark, use white icon on active tab. */
+.btn-icon {
+  filter: var(--app-icon-filter, none);
+}
+
+.nav-tabs button.active .btn-icon {
+  --app-icon-filter: brightness(0) saturate(100%) invert(100%);
+}
+
 .source-dropdown {
   position: relative;
   display: inline-flex;
@@ -1727,6 +1788,13 @@ button.active {
   background: #ffffff;
   font-size: 0.72rem;
   line-height: 1;
+}
+
+.mini-btn-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  display: block;
 }
 
 .source-order-btn {
@@ -1957,6 +2025,16 @@ button.active {
     padding: 7px 10px;
     font-size: 0.82rem;
     white-space: nowrap;
+  }
+
+  .btn-with-icon {
+    gap: 4px;
+  }
+
+  .btn-icon {
+    width: 13px;
+    height: 13px;
+    flex-basis: 13px;
   }
 
   .username-wrap {

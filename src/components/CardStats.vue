@@ -24,6 +24,19 @@
         </div>
 
         <template v-if="!navCollapsed">
+          <div v-if="!isMobileNav" class="nav-name-format export-hide">
+            <div class="nav-name-format-title">名称格式</div>
+            <div class="nav-name-format-options">
+              <label class="nav-name-format-option">
+                <input v-model="navNameFormat" type="radio" value="abbr" />
+                缩写
+              </label>
+              <label class="nav-name-format-option">
+                <input v-model="navNameFormat" type="radio" value="single" />
+                单字
+              </label>
+            </div>
+          </div>
           <div class="nav-title">快速跳转</div>
           <div class="nav-scroll">
             <div v-for="group in navGroups" :key="group.id" class="nav-group">
@@ -59,7 +72,13 @@
 
         <div id="panel-dist" class="stats-section card-panel section-main">
           <div class="section-head">
-            <h2>阶梯分布</h2>
+            <div class="section-head-left">
+              <h2>阶梯分布</h2>
+              <label v-if="!isMobileNav" class="dist-hide-name-toggle export-hide" title="勾选后不显示角色头像下方名称。">
+                <input v-model="hideDistCharNames" type="checkbox" />
+                隐藏角色名
+              </label>
+            </div>
             <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-dist', '阶梯分布')">PNG</button>
           </div>
           <div class="stats-grid">
@@ -116,7 +135,7 @@
                           class="avatar-img"
                           :style="{ borderColor: getCharColor(char.name) }"
                         />
-                        <span class="abbr-text">{{ getCharAbbr(char.name) }}</span>
+                        <span v-if="!hideDistCharNames" class="abbr-text">{{ getDistNameLabel(char.name) }}</span>
                         <span v-if="panel.showRewardBreakdown" class="sub-stat">{{ char.rewardThreeCount }}+{{ char.rewardTwoCount }}</span>
                       </div>
                     </td>
@@ -169,7 +188,7 @@
                       </div>
                       <span v-else class="festival-none-text">无</span>
                     </td>
-                    <td class="chars-cell">
+                    <td class="chars-cell" :class="{ 'festival-chars-empty-cell': !row.chars.length }">
                       <template v-if="row.chars.length">
                         <div
                           v-for="char in row.chars"
@@ -231,7 +250,7 @@
                       <span>{{ row.name }}</span>
                     </td>
                     <td>
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ row.eventLabel }}</button>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
                     </td>
                     <td>{{ row.date }}</td>
                     <td>{{ row.months }}个月 | {{ row.periods }}期</td>
@@ -261,7 +280,7 @@
                       <span>{{ row.name }}</span>
                     </td>
                     <td>
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ row.eventLabel }}</button>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
                     </td>
                     <td>{{ row.date }}</td>
                     <td>{{ row.months }}个月 | {{ row.periods }}期</td>
@@ -290,9 +309,9 @@
                       <span>{{ row.name }}</span>
                     </td>
                     <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ row.longest?.startMark || '-' }}</button>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
                       <span>→</span>
-                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ row.longest?.endMark || '-' }}</button>
+                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
                     </td>
                     <td>{{ formatGapValue(row.longest) }}</td>
                   </tr>
@@ -320,9 +339,9 @@
                       <span>{{ row.name }}</span>
                     </td>
                     <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ row.shortest?.startMark || '-' }}</button>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
                       <span>→</span>
-                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ row.shortest?.endMark || '-' }}</button>
+                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
                     </td>
                     <td>{{ formatGapValue(row.shortest) }}</td>
                   </tr>
@@ -350,9 +369,9 @@
                       <span>{{ row.name }}</span>
                     </td>
                     <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ row.longest?.startMark || '-' }}</button>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
                       <span>→</span>
-                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ row.longest?.endMark || '-' }}</button>
+                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
                     </td>
                     <td>{{ formatGapValue(row.longest) }}</td>
                   </tr>
@@ -380,9 +399,9 @@
                       <span>{{ row.name }}</span>
                     </td>
                     <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ row.shortest?.startMark || '-' }}</button>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
                       <span>→</span>
-                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ row.shortest?.endMark || '-' }}</button>
+                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
                     </td>
                     <td>{{ formatGapValue(row.shortest) }}</td>
                   </tr>
@@ -430,9 +449,9 @@
                       <span>{{ row.name }}</span>
                     </td>
                     <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ row.longest?.startMark || '-' }}</button>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
                       <span>→</span>
-                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ row.longest?.endMark || '-' }}</button>
+                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
                     </td>
                     <td>{{ formatGapValue(row.longest) }}</td>
                   </tr>
@@ -480,9 +499,9 @@
                       <span>{{ row.name }}</span>
                     </td>
                     <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ row.shortest?.startMark || '-' }}</button>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
                       <span>→</span>
-                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ row.shortest?.endMark || '-' }}</button>
+                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
                     </td>
                     <td>{{ formatGapValue(row.shortest) }}</td>
                   </tr>
@@ -529,7 +548,7 @@
                       <span>{{ row.label }}</span>
                     </td>
                     <td>
-                      <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ row.eventLabel }}</button>
+                      <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
                     </td>
                     <td>{{ row.date }}</td>
                     <td>{{ row.days }}天 | {{ row.periods }}期</td>
@@ -709,6 +728,97 @@
             </table>
           </div>
         </div>        
+
+        <div id="panel-lineup" class="stats-section card-panel lineup-panel">
+          <div class="section-head">
+            <div class="section-head-left">
+              <h2>日挑配队</h2>
+              <button class="lineup-toggle-btn" @click="toggleLineupExpandedAll">{{ getLineupGlobalToggleLabel() }}</button>
+            </div>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-lineup', '日挑配队')">PNG</button>
+          </div>
+          <div class="lineup-tip">注意：仅从技能分值角度考虑最佳配队，不考虑其他影响（如综合力、歌曲难度等）。</div>
+          <div class="lineup-grid">
+            <div
+              v-for="row in characterLineupRows"
+              :key="`lineup-${row.name}`"
+              :id="getLineupCardId(row.name)"
+              class="lineup-card"
+              :style="{ '--lineup-accent': getCharColor(row.name), backgroundColor: getRecordTint(row.name, 0.2) }"
+            >
+              <div class="lineup-char-head">
+                <div class="lineup-char-main">
+                  <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="lineup-char-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                  <div class="lineup-char-text">
+                    <div class="lineup-char-name">{{ row.name }}</div>
+                    <div class="lineup-char-sub">最优属性：{{ ATTR_LABELS[row.bestPlan.attr] }} {{ row.bestPlan.total }}</div>
+                  </div>
+                </div>
+                <div class="lineup-head-actions">
+                  <button
+                    v-if="row.otherPlans.length"
+                    class="lineup-toggle-btn"
+                    @click="toggleLineupExpanded(row.name)"
+                  >
+                    {{ getLineupToggleLabel(row.name, row.otherPlans.length) }}
+                  </button>
+                  <button
+                    class="card-export-btn"
+                    :disabled="isExportingPng"
+                    @click="exportElementPng(getLineupCardId(row.name), `日挑配队_${row.name}`)"
+                  >PNG</button>
+                </div>
+              </div>
+
+              <div class="lineup-plan-row lineup-plan-main" :style="getLineupRowStyle(row.bestPlan.attr)">
+                <div class="lineup-attr-cell">
+                  <img :src="`/elements/${String(row.bestPlan.attr).toLowerCase()}.png`" class="lineup-attr-icon" :title="ATTR_LABELS[row.bestPlan.attr]" />
+                </div>
+                <div
+                  v-for="(slot, idx) in row.bestPlan.memberSlots"
+                  :key="`main-${row.name}-${row.bestPlan.attr}-${idx}`"
+                  class="lineup-member-cell"
+                  :class="{ 'is-empty': !slot }"
+                  :style="getLineupMemberCellStyle(slot, row.bestPlan.attr)"
+                >
+                  <template v-if="slot">
+                    <div class="lineup-member-score">{{ slot.score }}</div>
+                    <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                  </template>
+                  <span v-else class="lineup-empty">-</span>
+                </div>
+                <div class="lineup-total-cell">{{ row.bestPlan.total }}</div>
+              </div>
+
+              <div v-if="row.otherPlans.length && isLineupExpanded(row.name)" class="lineup-more-list">
+                <div
+                  v-for="plan in row.otherPlans"
+                  :key="`other-${row.name}-${plan.attr}`"
+                  class="lineup-plan-row"
+                  :style="getLineupRowStyle(plan.attr)"
+                >
+                  <div class="lineup-attr-cell">
+                    <img :src="`/elements/${String(plan.attr).toLowerCase()}.png`" class="lineup-attr-icon" :title="ATTR_LABELS[plan.attr]" />
+                  </div>
+                  <div
+                    v-for="(slot, idx) in plan.memberSlots"
+                    :key="`slot-${row.name}-${plan.attr}-${idx}`"
+                    class="lineup-member-cell"
+                    :class="{ 'is-empty': !slot }"
+                    :style="getLineupMemberCellStyle(slot, plan.attr)"
+                  >
+                    <template v-if="slot">
+                      <div class="lineup-member-score">{{ slot.score }}</div>
+                      <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                    </template>
+                    <span v-else class="lineup-empty">-</span>
+                  </div>
+                  <div class="lineup-total-cell">{{ plan.total }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         
       </div>
     </div>
@@ -738,6 +848,8 @@ const matrixSortOrder = ref('');
 const vsUnitLastFourSort = ref('char');
 const vsUnitLastFourCompact = ref(true);
 const includeCollabRewardCards = ref(false);
+const hideDistCharNames = ref(true);
+const navNameFormat = ref('single');
 const banEventTypeFilter = ref('all');
 const limitedBanEventTypeFilter = ref('all');
 const festivalMergeHigherRanks = ref(false);
@@ -756,6 +868,14 @@ const CHAR_MAP = {
   "天马司": "TKS", "凤笑梦": "EMU", "草薙宁宁": "NENE", "神代类": "RUI",
   "宵崎奏": "KND", "朝比奈真冬": "MFY", "东云绘名": "ENA", "晓山瑞希": "MZK",
   "初音未来": "MIKU", "镜音铃": "RIN", "镜音连": "LEN", "巡音流歌": "LUKA", "MEIKO": "MEIKO", "KAITO": "KAITO"
+};
+const CHAR_SINGLE_MAP = {
+  "星乃一歌": "一", "天马咲希": "溪", "望月穗波": "萍", "日野森志步": "吸",
+  "花里实乃里": "花", "桐谷遥": "遥", "桃井爱莉": "桃", "日野森雫": "雫",
+  "小豆泽心羽": "豆", "白石杏": "杏", "东云彰人": "彰", "青柳冬弥": "冬",
+  "天马司": "司", "凤笑梦": "姆", "草薙宁宁": "宁", "神代类": "类",
+  "宵崎奏": "奏", "朝比奈真冬": "马", "东云绘名": "画", "晓山瑞希": "糖",
+  "初音未来": "葱", "镜音铃": "橘", "镜音连": "蕉", "巡音流歌": "鱼", "MEIKO": "酒", "KAITO": "冰"
 };
 
 //const getCharAbbr = (name) => CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
@@ -826,6 +946,16 @@ const CHAR_ORDER = {
   "宵崎奏": 17, "朝比奈真冬": 18, "东云绘名": 19, "晓山瑞希": 20,
   "初音未来": 21, "镜音铃": 22, "镜音连": 23, "巡音流歌": 24, "MEIKO": 25, "KAITO": 26
 };
+const LINEUP_CHAR_NAMES = (() => {
+  const names = Object.keys(CHAR_ORDER).sort((a, b) => (CHAR_ORDER[a] || 999) - (CHAR_ORDER[b] || 999));
+  const lukaIdx = names.indexOf('巡音流歌');
+  const mikuIdx = names.indexOf('初音未来');
+  if (lukaIdx >= 0 && mikuIdx >= 0 && lukaIdx !== mikuIdx + 1) {
+    names.splice(lukaIdx, 1);
+    names.splice(mikuIdx + 1, 0, '巡音流歌');
+  }
+  return names;
+})();
 const ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
 const LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t']);
 const EXCLUDED_PERIOD_EVENT_TYPES = new Set(['测试']);
@@ -1284,6 +1414,11 @@ const navGroups = computed(() => {
       id: 'panel-matrix',
       title: '角色矩阵',
       children: []
+    },
+    {
+      id: 'panel-lineup',
+      title: '日挑配队',
+      children: []
     }
   ];
 });
@@ -1335,13 +1470,21 @@ const formatExportTimestamp = () => {
   return `${y}${m}${d}_${hh}${mm}`;
 };
 
-const triggerDownloadPng = (canvas, fileName) => {
+const triggerDownloadPng = async (canvas, fileName) => {
+  const blob = await new Promise((resolve) => {
+    canvas.toBlob((b) => resolve(b), 'image/png');
+  });
+  if (!blob) {
+    throw new Error('toBlob failed');
+  }
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = canvas.toDataURL('image/png');
+  link.href = url;
   link.download = `${fileName}.png`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 };
 
 const waitNextPaint = () => new Promise((resolve) => {
@@ -1372,6 +1515,12 @@ const prepareExportClone = async (targetEl) => {
 
   clone.querySelectorAll('.card-export-btn').forEach((btn) => {
     btn.style.display = 'none';
+  });
+  clone.querySelectorAll('.lineup-toggle-btn').forEach((btn) => {
+    btn.style.display = 'none';
+  });
+  clone.querySelectorAll('.export-hide').forEach((el) => {
+    el.style.display = 'none';
   });
 
   const originalMatrixWrap = targetEl.querySelector('.matrix-wrap');
@@ -1416,10 +1565,10 @@ const resolveExportElementById = (id) => {
 
   const exact = document.getElementById(targetId);
   if (!exact) return null;
-  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('festival-card') || exact.classList.contains('song-card')) {
+  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('festival-card') || exact.classList.contains('song-card') || exact.classList.contains('lineup-card')) {
     return exact;
   }
-  return exact.closest('.record-block, .festival-card, .song-card, .card-panel');
+  return exact.closest('.record-block, .festival-card, .song-card, .lineup-card, .card-panel');
 };
 
 const exportElementPng = async (id, title) => {
@@ -1435,19 +1584,34 @@ const exportElementPng = async (id, title) => {
   try {
     cloneEl = await prepareExportClone(targetEl);
     const renderEl = cloneEl || targetEl;
+    const renderHeight = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
+    const isLineupPanelExport = String(id || '').trim() === 'panel-lineup';
+    const isMobileScreen = window.innerWidth <= 900;
+    const renderScale = isLineupPanelExport
+      ? (isMobileScreen
+          ? (renderHeight > 8000 ? 1 : Math.max(1, Math.min(1.2, window.devicePixelRatio || 1)))
+          : (renderHeight > 12000 ? Math.max(1.25, Math.min(1.6, window.devicePixelRatio || 1)) : Math.max(1.6, window.devicePixelRatio || 1)))
+      : Math.max(2, window.devicePixelRatio || 1);
     const canvas = await html2canvas(renderEl, {
       backgroundColor: '#ffffff',
-      scale: Math.max(2, window.devicePixelRatio || 1),
+      scale: renderScale,
       useCORS: true,
       logging: false,
       width: Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0),
       height: Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0)
     });
     const fileName = sanitizeExportFileName(`pjsk_${title || id}_${formatExportTimestamp()}`);
-    triggerDownloadPng(canvas, fileName);
+    await triggerDownloadPng(canvas, fileName);
   } catch (error) {
     console.error('导出模块PNG失败', error);
-    alert('导出PNG失败，请稍后重试。');
+    const idKey = String(id || '').trim();
+    const isLineupPanel = idKey === 'panel-lineup';
+    const isMobileScreen = window.innerWidth <= 900;
+    if (isLineupPanel && isMobileScreen) {
+      alert('导出失败。\n建议改用每个角色卡片右上角 PNG 按钮分批导出，或先收起其余属性后再导出总图。');
+    } else {
+      alert('导出PNG失败，请稍后重试。');
+    }
   } finally {
     if (cloneEl && cloneEl.parentNode) {
       cloneEl.parentNode.removeChild(cloneEl);
@@ -1742,6 +1906,399 @@ const countPeriodsSince = (eventRef) => {
   const startDate = parseDateSafe(eventRef?.date);
   if (!startDate) return 0;
   return validPeriodEvents.value.filter((ev) => ev.dateObj > startDate).length;
+};
+
+const LINEUP_SKILL_BASE = Object.freeze({
+  bfes_up: 160,
+  cfes: 140,
+  p_score: 130,
+  score_up: 120,
+  accuracy: 100,
+  recovery: 100,
+  unit_score: 100,
+  default: 120
+});
+const LINEUP_ATTR_BG = Object.freeze({
+  Cool: '#4b48e9',
+  Cute: '#f35c9b',
+  Pure: '#17a159',
+  Happy: '#ff8719',
+  Mysterious: '#8e65c2'
+});
+const LINEUP_BASE_ALPHA = 0.15;
+const LINEUP_FES_ALPHA = Object.freeze({ cfes: 0.2, bfes: 0.35 });
+
+const makeLineupFesBg = (alpha) => {
+  const a = Math.max(0, Math.min(1, Number(alpha)));
+  return `linear-gradient(45deg, rgba(253,124,193,${a}) 0%, rgba(135,192,255,${a}) 50%, rgba(248,255,135,${a}) 100%)`;
+};
+
+const getCardBaseName = (cardName) => String(cardName || '').trim().split(/\s+/)[0] || '';
+
+const getLineupCardId = (name) => `lineup-card-${getCharAbbr(name).toLowerCase()}`;
+
+const getCharSingleMark = (name) => {
+  const key = String(name || '').split(/\s+/)[0];
+  return CHAR_SINGLE_MAP[key] || key;
+};
+
+const useSingleNameMark = computed(() => isMobileNav.value || navNameFormat.value === 'single');
+
+const getDistNameLabel = (name) => {
+  if (useSingleNameMark.value) return getCharSingleMark(name);
+  return getCharAbbr(name);
+};
+
+const getLineupCardUnit = (card, baseName) => {
+  if (isVirtualSinger(baseName)) {
+    const aff = String(card?.Affiliation || '').trim().toLowerCase();
+    if (aff && UNIT_COLORS[aff]) return aff;
+    return 'vs';
+  }
+  return CHAR_UNIT_MAP[baseName] || 'vs';
+};
+
+const getLineupSkillInfo = (card) => {
+  const skill = String(card?.Skill || '').trim().toLowerCase();
+  const type = String(card?.Type || '').trim().toLowerCase();
+
+  if (skill === 'bfes_up' || type === 'bfes') {
+    return { kind: 'bfes_up', baseScore: LINEUP_SKILL_BASE.bfes_up, isUnitScore: false };
+  }
+  if (skill.startsWith('cfes') || type === 'cfes') {
+    return { kind: 'cfes', baseScore: LINEUP_SKILL_BASE.cfes, isUnitScore: false };
+  }
+  if (skill === 'p_score') {
+    return { kind: 'p_score', baseScore: LINEUP_SKILL_BASE.p_score, isUnitScore: false };
+  }
+  if (skill === 'score_up') {
+    return { kind: 'score_up', baseScore: LINEUP_SKILL_BASE.score_up, isUnitScore: false };
+  }
+  if (skill === 'accuracy') {
+    return { kind: 'accuracy', baseScore: LINEUP_SKILL_BASE.accuracy, isUnitScore: false };
+  }
+  if (skill === 'recovery') {
+    return { kind: 'recovery', baseScore: LINEUP_SKILL_BASE.recovery, isUnitScore: false };
+  }
+  if (skill === 'unit_score') {
+    return { kind: 'unit_score', baseScore: LINEUP_SKILL_BASE.unit_score, isUnitScore: true };
+  }
+  return { kind: 'default', baseScore: LINEUP_SKILL_BASE.default, isUnitScore: false };
+};
+
+const buildLineupEventRef = (card) => {
+  const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
+  if (!sourceKey) {
+    return { eventRef: null, eventLabel: '-' };
+  }
+  if (!isNumericEventId(sourceKey)) {
+    const label = SPECIAL_EVENT_KEY_LABELS[sourceKey] || sourceKey;
+    return { eventRef: { id: sourceKey }, eventLabel: label };
+  }
+  const ev = eventsById.value[Number(sourceKey)];
+  if (!ev) {
+    return { eventRef: { id: Number(sourceKey) }, eventLabel: `ID ${sourceKey}` };
+  }
+  const eventRef = {
+    id: Number(ev.id),
+    date: ev.date,
+    typeSeriesId: ev.type_series_id,
+    eventType: String(ev.event_type || '').trim(),
+    banner: String(ev.banner || '').trim(),
+    unit: String(ev.unit || '').trim(),
+    sourceKey: String(ev.id)
+  };
+  return { eventRef, eventLabel: getNonBanEventMark(eventRef) };
+};
+
+const getLineupEventMark = (eventRef, useSingleMark = false) => {
+  if (!eventRef) return '-';
+  const sourceKey = String(eventRef.sourceKey || eventRef.id || '').trim();
+  if (!sourceKey) return '-';
+  if (!isNumericEventId(sourceKey)) {
+    return SPECIAL_EVENT_KEY_LABELS[sourceKey] || sourceKey;
+  }
+
+  const typeSeries = getTypeSeriesText(eventRef.typeSeriesId);
+  const eventType = String(eventRef.eventType || '').trim();
+  const shortType = getEventTypeShort(eventType);
+
+  if (useSingleMark && (eventType === 'World Link' || eventType === 'World Link终章')) {
+    if (eventType === 'World Link' && Number(typeSeries) === 3) {
+      return eventRef.isFesCard ? 'wl3(fes)' : 'wl3';
+    }
+    const base = typeSeries ? `wl${typeSeries}` : 'wl';
+    return eventRef.isFesCard ? `${base}(fes)` : base;
+  }
+
+  const bannerName = normalizeBannerName(eventRef.banner);
+  const bannerMark = bannerName
+    ? (useSingleMark ? getCharSingleMark(bannerName) : getCharAbbr(bannerName).toLowerCase())
+    : '';
+  const unitMark = String(eventRef.unit || '').trim().toLowerCase();
+
+  if (eventType === 'World Link' || eventType === 'World Link终章') {
+    if (eventType === 'World Link' && Number(typeSeries) === 3) {
+      const base = `wl3${getWl3PartSuffix(eventRef)}`;
+      return eventRef.isFesCard ? `${base}(fes)` : base;
+    }
+    const wlHead = bannerMark || unitMark || 'vs';
+    const base = typeSeries ? `${wlHead} wl${typeSeries}` : `${wlHead} wl`;
+    return eventRef.isFesCard ? `${base}(fes)` : base;
+  }
+
+  let base = '?';
+  if (bannerMark && typeSeries) base = `${bannerMark}${typeSeries}${shortType}`;
+  else if (bannerMark) base = `${bannerMark}${shortType}`;
+  else if (unitMark && typeSeries) base = `${unitMark}${typeSeries}${shortType}`;
+  else if (typeSeries) base = `${typeSeries}${shortType}`;
+  else base = sourceKey;
+
+  return eventRef.isFesCard ? `${base}(fes)` : base;
+};
+
+const getJumpLinkLabel = (eventRef, fallback = '-') => {
+  if (!eventRef) return fallback || '-';
+  const mark = getLineupEventMark(eventRef, useSingleNameMark.value);
+  return mark || fallback || '-';
+};
+
+const calcLineupUnitScore = (unit, unitCountMap) => {
+  const selfIncluded = Number(unitCountMap[unit] || 0);
+  const others = Math.max(0, selfIncluded - 1);
+  const bonus = (others * 10) + (others === 4 ? 10 : 0);
+  return 100 + bonus;
+};
+
+const evalLineupMembers = (cards) => {
+  const unitCountMap = cards.reduce((map, card) => {
+    map[card.unit] = Number(map[card.unit] || 0) + 1;
+    return map;
+  }, {});
+
+  const members = cards.map((card) => {
+    const score = card.isUnitScore ? calcLineupUnitScore(card.unit, unitCountMap) : card.baseScore;
+    return {
+      ...card,
+      score
+    };
+  });
+
+  const baseTotal = members.reduce((sum, m) => sum + m.score, 0);
+  const captainBonus = members.length ? Math.max(...members.map((m) => m.score)) : 0;
+  return { total: baseTotal + captainBonus, members };
+};
+
+const solveSingleCharLineup = (cards) => {
+  const source = [...(cards || [])];
+  if (!source.length) return null;
+
+  const teamSize = Math.min(5, source.length);
+  let best = null;
+  const selected = [];
+
+  const dfs = (startIdx) => {
+    const need = teamSize - selected.length;
+    if (need === 0) {
+      const hit = evalLineupMembers(selected);
+      if (!best || hit.total > best.total) {
+        best = hit;
+        return;
+      }
+      if (best && hit.total === best.total) {
+        const hitBfes = hit.members.filter((m) => m.fesKind === 'bfes').length;
+        const bestBfes = best.members.filter((m) => m.fesKind === 'bfes').length;
+        if (hitBfes !== bestBfes) {
+          if (hitBfes > bestBfes) best = hit;
+          return;
+        }
+        const hitCfes = hit.members.filter((m) => m.fesKind === 'cfes').length;
+        const bestCfes = best.members.filter((m) => m.fesKind === 'cfes').length;
+        if (hitCfes !== bestCfes) {
+          if (hitCfes > bestCfes) best = hit;
+          return;
+        }
+        const hitNewest = Math.max(...hit.members.map((m) => Number(m.eventRef?.id || 0)));
+        const bestNewest = Math.max(...best.members.map((m) => Number(m.eventRef?.id || 0)));
+        if (hitNewest > bestNewest) best = hit;
+      }
+      return;
+    }
+
+    for (let i = startIdx; i <= source.length - need; i += 1) {
+      selected.push(source[i]);
+      dfs(i + 1);
+      selected.pop();
+    }
+  };
+
+  dfs(0);
+  return best;
+};
+
+const buildLineupPlan = (captainName, attr, attrPool) => {
+  const cards = [...(attrPool?.[attr]?.[captainName] || [])];
+  const solved = solveSingleCharLineup(cards);
+  if (!solved) return null;
+
+  const orderedMembers = [...solved.members].sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return Number(b.eventRef?.id || 0) - Number(a.eventRef?.id || 0);
+  });
+
+  const memberSlots = [...orderedMembers];
+  while (memberSlots.length < 5) memberSlots.push(null);
+
+  return {
+    attr,
+    total: solved.total,
+    bfesCount: orderedMembers.filter((m) => m.fesKind === 'bfes').length,
+    cfesCount: orderedMembers.filter((m) => m.fesKind === 'cfes').length,
+    members: orderedMembers,
+    memberSlots
+  };
+};
+
+const getLineupRowStyle = (attr) => {
+  const bg = LINEUP_ATTR_BG[attr] || '#64748b';
+  const flatBg = hexToSoftSolid(bg, 1 - LINEUP_BASE_ALPHA);
+  return {
+    '--lineup-row-bg': flatBg,
+    '--lineup-row-border': hexToRgba(bg, 0.38),
+    '--lineup-row-fg': '#111827',
+    '--lineup-row-fg-muted': '#64748b'
+  };
+};
+
+const getLineupMemberCellStyle = (slot, attr) => {
+  if (slot?.fesKind === 'bfes') {
+    return {
+      background: makeLineupFesBg(LINEUP_FES_ALPHA.bfes),
+      borderColor: '#f59e0b',
+      color: '#111827'
+    };
+  }
+  if (slot?.fesKind === 'cfes') {
+    return {
+      background: makeLineupFesBg(LINEUP_FES_ALPHA.cfes),
+      borderColor: '#f59e0b',
+      color: '#111827'
+    };
+  }
+  return getLineupRowStyle(attr);
+};
+
+const lineupCardPoolByAttr = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const pool = Object.fromEntries(ATTRS.map((attr) => [attr, {}]));
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+
+    const baseName = getCardBaseName(card?.Name);
+    if (!baseName || !CHAR_ORDER[baseName]) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    if (!attr) return;
+
+    const skillInfo = getLineupSkillInfo(card);
+    const { eventRef, eventLabel } = buildLineupEventRef(card);
+    const unit = getLineupCardUnit(card, baseName);
+
+    if (!pool[attr][baseName]) pool[attr][baseName] = [];
+    pool[attr][baseName].push({
+      cardId: String(card?.CardID || ''),
+      name: baseName,
+      attr,
+      unit,
+      baseScore: skillInfo.baseScore,
+      isUnitScore: skillInfo.isUnitScore,
+      isFes: ['cfes', 'bfes_up'].includes(skillInfo.kind),
+      fesKind: skillInfo.kind === 'bfes_up' ? 'bfes' : (skillInfo.kind === 'cfes' ? 'cfes' : ''),
+      skillKind: skillInfo.kind,
+      eventRef,
+      eventLabel
+    });
+  });
+
+  return pool;
+});
+
+const characterLineupRows = computed(() => {
+  const names = [...LINEUP_CHAR_NAMES];
+
+  return names.map((name) => {
+    const plans = ATTRS
+      .map((attr) => buildLineupPlan(name, attr, lineupCardPoolByAttr.value))
+      .filter(Boolean)
+      .sort((a, b) => {
+        if (b.total !== a.total) return b.total - a.total;
+        if ((b.bfesCount || 0) !== (a.bfesCount || 0)) return (b.bfesCount || 0) - (a.bfesCount || 0);
+        if ((b.cfesCount || 0) !== (a.cfesCount || 0)) return (b.cfesCount || 0) - (a.cfesCount || 0);
+        return ATTRS.indexOf(a.attr) - ATTRS.indexOf(b.attr);
+      });
+
+    if (!plans.length) {
+      const emptyPlan = {
+        attr: 'Pure',
+        total: 0,
+        members: [],
+        memberSlots: [null, null, null, null, null]
+      };
+      return {
+        name,
+        bestPlan: emptyPlan,
+        otherPlans: []
+      };
+    }
+
+    return {
+      name,
+      bestPlan: plans[0],
+      otherPlans: plans.slice(1)
+    };
+  });
+});
+
+const lineupExpandedMap = ref({});
+
+const isLineupExpanded = (name) => !!lineupExpandedMap.value[String(name || '')];
+
+const lineupRowsWithOthers = computed(() => characterLineupRows.value.filter((row) => (row.otherPlans || []).length > 0));
+
+const isLineupAllExpanded = computed(() => {
+  if (!lineupRowsWithOthers.value.length) return false;
+  return lineupRowsWithOthers.value.every((row) => isLineupExpanded(row.name));
+});
+
+const getLineupToggleLabel = (name, count = 0) => {
+  const expanded = isLineupExpanded(name);
+  if (isMobileNav.value) return expanded ? '收起' : '展开';
+  return expanded ? '收起其余属性' : '展开其余属性';
+};
+
+const getLineupGlobalToggleLabel = () => {
+  if (isMobileNav.value) return isLineupAllExpanded.value ? '全部收起' : '全部展开';
+  return isLineupAllExpanded.value ? '收起其余属性（全部）' : '展开其余属性（全部）';
+};
+
+const toggleLineupExpanded = (name) => {
+  const key = String(name || '');
+  if (!key) return;
+  lineupExpandedMap.value = {
+    ...lineupExpandedMap.value,
+    [key]: !lineupExpandedMap.value[key]
+  };
+};
+
+const toggleLineupExpandedAll = () => {
+  const target = !isLineupAllExpanded.value;
+  const next = { ...lineupExpandedMap.value };
+  lineupRowsWithOthers.value.forEach((row) => {
+    next[row.name] = target;
+  });
+  lineupExpandedMap.value = next;
 };
 
 // 2. 这里的计算属性直接指向完整的卡片源
@@ -2686,6 +3243,34 @@ const banShortestIntervals = computed(() => {
   padding: 8px;
 }
 
+.nav-name-format {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.nav-name-format-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.nav-name-format-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nav-name-format-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.74rem;
+  color: #374151;
+}
+
 .nav-cutoff-title {
   font-size: 0.76rem;
   font-weight: 700;
@@ -2985,6 +3570,14 @@ const banShortestIntervals = computed(() => {
   font-weight: bold;
 }
 
+.dist-hide-name-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+}
+
 .sub-stat {
   font-size: 0.66em;
   color: #6b7280;
@@ -3020,8 +3613,194 @@ const banShortestIntervals = computed(() => {
 .matrix-panel,
 .song-panel,
 .related-panel,
-.festival-panel {
+.festival-panel,
+.lineup-panel {
   margin-top: 18px;
+}
+
+.lineup-tip {
+  margin: 4px 0 10px;
+  font-size: 0.76rem;
+  color: #475569;
+}
+
+.lineup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lineup-card {
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  padding: 9px;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+}
+
+.lineup-char-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.lineup-char-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.lineup-char-main > div {
+  min-width: 0;
+}
+
+.lineup-char-text {
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.lineup-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.lineup-toggle-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.66rem;
+  line-height: 1;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.lineup-toggle-btn:hover {
+  background: #e2e8f0;
+}
+
+.lineup-char-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--lineup-accent, #d1d5db);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
+}
+
+.lineup-char-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.lineup-char-sub {
+  margin-top: 0;
+  font-size: 0.68rem;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lineup-plan-row {
+  display: grid;
+  grid-template-columns: 30px repeat(5, minmax(0, 1fr)) 48px;
+  gap: 5px;
+  align-items: stretch;
+}
+
+.lineup-plan-main {
+  margin-bottom: 6px;
+}
+
+.lineup-attr-cell,
+.lineup-total-cell,
+.lineup-member-cell {
+  border: 1px solid var(--lineup-row-border, #cbd5e1);
+  border-radius: 7px;
+  background: var(--lineup-row-bg, rgba(255, 255, 255, 0.88));
+  color: var(--lineup-row-fg, #111827);
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lineup-attr-cell {
+  padding: 2px;
+}
+
+.lineup-attr-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.lineup-member-cell {
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px 2px;
+}
+
+.lineup-member-cell.is-empty {
+  color: var(--lineup-row-fg-muted, #94a3b8);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.lineup-member-score {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: inherit;
+  line-height: 1;
+}
+
+.lineup-jump {
+  width: 100%;
+  max-width: 100%;
+  padding: 1px 3px;
+  font-size: 0.58rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lineup-total-cell {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--lineup-row-fg, #0f172a);
+}
+
+.lineup-more {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 6px;
+}
+
+.lineup-more summary {
+  cursor: pointer;
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+
+.lineup-more-list {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.lineup-empty {
+  color: #94a3b8;
 }
 
 .festival-grid {
@@ -3112,8 +3891,8 @@ const banShortestIntervals = computed(() => {
 }
 
 .festival-star-icon {
-  width: 11px;
-  height: 11px;
+  width: 13px;
+  height: 13px;
   object-fit: contain;
 }
 
@@ -3204,6 +3983,15 @@ const banShortestIntervals = computed(() => {
 .festival-empty {
   color: #9ca3af;
   font-size: 0.85rem;
+}
+
+.festival-chars-empty-cell {
+  display: table-cell;
+}
+
+.festival-chars-empty-cell .festival-empty {
+  display: inline-block;
+  width: 100%;
 }
 
 .matrix-table {
@@ -3707,6 +4495,7 @@ const banShortestIntervals = computed(() => {
   .stats-layout.nav-collapsed { grid-template-columns: 48px 1fr; }
   .stats-grid { grid-template-columns: 1fr; }
   .record-grid { grid-template-columns: 1fr; }
+  .lineup-grid { grid-template-columns: 1fr; }
   .pjsk-stats { padding: 14px; }
 }
 
@@ -3735,6 +4524,18 @@ const banShortestIntervals = computed(() => {
 
   .nav-cutoff {
     padding: 7px;
+  }
+
+  .nav-name-format {
+    padding: 7px;
+  }
+
+  .nav-name-format-title {
+    font-size: 0.72rem;
+  }
+
+  .nav-name-format-option {
+    font-size: 0.7rem;
   }
 
   .nav-cutoff-title {
@@ -3914,6 +4715,82 @@ const banShortestIntervals = computed(() => {
   .festival-grid {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  .lineup-plan-row {
+    grid-template-columns: 24px repeat(5, minmax(0, 1fr)) 40px;
+    gap: 4px;
+  }
+
+  .lineup-char-head {
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .lineup-char-main {
+    gap: 6px;
+  }
+
+  .lineup-char-text {
+    gap: 4px;
+    align-items: center;
+  }
+
+  .lineup-char-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .lineup-char-name {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .lineup-char-sub {
+    font-size: 0.62rem;
+    max-width: 30vw;
+  }
+
+  .lineup-head-actions {
+    gap: 3px;
+    flex-wrap: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .lineup-toggle-btn {
+    font-size: 0.58rem;
+    padding: 3px 5px;
+    white-space: nowrap;
+  }
+
+  .lineup-head-actions .card-export-btn {
+    font-size: 0.58rem;
+    padding: 3px 5px;
+    white-space: nowrap;
+  }
+
+  .lineup-attr-cell,
+  .lineup-total-cell,
+  .lineup-member-cell {
+    min-height: 48px;
+  }
+
+  .lineup-attr-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .lineup-member-score {
+    font-size: 0.86rem;
+  }
+
+  .lineup-jump {
+    font-size: 0.54rem;
+    padding: 1px 2px;
+  }
+
+  .lineup-total-cell {
+    font-size: 0.74rem;
   }
 
   .festival-card {

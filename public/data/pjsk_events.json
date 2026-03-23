@@ -2983,6 +2983,25 @@
    "virtual_singer": "LEN"
  },
  {
+   "id": "movie",
+   "date": "2025/1/17",
+   "event_title": "剧场版",
+   "gacha_title": "剧场版",
+   "festival": "",
+   "event_type": "联动",
+   "gacha_type": "联动",
+   "type_series_id": 0,
+   "rerun1": "",
+   "rerun2": "",
+   "unit": "",
+   "banner": "",
+   "event_attribute": "",
+   "event_song": "",
+   "song_alias": "",
+   "composer": "",
+   "virtual_singer": ""
+ },
+ {
    "id": 155,
    "date": "2025/1/21",
    "event_title": "Show your shine",

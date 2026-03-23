@@ -265,8 +265,8 @@
             :title="hideBirthdayRows ? '已隐藏生日行' : '显示生日行'"
             :data-tip="isCompactFilterBar ? '生日行' : null"
           >
-            <img v-if="isCompactFilterBar" src="/elements/birthday.png" class="compact-btn-icon" alt="生日" />
-            <span v-else>生日行：{{ hideBirthdayRows ? '隐藏' : '显示' }}</span>
+            <img src="/elements/birthday.png" class="compact-btn-icon birthday-toggle-icon" alt="生日" />
+            <span v-if="!isCompactFilterBar">生日行：{{ hideBirthdayRows ? '隐藏' : '显示' }}</span>
           </button>
           <button
             @click="hidePreviewRows = !hidePreviewRows"
@@ -274,8 +274,8 @@
             :title="hidePreviewRows ? '已隐藏生放送行' : '显示生放送行'"
             :data-tip="isCompactFilterBar ? '生放送' : null"
           >
-            <span v-if="isCompactFilterBar">📺</span>
-            <span v-else>生放送：{{ hidePreviewRows ? '隐藏' : '显示' }}</span>
+            <img src="/data/icon/live.png" class="compact-btn-icon" alt="生放送" />
+            <span v-if="!isCompactFilterBar">生放送：{{ hidePreviewRows ? '隐藏' : '显示' }}</span>
           </button>
           <button
             @click="hideCollabPools = !hideCollabPools"
@@ -283,16 +283,19 @@
             :title="hideCollabPools ? '已隐藏联动卡池' : '显示联动卡池'"
             :data-tip="isCompactFilterBar ? '联动卡池' : null"
           >
-            {{ isCompactFilterBar ? (hideCollabPools ? '联动隐藏' : '联动显示') : `联动卡池：${hideCollabPools ? '隐藏' : '显示'}` }}
+            <img src="/data/icon/collaboration.png" class="compact-btn-icon" alt="联动" />
+            <span v-if="!isCompactFilterBar">联动卡池：{{ hideCollabPools ? '隐藏' : '显示' }}</span>
           </button>
           <button @click="scrollTo('top')" class="nav-btn compact-tip" title="顶部" data-tip="回到顶部">
-            顶部
+            <img src="/data/icon/top.png" class="compact-btn-icon" alt="顶部" />
+            <span v-if="!isCompactFilterBar">顶部</span>
           </button>
           <button @click="scrollTo('current')" class="nav-btn current-btn compact-tip" title="当前活动" data-tip="当前活动">
             当期
           </button>
           <button @click="scrollTo('bottom')" class="nav-btn compact-tip" title="底部" data-tip="前往底部">
-            底部
+            <img src="/data/icon/bottom.png" class="compact-btn-icon" alt="底部" />
+            <span v-if="!isCompactFilterBar">底部</span>
           </button>
           <button 
             @click="showFilter = !showFilter" 
@@ -300,7 +303,8 @@
             :class="['nav-btn', 'compact-tip', { 'active-highlight': hasActiveFilters || showFilter }]"
             data-tip="筛选面板"
           >
-            {{ isCompactFilterBar ? '🔍' : filterPanelSummaryText }}
+            <img src="/data/icon/filter.png" class="compact-btn-icon" alt="筛选" />
+            <span v-if="!isCompactFilterBar">{{ filterPanelSummaryText }}</span>
           </button>
           <button v-if="hasActiveFilters" @click="resetFilters" class="clear-btn" :title="isCompactFilterBar ? '重置筛选' : ''">
             {{ isCompactFilterBar ? '✕' : '重置筛选' }}
@@ -324,7 +328,6 @@
                   :title="name"
                   @click="toggleChar(name)">
                 <img :src="`/chars/${getCharAbbr(name)}.png`" class="chip-img" />
-                <span>{{ name }}</span>
               </div>
             </div>
           </div>
@@ -338,7 +341,6 @@
                     :title="name"
                     @click="toggleEventFilterCharacter(name)">
                   <img :src="`/chars/${getCharAbbr(name)}.png`" class="chip-img" />
-                  <span>{{ name }}</span>
                 </div>
               </div>
             </div>
@@ -2176,7 +2178,7 @@ const hasActiveFilters = computed(() => {
 });
 
 const filterPanelSummaryText = computed(() => {
-  if (!hasActiveFilters.value) return '🔍 筛选面板';
+  if (!hasActiveFilters.value) return '筛选面板';
   if (filterMode.value === 'event') {
     const parts = [];
     if (eventFilterCriteria.value.characters.length > 0) {
@@ -2188,7 +2190,7 @@ const filterPanelSummaryText = computed(() => {
   }
   return filterCriteria.value.selectedChars.length > 0
     ? `已选: ${filterCriteria.value.selectedChars[0]}`
-    : '🔍 筛选面板';
+    : '筛选面板';
 });
 
 const isEventUnitFilterDisabledByMix = computed(() => {
@@ -4380,6 +4382,10 @@ const getFestivalPreviewUnitLogo = (name) => {
 .nav-btn {
   padding: 8px 15px;
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   cursor: pointer;
   border-radius: 6px;
   border: 1px solid #ddd;
@@ -4391,13 +4397,35 @@ const getFestivalPreviewUnitLogo = (name) => {
 
 
 .filter-bar { margin-bottom: 15px; }
-.sort-btn { padding: 8px 16px; cursor: pointer; border-radius: 4px; border: 1px solid #ddd; background: #fff; flex: 0 0 auto; white-space: nowrap; }
+.sort-btn {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background: #fff;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .compact-btn-icon {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   object-fit: contain;
-  vertical-align: middle;
+  flex: 0 0 17px;
+  display: block;
+  filter: var(--history-icon-filter, none);
+}
+
+/* Optional PNG tinting for highlighted filter buttons. */
+.nav-btn.active-highlight .compact-btn-icon {
+  --history-icon-filter: brightness(0) saturate(100%) invert(43%) sepia(58%) saturate(900%) hue-rotate(130deg) brightness(95%) contrast(90%);
+}
+
+.nav-btn.active-highlight .compact-btn-icon.birthday-toggle-icon {
+  --history-icon-filter: none;
 }
 
 .birthday-inline-icon {
@@ -4407,6 +4435,9 @@ const getFestivalPreviewUnitLogo = (name) => {
 .clear-btn {
   flex: 0 0 auto;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .history-list { display: flex; flex-direction: column; gap: 12px; padding-bottom: 16px; 
   margin-top: 20px; }
@@ -4680,22 +4711,35 @@ const getFestivalPreviewUnitLogo = (name) => {
   gap: 8px;
 }
 .char-chip {
-  display: flex;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: #f5f5f5;
-  border-radius: 20px;
+  justify-content: center;
+  background: transparent;
+  border-radius: 50%;
   cursor: pointer;
   border: 2px solid transparent;
   transition: 0.2s;
 }
 .char-chip.is-selected {
-  background: #e6fffb;
+  background: rgba(51, 204, 187, 0.14);
   border-color: #33ccbb;
-  color: #33ccbb;
 }
-.chip-img { width: 24px; height: 24px; border-radius: 50%; }
+.chip-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: grayscale(1) opacity(0.45);
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.char-chip.is-selected .chip-img {
+  filter: grayscale(0) opacity(1);
+  transform: scale(1.04);
+}
 
 /* 图标组高亮控制 */
 .icon-group { display: flex; }
