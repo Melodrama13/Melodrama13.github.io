@@ -778,7 +778,7 @@
                   v-for="(slot, idx) in row.bestPlan.memberSlots"
                   :key="`main-${row.name}-${row.bestPlan.attr}-${idx}`"
                   class="lineup-member-cell"
-                  :class="{ 'is-empty': !slot }"
+                  :class="{ 'is-empty': !slot, 'is-cfes': slot?.fesKind === 'cfes', 'is-bfes': slot?.fesKind === 'bfes' }"
                   :style="getLineupMemberCellStyle(slot, row.bestPlan.attr)"
                 >
                   <template v-if="slot">
@@ -804,7 +804,7 @@
                     v-for="(slot, idx) in plan.memberSlots"
                     :key="`slot-${row.name}-${plan.attr}-${idx}`"
                     class="lineup-member-cell"
-                    :class="{ 'is-empty': !slot }"
+                    :class="{ 'is-empty': !slot, 'is-cfes': slot?.fesKind === 'cfes', 'is-bfes': slot?.fesKind === 'bfes' }"
                     :style="getLineupMemberCellStyle(slot, plan.attr)"
                   >
                     <template v-if="slot">
@@ -860,7 +860,7 @@
                   v-for="(slot, idx) in plan.memberSlots"
                   :key="`support-slot-${unitRow.unit}-${plan.attr}-${idx}`"
                   class="lineup-member-cell"
-                  :class="{ 'is-empty': !slot, 'support-member-cell': !!slot }"
+                  :class="{ 'is-empty': !slot, 'support-member-cell': !!slot, 'is-cfes': slot?.fesKind === 'cfes', 'is-bfes': slot?.fesKind === 'bfes' }"
                   :style="getLineupMemberCellStyle(slot, plan.attr)"
                 >
                   <template v-if="slot">
@@ -1594,6 +1594,12 @@ const prepareExportClone = async (targetEl) => {
   });
   clone.querySelectorAll('.export-hide').forEach((el) => {
     el.style.display = 'none';
+  });
+  // html2canvas may over-render inset shadow on low-alpha CFES backgrounds,
+  // causing a gray veil in the middle/corners; keep on-screen style unchanged
+  // and neutralize this shadow only in export clone.
+  clone.querySelectorAll('.lineup-member-cell.is-cfes').forEach((cell) => {
+    cell.style.boxShadow = 'none';
   });
 
   const originalMatrixWrap = targetEl.querySelector('.matrix-wrap');
