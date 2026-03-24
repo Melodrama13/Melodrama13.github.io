@@ -346,22 +346,6 @@
             </div>
 
             <div class="filter-row">
-              <span class="row-label">多人规则</span>
-              <div class="btn-group-sm">
-                <button
-                  :class="{ active: eventFilterCriteria.multiPersonRule === 'same-event' }"
-                  :disabled="!canUseMultiPersonRule"
-                  @click="setEventMultiPersonRule('same-event')"
-                >同活</button>
-                <button
-                  :class="{ active: eventFilterCriteria.multiPersonRule === 'same-pool' }"
-                  :disabled="!canUseMultiPersonRule"
-                  @click="setEventMultiPersonRule('same-pool')"
-                >同池</button>
-              </div>
-            </div>
-
-            <div class="filter-row">
               <span class="row-label">是否Ban</span>
               <div class="btn-group-sm">
                 <button
@@ -378,6 +362,36 @@
             </div>
 
             <div class="filter-row">
+              <span class="row-label">多人规则</span>
+              <div class="btn-group-sm">
+                <button
+                  :class="{ active: eventFilterCriteria.multiPersonRule === 'same-event' }"
+                  :disabled="!canUseMultiPersonRule"
+                  @click="setEventMultiPersonRule('same-event')"
+                >同活</button>
+                <button
+                  :class="{ active: eventFilterCriteria.multiPersonRule === 'same-pool' }"
+                  :disabled="!canUseMultiPersonRule"
+                  @click="setEventMultiPersonRule('same-pool')"
+                >同池</button>
+              </div>
+            </div>            
+
+            <div class="filter-row">
+              <span class="row-label">特殊规则</span>
+              <div class="btn-group-sm">
+                <button
+                  v-for="opt in EVENT_SPECIAL_RULE_OPTIONS"
+                  :key="`event-rule-${opt.value}`"
+                  :class="{ active: eventFilterCriteria.specialRules.includes(opt.value) }"
+                  :disabled="opt.value === 'four-no-vs' && !canUseFourNoVsRule"
+                  :title="opt.value === 'four-no-vs' && !canUseFourNoVsRule ? '仅在仅选箱活时可用' : ''"
+                  @click="toggleEventSpecialRule(opt.value)"
+                >{{ opt.label }}</button>
+              </div>
+            </div>
+
+            <div class="filter-row">
               <span class="row-label">活动类型</span>
               <div class="btn-group-sm">
                 <button
@@ -388,6 +402,7 @@
                 >{{ opt.label }}</button>
               </div>
             </div>
+
 
             <div class="filter-row">
               <span class="row-label">卡池类型</span>
@@ -514,7 +529,7 @@
             v-if="row.kind === 'event'"
             :id="'event-' + row.event.id"
             class="event-item"
-            :class="['event-item', getPredictStatus(row.event)]"
+          :class="['event-item', getPredictStatus(row.event), { 'is-tooltip-raised': tooltipRaisedEventKey === row.key }]"
             @click="openPredictEditor(row.event)"
             :style="[
               isUnitRelated(row.event)
@@ -571,7 +586,14 @@
           <div class="event-members">
             <div class="member-row">
               <div v-for="card in getNormalCards(row.event.memberCards)" :key="card.CardID" class="member-card-box">
-                <div class="avatar-container" :style="{ borderColor: getUnitColor(card.Affiliation) }">
+                <div
+                  class="avatar-container"
+                  :style="{ borderColor: getUnitColor(card.Affiliation) }"
+                  @mouseenter="setTooltipRaisedEvent(row.key)"
+                  @mouseleave="clearTooltipRaisedEvent(row.key)"
+                  @focusin="setTooltipRaisedEvent(row.key)"
+                  @focusout="clearTooltipRaisedEvent(row.key)"
+                >
                   <img :src="`/chars/${getCharAbbr(card.Name)}.png`" class="member-avatar" />
                   <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/${card.Attribute.toLowerCase()}.png`" class="card-attr-icon" />
                   <img v-if="isVirtualSinger(card.Name)" :src="`/elements/${card.Affiliation.toLowerCase()}.png`" class="sub-unit-logo" />
@@ -592,7 +614,14 @@
             <div v-if="getFesCards(row.event.memberCards).length > 0" class="member-row fes-row">
               <img :src="`/elements/${getFesType(row.event.memberCards)}.webp`" class="fes-type-icon" />
               <div v-for="card in getFesCards(row.event.memberCards)" :key="card.CardID" class="member-card-box">
-                <div class="avatar-container" :style="{ borderColor: getUnitColor(card.Affiliation) }">
+                <div
+                  class="avatar-container"
+                  :style="{ borderColor: getUnitColor(card.Affiliation) }"
+                  @mouseenter="setTooltipRaisedEvent(row.key)"
+                  @mouseleave="clearTooltipRaisedEvent(row.key)"
+                  @focusin="setTooltipRaisedEvent(row.key)"
+                  @focusout="clearTooltipRaisedEvent(row.key)"
+                >
                   <img :src="`/chars/${getCharAbbr(card.Name)}.png`" class="member-avatar" />
                   <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/${card.Attribute.toLowerCase()}.png`" class="card-attr-icon" />
                   <img v-if="isVirtualSinger(card.Name)" :src="`/elements/${card.Affiliation.toLowerCase()}.png`" class="sub-unit-logo" />
@@ -613,7 +642,14 @@
             <div v-if="row.event.virtual_singer" class="vs-list">
               <img v-for="vs in parseVS(row.event.virtual_singer)" :key="vs" :src="`/chars/${getCharAbbr(vs)}.png`" :title="vs" class="vs-avatar" />
             </div>
-            <div class="song-tooltip" v-if="row.event.event_song">
+            <div
+              class="song-tooltip"
+              v-if="row.event.event_song"
+              @mouseenter="setTooltipRaisedEvent(row.key)"
+              @mouseleave="clearTooltipRaisedEvent(row.key)"
+              @focusin="setTooltipRaisedEvent(row.key)"
+              @focusout="clearTooltipRaisedEvent(row.key)"
+            >
               <span class="info-icon">🎵</span>
               <div class="tooltip-content">
                 <p><strong>书下曲：</strong>{{ row.event.event_song }}</p>
@@ -704,6 +740,17 @@ const hideCollabPools = ref(true);
 const hideBirthdayRows = ref(false);
 const hidePreviewRows = ref(false);
 const previewDataRows = ref([]);
+const tooltipRaisedEventKey = ref(null);
+
+const setTooltipRaisedEvent = (eventKey) => {
+  tooltipRaisedEventKey.value = eventKey;
+};
+
+const clearTooltipRaisedEvent = (eventKey) => {
+  if (tooltipRaisedEventKey.value === eventKey) {
+    tooltipRaisedEventKey.value = null;
+  }
+};
 
 const normalizeAttr = (attr) => {
   const map = {
@@ -2098,8 +2145,13 @@ const filterMode = ref('single'); // 'single' | 'event'
 const EVENT_TYPE_FILTER_OPTIONS = [
   { value: 'box', label: '箱活' },
   { value: 'mix', label: '混活' },
-  { value: 'wl', label: 'WL' },
+  { value: 'wl', label: 'World Link' },
   { value: 'collab', label: '联动' }
+];
+const EVENT_SPECIAL_RULE_OPTIONS = [
+  { value: 'two-vs', label: '2VS' },
+  { value: 'three-oc', label: '3OC' },
+  { value: 'four-no-vs', label: '4花后' }
 ];
 const EVENT_FESTIVAL_ORDER = ['新年', '情人节', '白情', '半周年', '五月', '婚活', '六月', '夏活', '八月', '九月', '周年', '十一月', '十二月'];
 const EVENT_FESTIVAL_EXCLUDE = new Set(['开服', '二月', '三月']);
@@ -2126,6 +2178,7 @@ const eventFilterCriteria = ref({
   multiPersonRule: 'same-event', // 'same-event' | 'same-pool'
   isBan: null, // 'yes' | 'no' | null
   eventTypes: [],
+  specialRules: [],
   festivals: [],
   attributes: [],
   units: [],
@@ -2134,6 +2187,10 @@ const eventFilterCriteria = ref({
 
 const canUseEventBanFilter = computed(() => eventFilterCriteria.value.characters.length === 1);
 const canUseMultiPersonRule = computed(() => eventFilterCriteria.value.characters.length >= 2);
+const canUseFourNoVsRule = computed(() => {
+  const selectedTypes = eventFilterCriteria.value.eventTypes || [];
+  return selectedTypes.length === 1 && selectedTypes[0] === 'box';
+});
 
 const sortedEvents = computed(() => {
   return [...(props.allEvents || [])].sort((a, b) => (
@@ -2165,6 +2222,7 @@ const hasEventFilters = computed(() => {
     (f.characters && f.characters.length > 0) ||
     f.isBan ||
     (f.eventTypes && f.eventTypes.length > 0) ||
+    (f.specialRules && f.specialRules.length > 0) ||
     (f.festivals && f.festivals.length > 0) ||
     (f.attributes && f.attributes.length > 0) ||
     (f.units && f.units.length > 0) ||
@@ -2185,6 +2243,7 @@ const filterPanelSummaryText = computed(() => {
       parts.push(`角色${eventFilterCriteria.value.characters.length}`);
     }
     if (eventFilterCriteria.value.eventTypes.length > 0) parts.push(`类型${eventFilterCriteria.value.eventTypes.length}`);
+    if (eventFilterCriteria.value.specialRules.length > 0) parts.push(`规则${eventFilterCriteria.value.specialRules.length}`);
     if (eventFilterCriteria.value.festivals.length > 0) parts.push(`节日${eventFilterCriteria.value.festivals.length}`);
     return `活动: ${parts.join(' · ') || '已启用'}`;
   }
@@ -2244,14 +2303,6 @@ const filteredData = computed(() => {
     if (typeValue === 'collab') return cType === 'collab' || cType === 'collab_t';
     if (typeValue === 'ue') return ['wl1', 'wl2', 'wl3'].includes(cType);
     return cType === String(typeValue || '').toLowerCase();
-  };
-
-  const getEventCardsForFilter = (event) => {
-    const cardsInEvent = Array.isArray(event?.memberCards) ? event.memberCards.filter(Boolean) : [];
-    if (cardsInEvent.length > 0) return cardsInEvent;
-    const eid = normalizeEventId(event?.id);
-    if (!eid) return [];
-    return (props.allCards || []).filter((card) => normalizeEventId(card?.EventID) === eid);
   };
 
   return data.filter((event) => {
@@ -2558,6 +2609,19 @@ const toggleEventFilterArray = (key, value) => {
   if (key === 'eventTypes' && eventFilterCriteria.value.eventTypes.includes('mix')) {
     eventFilterCriteria.value.units = [];
   }
+  if (key === 'eventTypes' && !canUseFourNoVsRule.value) {
+    eventFilterCriteria.value.specialRules = (eventFilterCriteria.value.specialRules || []).filter((rule) => rule !== 'four-no-vs');
+  }
+};
+
+const toggleEventSpecialRule = (ruleValue) => {
+  if (!EVENT_SPECIAL_RULE_OPTIONS.some((item) => item.value === ruleValue)) return;
+  if (ruleValue === 'four-no-vs' && !canUseFourNoVsRule.value) return;
+  const current = [...(eventFilterCriteria.value.specialRules || [])];
+  const idx = current.indexOf(ruleValue);
+  if (idx >= 0) current.splice(idx, 1);
+  else current.push(ruleValue);
+  eventFilterCriteria.value.specialRules = current;
 };
 
 const VS_TOKEN_TO_NAME = {
@@ -2579,22 +2643,61 @@ const parseEventVsNames = (vsStr) => {
   return names;
 };
 
+const getCardBaseName = (card) => String(card?.Name || '').trim().split(' ')[0] || '';
+
+const isFesCard = (card) => {
+  const t = String(card?.Type || '').trim().toLowerCase();
+  return t === 'cfes' || t === 'bfes';
+};
+
+const isVsEventCard = (card) => {
+  const baseName = getCardBaseName(card);
+  return isVirtualSinger(baseName);
+};
+
+const getEventCardsForFilter = (event) => {
+  const cardsInEvent = Array.isArray(event?.memberCards) ? event.memberCards.filter(Boolean) : [];
+  if (cardsInEvent.length > 0) return cardsInEvent;
+  const eid = normalizeEventId(event?.id);
+  if (!eid) return [];
+  return (props.allCards || []).filter((card) => normalizeEventId(card?.EventID) === eid);
+};
+
+const getEventNonFesCards = (event) => getEventCardsForFilter(event).filter((card) => !isFesCard(card));
+
+const matchEventSpecialRule = (event, rule) => {
+  const cards = getEventNonFesCards(event);
+
+  if (rule === 'three-oc') {
+    const fourStars = cards.filter((card) => String(card?.Rarity || '').trim() === '4');
+    if (fourStars.length !== 3) return false;
+    return fourStars.every((card) => !isVsEventCard(card));
+  }
+
+  if (rule === 'two-vs') {
+    const vsCount = cards.filter((card) => isVsEventCard(card)).length;
+    return vsCount >= 2;
+  }
+
+  if (rule === 'four-no-vs') {
+    const highRarity = cards.filter((card) => {
+      const rarity = String(card?.Rarity || '').trim();
+      return rarity === '4' || rarity === '3';
+    });
+    if (!highRarity.length) return false;
+    return highRarity.every((card) => !isVsEventCard(card));
+  }
+
+  return true;
+};
+
 const getEventCardNames = (event) => {
   const names = new Set();
-  const fromEvent = Array.isArray(event?.memberCards) ? event.memberCards : [];
+  const fromEvent = getEventCardsForFilter(event);
   fromEvent.forEach((card) => {
     const n = String(card?.Name || '').trim().split(' ')[0];
     if (n && n !== '-' && n !== 'CardID') names.add(n);
   });
-
-  const eid = normalizeEventId(event?.id);
-  if (eid) {
-    (props.allCards || []).forEach((card) => {
-      if (normalizeEventId(card?.EventID) !== eid) return;
-      const n = String(card?.Name || '').trim().split(' ')[0];
-      if (n && n !== '-' && n !== 'CardID') names.add(n);
-    });
-  }
 
   return [...names];
 };
@@ -2627,20 +2730,11 @@ const matchEventGachaFilter = (event, gachaValue) => {
 
   const getEventCardTypeSet = () => {
     const typeSet = new Set();
-    const eventCards = Array.isArray(event?.memberCards) ? event.memberCards : [];
+    const eventCards = getEventCardsForFilter(event);
     eventCards.forEach((card) => {
       const t = String(card?.Type || '').trim().toLowerCase();
       if (t) typeSet.add(t);
     });
-
-    const eid = normalizeEventId(event?.id);
-    if (eid) {
-      (props.allCards || []).forEach((card) => {
-        if (normalizeEventId(card?.EventID) !== eid) return;
-        const t = String(card?.Type || '').trim().toLowerCase();
-        if (t) typeSet.add(t);
-      });
-    }
 
     return typeSet;
   };
@@ -2683,6 +2777,8 @@ const matchEventFilters = (event) => {
 
   if (f.eventTypes.length > 0 && !f.eventTypes.some((typeValue) => matchEventTypeFilter(event, typeValue))) return false;
 
+  if (f.specialRules.length > 0 && !f.specialRules.every((rule) => matchEventSpecialRule(event, rule))) return false;
+
   if (f.festivals.length > 0) {
     const festival = String(event?.festival || '').trim();
     if (!f.festivals.includes(festival)) return false;
@@ -2709,6 +2805,7 @@ const resetFilters = () => {
     multiPersonRule: 'same-event',
     isBan: null,
     eventTypes: [],
+    specialRules: [],
     festivals: [],
     attributes: [],
     units: [],
@@ -2965,6 +3062,8 @@ const withTemporaryScreenshotOverrides = (rowsAllInRange, includeBirthdayRows, i
         node: tag,
         clipPath: tag.style.clipPath,
         webkitClipPath: tag.style.webkitClipPath,
+        mask: tag.style.mask,
+        webkitMask: tag.style.webkitMask,
         transform: tag.style.transform,
         borderRadius: tag.style.borderRadius,
         width: tag.style.width,
@@ -2990,6 +3089,8 @@ const withTemporaryScreenshotOverrides = (rowsAllInRange, includeBirthdayRows, i
       tag.innerHTML = rawText;
       tag.style.setProperty('clip-path', 'none', 'important');
       tag.style.setProperty('-webkit-clip-path', 'none', 'important');
+      tag.style.setProperty('mask', 'none', 'important');
+      tag.style.setProperty('-webkit-mask', 'none', 'important');
       tag.style.display = 'inline-flex';
       tag.style.alignItems = 'center';
       tag.style.justifyContent = 'center';
@@ -3022,9 +3123,11 @@ const withTemporaryScreenshotOverrides = (rowsAllInRange, includeBirthdayRows, i
       node.style.visibility = visibility;
     });
     limTags.forEach((snapshot) => {
-      const { node, clipPath, webkitClipPath } = snapshot;
+      const { node, clipPath, webkitClipPath, mask, webkitMask } = snapshot;
       node.style.clipPath = clipPath;
       node.style.webkitClipPath = webkitClipPath;
+      node.style.mask = mask;
+      node.style.webkitMask = webkitMask;
       node.style.transform = snapshot.transform;
       node.style.borderRadius = snapshot.borderRadius;
       node.style.width = snapshot.width;
@@ -4362,9 +4465,10 @@ const getFestivalPreviewUnitLogo = (name) => {
 .filter-sticky {
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 1500;
   background: #f4f7f6;
   overflow: visible;
+  isolation: isolate;
 }
 
 .filter-bar {
@@ -4440,7 +4544,9 @@ const getFestivalPreviewUnitLogo = (name) => {
   justify-content: center;
 }
 .history-list { display: flex; flex-direction: column; gap: 12px; padding-bottom: 16px; 
-  margin-top: 20px; }
+  margin-top: 20px;
+  position: relative;
+}
 
 .event-item {
   scroll-margin-top: 80px; /* 对应 .sticky-filter 的高度 */
@@ -4451,7 +4557,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   transition: all 0.2s; border-left: 6px solid transparent;
   box-sizing: border-box;
 }
-.event-item:hover { z-index: 1200; transform: translateX(5px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.event-item:hover { z-index: 900; transform: translateX(5px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
 .birthday-row {
   display: flex;
@@ -4604,11 +4710,23 @@ const getFestivalPreviewUnitLogo = (name) => {
 /* 活跃状态基础样式 */
 .event-item.is-active {
   position: relative;
-  z-index: 10;
+  z-index: 950;
   transform: translateX(10px);
   box-shadow: 0 4px 20px rgba(51, 204, 187, 0.3);
   /* 确保这里不设置 border，否则会挤压内部布局 */
   border: none; 
+}
+
+.event-item.is-tooltip-raised {
+  z-index: 1700;
+}
+
+/* 仅在角色详情悬浮框触发时抬高该活动卡，使 tooltip 可压过筛选栏。 */
+.event-item:has(.avatar-container:hover),
+.event-item:has(.avatar-container:focus-within),
+.event-item:has(.song-tooltip:hover),
+.event-item:has(.song-tooltip:focus-within) {
+  z-index: 1700;
 }
 
 /* 专门负责流光的伪元素 */
@@ -4654,6 +4772,8 @@ const getFestivalPreviewUnitLogo = (name) => {
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 12px;
+  position: relative;
+  z-index: 1510;
   padding: 15px;
   margin-bottom: 20px;
   display: flex;
@@ -4874,9 +4994,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   /* 通过 rotate 旋转，通过 translate 向上向右微调 */
   transform: rotate(45deg) translate(13px, -8px);
   
-  /* 关键 2：裁剪形状 */
-  /* 这个路径会将矩形裁剪成一个适配圆形边框的形状，确保不溢出 */
-  /* 如果你的圆环大小有变，可以微调这些百分比 */
+  /* 回退到手工形状：显示稳定，导出逻辑也更一致。 */
   clip-path: polygon(21% 28%, 78% 30%, 93% 90%, 5.5% 80%); 
   
   z-index: 2;

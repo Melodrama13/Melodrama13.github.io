@@ -737,7 +737,7 @@
             </div>
             <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-lineup', '日挑配队')">PNG</button>
           </div>
-          <div class="lineup-tip">注意：仅从技能分值角度考虑最佳配队，不考虑其他影响（如综合力、歌曲难度等）。</div>
+          <div class="lineup-tip">注意：仅从技能分值角度考虑最佳配队，不考虑其他影响（如综合力、歌曲、难度等）。配队不唯一，新卡优先显示。</div>
           <div class="lineup-grid">
             <div
               v-for="row in characterLineupRows"
@@ -819,6 +819,62 @@
             </div>
           </div>
         </div>
+
+        <div id="panel-support" class="stats-section card-panel support-panel">
+          <div class="section-head">
+            <div class="section-head-left">
+              <h2>支援配队</h2>
+            </div>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-support', '支援配队')">PNG</button>
+          </div>
+          <div class="lineup-tip">注意：仅从技能分值角度考虑最佳配队，不考虑其他影响（如综合力、歌曲、难度等）。配队不唯一，同分卡会优先取OC，再取VS，且新卡优先显示。</div>
+          <div class="support-grid">
+            <div
+              v-for="unitRow in supportLineupRows"
+              :key="`support-${unitRow.unit}`"
+              :id="getSupportCardId(unitRow.unit)"
+              class="support-card"
+              :style="{ backgroundColor: hexToRgba(UNIT_COLORS[unitRow.unit] || '#64748b', 0.12) }"
+            >
+              <div class="support-head">
+                <img :src="supportUnitTitleLogoMap[unitRow.unit] || unitLogoMap[unitRow.unit]" class="support-unit-title-logo" :title="unitRow.unit.toUpperCase()" />
+                <div class="support-head-actions">
+                  <label v-if="unitRow.unit === 'vs'" class="support-vs-toggle export-hide">
+                    <input v-model="supportUseOriginalVsTeam" type="checkbox" />
+                    <span>原v队</span>
+                  </label>
+                  <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(getSupportCardId(unitRow.unit), `支援配队_${unitRow.unit.toUpperCase()}`)">PNG</button>
+                </div>
+              </div>
+
+              <div
+                v-for="plan in unitRow.plans"
+                :key="`support-${unitRow.unit}-${plan.attr}`"
+                class="lineup-plan-row support-plan-row"
+                :style="getLineupRowStyle(plan.attr)"
+              >
+                <div class="lineup-attr-cell">
+                  <img :src="`/elements/${String(plan.attr).toLowerCase()}.png`" class="lineup-attr-icon" :title="ATTR_LABELS[plan.attr]" />
+                </div>
+                <div
+                  v-for="(slot, idx) in plan.memberSlots"
+                  :key="`support-slot-${unitRow.unit}-${plan.attr}-${idx}`"
+                  class="lineup-member-cell"
+                  :class="{ 'is-empty': !slot, 'support-member-cell': !!slot }"
+                  :style="getLineupMemberCellStyle(slot, plan.attr)"
+                >
+                  <template v-if="slot">
+                    <img :src="`/chibi_s/${getSupportMemberIconKey(slot)}.webp`" class="support-member-avatar" :title="slot.name" :alt="slot.name" />
+                    <div class="lineup-member-score">{{ slot.score }}</div>
+                    <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                  </template>
+                  <span v-else class="lineup-empty">-</span>
+                </div>
+                <div class="lineup-total-cell">{{ formatSupportTotal(plan.total) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
         
       </div>
     </div>
@@ -854,6 +910,7 @@ const banEventTypeFilter = ref('all');
 const limitedBanEventTypeFilter = ref('all');
 const festivalMergeHigherRanks = ref(false);
 const isMobileNav = ref(false);
+const supportUseOriginalVsTeam = ref(true);
 const festivalFesToggles = reactive({
   半周年: false,
   周年: false
@@ -921,7 +978,8 @@ const unitLogoMap = {
   mmj: '/elements/mmj.png',
   vbs: '/elements/vbs.png',
   ws: '/elements/ws.png',
-  nc: '/elements/nc.png'
+  nc: '/elements/nc.png',
+  vs: '/elements/vs.png'
 };
 const CHAR_COLORS = {
   "星乃一歌": "#33AAEE", "天马咲希": "#FFDD44", "望月穗波": "#EE6666", "日野森志步": "#BBDD22",
@@ -978,6 +1036,15 @@ const SPECIAL_FESTIVALS = ['新年', '婚活', '情人节', '白情', '半周年
 const FESTIVAL_ANCHOR_IDS = Object.fromEntries(SPECIAL_FESTIVALS.map((fest, idx) => [fest, `festival-${idx + 1}`]));
 const FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
 const VS_UNIT_SORT_ORDER = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
+const SUPPORT_UNITS = ['vs', 'ln', 'mmj', 'vbs', 'ws', 'nc'];
+const supportUnitTitleLogoMap = Object.freeze({
+  ln: '/elements/Leo_need.png',
+  mmj: '/elements/MORE_MORE_JUMP!.png',
+  vbs: '/elements/Vivid_BAD_SQUAD.png',
+  ws: '/elements/ワンダーランズ×ショウタイム.png',
+  nc: '/elements/25時、ナイトコードで.png',
+  vs: '/elements/virtual_singer.png'
+});
 
 const isVirtualSinger = (name) => VS_NAMES.includes(name);
 
@@ -1322,6 +1389,7 @@ const getWl3PartSuffix = (ev) => {
 const getNonBanEventMark = (ev) => {
   if (!ev) return '?';
   const sourceKey = String(ev.sourceKey || ev.id || '').trim();
+  if (sourceKey === '0') return '开服';
   const typeSeries = getTypeSeriesText(ev.typeSeriesId);
   const eventType = String(ev.eventType || '').trim();
   const shortType = getEventTypeShort(eventType);
@@ -1418,6 +1486,11 @@ const navGroups = computed(() => {
     {
       id: 'panel-lineup',
       title: '日挑配队',
+      children: []
+    },
+    {
+      id: 'panel-support',
+      title: '支援配队',
       children: []
     }
   ];
@@ -1565,10 +1638,10 @@ const resolveExportElementById = (id) => {
 
   const exact = document.getElementById(targetId);
   if (!exact) return null;
-  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('festival-card') || exact.classList.contains('song-card') || exact.classList.contains('lineup-card')) {
+  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('festival-card') || exact.classList.contains('song-card') || exact.classList.contains('lineup-card') || exact.classList.contains('support-card')) {
     return exact;
   }
-  return exact.closest('.record-block, .festival-card, .song-card, .lineup-card, .card-panel');
+  return exact.closest('.record-block, .festival-card, .song-card, .lineup-card, .support-card, .card-panel');
 };
 
 const exportElementPng = async (id, title) => {
@@ -1585,9 +1658,10 @@ const exportElementPng = async (id, title) => {
     cloneEl = await prepareExportClone(targetEl);
     const renderEl = cloneEl || targetEl;
     const renderHeight = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
-    const isLineupPanelExport = String(id || '').trim() === 'panel-lineup';
+    const exportPanelId = String(id || '').trim();
+    const isLineupLikePanelExport = exportPanelId === 'panel-lineup' || exportPanelId === 'panel-support';
     const isMobileScreen = window.innerWidth <= 900;
-    const renderScale = isLineupPanelExport
+    const renderScale = isLineupLikePanelExport
       ? (isMobileScreen
           ? (renderHeight > 8000 ? 1 : Math.max(1, Math.min(1.2, window.devicePixelRatio || 1)))
           : (renderHeight > 12000 ? Math.max(1.25, Math.min(1.6, window.devicePixelRatio || 1)) : Math.max(1.6, window.devicePixelRatio || 1)))
@@ -1605,7 +1679,7 @@ const exportElementPng = async (id, title) => {
   } catch (error) {
     console.error('导出模块PNG失败', error);
     const idKey = String(id || '').trim();
-    const isLineupPanel = idKey === 'panel-lineup';
+    const isLineupPanel = idKey === 'panel-lineup' || idKey === 'panel-support';
     const isMobileScreen = window.innerWidth <= 900;
     if (isLineupPanel && isMobileScreen) {
       alert('导出失败。\n建议改用每个角色卡片右上角 PNG 按钮分批导出，或先收起其余属性后再导出总图。');
@@ -1936,6 +2010,19 @@ const makeLineupFesBg = (alpha) => {
 const getCardBaseName = (cardName) => String(cardName || '').trim().split(/\s+/)[0] || '';
 
 const getLineupCardId = (name) => `lineup-card-${getCharAbbr(name).toLowerCase()}`;
+const getSupportCardId = (unit) => `support-card-${String(unit || '').toLowerCase()}`;
+
+const getSupportMemberIconKey = (slot) => {
+  const baseName = String(slot?.name || '').trim().split(/\s+/)[0] || '';
+  if (!baseName) return '';
+
+  const baseAbbr = CHAR_MAP[baseName] || getCharAbbr(baseName);
+  if (!VS_NAMES.includes(baseName)) return baseAbbr;
+
+  const unit = String(slot?.unit || '').trim().toLowerCase();
+  if (unit && unit !== 'vs') return `${String(baseAbbr).toLowerCase()}_${unit}`;
+  return baseAbbr;
+};
 
 const getCharSingleMark = (name) => {
   const key = String(name || '').split(/\s+/)[0];
@@ -1997,6 +2084,9 @@ const buildLineupEventRef = (card) => {
   }
   const ev = eventsById.value[Number(sourceKey)];
   if (!ev) {
+    if (Number(sourceKey) === 0) {
+      return { eventRef: { id: 0, sourceKey: '0' }, eventLabel: '开服' };
+    }
     return { eventRef: { id: Number(sourceKey) }, eventLabel: `ID ${sourceKey}` };
   }
   const eventRef = {
@@ -2015,6 +2105,7 @@ const getLineupEventMark = (eventRef, useSingleMark = false) => {
   if (!eventRef) return '-';
   const sourceKey = String(eventRef.sourceKey || eventRef.id || '').trim();
   if (!sourceKey) return '-';
+  if (sourceKey === '0') return '开服';
   if (!isNumericEventId(sourceKey)) {
     return SPECIAL_EVENT_KEY_LABELS[sourceKey] || sourceKey;
   }
@@ -2089,6 +2180,23 @@ const evalLineupMembers = (cards) => {
   return { total: baseTotal + captainBonus, members };
 };
 
+const compareLineupSolvedHit = (nextHit, bestHit) => {
+  if (!bestHit) return true;
+  if (nextHit.total !== bestHit.total) return nextHit.total > bestHit.total;
+
+  const nextBfes = nextHit.members.filter((m) => m.fesKind === 'bfes').length;
+  const bestBfes = bestHit.members.filter((m) => m.fesKind === 'bfes').length;
+  if (nextBfes !== bestBfes) return nextBfes > bestBfes;
+
+  const nextCfes = nextHit.members.filter((m) => m.fesKind === 'cfes').length;
+  const bestCfes = bestHit.members.filter((m) => m.fesKind === 'cfes').length;
+  if (nextCfes !== bestCfes) return nextCfes > bestCfes;
+
+  const nextNewest = Math.max(...nextHit.members.map((m) => Number(m.eventRef?.id || 0)));
+  const bestNewest = Math.max(...bestHit.members.map((m) => Number(m.eventRef?.id || 0)));
+  return nextNewest > bestNewest;
+};
+
 const solveSingleCharLineup = (cards) => {
   const source = [...(cards || [])];
   if (!source.length) return null;
@@ -2101,26 +2209,8 @@ const solveSingleCharLineup = (cards) => {
     const need = teamSize - selected.length;
     if (need === 0) {
       const hit = evalLineupMembers(selected);
-      if (!best || hit.total > best.total) {
+      if (compareLineupSolvedHit(hit, best)) {
         best = hit;
-        return;
-      }
-      if (best && hit.total === best.total) {
-        const hitBfes = hit.members.filter((m) => m.fesKind === 'bfes').length;
-        const bestBfes = best.members.filter((m) => m.fesKind === 'bfes').length;
-        if (hitBfes !== bestBfes) {
-          if (hitBfes > bestBfes) best = hit;
-          return;
-        }
-        const hitCfes = hit.members.filter((m) => m.fesKind === 'cfes').length;
-        const bestCfes = best.members.filter((m) => m.fesKind === 'cfes').length;
-        if (hitCfes !== bestCfes) {
-          if (hitCfes > bestCfes) best = hit;
-          return;
-        }
-        const hitNewest = Math.max(...hit.members.map((m) => Number(m.eventRef?.id || 0)));
-        const bestNewest = Math.max(...best.members.map((m) => Number(m.eventRef?.id || 0)));
-        if (hitNewest > bestNewest) best = hit;
       }
       return;
     }
@@ -2159,6 +2249,140 @@ const buildLineupPlan = (captainName, attr, attrPool) => {
   };
 };
 
+const compareLineupCardForPick = (a, b) => {
+  if ((b?.baseScore || 0) !== (a?.baseScore || 0)) return (b?.baseScore || 0) - (a?.baseScore || 0);
+  const aBfes = a?.fesKind === 'bfes' ? 1 : 0;
+  const bBfes = b?.fesKind === 'bfes' ? 1 : 0;
+  if (bBfes !== aBfes) return bBfes - aBfes;
+  const aCfes = a?.fesKind === 'cfes' ? 1 : 0;
+  const bCfes = b?.fesKind === 'cfes' ? 1 : 0;
+  if (bCfes !== aCfes) return bCfes - aCfes;
+  return Number(b?.eventRef?.id || 0) - Number(a?.eventRef?.id || 0);
+};
+
+const compressSupportCards = (cards) => {
+  const bestBySignature = {};
+  (cards || []).forEach((card) => {
+    const signature = [
+      String(card?.unit || ''),
+      Number(card?.baseScore || 0),
+      card?.isUnitScore ? 1 : 0,
+      String(card?.fesKind || ''),
+      String(card?.skillKind || '')
+    ].join('|');
+    const prev = bestBySignature[signature];
+    if (!prev || compareLineupCardForPick(card, prev) < 0) {
+      bestBySignature[signature] = card;
+    }
+  });
+  return Object.values(bestBySignature).sort(compareLineupCardForPick);
+};
+
+const evalSupportMembers = (cards) => {
+  const lineupHit = evalLineupMembers(cards);
+  const orderedMembers = [...lineupHit.members].sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return Number(b.eventRef?.id || 0) - Number(a.eventRef?.id || 0);
+  });
+  const captainScore = Number(orderedMembers[0]?.score || 0);
+  const othersScore = orderedMembers.slice(1).reduce((sum, m) => sum + Number(m.score || 0), 0);
+  const total = captainScore + (othersScore / 5);
+  return {
+    total,
+    members: orderedMembers,
+    captainScore,
+    othersScore
+  };
+};
+
+const compareSupportSolvedHit = (nextHit, bestHit, targetUnit) => {
+  if (!bestHit) return true;
+
+  if (compareLineupSolvedHit(nextHit, bestHit)) return true;
+  if (compareLineupSolvedHit(bestHit, nextHit)) return false;
+
+  if (targetUnit === 'vs') {
+    const nextPureVs = nextHit.members.filter((m) => String(m?.unit || '').trim().toLowerCase() === 'vs').length;
+    const bestPureVs = bestHit.members.filter((m) => String(m?.unit || '').trim().toLowerCase() === 'vs').length;
+    if (nextPureVs !== bestPureVs) return nextPureVs > bestPureVs;
+    return false;
+  }
+
+  const nextOcInUnit = nextHit.members.filter((m) => m.unit === targetUnit && !isVirtualSinger(String(m?.name || '').trim())).length;
+  const bestOcInUnit = bestHit.members.filter((m) => m.unit === targetUnit && !isVirtualSinger(String(m?.name || '').trim())).length;
+  if (nextOcInUnit !== bestOcInUnit) return nextOcInUnit > bestOcInUnit;
+
+  const nextVsCount = nextHit.members.filter((m) => isVirtualSinger(String(m?.name || '').trim())).length;
+  const bestVsCount = bestHit.members.filter((m) => isVirtualSinger(String(m?.name || '').trim())).length;
+  if (nextVsCount !== bestVsCount) return nextVsCount < bestVsCount;
+
+  return false;
+};
+
+const solveSupportLineup = (cardsByName, targetUnit) => {
+  const entries = Object.entries(cardsByName || {})
+    .map(([name, cards]) => ({
+      name,
+      // Keep all card options for a character; unit_score cards can outperform score_up after lineup composition.
+      cards: compressSupportCards(cards)
+    }))
+    .filter((entry) => entry.cards.length > 0)
+    .sort((a, b) => compareLineupCardForPick(b.cards[0], a.cards[0]));
+
+  if (!entries.length) return null;
+
+  const teamSize = Math.min(5, entries.length);
+  let best = null;
+  const selected = [];
+
+  const dfs = (idx) => {
+    const remainNeed = teamSize - selected.length;
+    const remainEntries = entries.length - idx;
+    if (remainNeed === 0) {
+      const hit = evalSupportMembers(selected);
+      if (compareSupportSolvedHit(hit, best, targetUnit)) best = hit;
+      return;
+    }
+    if (remainEntries < remainNeed) return;
+    if (idx >= entries.length) return;
+
+    const entry = entries[idx];
+    for (let i = 0; i < entry.cards.length; i += 1) {
+      selected.push(entry.cards[i]);
+      dfs(idx + 1);
+      selected.pop();
+    }
+
+    dfs(idx + 1);
+  };
+
+  dfs(0);
+  return best;
+};
+
+const buildSupportLineupPlan = (targetUnit, attr, supportPool) => {
+  const cardsByName = supportPool?.[targetUnit]?.[attr] || {};
+  const solved = solveSupportLineup(cardsByName, targetUnit);
+  if (!solved) {
+    return {
+      attr,
+      total: 0,
+      members: [],
+      memberSlots: [null, null, null, null, null]
+    };
+  }
+
+  const memberSlots = [...solved.members];
+  while (memberSlots.length < 5) memberSlots.push(null);
+
+  return {
+    attr,
+    total: solved.total,
+    members: solved.members,
+    memberSlots
+  };
+};
+
 const getLineupRowStyle = (attr) => {
   const bg = LINEUP_ATTR_BG[attr] || '#64748b';
   const flatBg = hexToSoftSolid(bg, 1 - LINEUP_BASE_ALPHA);
@@ -2174,14 +2398,15 @@ const getLineupMemberCellStyle = (slot, attr) => {
   if (slot?.fesKind === 'bfes') {
     return {
       background: makeLineupFesBg(LINEUP_FES_ALPHA.bfes),
-      borderColor: '#f59e0b',
+      borderColor: '#4c1d95',
       color: '#111827'
     };
   }
   if (slot?.fesKind === 'cfes') {
     return {
       background: makeLineupFesBg(LINEUP_FES_ALPHA.cfes),
-      borderColor: '#f59e0b',
+      borderColor: '#ffffff',
+      boxShadow: 'inset 0 0 0 1px rgba(15, 23, 42, 0.18)',
       color: '#111827'
     };
   }
@@ -2260,6 +2485,73 @@ const characterLineupRows = computed(() => {
     };
   });
 });
+
+const supportCardPoolByUnitAttr = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const pool = Object.fromEntries(
+    SUPPORT_UNITS.map((unit) => [unit, Object.fromEntries(ATTRS.map((attr) => [attr, {}]))])
+  );
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+
+    const baseName = getCardBaseName(card?.Name);
+    if (!baseName || !CHAR_ORDER[baseName]) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    if (!attr) return;
+
+    const unit = getLineupCardUnit(card, baseName);
+    const skillInfo = getLineupSkillInfo(card);
+    const { eventRef, eventLabel } = buildLineupEventRef(card);
+
+    SUPPORT_UNITS.forEach((targetUnit) => {
+      if (targetUnit === 'vs') {
+        if (!VS_NAMES.includes(baseName)) return;
+        if (supportUseOriginalVsTeam.value && unit !== 'vs') return;
+      } else if (unit !== targetUnit) {
+        return;
+      }
+
+      if (!pool[targetUnit][attr][baseName]) pool[targetUnit][attr][baseName] = [];
+      pool[targetUnit][attr][baseName].push({
+        cardId: String(card?.CardID || ''),
+        name: baseName,
+        attr,
+        unit,
+        baseScore: skillInfo.baseScore,
+        isUnitScore: skillInfo.isUnitScore,
+        isFes: ['cfes', 'bfes_up'].includes(skillInfo.kind),
+        fesKind: skillInfo.kind === 'bfes_up' ? 'bfes' : (skillInfo.kind === 'cfes' ? 'cfes' : ''),
+        skillKind: skillInfo.kind,
+        eventRef,
+        eventLabel
+      });
+    });
+  });
+
+  return pool;
+});
+
+const supportLineupRows = computed(() => {
+  return SUPPORT_UNITS.map((unit) => ({
+    unit,
+    plans: ATTRS
+      .map((attr) => buildSupportLineupPlan(unit, attr, supportCardPoolByUnitAttr.value))
+      .sort((a, b) => {
+        if (b.total !== a.total) return b.total - a.total;
+        return ATTRS.indexOf(a.attr) - ATTRS.indexOf(b.attr);
+      })
+  }));
+});
+
+const formatSupportTotal = (value) => {
+  const num = Number(value || 0);
+  if (!Number.isFinite(num)) return '0';
+  if (Math.abs(num - Math.round(num)) < 1e-9) return String(Math.round(num));
+  return num.toFixed(1);
+};
 
 const lineupExpandedMap = ref({});
 
@@ -3614,7 +3906,8 @@ const banShortestIntervals = computed(() => {
 .song-panel,
 .related-panel,
 .festival-panel,
-.lineup-panel {
+.lineup-panel,
+.support-panel {
   margin-top: 18px;
 }
 
@@ -3628,6 +3921,82 @@ const banShortestIntervals = computed(() => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.support-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.support-card {
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  padding: 9px;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+}
+
+.support-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.support-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.support-vs-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  user-select: none;
+}
+
+.support-vs-toggle input {
+  margin: 0;
+}
+
+.support-unit-title-logo {
+  height: 38px;
+  width: auto;
+  max-width: 300px;
+  object-fit: contain;
+}
+
+.support-unit-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.support-plan-row {
+  margin-bottom: 5px;
+}
+
+.support-plan-row:last-child {
+  margin-bottom: 0;
+}
+
+.support-member-cell {
+  gap: 1px;
+}
+
+.support-member-avatar {
+  width: 33px;
+  height: 33px;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  object-fit: cover;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
 }
 
 .lineup-card {
@@ -3768,10 +4137,12 @@ const banShortestIntervals = computed(() => {
   width: 100%;
   max-width: 100%;
   padding: 1px 3px;
-  font-size: 0.58rem;
+  font-size: 11px;
   line-height: 1.2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
 }
 
 .lineup-total-cell {
@@ -4496,6 +4867,7 @@ const banShortestIntervals = computed(() => {
   .stats-grid { grid-template-columns: 1fr; }
   .record-grid { grid-template-columns: 1fr; }
   .lineup-grid { grid-template-columns: 1fr; }
+  .support-grid { grid-template-columns: 1fr; }
   .pjsk-stats { padding: 14px; }
 }
 
@@ -4722,6 +5094,16 @@ const banShortestIntervals = computed(() => {
     gap: 4px;
   }
 
+  .support-unit-title-logo {
+    height: 28px;
+    max-width: 220px;
+  }
+
+  .support-member-avatar {
+    width: 27px;
+    height: 27px;
+  }
+
   .lineup-char-head {
     gap: 4px;
     flex-wrap: nowrap;
@@ -4916,6 +5298,14 @@ const banShortestIntervals = computed(() => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .jump-link.lineup-jump {
+    font-size: 10px;
+    padding: 1px 2px;
+    text-overflow: clip;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
   }
 }
 

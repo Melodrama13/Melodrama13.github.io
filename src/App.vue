@@ -124,7 +124,7 @@
             <button @click="deleteActivePredictSource" class="io-btn" :disabled="predictSources.length <= 1" title="删除当前数据源">
               <span class="btn-with-icon">
                 <img src="/data/icon/delete.png" class="btn-icon" alt="删除" />
-                <span>删除当前源</span>
+                <span>删除</span>
               </span>
             </button>
           </div>
@@ -1577,6 +1577,16 @@ watch(isHistoryPredictEditorOpen, (open) => {
   /* 移除 sticky，因为外层已经是 flex 布局，它自然就在最顶部 */
 }
 
+.nav-tabs > button,
+.nav-tabs > .io-btn,
+.nav-tabs > .source-dropdown > .source-trigger {
+  min-height: 42px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .username-wrap {
   display: inline-flex;
   align-items: center;
@@ -1680,8 +1690,14 @@ button.active {
 .btn-with-icon {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   line-height: 1;
+}
+
+.nav-tabs > button .btn-with-icon,
+.nav-tabs > .io-btn .btn-with-icon {
+  min-height: 1em;
 }
 
 .btn-icon {
@@ -2024,6 +2040,7 @@ button.active {
     flex: 0 0 auto;
     padding: 7px 10px;
     font-size: 0.82rem;
+    min-height: 34px;
     white-space: nowrap;
   }
 
@@ -2105,8 +2122,9 @@ button.active {
 
   .nav-tabs > .io-btn {
     order: 6;
-    font-size: 0.68rem;
-    padding: 4px 8px;
+    font-size: 0.74rem;
+    padding: 6px 10px;
+    min-height: 34px;
     white-space: nowrap;
     flex: 0 0 auto;
   }
@@ -2187,6 +2205,7 @@ button.active {
   .reset-btn {
     padding: 6px 8px;
     font-size: 0.76rem;
+    min-height: 32px;
   }
 
   .predict-info {
@@ -2200,8 +2219,9 @@ button.active {
   }
 
   .nav-tabs > .io-btn {
-    font-size: 0.62rem;
-    padding: 3px 6px;
+    font-size: 0.7rem;
+    padding: 5px 8px;
+    min-height: 32px;
   }
 
   .source-trigger {
