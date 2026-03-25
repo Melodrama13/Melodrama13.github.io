@@ -1799,7 +1799,6 @@ const limitedBanCountMap = computed(() => {
   const typeFilter = limitedBanEventTypeFilter.value;
 
   (props.allEvents || []).forEach((ev) => {
-    if (ev?.isPredict) return;
     if (!isNumericEventId(ev?.id)) return;
     const eid = Number(ev.id);
     if (eid > maxEid) return;
@@ -2840,9 +2839,33 @@ const festivalCharStats = computed(() => {
   });
 });
 
+const previewDailyLineupMap = computed(() => {
+  const result = {};
+  (characterLineupRows.value || []).forEach((row) => {
+    const name = String(row?.name || '').trim();
+    if (!name) return;
+    // Keep exactly the same order as stats panel: bestPlan first, then otherPlans.
+    const plans = [row?.bestPlan, ...(row?.otherPlans || [])]
+      .filter(Boolean)
+      .map((plan) => ({
+        attr: String(plan?.attr || ''),
+        total: Number(plan?.total || 0),
+        memberScores: [...(plan?.memberSlots || [])]
+          .slice(0, 5)
+          .map((slot) => Number(slot?.score || 0)),
+        memberFesKinds: [...(plan?.memberSlots || [])]
+          .slice(0, 5)
+          .map((slot) => String(slot?.fesKind || ''))
+      }));
+    result[name] = plans;
+  });
+  return result;
+});
+
 const statsPreviewPayload = computed(() => {
   const fourPanel = groupPanels.value.find((p) => p.id === 'four');
   const limitedPanel = groupPanels.value.find((p) => p.id === 'limited');
+  const limitedBanPanel = groupPanels.value.find((p) => p.id === 'limited-ban');
   const festivalGroups = Object.fromEntries(
     (festivalCharStats.value || []).map((item) => [item.festival, item.rows || []])
   );
@@ -2851,7 +2874,9 @@ const statsPreviewPayload = computed(() => {
     groups: {
       fourStarCount: fourPanel?.groups || [],
       limitedCount: limitedPanel?.groups || [],
-      festival: festivalGroups
+      limitedBanCount: limitedBanPanel?.groups || [],
+      festival: festivalGroups,
+      dailyLineup: previewDailyLineupMap.value
     }
   };
 });
@@ -3067,7 +3092,8 @@ const lastFourStarRecords = computed(() => {
     .sort((a, b) => {
       const da = parseDateSafe(a.date)?.getTime() || 0;
       const db = parseDateSafe(b.date)?.getTime() || 0;
-      if (db !== da) return db - da;
+      // Older first (longer since last appearance should be on top)
+      if (da !== db) return da - db;
       return compareCharOrder(a.name, b.name);
     });
 });
@@ -3324,7 +3350,8 @@ const lastLimitedRecords = computed(() => {
     .sort((a, b) => {
       const da = parseDateSafe(a.date)?.getTime() || 0;
       const db = parseDateSafe(b.date)?.getTime() || 0;
-      if (db !== da) return db - da;
+      // Older first (longer since last appearance should be on top)
+      if (da !== db) return da - db;
       return compareCharOrder(a.name, b.name);
     });
 });
@@ -3436,6 +3463,7 @@ const limitedShortestIntervals = computed(() => {
 const banIntervalRecords = computed(() => {
   const maxEid = safeMaxEventId.value;
   const typeFilter = banEventTypeFilter.value;
+  const nowGapDate = referenceDateStr.value;
   const bucket = {};
 
   (props.allEvents || []).forEach((ev) => {
@@ -3462,14 +3490,29 @@ const banIntervalRecords = computed(() => {
   return Object.keys(bucket)
     .map((name) => {
       const events = bucket[name].sort((a, b) => a.id - b.id);
-      if (events.length < 2) {
+      if (!events.length) {
         return { name, shortest: null, longest: null };
       }
       const ranges = buildGapRanges(events, countPeriodsBetweenExclusive);
+      const historicalRanges = [...ranges];
+      const last = events[events.length - 1];
+      // Align with four/limited longest logic: include gap from latest ban to current reference date.
+      ranges.push({
+        startMark: `${getTypeSeriesText(last.typeSeriesId) || '?'}${getEventTypeShort(last.eventType)}`,
+        endMark: '至今',
+        startRef: last,
+        endRef: null,
+        startTypeSeriesId: last.typeSeriesId,
+        endTypeSeriesId: 'NOW',
+        startEventType: last.eventType,
+        endEventType: '当前',
+        days: daysBetween(last.date, nowGapDate),
+        periods: countPeriodsSince(last)
+      });
       return {
         name,
-        shortest: pickGap(ranges, 'min'),
-        longest: pickGap(ranges, 'max')
+        shortest: pickGap(historicalRanges, 'min'),
+        longest: pickGapByPeriods(ranges, 'max')
       };
     })
     .sort((a, b) => compareCharOrder(a.name, b.name));

@@ -17679,6 +17679,7 @@
    "GachaID": "199",
    "Date": "2026/3/20"
  },
+ 
  {
    "CardID": "-",
    "Name": "花里实乃里",
@@ -17700,7 +17701,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "202",
    "GachaID": "202",
    "Date": "2026/4/18"
@@ -17713,7 +17714,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "202",
    "GachaID": "202",
    "Date": "2026/4/18"
@@ -17726,7 +17727,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "202",
    "GachaID": "202",
    "Date": "2026/4/18"
@@ -17739,7 +17740,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "202",
    "GachaID": "202",
    "Date": "2026/4/18"
@@ -17752,7 +17753,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "202",
    "GachaID": "202",
    "Date": "2026/4/18"
@@ -17785,19 +17786,6 @@
  },
  {
    "CardID": "-",
-   "Name": "镜音铃",
-   "Affiliation": "vs",
-   "CardName": "-",
-   "Rarity": "4",
-   "Type": "wl3",
-   "Attribute": "-",
-   "Skill": "-",
-   "EventID": "205",
-   "GachaID": "205",
-   "Date": "2026/5/17"
- },
- {
-   "CardID": "-",
    "Name": "天马司",
    "Affiliation": "ws",
    "CardName": "-",
@@ -17811,13 +17799,26 @@
  },
  {
    "CardID": "-",
+   "Name": "镜音铃",
+   "Affiliation": "vs",
+   "CardName": "-",
+   "Rarity": "4",
+   "Type": "wl3",
+   "Attribute": "-",
+   "Skill": "score_up",
+   "EventID": "205",
+   "GachaID": "205",
+   "Date": "2026/5/17"
+ },
+ {
+   "CardID": "-",
    "Name": "镜音连",
    "Affiliation": "vs",
    "CardName": "-",
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "205",
    "GachaID": "205",
    "Date": "2026/5/17"
@@ -17830,7 +17831,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "205",
    "GachaID": "205",
    "Date": "2026/5/17"
@@ -17843,7 +17844,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "205",
    "GachaID": "205",
    "Date": "2026/5/17"
@@ -17856,7 +17857,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "205",
    "GachaID": "205",
    "Date": "2026/5/17"
@@ -17869,7 +17870,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "205",
    "GachaID": "205",
    "Date": "2026/5/17"
@@ -17895,7 +17896,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "207",
    "GachaID": "207",
    "Date": "2026/6/9"
@@ -17908,7 +17909,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "207",
    "GachaID": "207",
    "Date": "2026/6/9"
@@ -17921,7 +17922,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "207",
    "GachaID": "207",
    "Date": "2026/6/9"
@@ -17934,7 +17935,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "207",
    "GachaID": "207",
    "Date": "2026/6/9"
@@ -17947,7 +17948,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "207",
    "GachaID": "207",
    "Date": "2026/6/9"
@@ -17973,7 +17974,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "210",
    "GachaID": "210",
    "Date": "2026/7/9"
@@ -17986,7 +17987,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "210",
    "GachaID": "210",
    "Date": "2026/7/9"
@@ -17999,7 +18000,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "210",
    "GachaID": "210",
    "Date": "2026/7/9"
@@ -18012,7 +18013,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "210",
    "GachaID": "210",
    "Date": "2026/7/9"
@@ -18025,7 +18026,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "210",
    "GachaID": "210",
    "Date": "2026/7/9"
@@ -18077,7 +18078,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "214",
    "GachaID": "214",
    "Date": "2026/8/19"
@@ -18090,7 +18091,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "214",
    "GachaID": "214",
    "Date": "2026/8/19"
@@ -18103,7 +18104,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "214",
    "GachaID": "214",
    "Date": "2026/8/19"
@@ -18116,7 +18117,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "214",
    "GachaID": "214",
    "Date": "2026/8/19"
@@ -18129,7 +18130,7 @@
    "Rarity": "4",
    "Type": "wl3",
    "Attribute": "-",
-   "Skill": "-",
+   "Skill": "score_up",
    "EventID": "214",
    "GachaID": "214",
    "Date": "2026/8/19"

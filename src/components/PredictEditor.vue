@@ -356,6 +356,10 @@ const handlePoolItemClick = (name) => {
 };
 
 const isWorldLinkMode = computed(() => form.eventType === 'World Link' && isWorldLinkTeamSeries(props.event));
+const isWorldLinkFinalChapter = computed(() => {
+  const sid = Number(props.event?.type_series_id);
+  return String(form.eventType || '').trim() === 'World Link' && sid === 3;
+});
 const normalizedBoxLockedUnits = computed(() => {
   const list = Array.isArray(props.boxLockedUnits) ? props.boxLockedUnits : [];
   return list
@@ -368,6 +372,7 @@ let isApplyingRules = false;
 const getOCUnit = (name) => CHAR_UNIT_MAP[name] || 'vs';
 const isUnitLockedInCurrentRound = (unit) => {
   if (form.eventType !== '箱活') return false;
+  if (FES_FESTIVALS.includes(String(props.event?.festival || '').trim())) return false;
   return normalizedBoxLockedUnits.value.includes(String(unit || '').trim().toLowerCase());
 };
 const isFesFestival = () => FES_FESTIVALS.includes(String(props.event?.festival || '').trim());
@@ -414,8 +419,10 @@ const isUnitScoreLocked = (char) => {
   return !isVsFesSkillMode(char) && !isBfesLocked(char) && form.gachaType === 'limited' && VS_NAMES.includes(char?.name) && String(char?.rarity) === '4';
 };
 
+const isConfirmedSkillLocked = () => isWorldLinkFinalChapter.value;
+
 const isSkillLocked = (char) => {
-  return isForcedBfesInBox(char) || isUnitScoreLocked(char);
+  return isConfirmedSkillLocked() || isForcedBfesInBox(char) || isUnitScoreLocked(char);
 };
 
 const isRarityLocked = (char) => {
@@ -493,6 +500,11 @@ const applyFesRules = () => {
 
 const applyAutoSkillRules = () => {
   form.selectedChars.forEach((c) => {
+    if (isConfirmedSkillLocked()) {
+      c.skillType = 'score_up';
+      return;
+    }
+
     if (isForcedBfesInBox(c)) {
       c.rarity = '4';
       c.skillType = 'bfes_up';

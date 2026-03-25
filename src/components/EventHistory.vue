@@ -54,6 +54,33 @@
               </button>
             </div>
           </div>
+          <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('daily-lineup')" class="preview-char-select" :class="{ 'is-collapsed': previewDailyLineupCharCollapsed }">
+            <div class="preview-char-select-title">
+              <span>日挑配队人选（最多6人）</span>
+              <div class="preview-char-select-actions">
+                <button
+                  class="preview-char-select-toggle"
+                  @click="appendPreviewDailyLineupCharsFromCurrentLineup"
+                  :disabled="!canAppendCurrentLineupToPreviewDailyLineup"
+                >读取列表</button>
+                <button class="preview-char-select-toggle" @click="clearPreviewDailyLineupChars" :disabled="selectedPreviewDailyLineupChars.length === 0">清空</button>
+                <button class="preview-char-select-toggle" @click="previewDailyLineupCharCollapsed = !previewDailyLineupCharCollapsed">{{ previewDailyLineupCharCollapsed ? '展开' : '收起' }}</button>
+              </div>
+            </div>
+            <div v-show="!previewDailyLineupCharCollapsed" class="preview-char-chips">
+              <button
+                v-for="name in previewSelectableChars"
+                :key="`pick-daily-${name}`"
+                class="preview-char-chip"
+                :class="{ 'is-active': selectedPreviewDailyLineupChars.includes(name) }"
+                :disabled="!selectedPreviewDailyLineupChars.includes(name) && selectedPreviewDailyLineupChars.length >= 6"
+                @click="togglePreviewDailyLineupChar(name)"
+                :title="name"
+              >
+                <img :src="`/chibi_s/${getCharAbbr(name)}.webp`" class="preview-char-chip-avatar" />
+              </button>
+            </div>
+          </div>
           <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('festival')" class="preview-char-select preview-festival-select">
             <div class="preview-char-select-title">
               <span>节日（单选）</span>
@@ -81,7 +108,6 @@
           @touchstart="bringPreviewPanelToFront(panel.id)"
         >
           <div class="preview-panel-head" @mousedown.prevent="startDragPreview(panel.id, $event)" @touchstart.prevent="startDragPreviewTouch(panel.id, $event)">
-            <span class="preview-icon">{{ panel.icon }}</span>
             <span class="preview-title">{{ panel.title }}</span>
             <label
               v-if="panel.id === 'festival'"
@@ -104,6 +130,19 @@
               <input v-model="previewIncludeCollabReward" type="checkbox" />
               <span>联动</span>
             </label>
+            <div
+              v-if="panel.id === 'limited-ban'"
+              class="preview-head-filters"
+              @mousedown.stop
+              @touchstart.stop
+              @click.stop
+            >
+              <button
+                class="preview-head-filter-btn"
+                :title="previewLimitedBanFilterButtonTitle"
+                @click="cyclePreviewLimitedBanEventTypeFilter"
+              >{{ previewLimitedBanFilterButtonText }}</button>
+            </div>
             <button
               class="preview-collapse-btn"
               :title="isPreviewPanelCollapsed(panel.id) ? '展开' : '收起'"
@@ -223,6 +262,39 @@
                   </tr>
                 </tbody>
               </table>
+            </template>
+            <template v-else-if="panel.id === 'daily-lineup'">
+              <div v-for="row in previewDailyLineupRows" :key="`daily-${row.name}`" class="preview-daily-card" :style="getPreviewDailyCardStyle(row.name)">
+                <div class="preview-daily-head">
+                  <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="preview-daily-avatar" :title="row.name" />
+                  <span class="preview-daily-name">{{ row.name }}</span>
+                </div>
+                <table class="preview-daily-table">
+                  <tbody>
+                    <tr
+                      v-for="plan in row.plans"
+                      :key="`daily-plan-${row.name}-${plan.attr}`"
+                      class="preview-daily-plan-row"
+                      :style="getPreviewDailyPlanStyle(plan.attr)"
+                    >
+                      <td class="preview-daily-attr-cell">
+                        <img :src="`/elements/${String(plan.attr).toLowerCase()}.png`" class="preview-daily-attr" :title="translateAttr(plan.attr)" />
+                      </td>
+                      <td
+                        v-for="(score, idx) in plan.memberScores"
+                        :key="`daily-score-${row.name}-${plan.attr}-${idx}`"
+                        :class="['preview-daily-score-cell', getPreviewDailyScoreCellClass(plan.memberFesKinds?.[idx], score)]"
+                      >
+                        {{ score > 0 ? score : '-' }}
+                      </td>
+                      <td class="preview-daily-total-cell">{{ plan.total }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div v-if="previewDailyLineupRows.length === 0" class="preview-step preview-step-empty">
+                <span class="preview-meta">请先在上方选择最多6位角色</span>
+              </div>
             </template>
             <template v-else>
             <div v-for="step in panel.steps" :key="`${panel.id}-${step.count}`" class="preview-step">
@@ -843,6 +915,7 @@ const previewConfigLayer = ref(0);
 const previewPanelState = ref({});
 const previewFloatingCollapsed = ref(false);
 const previewAttrCharCollapsed = ref(false);
+const previewDailyLineupCharCollapsed = ref(false);
 const previewConfigDragState = ref({ dragging: false, offsetX: 0, offsetY: 0 });
 const previewConfigPanelPos = ref({ x: null, y: null });
 const previewDragState = ref({ dragging: false, panelId: '', offsetX: 0, offsetY: 0 });
@@ -1000,6 +1073,7 @@ const resetPreviewPanelLayout = () => {
 
 const getPreviewPanelBaseSize = (panelId) => {
   if (panelId === 'attr-five') return { width: 188, height: 340 };
+  if (panelId === 'daily-lineup') return { width: 228, height: 390 };
   if (panelId === 'festival') return { width: 236, height: 350 };
   if (panelId === 'vs-last-four') return { width: 236, height: 242 };
   if (panelId === 'reward') return { width: 208, height: 260 };
@@ -1050,6 +1124,12 @@ const getPreviewPanelStyle = (panelId) => {
 };
 
 const getPreviewStepsStyle = (panelId) => {
+  if (panelId === 'daily-lineup') {
+    return {
+      maxHeight: '380px',
+      overflowY: 'auto'
+    };
+  }
   return {};
 };
 
@@ -1354,19 +1434,46 @@ const currentActiveId = ref(null);
 const PREVIEW_LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t']);
 const PREVIEW_FESTIVAL_TYPES = ['新年', '婚活', '情人节', '白情', '半周年', '周年'];
 const PREVIEW_BOX_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
+const PREVIEW_ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
+const PREVIEW_DAILY_ATTR_COLOR = {
+  Pure: '#84cc16',
+  Cool: '#3b82f6',
+  Cute: '#f472b6',
+  Happy: '#f59e0b',
+  Mysterious: '#8b5cf6'
+};
+const PREVIEW_DAILY_CHAR_UNIT_MAP = {
+  '星乃一歌': 'ln', '天马咲希': 'ln', '望月穗波': 'ln', '日野森志步': 'ln',
+  '花里实乃里': 'mmj', '桐谷遥': 'mmj', '桃井爱莉': 'mmj', '日野森雫': 'mmj',
+  '小豆泽心羽': 'vbs', '白石杏': 'vbs', '东云彰人': 'vbs', '青柳冬弥': 'vbs',
+  '天马司': 'ws', '凤笑梦': 'ws', '草薙宁宁': 'ws', '神代类': 'ws',
+  '宵崎奏': 'nc', '朝比奈真冬': 'nc', '东云绘名': 'nc', '晓山瑞希': 'nc'
+};
+const PREVIEW_DAILY_SKILL_BASE = {
+  bfes_up: 160,
+  cfes: 140,
+  p_score: 130,
+  score_up: 120,
+  accuracy: 100,
+  recovery: 100,
+  unit_score: 100,
+  default: 120
+};
 const PREVIEW_PANEL_DEFS = [
-  { id: 'four', title: '四星数', icon: '⭐', statKey: 'fourStarCount', externalKey: 'fourStarCount' },
-  { id: 'limited', title: '限定数', icon: '🎀', statKey: 'limitedCount', externalKey: 'limitedCount' },
+  { id: 'four', title: '四星', icon: '⭐', statKey: 'fourStarCount', externalKey: 'fourStarCount' },
+  { id: 'limited', title: '限定', icon: '🎀', statKey: 'limitedCount', externalKey: 'limitedCount' },
+  { id: 'limited-ban', title: '限ban', icon: '🚫', statKey: 'limitedBanCount' },
   { id: 'vs-last-four', title: 'V上次四星', icon: 'V', statKey: 'vsLastFour' },
   { id: 'vs-unit-score', title: '团分', icon: 'U', statKey: 'vsUnitScore' },
   { id: 'p-score', title: 'P分', icon: 'P', statKey: 'pScoreCount' },
   { id: 'pure-score', title: '分卡', icon: 'S', statKey: 'pureScoreCount' },
   { id: 'recovery', title: '奶卡', icon: '❤', statKey: 'recoveryCount' },
   { id: 'accuracy', title: '判卡', icon: '✓', statKey: 'accuracyCount' },
-  { id: 'three', title: '三星数', icon: '3', statKey: 'threeStarCount' },
-  { id: 'two', title: '二星数', icon: '2', statKey: 'twoStarCount' },
+  { id: 'three', title: '三星', icon: '3', statKey: 'threeStarCount' },
+  { id: 'two', title: '二星', icon: '2', statKey: 'twoStarCount' },
   { id: 'reward', title: '报酬', icon: '🎁', statKey: 'rewardTotalCount' },
-  { id: 'attr-five', title: '五属性', icon: '🧩', statKey: 'attrFive' },
+  { id: 'daily-lineup', title: '日挑配队', icon: '📊', statKey: 'dailyLineup' },
+  { id: 'attr-five', title: '花色', icon: '🧩', statKey: 'attrFive' },
   { id: 'festival', title: '节日人选', icon: '🎊', statKey: 'festival', externalKey: 'festival' }
 ];
 const PREVIEW_CHAR_ORDER = {
@@ -1380,8 +1487,10 @@ const PREVIEW_CHAR_ORDER = {
 const PREVIEW_FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
 const selectedPreviewPanelIds = ref([]);
 const selectedPreviewAttrChars = ref([]);
+const selectedPreviewDailyLineupChars = ref([]);
 const currentEditingSelectionNames = ref([]);
 const previewIncludeCollabReward = ref(false);
+const previewLimitedBanEventTypeFilter = ref('all');
 const previewFestivalMergeHigherRanks = ref(false);
 const selectedPreviewFestival = ref(PREVIEW_FESTIVAL_TYPES[0]);
 const previewFestivalFesToggles = ref({
@@ -1421,6 +1530,23 @@ const clearPreviewAttrChars = () => {
   selectedPreviewAttrChars.value = [];
 };
 
+const togglePreviewDailyLineupChar = (name) => {
+  const current = [...selectedPreviewDailyLineupChars.value];
+  const idx = current.indexOf(name);
+  if (idx >= 0) {
+    current.splice(idx, 1);
+    selectedPreviewDailyLineupChars.value = current;
+    return;
+  }
+  if (current.length >= 6) return;
+  current.push(name);
+  selectedPreviewDailyLineupChars.value = current;
+};
+
+const clearPreviewDailyLineupChars = () => {
+  selectedPreviewDailyLineupChars.value = [];
+};
+
 const normalizeCharName = (value) => String(value || '').trim().split(/\s+/)[0] || '';
 
 const getCurrentLineupCharNames = () => {
@@ -1444,6 +1570,24 @@ const getCurrentLineupCharNames = () => {
   return names;
 };
 
+const getCurrentLineupFourStarCharNames = () => {
+  const names = [];
+  const seen = new Set();
+  const cards = Array.isArray(currentEditingEvent.value?.memberCards)
+    ? currentEditingEvent.value.memberCards
+    : [];
+
+  cards.forEach((card) => {
+    if (String(card?.Rarity || '').trim() !== '4') return;
+    const name = normalizeCharName(card?.Name);
+    if (!name || !CHAR_MAP[name] || seen.has(name)) return;
+    seen.add(name);
+    names.push(name);
+  });
+
+  return names;
+};
+
 const canAppendCurrentLineupToPreviewAttr = computed(() => {
   const source = getCurrentLineupCharNames();
   if (source.length === 0) return false;
@@ -1464,6 +1608,26 @@ const appendPreviewAttrCharsFromCurrentLineup = () => {
   selectedPreviewAttrChars.value = next;
 };
 
+const canAppendCurrentLineupToPreviewDailyLineup = computed(() => {
+  const source = getCurrentLineupFourStarCharNames();
+  if (source.length === 0) return false;
+  if (selectedPreviewDailyLineupChars.value.length >= 6) return false;
+  return source.some((name) => !selectedPreviewDailyLineupChars.value.includes(name));
+});
+
+const appendPreviewDailyLineupCharsFromCurrentLineup = () => {
+  const source = getCurrentLineupFourStarCharNames();
+  if (source.length === 0) return;
+
+  const next = [...selectedPreviewDailyLineupChars.value];
+  source.forEach((name) => {
+    if (next.length >= 6) return;
+    if (next.includes(name)) return;
+    next.push(name);
+  });
+  selectedPreviewDailyLineupChars.value = next;
+};
+
 const handlePredictSelectionChange = (names) => {
   const list = Array.isArray(names)
     ? names.map((name) => normalizeCharName(name)).filter((name) => !!CHAR_MAP[name])
@@ -1475,6 +1639,43 @@ const setSelectedPreviewFestival = (festival) => {
   if (!PREVIEW_FESTIVAL_TYPES.includes(festival)) return;
   selectedPreviewFestival.value = festival;
 };
+
+const setPreviewLimitedBanEventTypeFilter = (targetType, checked) => {
+  if (checked) {
+    previewLimitedBanEventTypeFilter.value = targetType;
+    return;
+  }
+  if (previewLimitedBanEventTypeFilter.value === targetType) {
+    previewLimitedBanEventTypeFilter.value = 'all';
+  }
+};
+
+const cyclePreviewLimitedBanEventTypeFilter = () => {
+  const current = previewLimitedBanEventTypeFilter.value;
+  if (current === 'all') {
+    previewLimitedBanEventTypeFilter.value = '箱活';
+    return;
+  }
+  if (current === '箱活') {
+    previewLimitedBanEventTypeFilter.value = '混活';
+    return;
+  }
+  previewLimitedBanEventTypeFilter.value = 'all';
+};
+
+const previewLimitedBanFilterButtonText = computed(() => {
+  const current = previewLimitedBanEventTypeFilter.value;
+  if (current === '箱活') return '仅箱';
+  if (current === '混活') return '仅混';
+  return '箱混';
+});
+
+const previewLimitedBanFilterButtonTitle = computed(() => {
+  const current = previewLimitedBanEventTypeFilter.value;
+  if (current === '箱活') return '当前仅统计箱活，点击切换到混活';
+  if (current === '混活') return '当前仅统计混活，点击切换到全体';
+  return '当前统计全体，点击切换到箱活';
+});
 
 const parseFestivalPreviewCharKey = (charKey) => {
   const raw = String(charKey || '').trim();
@@ -1527,9 +1728,12 @@ const shouldCountPreviewFestivalFes = (festival) => {
 const previewPanelOptions = computed(() => PREVIEW_PANEL_DEFS.map((def) => {
   const selected = selectedPreviewPanelIds.value.includes(def.id);
   const isFestival = def.id === 'festival';
+  const isLimitedBan = def.id === 'limited-ban';
   const dynamicTitle = isFestival && activePreviewFestivalName.value
     ? `节日人选·${activePreviewFestivalName.value}`
-    : def.title;
+    : (isLimitedBan && previewLimitedBanEventTypeFilter.value !== 'all'
+      ? `限ban·${previewLimitedBanEventTypeFilter.value === '箱活' ? '箱' : '混'}`
+      : def.title);
   return {
     ...def,
     title: dynamicTitle,
@@ -1555,6 +1759,9 @@ const togglePreviewPanelType = (panelId) => {
 watch(selectedPreviewPanelIds, (ids) => {
   if (!ids.includes('attr-five')) {
     previewAttrCharCollapsed.value = false;
+  }
+  if (!ids.includes('daily-lineup')) {
+    previewDailyLineupCharCollapsed.value = false;
   }
 });
 
@@ -2053,6 +2260,287 @@ const previewAttrFiveRows = computed(() => {
     .sort((a, b) => (PREVIEW_CHAR_ORDER[a.name] || 999) - (PREVIEW_CHAR_ORDER[b.name] || 999));
 });
 
+const previewLimitedBanSteps = computed(() => {
+  const maxId = Number(previewMaxEventId.value);
+  if (!Number.isFinite(maxId) || maxId <= 0) return [];
+
+  const typeFilter = previewLimitedBanEventTypeFilter.value;
+  const countMap = Object.fromEntries(
+    Object.keys(PREVIEW_CHAR_ORDER)
+      .filter((name) => !isVirtualSinger(name))
+      .map((name) => [name, 0])
+  );
+
+  (props.allEvents || []).forEach((ev) => {
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (eid > maxId) return;
+    if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
+
+    const eventType = String(ev?.event_type || '').trim();
+    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+
+    const bannerName = normalizeCharName(ev?.banner);
+    if (!bannerName || !PREVIEW_CHAR_ORDER[bannerName]) return;
+    if (isVirtualSinger(bannerName)) return;
+    countMap[bannerName] = Number(countMap[bannerName] || 0) + 1;
+  });
+
+  const grouped = new Map();
+  Object.entries(countMap).forEach(([name, count]) => {
+    const n = Number(count || 0);
+    if (!grouped.has(n)) grouped.set(n, []);
+    grouped.get(n).push({ name });
+  });
+
+  return Array.from(grouped.entries())
+    .map(([count, chars]) => ({
+      count,
+      chars: chars.sort((a, b) => {
+        const ao = PREVIEW_CHAR_ORDER[a.name] || 999;
+        const bo = PREVIEW_CHAR_ORDER[b.name] || 999;
+        if (ao !== bo) return ao - bo;
+        return String(a.name).localeCompare(String(b.name), 'zh-Hans-CN');
+      })
+    }))
+    .sort((a, b) => b.count - a.count);
+});
+
+const previewDailyLineupRows = computed(() => {
+  if (!selectedPreviewPanelIds.value.includes('daily-lineup')) return [];
+  if (!selectedPreviewDailyLineupChars.value.length) return [];
+
+  const external = props.statsPreviewData;
+  const externalMaxId = Number(external?.maxEventId);
+  const lineupMap = external?.groups?.dailyLineup || {};
+  const canUseExternal = Number.isFinite(externalMaxId)
+    && externalMaxId === Number(previewMaxEventId.value)
+    && lineupMap
+    && typeof lineupMap === 'object';
+
+  const getDailyCardSkillInfo = (card) => {
+    const skill = String(card?.Skill || '').trim().toLowerCase();
+    const type = String(card?.Type || '').trim().toLowerCase();
+
+    if (skill === 'bfes_up' || type === 'bfes') {
+      return { kind: 'bfes_up', baseScore: PREVIEW_DAILY_SKILL_BASE.bfes_up, isUnitScore: false };
+    }
+    if (skill.startsWith('cfes') || type === 'cfes') {
+      return { kind: 'cfes', baseScore: PREVIEW_DAILY_SKILL_BASE.cfes, isUnitScore: false };
+    }
+    if (skill === 'p_score') {
+      return { kind: 'p_score', baseScore: PREVIEW_DAILY_SKILL_BASE.p_score, isUnitScore: false };
+    }
+    if (skill === 'score_up') {
+      return { kind: 'score_up', baseScore: PREVIEW_DAILY_SKILL_BASE.score_up, isUnitScore: false };
+    }
+    if (skill === 'accuracy') {
+      return { kind: 'accuracy', baseScore: PREVIEW_DAILY_SKILL_BASE.accuracy, isUnitScore: false };
+    }
+    if (skill === 'recovery') {
+      return { kind: 'recovery', baseScore: PREVIEW_DAILY_SKILL_BASE.recovery, isUnitScore: false };
+    }
+    if (skill === 'unit_score') {
+      return { kind: 'unit_score', baseScore: PREVIEW_DAILY_SKILL_BASE.unit_score, isUnitScore: true };
+    }
+    return { kind: 'default', baseScore: PREVIEW_DAILY_SKILL_BASE.default, isUnitScore: false };
+  };
+
+  const getDailyCardUnit = (card, baseName) => {
+    if (isVirtualSinger(baseName)) {
+      const aff = String(card?.Affiliation || '').trim().toLowerCase();
+      return aff && UNIT_COLORS[aff] ? aff : 'vs';
+    }
+    return PREVIEW_DAILY_CHAR_UNIT_MAP[baseName] || 'vs';
+  };
+
+  const calcDailyUnitScore = (unit, members) => {
+    const sameUnitCount = members.reduce((sum, m) => sum + (m.unit === unit ? 1 : 0), 0);
+    const others = Math.max(0, sameUnitCount - 1);
+    return 100 + (others * 10) + (others === 4 ? 10 : 0);
+  };
+
+  const evalDailyMembers = (cards) => {
+    const members = cards.map((card) => ({ ...card }));
+    members.forEach((m) => {
+      if (m.isUnitScore) {
+        m.score = calcDailyUnitScore(m.unit, members);
+      } else {
+        m.score = m.baseScore;
+      }
+    });
+    const baseTotal = members.reduce((sum, m) => sum + Number(m.score || 0), 0);
+    const captainBonus = members.length ? Math.max(...members.map((m) => Number(m.score || 0))) : 0;
+    return { total: baseTotal + captainBonus, members };
+  };
+
+  const compareDailySolvedHit = (nextHit, bestHit) => {
+    if (!bestHit) return true;
+    if (nextHit.total !== bestHit.total) return nextHit.total > bestHit.total;
+
+    const nextBfes = nextHit.members.filter((m) => m.fesKind === 'bfes').length;
+    const bestBfes = bestHit.members.filter((m) => m.fesKind === 'bfes').length;
+    if (nextBfes !== bestBfes) return nextBfes > bestBfes;
+
+    const nextCfes = nextHit.members.filter((m) => m.fesKind === 'cfes').length;
+    const bestCfes = bestHit.members.filter((m) => m.fesKind === 'cfes').length;
+    if (nextCfes !== bestCfes) return nextCfes > bestCfes;
+
+    const nextNewest = Math.max(...nextHit.members.map((m) => Number(m.eventId || 0)));
+    const bestNewest = Math.max(...bestHit.members.map((m) => Number(m.eventId || 0)));
+    return nextNewest > bestNewest;
+  };
+
+  const solveDailyLineup = (cards) => {
+    const source = [...(cards || [])];
+    if (!source.length) return null;
+    const teamSize = Math.min(5, source.length);
+    let best = null;
+    const selected = [];
+
+    const dfs = (startIdx) => {
+      const need = teamSize - selected.length;
+      if (need === 0) {
+        const hit = evalDailyMembers(selected);
+        if (compareDailySolvedHit(hit, best)) best = hit;
+        return;
+      }
+
+      for (let i = startIdx; i <= source.length - need; i += 1) {
+        selected.push(source[i]);
+        dfs(i + 1);
+        selected.pop();
+      }
+    };
+
+    dfs(0);
+    return best;
+  };
+
+  const localLineupMap = (() => {
+    if (canUseExternal) return null;
+    const maxId = Number(previewMaxEventId.value);
+    if (!Number.isFinite(maxId) || maxId <= 0) return {};
+
+    const byNameAttr = {};
+    (props.allCards || []).forEach((card) => {
+      if (!isCardWithinPreviewLimit(card, maxId)) return;
+      if (String(card?.Rarity || '').trim() !== '4') return;
+
+      const baseName = normalizeCharName(card?.Name);
+      if (!baseName || !PREVIEW_CHAR_ORDER[baseName]) return;
+
+      const attr = normalizeAttr(card?.Attribute);
+      if (!PREVIEW_ATTRS.includes(attr)) return;
+
+      const skillInfo = getDailyCardSkillInfo(card);
+      const unit = getDailyCardUnit(card, baseName);
+      if (!byNameAttr[baseName]) byNameAttr[baseName] = {};
+      if (!byNameAttr[baseName][attr]) byNameAttr[baseName][attr] = [];
+
+      byNameAttr[baseName][attr].push({
+        cardId: String(card?.CardID || ''),
+        unit,
+        baseScore: skillInfo.baseScore,
+        isUnitScore: skillInfo.isUnitScore,
+        fesKind: skillInfo.kind === 'bfes_up' ? 'bfes' : (skillInfo.kind === 'cfes' ? 'cfes' : ''),
+        eventId: Number(String(card?.EventID || '').trim()) || 0
+      });
+    });
+
+    const map = {};
+    Object.keys(byNameAttr).forEach((name) => {
+      const plans = PREVIEW_ATTRS
+        .map((attr) => {
+          const solved = solveDailyLineup(byNameAttr[name][attr] || []);
+          if (!solved) return null;
+          const orderedMembers = [...solved.members].sort((a, b) => {
+            if (Number(b.score || 0) !== Number(a.score || 0)) return Number(b.score || 0) - Number(a.score || 0);
+            return Number(b.eventId || 0) - Number(a.eventId || 0);
+          });
+          const memberScores = orderedMembers.map((m) => Number(m.score || 0));
+          while (memberScores.length < 5) memberScores.push(0);
+          return {
+            attr,
+            total: Number(solved.total || 0),
+            memberScores,
+            memberFesKinds: orderedMembers.map((m) => String(m.fesKind || '')),
+            bfesCount: orderedMembers.filter((m) => m.fesKind === 'bfes').length,
+            cfesCount: orderedMembers.filter((m) => m.fesKind === 'cfes').length
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => {
+          if (b.total !== a.total) return b.total - a.total;
+          if ((b.bfesCount || 0) !== (a.bfesCount || 0)) return (b.bfesCount || 0) - (a.bfesCount || 0);
+          if ((b.cfesCount || 0) !== (a.cfesCount || 0)) return (b.cfesCount || 0) - (a.cfesCount || 0);
+          return PREVIEW_ATTRS.indexOf(a.attr) - PREVIEW_ATTRS.indexOf(b.attr);
+        })
+        .map(({ bfesCount, cfesCount, ...plan }) => plan);
+      map[name] = plans;
+    });
+    return map;
+  })();
+
+  const activeLineupMap = canUseExternal ? lineupMap : localLineupMap;
+  if (!activeLineupMap || typeof activeLineupMap !== 'object') return [];
+
+  return selectedPreviewDailyLineupChars.value
+    .map((name) => {
+      const plansRaw = Array.isArray(activeLineupMap?.[name]) ? activeLineupMap[name] : [];
+      const plans = plansRaw
+        .map((plan) => {
+          const attr = String(plan?.attr || '');
+          if (!PREVIEW_ATTRS.includes(attr)) return null;
+          const rawScores = Array.isArray(plan?.memberScores) ? plan.memberScores : [];
+          const memberScores = [...rawScores].slice(0, 5).map((n) => Number(n || 0));
+          while (memberScores.length < 5) memberScores.push(0);
+          const rawKinds = Array.isArray(plan?.memberFesKinds) ? plan.memberFesKinds : [];
+          const memberFesKinds = [...rawKinds].slice(0, 5).map((k) => String(k || ''));
+          while (memberFesKinds.length < 5) memberFesKinds.push('');
+          return {
+            attr,
+            total: Number(plan?.total || 0),
+            memberScores,
+            memberFesKinds
+          };
+        })
+        .filter(Boolean);
+      if (!plans.length) {
+        return null;
+      }
+      return { name, plans };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (PREVIEW_CHAR_ORDER[a.name] || 999) - (PREVIEW_CHAR_ORDER[b.name] || 999));
+});
+
+const getPreviewDailyPlanStyle = (attr) => {
+  const color = PREVIEW_DAILY_ATTR_COLOR[String(attr || '')] || '#94a3b8';
+  return {
+    '--daily-row-bg': hexToRgba(color, 0.12),
+    '--lineup-row-border': hexToRgba(color, 0.52)
+  };
+};
+
+const getPreviewDailyCardStyle = (name) => {
+  const color = getCharColor(name);
+  return {
+    backgroundColor: hexToRgba(color, 0.14),
+    borderColor: hexToRgba(color, 0.34)
+  };
+};
+
+const getPreviewDailyScoreCellClass = (fesKind, score) => {
+  const kind = String(fesKind || '').toLowerCase();
+  const empty = Number(score || 0) <= 0;
+  return {
+    'is-empty': empty,
+    'is-bfes': !empty && kind === 'bfes',
+    'is-cfes': !empty && kind === 'cfes'
+  };
+};
+
 const buildPreviewSteps = (key) => {
   const grouped = new Map();
   previewCharStats.value.forEach((row) => {
@@ -2079,6 +2567,9 @@ const buildPreviewSteps = (key) => {
 };
 
 const getPreviewStepsByKey = (key) => {
+  if (key === 'limitedBanCount') {
+    return previewLimitedBanSteps.value;
+  }
   const panelDef = PREVIEW_PANEL_DEFS.find((d) => d.statKey === key);
   const external = props.statsPreviewData;
   const externalMaxId = Number(external?.maxEventId);
@@ -2101,6 +2592,7 @@ const getPreviewAttrRowStyle = (name) => {
 };
 
 const previewFloatingPanels = computed(() => {
+  if (!isEditorOpen.value) return [];
   return selectedPreviewPanelIds.value
     .map((id) => PREVIEW_PANEL_DEFS.find((d) => d.id === id))
     .filter(Boolean)
@@ -2121,6 +2613,13 @@ watch(previewFloatingPanels, (panels) => {
   panels.forEach((panel, idx) => {
     if (!nextState[panel.id]) {
       nextState[panel.id] = getPreviewDefaultState(idx);
+    }
+    if (panel.id === 'daily-lineup') {
+      const cur = nextState[panel.id];
+      nextState[panel.id] = {
+        ...cur,
+        scale: Math.min(1, Number(cur?.scale || 1))
+      };
     }
     if (!previewPanelLayers.value[panel.id]) {
       bringPreviewPanelToFront(panel.id);
@@ -3783,6 +4282,11 @@ const getFestivalPreviewUnitLogo = (name) => {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  filter: grayscale(1) saturate(0.2) opacity(0.7);
+}
+
+.preview-char-chip.is-active .preview-char-chip-avatar {
+  filter: none;
 }
 
 .preview-festival-select {
@@ -3845,10 +4349,6 @@ const getFestivalPreviewUnitLogo = (name) => {
   cursor: grabbing;
 }
 
-.preview-icon {
-  font-size: 0.85rem;
-}
-
 .preview-title {
   font-size: 0.86rem;
   font-weight: 700;
@@ -3867,6 +4367,45 @@ const getFestivalPreviewUnitLogo = (name) => {
 .preview-head-toggle input {
   width: 12px;
   height: 12px;
+}
+
+.preview-head-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.preview-head-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.66rem;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: #f8fafc;
+}
+
+.preview-head-filter-toggle input {
+  width: 11px;
+  height: 11px;
+}
+
+.preview-head-filter-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.66rem;
+  line-height: 1;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.preview-head-filter-btn:hover {
+  background: #e2e8f0;
 }
 
 .preview-collapse-btn {
@@ -4035,6 +4574,97 @@ const getFestivalPreviewUnitLogo = (name) => {
   line-height: 1.2;
   background: rgba(15, 23, 42, 0.88);
   color: #fff;
+}
+
+.preview-daily-card {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.88);
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.preview-daily-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.preview-daily-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.preview-daily-name {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.preview-daily-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+  table-layout: fixed;
+}
+
+.preview-daily-plan-row td {
+  background: var(--daily-row-bg, rgba(148, 163, 184, 0.16));
+}
+
+.preview-daily-attr-cell {
+  width: 14px;
+  text-align: center;
+  padding: 1px 1px;
+  border: 1px solid var(--lineup-row-border, rgba(148, 163, 184, 0.52));
+  border-radius: 6px;
+}
+
+.preview-daily-attr {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
+.preview-daily-score-cell {
+  width: 1.55em;
+  height: 1.45em;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 4px;
+  font-size: 0.60rem;
+  line-height: 1;
+  color: #1f2937;
+  text-align: center;
+  padding: 0;
+}
+
+.preview-daily-score-cell.is-empty {
+  color: #94a3b8;
+}
+
+.preview-daily-score-cell.is-bfes {
+  border-color: #4c1d95;
+  box-shadow: inset 0 0 0 1px rgba(76, 29, 149, 0.28);
+}
+
+.preview-daily-score-cell.is-cfes {
+  border-color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.25);
+}
+
+.preview-daily-total-cell {
+  width: 1.52em;
+  font-size: 0.63rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: center;
+  padding: 0 1px;
+  border: 1px solid var(--lineup-row-border, rgba(148, 163, 184, 0.52));
+  border-radius: 6px;
 }
 
 .preview-vs-mini-table {
