@@ -376,10 +376,8 @@
             data-tip="筛选面板"
           >
             <img src="/data/icon/filter.png" class="compact-btn-icon" alt="筛选" />
-            <span v-if="!isCompactFilterBar">{{ filterPanelSummaryText }}</span>
-          </button>
-          <button v-if="hasActiveFilters" @click="resetFilters" class="clear-btn" :title="isCompactFilterBar ? '重置筛选' : ''">
-            {{ isCompactFilterBar ? '✕' : '重置筛选' }}
+            <span v-if="!isCompactFilterBar">{{ hasActiveFilters ? `筛选：${filterHitEventCount}个活动` : '筛选' }}</span>
+            <span v-else-if="hasActiveFilters" class="compact-filter-count">{{ filterHitEventCount }}</span>
           </button>
         </div>
         <transition name="slide-fade">
@@ -389,7 +387,9 @@
             <div class="btn-group">
               <button :class="{active: filterMode === 'single'}" @click="filterMode = 'single'; resetFilters()">卡片筛选</button>
               <button :class="{active: filterMode === 'event'}" @click="filterMode = 'event'; resetFilters()">活动筛选</button>
+              <button class="clear-btn panel-reset-btn" :class="{ 'is-ready': hasActiveFilters }" :disabled="!hasActiveFilters" @click="resetFilters">{{ isCompactFilterBar ? '重置' : '重置筛选' }}</button>
             </div>
+            <span v-if="hasActiveFilters" class="filter-mode-hit-count">{{ activeFilteredEventCount }}个活动</span>
           </div>
 
           <div v-if="filterMode !== 'event'" class="filter-row">
@@ -669,7 +669,7 @@
                   <img :src="`/chars/${getCharAbbr(card.Name)}.png`" class="member-avatar" />
                   <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/${card.Attribute.toLowerCase()}.png`" class="card-attr-icon" />
                   <img v-if="isVirtualSinger(card.Name)" :src="`/elements/${card.Affiliation.toLowerCase()}.png`" class="sub-unit-logo" />
-                  <div v-if="['limited', 'collab_t'].includes(card.Type?.toLowerCase())" class="lim-tag">期间限定</div>
+                  <div v-if="['limited', 'collab_t', 'wl3'].includes(card.Type?.toLowerCase())" class="lim-tag">期间限定</div>  
                   <div class="stars-overlay">
                     <img v-for="n in parseInt(card.Rarity)" :key="n" :src="card.Rarity == 4 ? '/elements/rstar.png' : '/elements/ystar.png'" class="star-icon" />
                   </div>
@@ -1431,7 +1431,7 @@ const removePredict = (event) => {
 const sortDesc = ref(false); 
 const listRef = ref(null);
 const currentActiveId = ref(null);
-const PREVIEW_LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t']);
+const PREVIEW_LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t', 'wl3']);  //补充了WL3
 const PREVIEW_FESTIVAL_TYPES = ['新年', '婚活', '情人节', '白情', '半周年', '周年'];
 const PREVIEW_BOX_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 const PREVIEW_ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
@@ -1462,7 +1462,7 @@ const PREVIEW_DAILY_SKILL_BASE = {
 const PREVIEW_PANEL_DEFS = [
   { id: 'four', title: '四星', icon: '⭐', statKey: 'fourStarCount', externalKey: 'fourStarCount' },
   { id: 'limited', title: '限定', icon: '🎀', statKey: 'limitedCount', externalKey: 'limitedCount' },
-  { id: 'limited-ban', title: '限ban', icon: '🚫', statKey: 'limitedBanCount' },
+  { id: 'limited-ban', title: '限Ban', icon: '🚫', statKey: 'limitedBanCount' },
   { id: 'vs-last-four', title: 'V上次四星', icon: 'V', statKey: 'vsLastFour' },
   { id: 'vs-unit-score', title: '团分', icon: 'U', statKey: 'vsUnitScore' },
   { id: 'p-score', title: 'P分', icon: 'P', statKey: 'pScoreCount' },
@@ -1732,7 +1732,7 @@ const previewPanelOptions = computed(() => PREVIEW_PANEL_DEFS.map((def) => {
   const dynamicTitle = isFestival && activePreviewFestivalName.value
     ? `节日人选·${activePreviewFestivalName.value}`
     : (isLimitedBan && previewLimitedBanEventTypeFilter.value !== 'all'
-      ? `限ban·${previewLimitedBanEventTypeFilter.value === '箱活' ? '箱' : '混'}`
+      ? `限Ban·${previewLimitedBanEventTypeFilter.value === '箱活' ? '箱' : '混'}`
       : def.title);
   return {
     ...def,
@@ -2734,23 +2734,6 @@ const hasActiveFilters = computed(() => {
   return hasDetailFilters.value;
 });
 
-const filterPanelSummaryText = computed(() => {
-  if (!hasActiveFilters.value) return '筛选面板';
-  if (filterMode.value === 'event') {
-    const parts = [];
-    if (eventFilterCriteria.value.characters.length > 0) {
-      parts.push(`角色${eventFilterCriteria.value.characters.length}`);
-    }
-    if (eventFilterCriteria.value.eventTypes.length > 0) parts.push(`类型${eventFilterCriteria.value.eventTypes.length}`);
-    if (eventFilterCriteria.value.specialRules.length > 0) parts.push(`规则${eventFilterCriteria.value.specialRules.length}`);
-    if (eventFilterCriteria.value.festivals.length > 0) parts.push(`节日${eventFilterCriteria.value.festivals.length}`);
-    return `活动: ${parts.join(' · ') || '已启用'}`;
-  }
-  return filterCriteria.value.selectedChars.length > 0
-    ? `已选: ${filterCriteria.value.selectedChars[0]}`
-    : '筛选面板';
-});
-
 const isEventUnitFilterDisabledByMix = computed(() => {
   return eventFilterCriteria.value.eventTypes.includes('mix');
 });
@@ -2839,6 +2822,13 @@ const filteredData = computed(() => {
       return matchRarity && matchAttr && matchSkill && matchType && matchUnit;
     });
   });
+});
+
+const filterHitEventCount = computed(() => filteredData.value.length);
+
+const activeFilteredEventCount = computed(() => {
+  if (!hasActiveFilters.value) return 0;
+  return filteredData.value.length;
 });
 
 const birthdayRows = computed(() => {
@@ -3123,25 +3113,6 @@ const toggleEventSpecialRule = (ruleValue) => {
   eventFilterCriteria.value.specialRules = current;
 };
 
-const VS_TOKEN_TO_NAME = {
-  MIKU: '初音未来',
-  RIN: '镜音铃',
-  LEN: '镜音连',
-  LUKA: '巡音流歌',
-  MEIKO: 'MEIKO',
-  KAITO: 'KAITO'
-};
-
-const parseEventVsNames = (vsStr) => {
-  const names = parseVS(vsStr).map((raw) => {
-    const token = String(raw || '').trim();
-    if (!token) return '';
-    const upper = token.toUpperCase();
-    return VS_TOKEN_TO_NAME[upper] || token;
-  }).filter(Boolean);
-  return names;
-};
-
 const getCardBaseName = (card) => String(card?.Name || '').trim().split(' ')[0] || '';
 
 const isFesCard = (card) => {
@@ -3206,8 +3177,6 @@ const eventContainsCharacter = (event, name) => {
   if (!target) return true;
   const banner = String(event?.banner || '').trim();
   if (banner === target) return true;
-  const vsNames = parseEventVsNames(event?.virtual_singer);
-  if (vsNames.includes(target)) return true;
   return getEventCardNames(event).includes(target);
 };
 
@@ -4254,7 +4223,7 @@ const getFestivalPreviewUnitLogo = (name) => {
 .preview-char-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
 }
 
 .preview-char-chip {
@@ -5162,6 +5131,22 @@ const getFestivalPreviewUnitLogo = (name) => {
   --history-icon-filter: none;
 }
 
+.compact-filter-count {
+  margin-left: 3px;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.12);
+  border: 1px solid rgba(15, 118, 110, 0.35);
+  color: #0f766e;
+  font-size: 0.66rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .birthday-inline-icon {
   margin-right: 4px;
 }
@@ -5426,6 +5411,18 @@ const getFestivalPreviewUnitLogo = (name) => {
   padding-top: 4px;
 }
 
+.filter-mode-hit-count {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: #0f766e;
+  background: #ecfeff;
+  border: 1px solid #99f6e4;
+  border-radius: 999px;
+  padding: 2px 8px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 
 /* 按钮组父容器 */
 .btn-group, .btn-group-sm {
@@ -5555,6 +5552,31 @@ const getFestivalPreviewUnitLogo = (name) => {
   padding: 8px 15px;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.panel-reset-btn {
+  margin-left: 2px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.panel-reset-btn.is-ready {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
+}
+
+.panel-reset-btn:disabled {
+  opacity: 1;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
 /* 展开动画 */
@@ -5781,6 +5803,16 @@ const getFestivalPreviewUnitLogo = (name) => {
     min-width: 38px;
     font-size: 0.78rem;
     padding-top: 2px;
+  }
+
+  .filter-mode-hit-count {
+    font-size: 0.68rem;
+    padding: 2px 6px;
+  }
+
+  .preview-char-chip {
+    width: 26px;
+    height: 26px;
   }
 
   .btn-group,

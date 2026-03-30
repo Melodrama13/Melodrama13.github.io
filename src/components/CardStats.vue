@@ -24,7 +24,7 @@
         </div>
 
         <template v-if="!navCollapsed">
-          <div v-if="!isMobileNav" class="nav-name-format export-hide">
+          <div v-if="showDesktopNameControls" class="nav-name-format export-hide">
             <div class="nav-name-format-title">名称格式</div>
             <div class="nav-name-format-options">
               <label class="nav-name-format-option">
@@ -74,7 +74,7 @@
           <div class="section-head">
             <div class="section-head-left">
               <h2>阶梯分布</h2>
-              <label v-if="!isMobileNav" class="dist-hide-name-toggle export-hide" title="勾选后不显示角色头像下方名称。">
+              <label v-if="showDesktopNameControls" class="dist-hide-name-toggle export-hide" title="勾选后不显示角色头像下方名称。">
                 <input v-model="hideDistCharNames" type="checkbox" />
                 隐藏角色名
               </label>
@@ -100,7 +100,7 @@
                     统计联动
                   </label>
                   <div v-if="panel.id === 'limited-ban'" class="head-inline-filters">
-                    <label class="head-filter-toggle" title="只统计箱限ban个数。">
+                    <label class="head-filter-toggle" title="只统计箱限Ban个数。">
                       <input
                         type="checkbox"
                         :checked="limitedBanEventTypeFilter === '箱活'"
@@ -108,7 +108,7 @@
                       />
                       只看箱活
                     </label>
-                    <label class="head-filter-toggle" title="只统计混限ban个数。">
+                    <label class="head-filter-toggle" title="只统计混限Ban个数。">
                       <input
                         type="checkbox"
                         :checked="limitedBanEventTypeFilter === '混活'"
@@ -120,7 +120,7 @@
                 </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(`panel-${panel.id}`, `阶梯分布_${panel.title}`)">PNG</button>
               </div>
-              <table class="count-table">
+              <table class="count-table" :class="{ 'compact-char-table': hideDistCharNames }">
                 <thead>
                   <tr><th width="50">数量</th><th>持有角色</th></tr>
                 </thead>
@@ -133,7 +133,7 @@
                           :src="`/chibi_s/${getCharAbbr(char.name)}.webp`"
                           :title="char.name"
                           class="avatar-img"
-                          :style="{ borderColor: getCharColor(char.name) }"
+                          :style="getStepFestivalAvatarStyle(char.name)"
                         />
                         <span v-if="!hideDistCharNames" class="abbr-text">{{ getDistNameLabel(char.name) }}</span>
                         <span v-if="panel.showRewardBreakdown" class="sub-stat">{{ char.rewardThreeCount }}+{{ char.rewardTwoCount }}</span>
@@ -150,6 +150,10 @@
           <div class="section-head">
             <div class="section-head-left">
               <h2>节日人选</h2>
+              <label v-if="showDesktopNameControls" class="festival-hide-name-toggle export-hide" title="勾选后不显示角色头像下方名称。">
+                <input v-model="hideFestivalCharNames" type="checkbox" />
+                隐藏角色名
+              </label>
               <label class="festival-merge-toggle" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
                 <input v-model="festivalMergeHigherRanks" type="checkbox" />
                 高星合并低星
@@ -174,7 +178,7 @@
                 </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(fest.anchorId, `节日人选_${fest.festival}`)">PNG</button>
               </div>
-              <table class="count-table">
+              <table class="count-table" :class="{ 'compact-char-table': hideFestivalCharNames }">
                 <tbody>
                   <tr v-for="row in fest.rows" :key="`${fest.festival}-${row.key}`">
                     <td class="count-cell festival-tier-cell" :class="`festival-tier-${row.key}`">
@@ -201,7 +205,7 @@
                               :src="`/chibi_s/${getCharAbbr(char.name)}.webp`"
                               :title="char.name"
                               class="avatar-img"
-                              :style="{ borderColor: getCharColor(char.name) }"
+                              :style="getStepFestivalAvatarStyle(char.name)"
                             />
                             <img
                               v-if="getFestivalUnitLogoByName(char.name)"
@@ -210,7 +214,7 @@
                             />
                             <span v-if="row.key === 'four' && char.isPermOnly" class="festival-perm-mark">普</span>
                           </div>
-                          <span class="abbr-text">{{ getFestivalDisplayAbbr(char.name) }}</span>
+                          <span v-if="!hideFestivalCharNames" class="abbr-text">{{ getFestivalDisplayNameLabel(char.name) }}</span>
                         </div>
                       </template>
                       <span v-else class="festival-empty">-</span>
@@ -905,11 +909,13 @@ const vsUnitLastFourSort = ref('char');
 const vsUnitLastFourCompact = ref(true);
 const includeCollabRewardCards = ref(false);
 const hideDistCharNames = ref(true);
+const hideFestivalCharNames = ref(true);
 const navNameFormat = ref('single');
 const banEventTypeFilter = ref('all');
 const limitedBanEventTypeFilter = ref('all');
 const festivalMergeHigherRanks = ref(false);
 const isMobileNav = ref(false);
+const isNavTopLayout = ref(false);
 const supportUseOriginalVsTeam = ref(true);
 const festivalFesToggles = reactive({
   半周年: false,
@@ -964,6 +970,23 @@ const getCharColor = (name) => {
   return CHAR_COLORS[key] || '#d1d5db';
 };
 
+const STEP_FESTIVAL_AVATAR_BORDER_MODE = 'unit'; // 'unit' | 'char'
+const STEP_FESTIVAL_AVATAR_BORDER_WIDTH = 2;
+
+const getStepFestivalAvatarBorderColor = (name) => {
+  if (STEP_FESTIVAL_AVATAR_BORDER_MODE === 'char') {
+    return getCharColor(name);
+  }
+  return UNIT_COLORS[getUnitByChar(name)] || '#d1d5db';
+};
+
+const getStepFestivalAvatarStyle = (name) => ({
+  borderColor: getStepFestivalAvatarBorderColor(name),
+  borderWidth: `${STEP_FESTIVAL_AVATAR_BORDER_WIDTH}px`
+});
+
+const showDesktopNameControls = computed(() => !isNavTopLayout.value);
+
 const VS_NAMES = ["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"];
 const UNIT_COLORS = {
   ln: '#4455DD',
@@ -1015,7 +1038,7 @@ const LINEUP_CHAR_NAMES = (() => {
   return names;
 })();
 const ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
-const LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t']);
+const LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t', 'wl3']);//加入wl3为限定卡
 const EXCLUDED_PERIOD_EVENT_TYPES = new Set(['测试']);
 const SPECIAL_EVENT_KEY_LABELS = {
   c1: '大罪',
@@ -1136,8 +1159,11 @@ const getFestivalUnitLogoByName = (charName) => {
   return unitLogoMap[parsed.unit] || '';
 };
 
-const getFestivalDisplayAbbr = (charName) => {
+const getFestivalDisplayNameLabel = (charName) => {
   const parsed = parseFestivalCharKey(charName);
+  if (useSingleNameMark.value) {
+    return getCharSingleMark(parsed.baseName || charName);
+  }
   if (parsed?.isVs) {
     return CHAR_MAP[parsed.baseName] || getCharAbbr(parsed.baseName);
   }
@@ -1514,7 +1540,9 @@ const isGroupExpanded = (group) => isMobileNav.value || isGroupActive(group);
 
 const updateMobileNavState = () => {
   if (typeof window === 'undefined') return;
-  isMobileNav.value = window.innerWidth <= 900;
+  const isTopLayout = window.innerWidth <= 900;
+  isNavTopLayout.value = isTopLayout;
+  isMobileNav.value = isTopLayout;
 };
 
 const scrollToSection = (id) => {
@@ -1812,6 +1840,30 @@ const limitedBanCountMap = computed(() => {
     if (!CHAR_ORDER[bannerName]) return;
     if (VS_NAMES.includes(bannerName)) return;
     map[bannerName] = (map[bannerName] || 0) + 1;
+  });
+
+  return map;
+});
+
+const limitedBanLastEventIdMap = computed(() => {
+  const map = {};
+  const maxEid = safeMaxEventId.value;
+  const typeFilter = limitedBanEventTypeFilter.value;
+
+  (props.allEvents || []).forEach((ev) => {
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (eid > maxEid) return;
+
+    const eventType = String(ev?.event_type || '').trim();
+    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+
+    if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
+
+    const bannerName = normalizeBannerName(ev?.banner);
+    if (!CHAR_ORDER[bannerName]) return;
+    if (VS_NAMES.includes(bannerName)) return;
+    map[bannerName] = Math.max(Number(map[bannerName] || 0), eid);
   });
 
   return map;
@@ -2598,6 +2650,28 @@ const toggleLineupExpandedAll = () => {
   lineupExpandedMap.value = next;
 };
 
+const getCardProgressOrderId = (card) => {
+  const cardId = Number(String(card?.CardID || '').trim());
+  if (Number.isFinite(cardId) && cardId > 0) return cardId;
+  const eventId = Number(String(card?.EventID || '').trim());
+  if (Number.isFinite(eventId) && eventId > 0) return eventId * 10000;
+  return 0;
+};
+
+const getStatProgressOrderKey = (row, key) => {
+  if (key === 'fourStarCount') return Number(row?.lastFourStarOrderId || 0);
+  if (key === 'limitedCount') return Number(row?.lastLimitedOrderId || 0);
+  if (key === 'pScoreCount') return Number(row?.lastPScoreOrderId || 0);
+  if (key === 'pureScoreCount') return Number(row?.lastPureScoreOrderId || 0);
+  if (key === 'recoveryCount') return Number(row?.lastRecoveryOrderId || 0);
+  if (key === 'accuracyCount') return Number(row?.lastAccuracyOrderId || 0);
+  if (key === 'threeStarCount') return Number(row?.lastThreeStarOrderId || 0);
+  if (key === 'twoStarCount') return Number(row?.lastTwoStarOrderId || 0);
+  if (key === 'rewardTotalCount') return Number(row?.lastRewardOrderId || 0);
+  if (key === 'limitedBanCount') return Number(row?.lastLimitedBanOrderId || 0);
+  return Number(row?.lastCardOrderId || 0);
+};
+
 // 2. 这里的计算属性直接指向完整的卡片源
 const processedStats = computed(() => {
   const stats = {};
@@ -2633,6 +2707,17 @@ const processedStats = computed(() => {
         recoveryCount: 0,
         unitScoreCount: 0,
         pureScoreCount: 0,
+        lastCardOrderId: 0,
+        lastFourStarOrderId: 0,
+        lastLimitedOrderId: 0,
+        lastPScoreOrderId: 0,
+        lastPureScoreOrderId: 0,
+        lastRecoveryOrderId: 0,
+        lastAccuracyOrderId: 0,
+        lastThreeStarOrderId: 0,
+        lastTwoStarOrderId: 0,
+        lastRewardOrderId: 0,
+        lastLimitedBanOrderId: 0,
         attrCounts: { Pure: 0, Cool: 0, Cute: 0, Happy: 0, Mysterious: 0 }
       };
     }
@@ -2640,32 +2725,55 @@ const processedStats = computed(() => {
     const rarity = String(card.Rarity || '').trim();
     const skill = String(card.Skill || '').toLowerCase();
     const attr = normalizeAttr(card.Attribute);
+    const progressOrderId = getCardProgressOrderId(card);
+    stats[name].lastCardOrderId = Math.max(Number(stats[name].lastCardOrderId || 0), progressOrderId);
 
     // 统计 4 星卡片及技能分类
     if (rarity === "4") {
       stats[name].fourStarCount++;
+      stats[name].lastFourStarOrderId = Math.max(Number(stats[name].lastFourStarOrderId || 0), progressOrderId);
 
-      if (skill === 'p_score') stats[name].pScoreCount++;
-      if (skill === 'accuracy') stats[name].accuracyCount++;
-      if (skill === 'recovery') stats[name].recoveryCount++;
+      if (skill === 'p_score') {
+        stats[name].pScoreCount++;
+        stats[name].lastPScoreOrderId = Math.max(Number(stats[name].lastPScoreOrderId || 0), progressOrderId);
+      }
+      if (skill === 'accuracy') {
+        stats[name].accuracyCount++;
+        stats[name].lastAccuracyOrderId = Math.max(Number(stats[name].lastAccuracyOrderId || 0), progressOrderId);
+      }
+      if (skill === 'recovery') {
+        stats[name].recoveryCount++;
+        stats[name].lastRecoveryOrderId = Math.max(Number(stats[name].lastRecoveryOrderId || 0), progressOrderId);
+      }
       if (skill === 'unit_score') stats[name].unitScoreCount++;
+      if (!['accuracy', 'recovery', 'unit_score'].includes(skill)) {
+        stats[name].lastPureScoreOrderId = Math.max(Number(stats[name].lastPureScoreOrderId || 0), progressOrderId);
+      }
 
       if (attr) {
         stats[name].attrCounts[attr] += 1;
       }
     }
 
-    if (rarity === '3') stats[name].threeStarCount++;
-    if (rarity === '2') stats[name].twoStarCount++;
+    if (rarity === '3') {
+      stats[name].threeStarCount++;
+      stats[name].lastThreeStarOrderId = Math.max(Number(stats[name].lastThreeStarOrderId || 0), progressOrderId);
+    }
+    if (rarity === '2') {
+      stats[name].twoStarCount++;
+      stats[name].lastTwoStarOrderId = Math.max(Number(stats[name].lastTwoStarOrderId || 0), progressOrderId);
+    }
 
     if (isEventRewardCard(card)) {
       if (rarity === '3') stats[name].rewardThreeCount++;
       if (rarity === '2') stats[name].rewardTwoCount++;
+      stats[name].lastRewardOrderId = Math.max(Number(stats[name].lastRewardOrderId || 0), progressOrderId);
     }
 
     // 统计限定卡片 (含 Fes 和 联名限定)
     if (LIMITED_TYPES.has(String(card.Type).toLowerCase())) {
       stats[name].limitedCount++;
+      stats[name].lastLimitedOrderId = Math.max(Number(stats[name].lastLimitedOrderId || 0), progressOrderId);
     }
   });
 
@@ -2676,6 +2784,7 @@ const processedStats = computed(() => {
     s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount;
     s.rewardTotalCount = s.rewardThreeCount + s.rewardTwoCount;
     s.limitedBanCount = limitedBanCountMap.value[normalizeBannerName(s.name)] || 0;
+    s.lastLimitedBanOrderId = Number(limitedBanLastEventIdMap.value[normalizeBannerName(s.name)] || 0);
     s.attrTotalCount = ATTRS.reduce((sum, a) => sum + s.attrCounts[a], 0);
     return s;
   });
@@ -2691,7 +2800,15 @@ const groupByCount = (data, key) => {
   return Object.keys(groups)
     .map(count => ({
       count: parseInt(count, 10),
-      chars: groups[count].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+      chars: groups[count].sort((a, b) => {
+        const ao = getStatProgressOrderKey(a, key);
+        const bo = getStatProgressOrderKey(b, key);
+        if (ao !== bo) return ao - bo;
+        const ac = CHAR_ORDER[String(a?.name || '').split(/\s+/)[0]] || 999;
+        const bc = CHAR_ORDER[String(b?.name || '').split(/\s+/)[0]] || 999;
+        if (ac !== bc) return ac - bc;
+        return String(a?.name || '').localeCompare(String(b?.name || ''), 'zh-Hans-CN');
+      })
     }))
     .sort((a, b) => b.count - a.count);
 };
@@ -2714,7 +2831,7 @@ const groupPanels = computed(() => [
   },
   {
     id: 'limited-ban',
-    title: '限ban数量分布',
+    title: '限Ban数量分布',
     cellClass: 'limited-ban',
     showRewardBreakdown: false,
     groups: groupByCount(
@@ -3810,7 +3927,8 @@ const banShortestIntervals = computed(() => {
 
   .head-filter-toggle,
   .reward-collab-toggle,
-  .festival-merge-toggle {
+  .festival-merge-toggle,
+  .festival-hide-name-toggle {
     font-size: 0.7rem;
   }
 }
@@ -3829,7 +3947,7 @@ const banShortestIntervals = computed(() => {
 /* 2x2 网格布局 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 20px;
   align-items: flex-start;
 }
@@ -3884,6 +4002,29 @@ const banShortestIntervals = computed(() => {
 .count-cell.recovery { color: #db2777; }
 
 .chars-cell { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.count-table.compact-char-table td {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.count-table.compact-char-table .chars-cell {
+  gap: 4px;
+}
+
+.count-table.compact-char-table .char-avatar-box {
+  width: 50px;
+}
+
+.count-table.compact-char-table .avatar-img,
+.count-table.compact-char-table .festival-avatar-wrap {
+  width: 46px;
+  height: 46px;
+}
+
+.count-table.compact-char-table .sub-stat {
+  margin-top: 1px;
+}
 
 .char-avatar-box {
   display: flex;
@@ -3968,13 +4109,13 @@ const banShortestIntervals = computed(() => {
 
 .lineup-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 10px;
 }
 
 .support-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 10px;
 }
 
@@ -4225,8 +4366,9 @@ const banShortestIntervals = computed(() => {
 
 .festival-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .festival-card {
@@ -4269,6 +4411,25 @@ const banShortestIntervals = computed(() => {
   white-space: nowrap;
 }
 
+.festival-hide-name-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.festival-hide-name-toggle input {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  position: relative;
+  top: -1px;
+}
+
 .festival-merge-toggle input {
   margin: 0;
   width: 14px;
@@ -4300,6 +4461,7 @@ const banShortestIntervals = computed(() => {
   font-size: 0.86rem;
   font-weight: 800;
   text-align: center;
+  vertical-align: middle;
 }
 
 .festival-star-stack {
@@ -4307,12 +4469,12 @@ const banShortestIntervals = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
 }
 
 .festival-star-icon {
-  width: 13px;
-  height: 13px;
+  width: 11px;
+  height: 11px;
   object-fit: contain;
 }
 
@@ -4640,7 +4802,7 @@ const banShortestIntervals = computed(() => {
 
 .record-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 12px;
 }
 
@@ -4910,13 +5072,28 @@ const banShortestIntervals = computed(() => {
   }
 }
 
+@media (min-width: 901px) and (max-width: 1360px) {
+  .related-panel .record-char > span {
+    display: none;
+  }
+
+  .related-panel .record-table th:first-child,
+  .related-panel .record-table td:first-child {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    padding-left: 3px;
+    padding-right: 3px;
+  }
+
+  .related-panel .record-char {
+    justify-content: center;
+  }
+}
+
 @media (max-width: 1200px) {
   .stats-layout { grid-template-columns: 180px 1fr; }
   .stats-layout.nav-collapsed { grid-template-columns: 48px 1fr; }
-  .stats-grid { grid-template-columns: 1fr; }
-  .record-grid { grid-template-columns: 1fr; }
-  .lineup-grid { grid-template-columns: 1fr; }
-  .support-grid { grid-template-columns: 1fr; }
   .pjsk-stats { padding: 14px; }
 }
 

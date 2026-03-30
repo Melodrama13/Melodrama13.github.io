@@ -117,7 +117,7 @@
         </div>
       </div>
       <div v-else class="pool-section wl-lock-note">
-        World Link 人选已固定，当前仅可调整属性与技能。
+        World Link 人选已固定，当前仅可调整属性。
       </div>
 
       <div class="drawer-footer">
@@ -370,9 +370,10 @@ const normalizedBoxLockedUnits = computed(() => {
 let isApplyingRules = false;
 
 const getOCUnit = (name) => CHAR_UNIT_MAP[name] || 'vs';
-const isUnitLockedInCurrentRound = (unit) => {
+const isUnitLockedInCurrentRound = (unit, options = {}) => {
+  const ignoreFesBypass = options.ignoreFesBypass === true;
   if (form.eventType !== '箱活') return false;
-  if (FES_FESTIVALS.includes(String(props.event?.festival || '').trim())) return false;
+  if (!ignoreFesBypass && FES_FESTIVALS.includes(String(props.event?.festival || '').trim())) return false;
   return normalizedBoxLockedUnits.value.includes(String(unit || '').trim().toLowerCase());
 };
 const isFesFestival = () => FES_FESTIVALS.includes(String(props.event?.festival || '').trim());
@@ -441,11 +442,12 @@ const getCharDisableReason = (name) => {
   if (isWorldLinkMode.value) return '';
   if (form.eventType !== '箱活') return '';
 
-  if (!VS_NAMES.includes(name) && isUnitLockedInCurrentRound(getOCUnit(name))) {
+  const isFirstPick = form.selectedChars.length === 0;
+  if (!VS_NAMES.includes(name) && isUnitLockedInCurrentRound(getOCUnit(name), { ignoreFesBypass: isFirstPick })) {
     return '本轮箱活已出';
   }
 
-  if (form.selectedChars.length === 0) {
+  if (isFirstPick) {
     return VS_NAMES.includes(name) ? '箱活ban主禁止选v' : '';
   }
 
@@ -461,7 +463,7 @@ const clearInvalidBoxBanner = () => {
   while (
     form.selectedChars.length > 0 && (
       VS_NAMES.includes(form.selectedChars[0].name)
-      || isUnitLockedInCurrentRound(getOCUnit(form.selectedChars[0].name))
+      || isUnitLockedInCurrentRound(getOCUnit(form.selectedChars[0].name), { ignoreFesBypass: true })
     )
   ) {
     form.selectedChars.splice(0, 1);
