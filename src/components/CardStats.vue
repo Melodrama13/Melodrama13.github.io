@@ -1,31 +1,44 @@
 <template>
   <div class="pjsk-stats">
-    <div class="stats-layout" :class="{ 'nav-collapsed': navCollapsed }">
-      <aside class="stats-nav card-panel">
-        <button class="nav-toggle" @click="navCollapsed = !navCollapsed">{{ navCollapsed ? '>' : '<' }}</button>
+    <div class="stats-layout" :class="{ 'nav-collapsed': navCollapsed, 'mobile-nav-overlay': isNavTopLayout, 'mobile-nav-open': isNavTopLayout && !navCollapsed }">
+      <button
+        v-if="isNavTopLayout"
+        class="mobile-floating-menu-btn export-hide"
+        :title="navCollapsed ? '展开统计菜单' : '收起统计菜单'"
+        @click="navCollapsed = !navCollapsed"
+      >
+        <img v-if="navCollapsed" src="/data/icon/menu.png" class="mobile-floating-menu-icon" alt="菜单" />
+        <span v-else class="mobile-floating-menu-close">×</span>
+      </button>
+      <aside class="stats-nav card-panel" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': isMiniFloatingNav, 'is-open': isNavTopLayout && !navCollapsed }">
+        <button v-if="!isNavTopLayout" class="nav-toggle" @click="navCollapsed = !navCollapsed">{{ navCollapsed ? '>' : '<' }}</button>
 
-        <div v-if="!navCollapsed" class="nav-cutoff">
-            <div class="nav-cutoff-title">统计截止活动 ID</div>
-            <div class="nav-cutoff-controls">
-              <input
-                type="number"
-                :value="displayEventIdDraft"
-                @focus="onDisplayEventIdFocus"
-                @input="onDisplayEventIdInput($event.target.value)"
-                @blur="onDisplayEventIdBlur"
-                class="id-input"
-                placeholder="输入活动 ID"
-              />
-              <button @click="manualEventId = null" class="reset-mini-btn" :title="`恢复到当前参考活动 ID：${autoCurrentId}`">
-                恢复
-              </button>
-            </div>
-            <p class="config-tips">系统时间：{{ nowStr }} | 输入更大ID可查看预测统计。</p>
+        <div v-if="!navCollapsed" class="nav-cutoff" :class="{ 'mini-cutoff': isMiniFloatingNav }">
+          <div class="nav-cutoff-title">统计截止活动 ID</div>
+          <div class="nav-cutoff-controls">
+            <input
+              type="number"
+              step="1"
+              inputmode="numeric"
+              :value="displayEventIdDraft"
+              @focus="onDisplayEventIdFocus"
+              @input="onDisplayEventIdInput($event.target.value)"
+              @blur="onDisplayEventIdBlur"
+              class="id-input"
+              placeholder="输入活动 ID"
+            />
+            <button class="id-step-btn" @click="adjustDisplayEventId(-1)" title="减少 1">－</button>
+            <button class="id-step-btn" @click="adjustDisplayEventId(1)" title="增加 1">＋</button>
+            <button @click="manualEventId = null" class="reset-mini-btn" :title="`恢复到当前参考活动 ID：${autoCurrentId}`">
+              <img src="/data/icon/reset.png" class="reset-mini-icon" alt="复位" />
+            </button>
+          </div>
+          <p class="config-tips">系统时间：{{ nowStr }} | 输入更大ID可查看预测统计。</p>
         </div>
 
         <template v-if="!navCollapsed">
           <div v-if="showDesktopNameControls" class="nav-name-format export-hide">
-            <div class="nav-name-format-title">名称格式</div>
+            <span class="nav-name-format-title">名称格式</span>
             <div class="nav-name-format-options">
               <label class="nav-name-format-option">
                 <input v-model="navNameFormat" type="radio" value="abbr" />
@@ -99,6 +112,14 @@
                     <input v-model="includeCollabRewardCards" type="checkbox" />
                     统计联动
                   </label>
+                  <label
+                    v-if="panel.id === 'fes-limited'"
+                    class="reward-collab-toggle"
+                    title="勾选后，百六限定次数会额外计入当期FES卡。"
+                  >
+                    <input v-model="fesLimitedIncludeFes" type="checkbox" />
+                    统计FES
+                  </label>
                   <div v-if="panel.id === 'limited-ban'" class="head-inline-filters">
                     <label class="head-filter-toggle" title="只统计箱限Ban个数。">
                       <input
@@ -113,6 +134,24 @@
                         type="checkbox"
                         :checked="limitedBanEventTypeFilter === '混活'"
                         @change="setLimitedBanEventTypeFilter('混活', $event.target.checked)"
+                      />
+                      只看混活
+                    </label>
+                  </div>
+                  <div v-if="panel.id === 'fes-limited-ban'" class="head-inline-filters">
+                    <label class="head-filter-toggle" title="只统计箱活百六Ban个数。">
+                      <input
+                        type="checkbox"
+                        :checked="fesLimitedBanEventTypeFilter === '箱活'"
+                        @change="setFesLimitedBanEventTypeFilter('箱活', $event.target.checked)"
+                      />
+                      只看箱活
+                    </label>
+                    <label class="head-filter-toggle" title="只统计混活百六Ban个数。">
+                      <input
+                        type="checkbox"
+                        :checked="fesLimitedBanEventTypeFilter === '混活'"
+                        @change="setFesLimitedBanEventTypeFilter('混活', $event.target.checked)"
                       />
                       只看混活
                     </label>
@@ -171,6 +210,10 @@
               <div class="festival-card-head">
                 <div class="festival-head-left">
                   <h3>{{ fest.festival }}</h3>
+                  <label class="festival-merge-toggle festival-card-merge-toggle" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
+                    <input v-model="festivalMergeToggles[fest.festival]" type="checkbox" />
+                    高星合并低星
+                  </label>
                   <label v-if="canToggleFestivalFes(fest.festival)" class="festival-fes-toggle">
                     <input v-model="festivalFesToggles[fest.festival]" type="checkbox" />
                     统计FES
@@ -615,6 +658,102 @@
                 </tbody>
               </table>
             </div>
+
+            <div id="rel-cfes-stat" class="record-block fes-record-block">
+              <div class="block-head">
+                <h3>{{ getRelatedRecordTitle('rel-cfes-stat') }}</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-cfes-stat', '相关记录_CFES统计')">PNG</button>
+              </div>
+              <table class="record-table fes-record-table">
+                <thead>
+                  <tr>
+                    <th class="fes-row-head" aria-label="团体"></th>
+                    <th v-for="attr in ATTRS" :key="`cfes-head-${attr}`" :style="getFesMatrixAttrHeadStyle(attr)">
+                      <img :src="`/elements/${String(attr).toLowerCase()}.png`" class="fes-attr-icon" :alt="ATTR_LABELS[attr]" :title="ATTR_LABELS[attr]" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="unit in RELATED_FES_UNITS" :key="`cfes-row-${unit}`">
+                    <td class="fes-unit-head" :style="getFesMatrixUnitHeadStyle(unit)">
+                      <img :src="unitLogoMap[unit]" class="mini-unit-logo" :alt="unit" :title="unit.toUpperCase()" />
+                    </td>
+                    <td
+                      v-for="attr in ATTRS"
+                      :key="`cfes-cell-${unit}-${attr}`"
+                      :style="getFesMatrixCellStyle(unit, attr)"
+                    >
+                      <div v-if="cfesRecordMatrix.iconRows[unit][attr]?.length" class="fes-cell-icons">
+                        <img
+                          v-for="icon in cfesRecordMatrix.iconRows[unit][attr]"
+                          :key="`cfes-icon-${unit}-${attr}-${icon.iconKey}`"
+                          :src="`/chibi_s/${icon.iconKey}.webp`"
+                          class="fes-cell-avatar"
+                          :title="icon.name"
+                          :alt="icon.name"
+                          :style="{ borderColor: getCharColor(icon.name) }"
+                        />
+                      </div>
+                      <span v-else class="score-empty">-</span>
+                    </td>
+                  </tr>
+                  <tr class="fes-total-row">
+                    <td class="fes-total-head">总计</td>
+                    <td v-for="attr in ATTRS" :key="`cfes-total-${attr}`" class="fes-total-num" :style="getFesMatrixTotalCellStyle(attr)">
+                      {{ cfesRecordMatrix.totals[attr] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-bfes-stat" class="record-block fes-record-block">
+              <div class="block-head">
+                <h3>{{ getRelatedRecordTitle('rel-bfes-stat') }}</h3>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-bfes-stat', '相关记录_BFES统计')">PNG</button>
+              </div>
+              <table class="record-table fes-record-table">
+                <thead>
+                  <tr>
+                    <th class="fes-row-head" aria-label="团体"></th>
+                    <th v-for="attr in ATTRS" :key="`bfes-head-${attr}`" :style="getFesMatrixAttrHeadStyle(attr)">
+                      <img :src="`/elements/${String(attr).toLowerCase()}.png`" class="fes-attr-icon" :alt="ATTR_LABELS[attr]" :title="ATTR_LABELS[attr]" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="unit in RELATED_FES_UNITS" :key="`bfes-row-${unit}`">
+                    <td class="fes-unit-head" :style="getFesMatrixUnitHeadStyle(unit)">
+                      <img :src="unitLogoMap[unit]" class="mini-unit-logo" :alt="unit" :title="unit.toUpperCase()" />
+                    </td>
+                    <td
+                      v-for="attr in ATTRS"
+                      :key="`bfes-cell-${unit}-${attr}`"
+                      :style="getFesMatrixCellStyle(unit, attr)"
+                    >
+                      <div v-if="bfesRecordMatrix.iconRows[unit][attr]?.length" class="fes-cell-icons">
+                        <img
+                          v-for="icon in bfesRecordMatrix.iconRows[unit][attr]"
+                          :key="`bfes-icon-${unit}-${attr}-${icon.iconKey}`"
+                          :src="`/chibi_s/${icon.iconKey}.webp`"
+                          class="fes-cell-avatar"
+                          :title="icon.name"
+                          :alt="icon.name"
+                          :style="{ borderColor: getCharColor(icon.name) }"
+                        />
+                      </div>
+                      <span v-else class="score-empty">-</span>
+                    </td>
+                  </tr>
+                  <tr class="fes-total-row">
+                    <td class="fes-total-head">总计</td>
+                    <td v-for="attr in ATTRS" :key="`bfes-total-${attr}`" class="fes-total-num" :style="getFesMatrixTotalCellStyle(attr)">
+                      {{ bfesRecordMatrix.totals[attr] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -649,89 +788,7 @@
               </ul>
             </div>
           </div>
-        </div>
-
-        <div id="panel-matrix" class="stats-section card-panel matrix-panel">
-          <div class="section-head">
-            <h2>角色矩阵</h2>
-            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-matrix', '角色矩阵')">PNG</button>
-          </div>
-          <div class="matrix-wrap">
-            <table class="matrix-table">
-              <thead>
-                <tr>
-                  <th>角色</th>
-                  <th v-for="(attr, idx) in ATTRS" :key="`head-${attr}`" :class="matrixGroupClass(idx, ATTRS.length)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort(attr)">
-                      <span>{{ ATTR_LABELS[attr] }}</span>
-                      <span class="matrix-sort-ind">{{ getMatrixSortIndicator(attr) }}</span>
-                    </button>
-                  </th>
-                  <th :class="matrixGroupClass(0, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pureScoreCount')"><span>分卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pureScoreCount') }}</span></button>
-                  </th>
-                  <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pScoreCount')"><span>P 分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pScoreCount') }}</span></button>
-                  </th>
-                  <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('accuracyCount')"><span>判卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('accuracyCount') }}</span></button>
-                  </th>
-                  <th :class="matrixGroupClass(3, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('recoveryCount')"><span>奶卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('recoveryCount') }}</span></button>
-                  </th>
-                  <th :class="matrixGroupClass(0, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('fourStarCount')"><span>四星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('fourStarCount') }}</span></button>
-                  </th>
-                  <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('threeStarCount')"><span>三星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('threeStarCount') }}</span></button>
-                  </th>
-                  <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('twoStarCount')"><span>二星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('twoStarCount') }}</span></button>
-                  </th>
-                  <th :class="matrixGroupClass(3, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('rewardTotalCount')"><span>报酬</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('rewardTotalCount') }}</span></button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="row in attrMatrixRows"
-                  :key="`attr-${row.name}`"
-                  :class="getMatrixUnitFrameClass(row.name)"
-                  :style="{
-                    backgroundColor: getCharTint(row.name),
-                    '--matrix-unit-border-color': getMatrixUnitColor(row.name)
-                  }"
-                >
-                  <td class="row-char" :style="{ backgroundColor: getUnitMatrixTint(row.name) }">
-                    <img
-                      :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
-                      class="mini-avatar"
-                      :title="row.name"
-                      :style="{ borderColor: getCharColor(row.name) }"
-                    />
-                  </td>
-                  <td
-                    v-for="(attr, idx) in ATTRS"
-                    :key="`${row.name}-${attr}`"
-                    class="matrix-num"
-                    :class="[matrixGroupClass(idx, ATTRS.length), getAttrExtremeClass(attr, row[attr], row.name)]"
-                  >
-                    {{ row[attr] }}
-                  </td>
-                  <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ row.pureScoreCount }}</td>
-                  <td class="matrix-num">{{ row.pScoreCount }}</td>
-                  <td class="matrix-num">{{ row.accuracyCount }}</td>
-                  <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ row.recoveryCount }}</td>
-                  <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ row.fourStarCount }}</td>
-                  <td class="matrix-num">{{ row.threeStarCount }}</td>
-                  <td class="matrix-num">{{ row.twoStarCount }}</td>
-                  <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ row.rewardTotalCount }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>        
+        </div>   
 
         <div id="panel-lineup" class="stats-section card-panel lineup-panel">
           <div class="section-head">
@@ -828,6 +885,10 @@
           <div class="section-head">
             <div class="section-head-left">
               <h2>支援配队</h2>
+              <label class="support-wl-toggle export-hide" title="勾选后才计算并显示 WL 配队（更耗时）。">
+                <input v-model="supportEnableWlLineup" type="checkbox" />
+                <span>WL配队</span>
+              </label>
             </div>
             <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-support', '支援配队')">PNG</button>
           </div>
@@ -858,7 +919,8 @@
                 :style="getLineupRowStyle(plan.attr)"
               >
                 <div class="lineup-attr-cell">
-                  <img :src="`/elements/${String(plan.attr).toLowerCase()}.png`" class="lineup-attr-icon" :title="ATTR_LABELS[plan.attr]" />
+                  <img v-if="isSupportAttrIcon(plan.attr)" :src="`/elements/${String(plan.attr).toLowerCase()}.png`" class="lineup-attr-icon" :title="ATTR_LABELS[plan.attr]" />
+                  <span v-else class="lineup-attr-text">WL</span>
                 </div>
                 <div
                   v-for="(slot, idx) in plan.memberSlots"
@@ -869,6 +931,13 @@
                 >
                   <template v-if="slot">
                     <img :src="`/chibi_s/${getSupportMemberIconKey(slot)}.webp`" class="support-member-avatar" :title="slot.name" :alt="slot.name" />
+                    <img
+                      v-if="plan.attr === SUPPORT_WL_ATTR && isSupportAttrIcon(slot.attr)"
+                      :src="`/elements/${String(slot.attr).toLowerCase()}.png`"
+                      class="support-member-attr-icon"
+                      :title="ATTR_LABELS[slot.attr]"
+                      :alt="ATTR_LABELS[slot.attr]"
+                    />
                     <div class="lineup-member-score">{{ slot.score }}</div>
                     <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
                   </template>
@@ -880,6 +949,179 @@
           </div>
         </div>
         
+        <div id="panel-matrix" class="stats-section card-panel matrix-panel">
+          <div class="section-head">
+            <h2>角色矩阵</h2>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-matrix', '角色矩阵')">PNG</button>
+          </div>
+          <div class="matrix-wrap">
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th>角色</th>
+                  <th v-for="(attr, idx) in ATTRS" :key="`head-${attr}`" :class="matrixGroupClass(idx, ATTRS.length)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort(attr)">
+                      <span>{{ ATTR_LABELS[attr] }}</span>
+                      <span class="matrix-sort-ind">{{ getMatrixSortIndicator(attr) }}</span>
+                    </button>
+                  </th>
+                  <th :class="matrixGroupClass(0, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pureScoreCount')"><span>分卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pureScoreCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pScoreCount')"><span>P 分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pScoreCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('accuracyCount')"><span>判卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('accuracyCount') }}</span></button>
+                  </th>
+                  <th :class="matrixGroupClass(3, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('recoveryCount')"><span>奶卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('recoveryCount') }}</span></button>
+                  </th>
+                  <th :class="matrixGroupClass(0, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('fourStarCount')"><span>四星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('fourStarCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('threeStarCount')"><span>三星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('threeStarCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('twoStarCount')"><span>二星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('twoStarCount') }}</span></button>
+                  </th>
+                  <th :class="matrixGroupClass(3, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('rewardTotalCount')"><span>报酬</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('rewardTotalCount') }}</span></button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in attrMatrixRows"
+                  :key="`attr-${row.name}`"
+                  :class="getMatrixUnitFrameClass(row.name)"
+                  :style="{
+                    backgroundColor: getCharTint(row.name),
+                    '--matrix-unit-border-color': getMatrixUnitColor(row.name)
+                  }"
+                >
+                  <td class="row-char" :style="{ backgroundColor: getUnitMatrixTint(row.name) }">
+                    <img
+                      :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                      class="mini-avatar"
+                      :title="row.name"
+                      :style="{ borderColor: getCharColor(row.name) }"
+                    />
+                  </td>
+                  <td
+                    v-for="(attr, idx) in ATTRS"
+                    :key="`${row.name}-${attr}`"
+                    class="matrix-num"
+                    :class="[matrixGroupClass(idx, ATTRS.length), getAttrExtremeClass(attr, row[attr], row.name)]"
+                  >
+                    {{ row[attr] }}
+                  </td>
+                  <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ row.pureScoreCount }}</td>
+                  <td class="matrix-num">{{ row.pScoreCount }}</td>
+                  <td class="matrix-num">{{ row.accuracyCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ row.recoveryCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ row.fourStarCount }}</td>
+                  <td class="matrix-num">{{ row.threeStarCount }}</td>
+                  <td class="matrix-num">{{ row.twoStarCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ row.rewardTotalCount }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="panel-vs-matrix" class="stats-section card-panel matrix-panel">
+          <div class="section-head">
+            <h2>虚拟歌手矩阵</h2>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-vs-matrix', '虚拟歌手矩阵')">PNG</button>
+          </div>
+          <div class="matrix-wrap">
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th>角色</th>
+                  <th v-for="(attr, idx) in ATTRS" :key="`vs-head-${attr}`" :class="matrixGroupClass(idx, ATTRS.length)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort(attr)">
+                      <span>{{ ATTR_LABELS[attr] }}</span>
+                      <span class="matrix-sort-ind">{{ getMatrixSortIndicator(attr) }}</span>
+                    </button>
+                  </th>
+                  <th :class="matrixGroupClass(0, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pureScoreCount')"><span>分卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pureScoreCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pScoreCount')"><span>P 分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pScoreCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('accuracyCount')"><span>判卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('accuracyCount') }}</span></button>
+                  </th>
+                  <th :class="matrixGroupClass(3, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('recoveryCount')"><span>奶卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('recoveryCount') }}</span></button>
+                  </th>
+                  <th :class="matrixGroupClass(0, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('fourStarCount')"><span>四星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('fourStarCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('threeStarCount')"><span>三星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('threeStarCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('twoStarCount')"><span>二星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('twoStarCount') }}</span></button>
+                  </th>
+                  <th :class="matrixGroupClass(3, 4)">
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('rewardTotalCount')"><span>报酬</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('rewardTotalCount') }}</span></button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in virtualSingerMatrixRows"
+                  :key="`vs-matrix-${row.name}`"
+                  :class="getMatrixUnitFrameClass(row.name, 'vs')"
+                  :style="{
+                    backgroundColor: getCharTint(row.name),
+                    '--matrix-unit-border-color': getMatrixUnitColor(row.name)
+                  }"
+                >
+                  <td class="row-char" :style="{ backgroundColor: getUnitMatrixTint(row.name) }">
+                    <div class="matrix-avatar-wrap">
+                      <img
+                        :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                        class="mini-avatar"
+                        :title="row.name"
+                        :style="{ borderColor: getCharColor(row.name) }"
+                      />
+                      <img
+                        v-if="getVsUnitLogoByKey(row.name)"
+                        :src="getVsUnitLogoByKey(row.name)"
+                        class="matrix-avatar-unit-logo"
+                        :alt="parseVsMatrixRowName(row.name).unit"
+                        :title="parseVsMatrixRowName(row.name).unit.toUpperCase()"
+                      />
+                    </div>
+                  </td>
+                  <td
+                    v-for="(attr, idx) in ATTRS"
+                    :key="`vs-${row.name}-${attr}`"
+                    class="matrix-num"
+                    :class="[matrixGroupClass(idx, ATTRS.length), getVsMatrixValueClass(row[attr])]"
+                  >
+                    {{ row[attr] }}
+                  </td>
+                  <td class="matrix-num" :class="[matrixGroupClass(0, 4), getVsMatrixValueClass(row.pureScoreCount)]">{{ row.pureScoreCount }}</td>
+                  <td class="matrix-num" :class="getVsMatrixValueClass(row.pScoreCount)">{{ row.pScoreCount }}</td>
+                  <td class="matrix-num" :class="getVsMatrixValueClass(row.accuracyCount)">{{ row.accuracyCount }}</td>
+                  <td class="matrix-num" :class="[matrixGroupClass(3, 4), getVsMatrixValueClass(row.recoveryCount)]">{{ row.recoveryCount }}</td>
+                  <td class="matrix-num" :class="[matrixGroupClass(0, 4), getVsMatrixFourStarClass(row.fourStarCount)]">{{ row.fourStarCount }}</td>
+                  <td class="matrix-num" :class="getVsMatrixValueClass(row.threeStarCount)">{{ row.threeStarCount }}</td>
+                  <td class="matrix-num" :class="getVsMatrixValueClass(row.twoStarCount)">{{ row.twoStarCount }}</td>
+                  <td class="matrix-num" :class="[matrixGroupClass(3, 4), getVsMatrixValueClass(row.rewardTotalCount)]">{{ row.rewardTotalCount }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -913,10 +1155,30 @@ const hideFestivalCharNames = ref(true);
 const navNameFormat = ref('single');
 const banEventTypeFilter = ref('all');
 const limitedBanEventTypeFilter = ref('all');
-const festivalMergeHigherRanks = ref(false);
+const fesLimitedBanEventTypeFilter = ref('all');
+const fesLimitedIncludeFes = ref(false);
+const festivalMergeToggles = reactive({
+  新年: false,
+  婚活: false,
+  情人节: false,
+  白情: false,
+  半周年: false,
+  周年: false
+});
+const festivalMergeHigherRanks = computed({
+  get: () => Object.keys(festivalMergeToggles).every((fest) => !!festivalMergeToggles[fest]),
+  set: (value) => {
+    const checked = !!value;
+    Object.keys(festivalMergeToggles).forEach((fest) => {
+      festivalMergeToggles[fest] = checked;
+    });
+  }
+});
 const isMobileNav = ref(false);
 const isNavTopLayout = ref(false);
+const navTopLayoutPrev = ref(null);
 const supportUseOriginalVsTeam = ref(true);
+const supportEnableWlLineup = ref(false);
 const festivalFesToggles = reactive({
   半周年: false,
   周年: false
@@ -986,6 +1248,8 @@ const getStepFestivalAvatarStyle = (name) => ({
 });
 
 const showDesktopNameControls = computed(() => !isNavTopLayout.value);
+const isMiniFloatingNav = computed(() => isNavTopLayout.value && navCollapsed.value);
+const isSupportAttrIcon = (attr) => ATTRS.includes(String(attr || ''));
 
 const VS_NAMES = ["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"];
 const UNIT_COLORS = {
@@ -1038,7 +1302,10 @@ const LINEUP_CHAR_NAMES = (() => {
   return names;
 })();
 const ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
+const SUPPORT_WL_ATTR = 'wl';
 const LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t', 'wl3']);//加入wl3为限定卡
+const FES_CARD_TYPES = new Set(['cfes', 'bfes']);
+const FES_SKILL_TYPES = new Set(['cfes', 'bfes_up']);
 const EXCLUDED_PERIOD_EVENT_TYPES = new Set(['测试']);
 const SPECIAL_EVENT_KEY_LABELS = {
   c1: '大罪',
@@ -1055,10 +1322,18 @@ const ATTR_LABELS = {
   Happy: '橙心',
   Mysterious: '紫月'
 };
+const ATTR_COLORS = Object.freeze({
+  Pure: '#17a159',
+  Cool: '#4b48e9',
+  Cute: '#f35c9b',
+  Happy: '#ff8719',
+  Mysterious: '#8e65c2'
+});
 const SPECIAL_FESTIVALS = ['新年', '婚活', '情人节', '白情', '半周年', '周年'];
 const FESTIVAL_ANCHOR_IDS = Object.fromEntries(SPECIAL_FESTIVALS.map((fest, idx) => [fest, `festival-${idx + 1}`]));
 const FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
 const VS_UNIT_SORT_ORDER = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
+const RELATED_FES_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'];
 const SUPPORT_UNITS = ['vs', 'ln', 'mmj', 'vbs', 'ws', 'nc'];
 const supportUnitTitleLogoMap = Object.freeze({
   ln: '/elements/Leo_need.png',
@@ -1186,6 +1461,23 @@ const getFestivalTierCount = (tierKey) => {
 
 const getFestivalTierIcon = (tierKey) => (tierKey === 'four' ? '/elements/rstar.png' : '/elements/ystar.png');
 
+const isFesCardType = (typeValue) => FES_CARD_TYPES.has(String(typeValue || '').trim().toLowerCase());
+
+const isFesSkillType = (skillKind) => {
+  const kind = String(skillKind || '').trim().toLowerCase();
+  if (!kind) return false;
+  // Keep compatibility with specific CFES variants like cfes_l / cfes_j.
+  if (kind.startsWith('cfes')) return true;
+  return FES_SKILL_TYPES.has(kind);
+};
+
+const getFesKindBySkillKind = (skillKind) => {
+  const kind = String(skillKind || '').trim().toLowerCase();
+  if (kind === 'bfes_up') return 'bfes';
+  if (kind.startsWith('cfes')) return 'cfes';
+  return '';
+};
+
 const hexToRgba = (hex, alpha) => {
   const h = String(hex || '').replace('#', '');
   if (h.length !== 6) return `rgba(0,0,0,${alpha})`;
@@ -1240,10 +1532,9 @@ const getMatrixSortIndicator = (key) => {
 
 const isMatrixDefaultSort = computed(() => !matrixSortKey.value || !matrixSortOrder.value);
 
-const matrixUnitFrameMap = computed(() => {
+const buildMatrixUnitFrameMap = (rows) => {
   const map = new Map();
   if (!isMatrixDefaultSort.value) return map;
-  const rows = attrMatrixRows.value;
   rows.forEach((row, idx) => {
     const unit = getUnitByChar(row.name);
     const prevUnit = idx > 0 ? getUnitByChar(rows[idx - 1].name) : null;
@@ -1254,10 +1545,14 @@ const matrixUnitFrameMap = computed(() => {
     });
   });
   return map;
-});
+};
 
-const getMatrixUnitFrameClass = (name) => {
-  const info = matrixUnitFrameMap.value.get(name);
+const matrixUnitFrameMap = computed(() => buildMatrixUnitFrameMap(attrMatrixRows.value));
+const vsMatrixUnitFrameMap = computed(() => buildMatrixUnitFrameMap(virtualSingerMatrixRows.value));
+
+const getMatrixUnitFrameClass = (name, matrixType = 'char') => {
+  const frameMap = matrixType === 'vs' ? vsMatrixUnitFrameMap.value : matrixUnitFrameMap.value;
+  const info = frameMap.get(name);
   if (!info) return [];
   return [
     'matrix-unit-framed',
@@ -1465,7 +1760,9 @@ const RELATED_RECORD_ITEMS = [
   { id: 'rel-ban-long', title: 'Ban最长间隔' },
   { id: 'rel-ban-short', title: 'Ban最短间隔' },
   { id: 'rel-vs-unit-last-four', title: '各团VS上次四星' },
-  { id: 'rel-vs-unit-score', title: '团分统计' }
+  { id: 'rel-vs-unit-score', title: '团分统计' },
+  { id: 'rel-cfes-stat', title: 'CFES统计' },
+  { id: 'rel-bfes-stat', title: 'BFES统计' }
 ];
 
 const RELATED_RECORD_TITLE_MAP = Object.fromEntries(
@@ -1505,11 +1802,6 @@ const navGroups = computed(() => {
       children: []
     },
     {
-      id: 'panel-matrix',
-      title: '角色矩阵',
-      children: []
-    },
-    {
       id: 'panel-lineup',
       title: '日挑配队',
       children: []
@@ -1517,6 +1809,16 @@ const navGroups = computed(() => {
     {
       id: 'panel-support',
       title: '支援配队',
+      children: []
+    },
+    {
+      id: 'panel-matrix',
+      title: '角色矩阵',
+      children: []
+    },
+    {
+      id: 'panel-vs-matrix',
+      title: '虚拟歌手矩阵',
       children: []
     }
   ];
@@ -1541,8 +1843,15 @@ const isGroupExpanded = (group) => isMobileNav.value || isGroupActive(group);
 const updateMobileNavState = () => {
   if (typeof window === 'undefined') return;
   const isTopLayout = window.innerWidth <= 900;
+  const prev = navTopLayoutPrev.value;
   isNavTopLayout.value = isTopLayout;
   isMobileNav.value = isTopLayout;
+  if (prev === null) {
+    navCollapsed.value = isTopLayout;
+  } else if (prev !== isTopLayout) {
+    navCollapsed.value = isTopLayout;
+  }
+  navTopLayoutPrev.value = isTopLayout;
 };
 
 const scrollToSection = (id) => {
@@ -1550,6 +1859,9 @@ const scrollToSection = (id) => {
   if (!el) return;
   activeNavId.value = id;
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (isNavTopLayout.value) {
+    navCollapsed.value = true;
+  }
 };
 
 const sanitizeExportFileName = (name) => {
@@ -1821,6 +2133,16 @@ const setLimitedBanEventTypeFilter = (targetType, checked) => {
   }
 };
 
+const setFesLimitedBanEventTypeFilter = (targetType, checked) => {
+  if (checked) {
+    fesLimitedBanEventTypeFilter.value = targetType;
+    return;
+  }
+  if (fesLimitedBanEventTypeFilter.value === targetType) {
+    fesLimitedBanEventTypeFilter.value = 'all';
+  }
+};
+
 const limitedBanCountMap = computed(() => {
   const map = {};
   const maxEid = safeMaxEventId.value;
@@ -1859,6 +2181,80 @@ const limitedBanLastEventIdMap = computed(() => {
     if (typeFilter !== 'all' && eventType !== typeFilter) return;
 
     if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
+
+    const bannerName = normalizeBannerName(ev?.banner);
+    if (!CHAR_ORDER[bannerName]) return;
+    if (VS_NAMES.includes(bannerName)) return;
+    map[bannerName] = Math.max(Number(map[bannerName] || 0), eid);
+  });
+
+  return map;
+});
+
+const fesLimitedEventIdSet = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const fesEventIds = new Set();
+  const result = new Set();
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    const eidRaw = String(card?.EventID || '').trim();
+    if (!isNumericEventId(eidRaw)) return;
+    const type = String(card?.Type || '').trim().toLowerCase();
+    if (isFesCardType(type)) {
+      fesEventIds.add(Number(eidRaw));
+    }
+  });
+
+  (props.allEvents || []).forEach((ev) => {
+    if (shouldSkipPredictEvent(ev)) return;
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (eid > maxEid) return;
+    if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
+    if (!fesEventIds.has(eid)) return;
+    result.add(eid);
+  });
+
+  return result;
+});
+
+const fesLimitedBanCountMap = computed(() => {
+  const map = {};
+  const targetEventIds = fesLimitedEventIdSet.value;
+  const typeFilter = fesLimitedBanEventTypeFilter.value;
+  if (!targetEventIds.size) return map;
+
+  (props.allEvents || []).forEach((ev) => {
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (!targetEventIds.has(eid)) return;
+
+    const eventType = String(ev?.event_type || '').trim();
+    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+
+    const bannerName = normalizeBannerName(ev?.banner);
+    if (!CHAR_ORDER[bannerName]) return;
+    if (VS_NAMES.includes(bannerName)) return;
+    map[bannerName] = (map[bannerName] || 0) + 1;
+  });
+
+  return map;
+});
+
+const fesLimitedBanLastEventIdMap = computed(() => {
+  const map = {};
+  const targetEventIds = fesLimitedEventIdSet.value;
+  const typeFilter = fesLimitedBanEventTypeFilter.value;
+  if (!targetEventIds.size) return map;
+
+  (props.allEvents || []).forEach((ev) => {
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (!targetEventIds.has(eid)) return;
+
+    const eventType = String(ev?.event_type || '').trim();
+    if (typeFilter !== 'all' && eventType !== typeFilter) return;
 
     const bannerName = normalizeBannerName(ev?.banner);
     if (!CHAR_ORDER[bannerName]) return;
@@ -1927,11 +2323,65 @@ const onDisplayEventIdInput = (rawVal) => {
   manualEventId.value = n ?? null;
 };
 
+const adjustDisplayEventId = (delta) => {
+  const cur = toFiniteEventId(displayEventIdDraft.value)
+    ?? toFiniteEventId(displayEventId.value)
+    ?? toFiniteEventId(autoCurrentId.value)
+    ?? 1;
+  const next = Math.max(1, Number(cur) + Number(delta || 0));
+  manualEventId.value = next;
+  displayEventIdDraft.value = String(next);
+  isEditingDisplayEventId.value = false;
+};
+
 const onDisplayEventIdBlur = () => {
   isEditingDisplayEventId.value = false;
   const n = toFiniteEventId(displayEventIdDraft.value);
   manualEventId.value = n ?? null;
   updateDisplayEventIdDraft();
+};
+
+const getTopBarState = () => ({
+  displayEventId: Number(displayEventId.value || 0),
+  displayEventIdDraft: String(displayEventIdDraft.value || ''),
+  autoCurrentId: Number(autoCurrentId.value || 0),
+  navCollapsed: !!navCollapsed.value,
+  isNavTopLayout: !!isNavTopLayout.value
+});
+
+const setTopBarDisplayEventIdDraft = (rawVal) => {
+  displayEventIdDraft.value = String(rawVal ?? '');
+  const n = toFiniteEventId(displayEventIdDraft.value);
+  manualEventId.value = n ?? null;
+};
+
+const applyTopBarDisplayEventId = (rawVal) => {
+  if (rawVal !== undefined) {
+    displayEventIdDraft.value = String(rawVal ?? '');
+  }
+  const n = toFiniteEventId(displayEventIdDraft.value);
+  manualEventId.value = n ?? null;
+  isEditingDisplayEventId.value = false;
+  updateDisplayEventIdDraft();
+  return Number(displayEventId.value || 0);
+};
+
+const adjustTopBarDisplayEventId = (delta) => {
+  adjustDisplayEventId(delta);
+  return Number(displayEventId.value || 0);
+};
+
+const resetTopBarDisplayEventId = () => {
+  manualEventId.value = null;
+  isEditingDisplayEventId.value = false;
+  updateDisplayEventIdDraft();
+  return Number(displayEventId.value || 0);
+};
+
+const toggleTopBarNavCollapsed = () => {
+  if (!isNavTopLayout.value) return !!navCollapsed.value;
+  navCollapsed.value = !navCollapsed.value;
+  return !!navCollapsed.value;
 };
 
 watch(displayEventId, () => {
@@ -2058,6 +2508,12 @@ const LINEUP_ATTR_BG = Object.freeze({
 });
 const LINEUP_BASE_ALPHA = 0.15;
 const LINEUP_FES_ALPHA = Object.freeze({ cfes: 0.2, bfes: 0.35 });
+// NOTE(wl-heuristic-2026-04): WL 计算为了移动端性能，当前强制“VS只看原v”，
+// 并把 OC 的候选卡裁剪为 BFES/团分（unit_score，按150视作稳定触发）。
+// 若后续出现高倍率的非原v/CFES/P分卡，再回退这组筛选即可。
+const WL_OC_UNIT_SCORE_BASE = 150;
+const WL_OC_ALLOWED_SKILLS = new Set(['bfes_up', 'unit_score']);
+const WL_OC_FALLBACK_SKILLS = new Set(['bfes_up', 'unit_score', 'p_score', 'score_up', 'default']);
 
 const makeLineupFesBg = (alpha) => {
   const a = Math.max(0, Math.min(1, Number(alpha)));
@@ -2440,7 +2896,150 @@ const buildSupportLineupPlan = (targetUnit, attr, supportPool) => {
   };
 };
 
+const buildSupportWlPlan = (targetUnit, supportPool) => {
+  const isVsTarget = targetUnit === 'vs';
+  const isOcTarget = targetUnit !== 'vs';
+
+  const buildWlAttrCandidateCards = (cardsByName, { strictOc = true, widen = false } = {}) => {
+    const cards = Object.values(cardsByName || {}).flatMap((list) => Array.isArray(list) ? list : []);
+    const normalized = cards
+      .filter((card) => {
+        const unit = String(card?.unit || '').trim().toLowerCase();
+        const skillKind = String(card?.skillKind || '').trim().toLowerCase();
+
+        // NOTE(wl-heuristic-2026-04): WL 行固定按“原v”统计，忽略“原v队”勾选，避免无效搜索空间。
+        if (isVsTarget) return unit === 'vs';
+
+        // NOTE(wl-heuristic-2026-04): OC 行仅保留 BFES/团分，未来若出现高倍率 CFES/P分再回退。
+        if (isOcTarget) {
+          if (unit !== targetUnit) return false;
+          if (!strictOc) return true;
+          return WL_OC_ALLOWED_SKILLS.has(skillKind);
+        }
+
+        return true;
+      })
+      .map((card) => {
+        const skillKind = String(card?.skillKind || '').trim().toLowerCase();
+        if (isOcTarget && skillKind === 'unit_score') {
+          return { ...card, baseScore: WL_OC_UNIT_SCORE_BASE };
+        }
+        return card;
+      });
+
+    const sorted = [...normalized].sort(compareLineupCardForPick);
+    if (!sorted.length) return [];
+
+    const unitScoreCards = sorted.filter((card) => card?.isUnitScore).slice(0, widen ? 8 : 4);
+    const bfesCards = sorted.filter((card) => card?.fesKind === 'bfes').slice(0, widen ? 8 : 4);
+    const scoreCards = sorted
+      .filter((card) => WL_OC_FALLBACK_SKILLS.has(String(card?.skillKind || '').trim().toLowerCase()))
+      .slice(0, widen ? 8 : 4);
+    const highBaseCards = sorted.slice(0, widen ? 9 : 5);
+
+    const merged = [];
+    const seen = new Set();
+    const pushUnique = (card) => {
+      const key = String(card?.cardId || '').trim() || `${String(card?.name || '').trim()}|${String(card?.attr || '').trim()}|${String(card?.unit || '').trim()}|${String(card?.skillKind || '').trim()}|${Number(card?.baseScore || 0)}`;
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      merged.push(card);
+    };
+
+    unitScoreCards.forEach(pushUnique);
+    bfesCards.forEach(pushUnique);
+    scoreCards.forEach(pushUnique);
+    highBaseCards.forEach(pushUnique);
+    if (isVsTarget || !strictOc || widen) {
+      sorted.forEach(pushUnique);
+    }
+
+    const limit = isVsTarget
+      ? (widen ? 14 : 10)
+      : (strictOc ? (widen ? 10 : 6) : (widen ? 14 : 10));
+    return merged.slice(0, limit);
+  };
+
+  const buildAttrBuckets = (strictOc, widen) => ATTRS.map((attr) => {
+    const cardsByName = supportPool?.[targetUnit]?.[attr] || {};
+    return {
+      attr,
+      cards: buildWlAttrCandidateCards(cardsByName, { strictOc, widen })
+    };
+  });
+
+  const solveByBuckets = (attrBuckets) => {
+    if (attrBuckets.some((bucket) => bucket.cards.length === 0)) {
+      return null;
+    }
+
+    let best = null;
+    const selected = [];
+    const usedNames = new Set();
+
+    const dfs = (idx) => {
+      if (idx >= attrBuckets.length) {
+        if (selected.length !== ATTRS.length) return;
+        const hit = evalSupportMembers(selected);
+        if (compareSupportSolvedHit(hit, best, targetUnit)) best = hit;
+        return;
+      }
+
+      const bucket = attrBuckets[idx];
+      for (let i = 0; i < bucket.cards.length; i += 1) {
+        const card = bucket.cards[i];
+        const nameKey = String(card?.name || '').trim();
+        if (!nameKey || usedNames.has(nameKey)) continue;
+        usedNames.add(nameKey);
+        selected.push(card);
+        dfs(idx + 1);
+        selected.pop();
+        usedNames.delete(nameKey);
+      }
+    };
+
+    dfs(0);
+    return best;
+  };
+
+  let best = solveByBuckets(buildAttrBuckets(true, false));
+  if (!best && isOcTarget) {
+    // 回退策略：当严格筛选导致某团 WL 行无法成队时，放宽到同团全技能并扩大候选集。
+    best = solveByBuckets(buildAttrBuckets(false, true));
+  }
+  if (!best && isVsTarget) {
+    best = solveByBuckets(buildAttrBuckets(true, true));
+  }
+
+  if (!best) {
+    return {
+      attr: SUPPORT_WL_ATTR,
+      total: 0,
+      members: [],
+      memberSlots: [null, null, null, null, null]
+    };
+  }
+
+  const memberSlots = [...best.members];
+  while (memberSlots.length < 5) memberSlots.push(null);
+
+  return {
+    attr: SUPPORT_WL_ATTR,
+    total: best.total,
+    members: best.members,
+    memberSlots
+  };
+};
+
 const getLineupRowStyle = (attr) => {
+  if (String(attr || '').toLowerCase() === SUPPORT_WL_ATTR) {
+    return {
+      '--lineup-row-bg': 'transparent',
+      '--lineup-row-border': 'rgba(71, 85, 105, 0.34)',
+      '--lineup-row-fg': '#111827',
+      '--lineup-row-fg-muted': '#64748b'
+    };
+  }
   const bg = LINEUP_ATTR_BG[attr] || '#64748b';
   const flatBg = hexToSoftSolid(bg, 1 - LINEUP_BASE_ALPHA);
   return {
@@ -2496,8 +3095,8 @@ const lineupCardPoolByAttr = computed(() => {
       unit,
       baseScore: skillInfo.baseScore,
       isUnitScore: skillInfo.isUnitScore,
-      isFes: ['cfes', 'bfes_up'].includes(skillInfo.kind),
-      fesKind: skillInfo.kind === 'bfes_up' ? 'bfes' : (skillInfo.kind === 'cfes' ? 'cfes' : ''),
+      isFes: isFesSkillType(skillInfo.kind),
+      fesKind: getFesKindBySkillKind(skillInfo.kind),
       skillKind: skillInfo.kind,
       eventRef,
       eventLabel
@@ -2579,8 +3178,8 @@ const supportCardPoolByUnitAttr = computed(() => {
         unit,
         baseScore: skillInfo.baseScore,
         isUnitScore: skillInfo.isUnitScore,
-        isFes: ['cfes', 'bfes_up'].includes(skillInfo.kind),
-        fesKind: skillInfo.kind === 'bfes_up' ? 'bfes' : (skillInfo.kind === 'cfes' ? 'cfes' : ''),
+        isFes: isFesSkillType(skillInfo.kind),
+        fesKind: getFesKindBySkillKind(skillInfo.kind),
         skillKind: skillInfo.kind,
         eventRef,
         eventLabel
@@ -2592,15 +3191,23 @@ const supportCardPoolByUnitAttr = computed(() => {
 });
 
 const supportLineupRows = computed(() => {
-  return SUPPORT_UNITS.map((unit) => ({
-    unit,
-    plans: ATTRS
+  return SUPPORT_UNITS.map((unit) => {
+    const plans = ATTRS
       .map((attr) => buildSupportLineupPlan(unit, attr, supportCardPoolByUnitAttr.value))
       .sort((a, b) => {
         if (b.total !== a.total) return b.total - a.total;
         return ATTRS.indexOf(a.attr) - ATTRS.indexOf(b.attr);
-      })
-  }));
+      });
+
+    if (supportEnableWlLineup.value) {
+      plans.push(buildSupportWlPlan(unit, supportCardPoolByUnitAttr.value));
+    }
+
+    return {
+      unit,
+      plans
+    };
+  });
 });
 
 const formatSupportTotal = (value) => {
@@ -2661,6 +3268,7 @@ const getCardProgressOrderId = (card) => {
 const getStatProgressOrderKey = (row, key) => {
   if (key === 'fourStarCount') return Number(row?.lastFourStarOrderId || 0);
   if (key === 'limitedCount') return Number(row?.lastLimitedOrderId || 0);
+  if (key === 'fesLimitedCount') return Number(row?.lastFesLimitedOrderId || 0);
   if (key === 'pScoreCount') return Number(row?.lastPScoreOrderId || 0);
   if (key === 'pureScoreCount') return Number(row?.lastPureScoreOrderId || 0);
   if (key === 'recoveryCount') return Number(row?.lastRecoveryOrderId || 0);
@@ -2669,6 +3277,7 @@ const getStatProgressOrderKey = (row, key) => {
   if (key === 'twoStarCount') return Number(row?.lastTwoStarOrderId || 0);
   if (key === 'rewardTotalCount') return Number(row?.lastRewardOrderId || 0);
   if (key === 'limitedBanCount') return Number(row?.lastLimitedBanOrderId || 0);
+  if (key === 'fesLimitedBanCount') return Number(row?.lastFesLimitedBanOrderId || 0);
   return Number(row?.lastCardOrderId || 0);
 };
 
@@ -2703,9 +3312,12 @@ const processedStats = computed(() => {
         rewardTwoCount: 0,
         rewardThreeCount: 0,
         limitedBanCount: 0,
+        fesLimitedCount: 0,
+        fesLimitedBanCount: 0,
         accuracyCount: 0,
         recoveryCount: 0,
         unitScoreCount: 0,
+        pendingSkillCount: 0,
         pureScoreCount: 0,
         lastCardOrderId: 0,
         lastFourStarOrderId: 0,
@@ -2718,12 +3330,17 @@ const processedStats = computed(() => {
         lastTwoStarOrderId: 0,
         lastRewardOrderId: 0,
         lastLimitedBanOrderId: 0,
+        lastFesLimitedOrderId: 0,
+        lastFesLimitedBanOrderId: 0,
         attrCounts: { Pure: 0, Cool: 0, Cute: 0, Happy: 0, Mysterious: 0 }
       };
     }
 
+    const eventIdRaw = String(card?.EventID || '').trim();
+    const eventIdNum = isNumericEventId(eventIdRaw) ? Number(eventIdRaw) : null;
     const rarity = String(card.Rarity || '').trim();
     const skill = String(card.Skill || '').toLowerCase();
+    const cardType = String(card?.Type || '').trim().toLowerCase();
     const attr = normalizeAttr(card.Attribute);
     const progressOrderId = getCardProgressOrderId(card);
     stats[name].lastCardOrderId = Math.max(Number(stats[name].lastCardOrderId || 0), progressOrderId);
@@ -2732,6 +3349,14 @@ const processedStats = computed(() => {
     if (rarity === "4") {
       stats[name].fourStarCount++;
       stats[name].lastFourStarOrderId = Math.max(Number(stats[name].lastFourStarOrderId || 0), progressOrderId);
+
+      if (eventIdNum !== null && fesLimitedEventIdSet.value.has(eventIdNum)) {
+        const isFesCard = isFesCardType(cardType);
+        if (fesLimitedIncludeFes.value || !isFesCard) {
+          stats[name].fesLimitedCount++;
+          stats[name].lastFesLimitedOrderId = Math.max(Number(stats[name].lastFesLimitedOrderId || 0), progressOrderId);
+        }
+      }
 
       if (skill === 'p_score') {
         stats[name].pScoreCount++;
@@ -2746,7 +3371,8 @@ const processedStats = computed(() => {
         stats[name].lastRecoveryOrderId = Math.max(Number(stats[name].lastRecoveryOrderId || 0), progressOrderId);
       }
       if (skill === 'unit_score') stats[name].unitScoreCount++;
-      if (!['accuracy', 'recovery', 'unit_score'].includes(skill)) {
+      if (!skill || skill === '-') stats[name].pendingSkillCount++;
+      if (!['accuracy', 'recovery', 'unit_score', '-', ''].includes(skill)) {
         stats[name].lastPureScoreOrderId = Math.max(Number(stats[name].lastPureScoreOrderId || 0), progressOrderId);
       }
 
@@ -2771,7 +3397,7 @@ const processedStats = computed(() => {
     }
 
     // 统计限定卡片 (含 Fes 和 联名限定)
-    if (LIMITED_TYPES.has(String(card.Type).toLowerCase())) {
+    if (LIMITED_TYPES.has(cardType)) {
       stats[name].limitedCount++;
       stats[name].lastLimitedOrderId = Math.max(Number(stats[name].lastLimitedOrderId || 0), progressOrderId);
     }
@@ -2780,11 +3406,13 @@ const processedStats = computed(() => {
   // 最后的汇总处理
   return Object.values(stats).map(s => {
     // 计算“纯分卡”数量：四星总数 - (判定 + 奶卡 + 团分)
-    // 这样剩下的就是 100% / 110% / 120% / 130% 等纯分卡
-    s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount;
+    // 同时剔除技能待定的 4 星卡，避免被误记为分卡。
+    s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount - s.pendingSkillCount;
     s.rewardTotalCount = s.rewardThreeCount + s.rewardTwoCount;
     s.limitedBanCount = limitedBanCountMap.value[normalizeBannerName(s.name)] || 0;
     s.lastLimitedBanOrderId = Number(limitedBanLastEventIdMap.value[normalizeBannerName(s.name)] || 0);
+    s.fesLimitedBanCount = fesLimitedBanCountMap.value[normalizeBannerName(s.name)] || 0;
+    s.lastFesLimitedBanOrderId = Number(fesLimitedBanLastEventIdMap.value[normalizeBannerName(s.name)] || 0);
     s.attrTotalCount = ATTRS.reduce((sum, a) => sum + s.attrCounts[a], 0);
     return s;
   });
@@ -2838,6 +3466,23 @@ const groupPanels = computed(() => [
       processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
       'limitedBanCount'
     )
+  },
+  {
+    id: 'fes-limited',
+    title: '百六限定次数分布',
+    cellClass: 'fes-limited',
+    showRewardBreakdown: false,
+    groups: groupByCount(processedStats.value, 'fesLimitedCount')
+  },
+  {
+    id: 'fes-limited-ban',
+    title: '百六Ban次数分布',
+    cellClass: 'fes-limited-ban',
+    showRewardBreakdown: false,
+    groups: groupByCount(
+      processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
+      'fesLimitedBanCount'
+    )
   }
 ]);
 
@@ -2880,7 +3525,7 @@ const festivalCharStats = computed(() => {
     if (!baseName) return;
 
     const type = String(card?.Type || '').trim().toLowerCase();
-    const isFes = ['cfes', 'bfes'].includes(type);
+    const isFes = isFesCardType(type);
     if (isFes && !shouldCountFestivalFes(fest)) return;
 
     const rarity = String(card?.Rarity || '').trim();
@@ -2917,8 +3562,13 @@ const festivalCharStats = computed(() => {
     .sort((a, b) => compareFestivalCharKey(a.name, b.name));
   const getFestivalBaseName = (charName) => parseFestivalCharKey(charName).baseName;
 
-  const applyFestivalMerge = (rows) => {
-    if (!festivalMergeHigherRanks.value) return rows;
+  const shouldMergeFestivalRows = (festival) => {
+    const festKey = String(festival || '').trim();
+    return !!festivalMergeToggles[festKey];
+  };
+
+  const applyFestivalMerge = (festival, rows) => {
+    if (!shouldMergeFestivalRows(festival)) return rows;
     const fourRow = rows.find((row) => row.key === 'four') || { chars: [] };
     const threeRow = rows.find((row) => row.key === 'three') || { chars: [] };
     const twoRow = rows.find((row) => row.key === 'two') || { chars: [] };
@@ -2952,7 +3602,7 @@ const festivalCharStats = computed(() => {
       .map((name) => ({ name, count: 0 }));
 
     rows.push({ key: 'none', label: '未出', chars: noneChars });
-    return { festival: fest, anchorId: FESTIVAL_ANCHOR_IDS[fest], rows: applyFestivalMerge(rows) };
+    return { festival: fest, anchorId: FESTIVAL_ANCHOR_IDS[fest], rows: applyFestivalMerge(fest, rows) };
   });
 });
 
@@ -2983,6 +3633,8 @@ const statsPreviewPayload = computed(() => {
   const fourPanel = groupPanels.value.find((p) => p.id === 'four');
   const limitedPanel = groupPanels.value.find((p) => p.id === 'limited');
   const limitedBanPanel = groupPanels.value.find((p) => p.id === 'limited-ban');
+  const fesLimitedPanel = groupPanels.value.find((p) => p.id === 'fes-limited');
+  const fesLimitedBanPanel = groupPanels.value.find((p) => p.id === 'fes-limited-ban');
   const festivalGroups = Object.fromEntries(
     (festivalCharStats.value || []).map((item) => [item.festival, item.rows || []])
   );
@@ -2992,6 +3644,8 @@ const statsPreviewPayload = computed(() => {
       fourStarCount: fourPanel?.groups || [],
       limitedCount: limitedPanel?.groups || [],
       limitedBanCount: limitedBanPanel?.groups || [],
+      fesLimitedCount: fesLimitedPanel?.groups || [],
+      fesLimitedBanCount: fesLimitedBanPanel?.groups || [],
       festival: festivalGroups,
       dailyLineup: previewDailyLineupMap.value
     }
@@ -3003,7 +3657,7 @@ watch(statsPreviewPayload, (payload) => {
 }, { immediate: true });
 
 const attrMatrixRows = computed(() => {
-  const rows = [...processedStats.value]
+  const baseRows = [...processedStats.value]
     .sort((a, b) => (CHAR_ORDER[a.name] || 999) - (CHAR_ORDER[b.name] || 999))
     .map((s) => ({
       name: s.name,
@@ -3024,10 +3678,10 @@ const attrMatrixRows = computed(() => {
 
   const key = matrixSortKey.value;
   const order = matrixSortOrder.value;
-  if (!key || !order) return rows;
+  if (!key || !order) return baseRows;
 
   const orderFactor = order === 'desc' ? -1 : 1;
-  return [...rows].sort((a, b) => {
+  return [...baseRows].sort((a, b) => {
     const av = Number(a?.[key] || 0);
     const bv = Number(b?.[key] || 0);
     if (av !== bv) return (av - bv) * orderFactor;
@@ -3035,10 +3689,130 @@ const attrMatrixRows = computed(() => {
   });
 });
 
-const unitAttrExtremes = computed(() => {
+const createMatrixStatSeed = (name) => ({
+  name,
+  fourStarCount: 0,
+  pScoreCount: 0,
+  twoStarCount: 0,
+  threeStarCount: 0,
+  rewardTwoCount: 0,
+  rewardThreeCount: 0,
+  accuracyCount: 0,
+  recoveryCount: 0,
+  unitScoreCount: 0,
+  pendingSkillCount: 0,
+  pureScoreCount: 0,
+  rewardTotalCount: 0,
+  attrCounts: { Pure: 0, Cool: 0, Cute: 0, Happy: 0, Mysterious: 0 }
+});
+
+const parseVsMatrixRowName = (name) => {
+  const [baseName, unitRaw] = String(name || '').trim().split(/\s+/);
+  return {
+    baseName,
+    unit: String(unitRaw || '').toLowerCase()
+  };
+};
+
+const compareVsMatrixName = (aName, bName) => {
+  const a = parseVsMatrixRowName(aName);
+  const b = parseVsMatrixRowName(bName);
+  const au = VS_UNIT_SORT_ORDER.indexOf(a.unit);
+  const bu = VS_UNIT_SORT_ORDER.indexOf(b.unit);
+  const aUnitOrder = au >= 0 ? au : 999;
+  const bUnitOrder = bu >= 0 ? bu : 999;
+  if (aUnitOrder !== bUnitOrder) return aUnitOrder - bUnitOrder;
+  const ac = CHAR_ORDER[a.baseName] || 999;
+  const bc = CHAR_ORDER[b.baseName] || 999;
+  if (ac !== bc) return ac - bc;
+  return String(aName).localeCompare(String(bName), 'zh-Hans-CN');
+};
+
+const virtualSingerMatrixRows = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const matrixStats = {};
+
+  VS_UNIT_SORT_ORDER.forEach((unit) => {
+    VS_NAMES.forEach((vsName) => {
+      const key = `${vsName} ${unit}`;
+      matrixStats[key] = createMatrixStatSeed(key);
+    });
+  });
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    const baseName = String(card?.Name || '').trim();
+    if (!VS_NAMES.includes(baseName)) return;
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (!VS_UNIT_SORT_ORDER.includes(unit)) return;
+
+    const key = `${baseName} ${unit}`;
+    const target = matrixStats[key];
+    if (!target) return;
+
+    const rarity = String(card?.Rarity || '').trim();
+    const skill = String(card?.Skill || '').toLowerCase();
+    const attr = normalizeAttr(card?.Attribute);
+
+    if (rarity === '4') {
+      target.fourStarCount += 1;
+      if (skill === 'p_score') target.pScoreCount += 1;
+      if (skill === 'accuracy') target.accuracyCount += 1;
+      if (skill === 'recovery') target.recoveryCount += 1;
+      if (skill === 'unit_score') target.unitScoreCount += 1;
+      if (!skill || skill === '-') target.pendingSkillCount += 1;
+      if (attr) target.attrCounts[attr] += 1;
+    }
+
+    if (rarity === '3') target.threeStarCount += 1;
+    if (rarity === '2') target.twoStarCount += 1;
+
+    if (isEventRewardCard(card)) {
+      if (rarity === '3') target.rewardThreeCount += 1;
+      if (rarity === '2') target.rewardTwoCount += 1;
+    }
+  });
+
+  const baseRows = Object.values(matrixStats)
+    .map((s) => {
+      s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount - s.pendingSkillCount;
+      s.rewardTotalCount = s.rewardThreeCount + s.rewardTwoCount;
+      return {
+        name: s.name,
+        Pure: s.attrCounts.Pure,
+        Cool: s.attrCounts.Cool,
+        Cute: s.attrCounts.Cute,
+        Happy: s.attrCounts.Happy,
+        Mysterious: s.attrCounts.Mysterious,
+        pureScoreCount: s.pureScoreCount,
+        pScoreCount: s.pScoreCount,
+        accuracyCount: s.accuracyCount,
+        recoveryCount: s.recoveryCount,
+        fourStarCount: s.fourStarCount,
+        threeStarCount: s.threeStarCount,
+        twoStarCount: s.twoStarCount,
+        rewardTotalCount: s.rewardTotalCount
+      };
+    })
+    .sort((a, b) => compareVsMatrixName(a.name, b.name));
+
+  const key = matrixSortKey.value;
+  const order = matrixSortOrder.value;
+  if (!key || !order) return baseRows;
+
+  const orderFactor = order === 'desc' ? -1 : 1;
+  return [...baseRows].sort((a, b) => {
+    const av = Number(a?.[key] || 0);
+    const bv = Number(b?.[key] || 0);
+    if (av !== bv) return (av - bv) * orderFactor;
+    return compareVsMatrixName(a.name, b.name);
+  });
+});
+
+const buildUnitAttrExtremes = (rows) => {
   const result = {};
   const unitBuckets = {};
-  attrMatrixRows.value.forEach((row) => {
+  rows.forEach((row) => {
     const unit = getUnitByChar(row.name);
     if (!unitBuckets[unit]) unitBuckets[unit] = [];
     unitBuckets[unit].push(row);
@@ -3052,7 +3826,9 @@ const unitAttrExtremes = computed(() => {
   });
 
   return result;
-});
+};
+
+const unitAttrExtremes = computed(() => buildUnitAttrExtremes(attrMatrixRows.value));
 
 const getAttrExtremeClass = (attr, value, name) => {
   void attr;
@@ -3062,6 +3838,22 @@ const getAttrExtremeClass = (attr, value, name) => {
   if (range.max !== range.min && value === range.max) return 'matrix-max';
   if (range.max !== range.min && value === range.min) return 'matrix-min';
   return '';
+};
+
+const vsMatrixMaxFourStarCount = computed(() => {
+  const values = (virtualSingerMatrixRows.value || []).map((row) => Number(row?.fourStarCount || 0));
+  return values.length ? Math.max(...values) : 0;
+});
+
+const getVsMatrixValueClass = (value) => (Number(value || 0) === 0 ? 'matrix-vs-zero' : '');
+
+const getVsMatrixFourStarClass = (value) => {
+  const classes = [];
+  const numericValue = Number(value || 0);
+  if (numericValue === 0) classes.push('matrix-vs-zero');
+  const maxFour = Number(vsMatrixMaxFourStarCount.value || 0);
+  if (maxFour > 0 && numericValue === maxFour) classes.push('matrix-vs-four-max');
+  return classes;
 };
 
 const virtualSingerSongStats = computed(() => {
@@ -3157,7 +3949,7 @@ const charEventBuckets = computed(() => {
       };
     }
 
-    if (['cfes', 'bfes'].includes(String(card?.Type || '').toLowerCase())) {
+    if (isFesCardType(card?.Type)) {
       buckets[name].eventMeta[sourceKey].isFesCard = true;
     }
 
@@ -3447,6 +4239,88 @@ const getVsMiniDataCellStyle = (days) => {
   };
 };
 
+const getFesMatrixAttrHeadStyle = (attr) => ({
+  backgroundColor: hexToRgba(ATTR_COLORS[attr] || '#94a3b8', 0.18)
+});
+
+const getFesMatrixUnitHeadStyle = (unit) => ({
+  backgroundColor: hexToRgba(UNIT_COLORS[unit] || '#94a3b8', 0.2)
+});
+
+const getFesMatrixCellStyle = (unit, attr) => ({
+  backgroundImage: `linear-gradient(${hexToRgba(UNIT_COLORS[unit] || '#94a3b8', 0.12)}, ${hexToRgba(UNIT_COLORS[unit] || '#94a3b8', 0.12)}), linear-gradient(${hexToRgba(ATTR_COLORS[attr] || '#94a3b8', 0.12)}, ${hexToRgba(ATTR_COLORS[attr] || '#94a3b8', 0.12)})`,
+  backgroundColor: '#f8fafc'
+});
+
+const getFesMatrixTotalCellStyle = (attr) => ({
+  backgroundColor: hexToRgba(ATTR_COLORS[attr] || '#94a3b8', 0.2),
+  fontWeight: 800
+});
+
+const createFesIconRowsSeed = () => Object.fromEntries(
+  RELATED_FES_UNITS.map((unit) => [
+    unit,
+    Object.fromEntries(ATTRS.map((attr) => [attr, []]))
+  ])
+);
+
+const createFesIconSeenSeed = () => Object.fromEntries(
+  RELATED_FES_UNITS.map((unit) => [
+    unit,
+    Object.fromEntries(ATTRS.map((attr) => [attr, new Set()]))
+  ])
+);
+
+const buildFesRecordMatrix = (fesType) => {
+  const maxEid = safeMaxEventId.value;
+  const targetType = String(fesType || '').trim().toLowerCase();
+  const iconRows = createFesIconRowsSeed();
+  const seenRows = createFesIconSeenSeed();
+  const totals = Object.fromEntries(ATTRS.map((attr) => [attr, 0]));
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    if (String(card?.Type || '').trim().toLowerCase() !== targetType) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+
+    const baseName = getCardBaseName(card?.Name);
+    if (!baseName || !CHAR_ORDER[baseName]) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    if (!ATTRS.includes(attr)) return;
+
+    const unit = getLineupCardUnit(card, baseName);
+    if (!RELATED_FES_UNITS.includes(unit)) return;
+
+    totals[attr] += 1;
+
+    const iconKey = getSupportMemberIconKey({ name: baseName, unit });
+    const uniqueKey = `${baseName}|${iconKey}`;
+    const seen = seenRows[unit]?.[attr];
+    if (!seen || seen.has(uniqueKey)) return;
+
+    seen.add(uniqueKey);
+    iconRows[unit][attr].push({
+      name: baseName,
+      iconKey
+    });
+  });
+
+  RELATED_FES_UNITS.forEach((unit) => {
+    ATTRS.forEach((attr) => {
+      iconRows[unit][attr].sort((a, b) => compareCharOrder(a.name, b.name));
+    });
+  });
+
+  return {
+    iconRows,
+    totals
+  };
+};
+
+const cfesRecordMatrix = computed(() => buildFesRecordMatrix('cfes'));
+const bfesRecordMatrix = computed(() => buildFesRecordMatrix('bfes'));
+
 const lastLimitedRecords = computed(() => {
   return Object.keys(charEventBuckets.value)
     .map((name) => {
@@ -3652,6 +4526,15 @@ const banShortestIntervals = computed(() => {
     return compareCharOrder(a.name, b.name);
   });
 });
+
+defineExpose({
+  getTopBarState,
+  setTopBarDisplayEventIdDraft,
+  applyTopBarDisplayEventId,
+  adjustTopBarDisplayEventId,
+  resetTopBarDisplayEventId,
+  toggleTopBarNavCollapsed
+});
 </script>
 
 <style scoped>
@@ -3677,7 +4560,7 @@ const banShortestIntervals = computed(() => {
   position: sticky;
   top: 8px;
   align-self: start;
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 72px);
   min-height: 0;
   box-sizing: border-box;
   overflow: hidden;
@@ -3706,19 +4589,24 @@ const banShortestIntervals = computed(() => {
   border-radius: 10px;
   background: #ffffff;
   padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
 }
 
 .nav-name-format-title {
   font-size: 0.76rem;
   font-weight: 700;
   color: #374151;
-  margin-bottom: 6px;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .nav-name-format-options {
-  display: flex;
+  display: inline-flex;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .nav-name-format-option {
@@ -3763,6 +4651,39 @@ const banShortestIntervals = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.mobile-floating-menu-btn {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 54px);
+  left: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  border: 2px solid #0f766e;
+  background: #33ccbb;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+  color: #f8fafc;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4300;
+  padding: 0;
+  cursor: pointer;
+}
+
+.mobile-floating-menu-icon {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+  display: block;
+  filter: brightness(0) saturate(100%) invert(96%) sepia(6%) saturate(243%) hue-rotate(182deg) brightness(103%) contrast(96%);
+}
+
+.mobile-floating-menu-close {
+  font-size: 1.08rem;
+  line-height: 1;
+  font-weight: 700;
 }
 
 .nav-title {
@@ -3996,6 +4917,8 @@ const banShortestIntervals = computed(() => {
 .count-cell.pure-score { color: #f5222d; } /* 分卡红色 */
 .count-cell.reward { color: #f97316; }
 .count-cell.limited-ban { color: #0f766e; }
+.count-cell.fes-limited { color: #dc2626; }
+.count-cell.fes-limited-ban { color: #9333ea; }
 .count-cell.three-star { color: #7c3aed; }
 .count-cell.two-star { color: #059669; }
 .count-cell.accuracy { color: #2563eb; }
@@ -4067,22 +4990,66 @@ const banShortestIntervals = computed(() => {
 }
 
 .id-input {
-  width: 64px;
-  padding: 4px 6px;
+  width: 58px;
+  padding: 3px 5px;
   border: 2px solid #33ccbb;
   border-radius: 4px;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   text-align: center;
 }
 
-.reset-mini-btn {
-  padding: 4px 8px;
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.id-step-btn {
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.78rem;
+  line-height: 1;
   cursor: pointer;
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition: filter 0.16s ease, transform 0.16s ease, background-color 0.16s ease;
+}
+
+.mini-cutoff-line {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
   white-space: nowrap;
+}
+
+.reset-mini-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  box-sizing: border-box;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition: filter 0.16s ease, transform 0.16s ease, background-color 0.16s ease;
+}
+
+.id-step-btn:active,
+.reset-mini-btn:active {
+  filter: brightness(0.82);
+  transform: translateY(1px) scale(0.96);
+}
+
+.reset-mini-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: block;
 }
 
 .config-tips {
@@ -4152,6 +5119,20 @@ const banShortestIntervals = computed(() => {
 }
 
 .support-vs-toggle input {
+  margin: 0;
+}
+
+.support-wl-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  user-select: none;
+}
+
+.support-wl-toggle input {
   margin: 0;
 }
 
@@ -4305,9 +5286,23 @@ const banShortestIntervals = computed(() => {
 }
 
 .lineup-member-cell {
+  position: relative;
   flex-direction: column;
   gap: 2px;
   padding: 3px 2px;
+}
+
+.support-member-attr-icon {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.24);
+  pointer-events: none;
 }
 
 .lineup-member-cell.is-empty {
@@ -4409,6 +5404,11 @@ const banShortestIntervals = computed(() => {
   color: #475569;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.festival-card-merge-toggle {
+  margin-left: 0;
+  margin-top: 2px;
 }
 
 .festival-hide-name-toggle {
@@ -4672,9 +5672,33 @@ const banShortestIntervals = computed(() => {
     0 1px 3px rgba(15, 23, 42, 0.2);
 }
 
-.matrix-num {
+.matrix-avatar-wrap {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+}
+
+.matrix-avatar-unit-logo {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.22);
+}
+
+.matrix-table td.matrix-num {
   color: #374151;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.12rem;
+  line-height: 1.1;
+  font-family: 'DIN Alternate', 'Avenir Next', 'Trebuchet MS', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
 
 .matrix-group-start {
@@ -4685,14 +5709,30 @@ const banShortestIntervals = computed(() => {
   border-right: 2px solid #94a3b8 !important;
 }
 
-.matrix-max {
+.matrix-table td.matrix-num.matrix-max {
   color: #dc2626;
   font-weight: 800;
 }
 
-.matrix-min {
+.matrix-table td.matrix-num.matrix-min {
   color: #2563eb;
   font-weight: 800;
+}
+
+.matrix-zero {
+  color: #475569;
+  font-weight: 800;
+  background-color: rgba(148, 163, 184, 0.16);
+}
+
+.matrix-table td.matrix-num.matrix-vs-zero {
+  color: #2563eb;
+  font-weight: 800;
+}
+
+.matrix-table td.matrix-num.matrix-vs-four-max {
+  color: #dc2626;
+  font-weight: 900;
 }
 
 .song-grid {
@@ -5014,6 +6054,71 @@ const banShortestIntervals = computed(() => {
   color: #94a3b8;
 }
 
+.fes-record-table {
+  table-layout: fixed;
+}
+
+.fes-record-table th,
+.fes-record-table td {
+  padding: 6px 6px;
+}
+
+.fes-record-table tbody tr:not(.fes-total-row) td {
+  height: 102px;
+}
+
+.fes-record-table td {
+  vertical-align: middle;
+}
+
+.fes-row-head {
+  min-width: 64px;
+  width: 64px;
+  font-size: 0.74rem;
+}
+
+.fes-unit-head,
+.fes-total-head {
+  font-weight: 800;
+}
+
+.fes-total-head {
+  background: #e2e8f0;
+}
+
+.fes-total-num {
+  font-size: 1.04rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.fes-attr-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.fes-cell-icons {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 68px;
+  min-height: 90px;
+  margin: 0 auto;
+}
+
+.fes-cell-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.8px solid #d1d5db;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+}
+
 .record-table th {
   background: #f8fafc;
   font-weight: 700;
@@ -5052,6 +6157,15 @@ const banShortestIntervals = computed(() => {
 }
 
 @media (min-width: 901px) {
+  .matrix-table th,
+  .matrix-table td {
+    font-size: 0.92rem;
+  }
+
+  .matrix-table td.matrix-num {
+    font-size: 1.24rem;
+  }
+
   .vs-unit-score-table th,
   .vs-unit-score-table td {
     padding: 12px 10px;
@@ -5092,9 +6206,66 @@ const banShortestIntervals = computed(() => {
 }
 
 @media (max-width: 1200px) {
-  .stats-layout { grid-template-columns: 180px 1fr; }
+  .stats-layout { grid-template-columns: 196px 1fr; }
   .stats-layout.nav-collapsed { grid-template-columns: 48px 1fr; }
+  .stats-nav { max-height: calc(100vh - 56px); }
   .pjsk-stats { padding: 14px; }
+}
+
+@media (min-width: 901px) and (max-width: 1200px) {
+  .nav-cutoff {
+    padding: 7px;
+  }
+
+  .nav-cutoff-controls {
+    gap: 4px;
+  }
+
+  .id-input {
+    width: 52px;
+    padding: 2px 4px;
+    font-size: 0.76rem;
+  }
+
+  .id-step-btn {
+    width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+
+  .reset-mini-btn {
+    width: 22px;
+    height: 22px;
+  }
+
+  .reset-mini-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .config-tips {
+    font-size: 0.68rem;
+  }
+
+  .nav-name-format {
+    gap: 6px;
+    padding: 7px;
+    justify-content: space-between;
+  }
+
+  .nav-name-format-title {
+    font-size: 0.72rem;
+  }
+
+  .nav-name-format-options {
+    gap: 6px;
+  }
+
+  .nav-name-format-option {
+    gap: 3px;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 900px) {
@@ -5109,10 +6280,39 @@ const banShortestIntervals = computed(() => {
     gap: 10px;
   }
 
+  .stats-layout.mobile-nav-open .stats-main {
+    padding-top: 0;
+  }
+
+  .stats-layout.mobile-nav-open .mobile-floating-menu-btn {
+    background: #2bbbad;
+    border-color: #0f766e;
+    color: #ffffff;
+  }
+
   .stats-nav {
     position: static;
     max-height: none;
     top: auto;
+  }
+
+  .stats-nav.mobile-floating {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 52px);
+    left: 8px;
+    right: 8px;
+    z-index: 4200;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.22);
+  }
+
+  .stats-nav.mobile-floating.is-collapsed {
+    display: none;
+  }
+
+  .stats-nav.mobile-floating.is-open {
+    right: 8px;
+    left: 8px;
+    max-height: calc(100dvh - 16px);
   }
 
   .nav-toggle {
@@ -5145,13 +6345,25 @@ const banShortestIntervals = computed(() => {
   }
 
   .id-input {
-    width: 56px;
-    font-size: 0.82rem;
+    width: 54px;
+    font-size: 0.78rem;
+  }
+
+  .id-step-btn,
+  .reset-mini-btn {
+    width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+
+  .reset-mini-icon {
+    width: 12px;
+    height: 12px;
   }
 
   .reset-mini-btn {
     font-size: 0.72rem;
-    padding: 3px 6px;
+    padding: 0;
   }
 
   .config-tips {
@@ -5297,12 +6509,57 @@ const banShortestIntervals = computed(() => {
   .matrix-table th,
   .matrix-table td {
     padding: 6px;
-    font-size: 0.74rem;
+    font-size: 0.8rem;
   }
 
   .mini-avatar {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
+  }
+
+  .matrix-avatar-wrap {
+    width: 30px;
+    height: 30px;
+  }
+
+  .matrix-avatar-unit-logo {
+    width: 15px;
+    height: 15px;
+    right: -4px;
+    bottom: -4px;
+  }
+
+  .matrix-table td.matrix-num {
+    font-size: 0.98rem;
+  }
+
+  .fes-record-table tbody tr:not(.fes-total-row) td {
+    height: 84px;
+  }
+
+  .fes-attr-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .fes-cell-icons {
+    min-height: 72px;
+    gap: 1px;
+  }
+
+  .fes-cell-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .fes-row-head {
+    width: 54px;
+    min-width: 54px;
+    font-size: 0.66rem;
+  }
+
+  .fes-total-num {
+    font-size: 0.88rem;
   }
 
   .song-grid {
@@ -5328,6 +6585,13 @@ const banShortestIntervals = computed(() => {
   .support-member-avatar {
     width: 27px;
     height: 27px;
+  }
+
+  .support-member-attr-icon {
+    width: 11px;
+    height: 11px;
+    top: 1px;
+    right: 1px;
   }
 
   .lineup-char-head {
@@ -5538,6 +6802,12 @@ const banShortestIntervals = computed(() => {
 @media (max-width: 520px) {
   .pjsk-stats {
     padding: 6px;
+  }
+
+  .mobile-floating-menu-btn {
+    top: calc(env(safe-area-inset-top, 0px) + 48px);
+    width: 32px;
+    height: 32px;
   }
 
   .stats-main h1 {

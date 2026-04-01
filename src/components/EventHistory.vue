@@ -385,9 +385,10 @@
           <div class="filter-row">
             <span class="row-label">模式</span>
             <div class="btn-group">
-              <button :class="{active: filterMode === 'single'}" @click="filterMode = 'single'; resetFilters()">卡片筛选</button>
-              <button :class="{active: filterMode === 'event'}" @click="filterMode = 'event'; resetFilters()">活动筛选</button>
+              <button :class="{active: filterMode === 'single'}" @click="switchFilterMode('single')">卡片筛选</button>
+              <button :class="{active: filterMode === 'event'}" @click="switchFilterMode('event')">活动筛选</button>
               <button class="clear-btn panel-reset-btn" :class="{ 'is-ready': hasActiveFilters }" :disabled="!hasActiveFilters" @click="resetFilters">{{ isCompactFilterBar ? '重置' : '重置筛选' }}</button>
+              <button class="clear-btn panel-reset-btn panel-collapse-btn" @click="showFilter = false">收起</button>
             </div>
             <span v-if="hasActiveFilters" class="filter-mode-hit-count">{{ activeFilteredEventCount }}个活动</span>
           </div>
@@ -1432,6 +1433,7 @@ const sortDesc = ref(false);
 const listRef = ref(null);
 const currentActiveId = ref(null);
 const PREVIEW_LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t', 'wl3']);  //补充了WL3
+const FES_CARD_TYPES = new Set(['cfes', 'bfes']);
 const PREVIEW_FESTIVAL_TYPES = ['新年', '婚活', '情人节', '白情', '半周年', '周年'];
 const PREVIEW_BOX_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 const PREVIEW_ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
@@ -1462,7 +1464,7 @@ const PREVIEW_DAILY_SKILL_BASE = {
 const PREVIEW_PANEL_DEFS = [
   { id: 'four', title: '四星', icon: '⭐', statKey: 'fourStarCount', externalKey: 'fourStarCount' },
   { id: 'limited', title: '限定', icon: '🎀', statKey: 'limitedCount', externalKey: 'limitedCount' },
-  { id: 'limited-ban', title: '限Ban', icon: '🚫', statKey: 'limitedBanCount' },
+  { id: 'limited-ban', title: '限Ban', icon: '🚫', statKey: 'limitedBanCount', externalKey: 'limitedBanCount' },
   { id: 'vs-last-four', title: 'V上次四星', icon: 'V', statKey: 'vsLastFour' },
   { id: 'vs-unit-score', title: '团分', icon: 'U', statKey: 'vsUnitScore' },
   { id: 'p-score', title: 'P分', icon: 'P', statKey: 'pScoreCount' },
@@ -1676,6 +1678,8 @@ const previewLimitedBanFilterButtonTitle = computed(() => {
   if (current === '混活') return '当前仅统计混活，点击切换到全体';
   return '当前统计全体，点击切换到箱活';
 });
+
+const isFesCardType = (typeValue) => FES_CARD_TYPES.has(String(typeValue || '').trim().toLowerCase());
 
 const parseFestivalPreviewCharKey = (charKey) => {
   const raw = String(charKey || '').trim();
@@ -1946,7 +1950,7 @@ const previewFestivalRowsLocal = computed(() => {
     if (!baseName) return;
     const rarity = String(card?.Rarity || '').trim();
     const type = String(card?.Type || '').trim().toLowerCase();
-    const isFes = ['cfes', 'bfes'].includes(type);
+    const isFes = isFesCardType(type);
     if (isFes && !shouldCountPreviewFestivalFes(festival)) return;
 
     const bucket = buckets[festival];
@@ -2182,6 +2186,131 @@ const isPreviewEventRewardCard = (card) => {
   return String(card?.Type || '').trim().toLowerCase() === 'collab';
 };
 
+const getPreviewCardProgressOrderId = (card) => {
+  const cardId = Number(String(card?.CardID || '').trim());
+  if (Number.isFinite(cardId) && cardId > 0) return cardId;
+  const eventId = Number(String(card?.EventID || '').trim());
+  if (Number.isFinite(eventId) && eventId > 0) return eventId * 10000;
+  return 0;
+};
+
+const getPreviewStepBaseOrder = (name) => {
+  const base = String(name || '').trim().split(/\s+/)[0] || '';
+  return PREVIEW_CHAR_ORDER[base] || 999;
+};
+
+const previewStepProgressOrderMap = computed(() => {
+  const maxId = Number(previewMaxEventId.value);
+  const rowMap = {};
+
+  const ensure = (rawName) => {
+    const name = String(rawName || '').trim();
+    if (!name) return null;
+    if (!rowMap[name]) {
+      rowMap[name] = {
+        lastCardOrderId: 0,
+        lastFourStarOrderId: 0,
+        lastLimitedOrderId: 0,
+        lastPScoreOrderId: 0,
+        lastPureScoreOrderId: 0,
+        lastRecoveryOrderId: 0,
+        lastAccuracyOrderId: 0,
+        lastThreeStarOrderId: 0,
+        lastTwoStarOrderId: 0,
+        lastRewardOrderId: 0,
+        lastLimitedBanOrderId: 0
+      };
+    }
+    return rowMap[name];
+  };
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinPreviewLimit(card, maxId)) return;
+    const name = String(card?.Name || '').trim();
+    if (!name || name === '-' || name === 'CardID') return;
+
+    const row = ensure(name);
+    if (!row) return;
+
+    const rarity = String(card?.Rarity || '').trim();
+    const skill = String(card?.Skill || '').trim().toLowerCase();
+    const type = String(card?.Type || '').trim().toLowerCase();
+    const progressOrderId = getPreviewCardProgressOrderId(card);
+
+    row.lastCardOrderId = Math.max(Number(row.lastCardOrderId || 0), progressOrderId);
+
+    if (rarity === '4') {
+      row.lastFourStarOrderId = Math.max(Number(row.lastFourStarOrderId || 0), progressOrderId);
+      if (skill === 'p_score') row.lastPScoreOrderId = Math.max(Number(row.lastPScoreOrderId || 0), progressOrderId);
+      if (skill === 'accuracy') row.lastAccuracyOrderId = Math.max(Number(row.lastAccuracyOrderId || 0), progressOrderId);
+      if (skill === 'recovery') row.lastRecoveryOrderId = Math.max(Number(row.lastRecoveryOrderId || 0), progressOrderId);
+      if (!['accuracy', 'recovery', 'unit_score'].includes(skill)) {
+        row.lastPureScoreOrderId = Math.max(Number(row.lastPureScoreOrderId || 0), progressOrderId);
+      }
+    }
+
+    if (rarity === '3') {
+      row.lastThreeStarOrderId = Math.max(Number(row.lastThreeStarOrderId || 0), progressOrderId);
+    }
+    if (rarity === '2') {
+      row.lastTwoStarOrderId = Math.max(Number(row.lastTwoStarOrderId || 0), progressOrderId);
+    }
+
+    if (isPreviewEventRewardCard(card)) {
+      row.lastRewardOrderId = Math.max(Number(row.lastRewardOrderId || 0), progressOrderId);
+    }
+
+    if (PREVIEW_LIMITED_TYPES.has(type)) {
+      row.lastLimitedOrderId = Math.max(Number(row.lastLimitedOrderId || 0), progressOrderId);
+    }
+  });
+
+  const typeFilter = previewLimitedBanEventTypeFilter.value;
+  (props.allEvents || []).forEach((ev) => {
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (!Number.isFinite(eid) || eid <= 0) return;
+    if (Number.isFinite(maxId) && maxId > 0 && eid > maxId) return;
+    if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
+
+    const eventType = String(ev?.event_type || '').trim();
+    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+
+    const bannerName = normalizeCharName(ev?.banner);
+    if (!bannerName || !PREVIEW_CHAR_ORDER[bannerName] || isVirtualSinger(bannerName)) return;
+    const row = ensure(bannerName);
+    if (!row) return;
+    row.lastLimitedBanOrderId = Math.max(Number(row.lastLimitedBanOrderId || 0), eid);
+  });
+
+  return rowMap;
+});
+
+const getPreviewStepProgressOrderKey = (name, key) => {
+  const row = previewStepProgressOrderMap.value[String(name || '').trim()] || {};
+  if (key === 'fourStarCount') return Number(row.lastFourStarOrderId || 0);
+  if (key === 'limitedCount') return Number(row.lastLimitedOrderId || 0);
+  if (key === 'pScoreCount') return Number(row.lastPScoreOrderId || 0);
+  if (key === 'pureScoreCount') return Number(row.lastPureScoreOrderId || 0);
+  if (key === 'recoveryCount') return Number(row.lastRecoveryOrderId || 0);
+  if (key === 'accuracyCount') return Number(row.lastAccuracyOrderId || 0);
+  if (key === 'threeStarCount') return Number(row.lastThreeStarOrderId || 0);
+  if (key === 'twoStarCount') return Number(row.lastTwoStarOrderId || 0);
+  if (key === 'rewardTotalCount') return Number(row.lastRewardOrderId || 0);
+  if (key === 'limitedBanCount') return Number(row.lastLimitedBanOrderId || 0);
+  return Number(row.lastCardOrderId || 0);
+};
+
+const comparePreviewStepCharByKey = (aName, bName, key) => {
+  const ao = getPreviewStepProgressOrderKey(aName, key);
+  const bo = getPreviewStepProgressOrderKey(bName, key);
+  if (ao !== bo) return ao - bo;
+  const ac = getPreviewStepBaseOrder(aName);
+  const bc = getPreviewStepBaseOrder(bName);
+  if (ac !== bc) return ac - bc;
+  return String(aName || '').localeCompare(String(bName || ''), 'zh-Hans-CN');
+};
+
 const previewCharStats = computed(() => {
   const stats = {};
   const maxId = previewMaxEventId.value;
@@ -2203,6 +2332,7 @@ const previewCharStats = computed(() => {
         accuracyCount: 0,
         recoveryCount: 0,
         unitScoreCount: 0,
+        pendingSkillCount: 0,
         pureScoreCount: 0,
         rewardTotalCount: 0,
         attr4Counts: { Pure: 0, Cool: 0, Cute: 0, Happy: 0, Mysterious: 0 }
@@ -2218,6 +2348,7 @@ const previewCharStats = computed(() => {
       if (skill === 'accuracy') stats[name].accuracyCount += 1;
       if (skill === 'recovery') stats[name].recoveryCount += 1;
       if (skill === 'unit_score') stats[name].unitScoreCount += 1;
+      if (!skill || skill === '-') stats[name].pendingSkillCount += 1;
       const attr = normalizeAttr(card?.Attribute);
       if (stats[name].attr4Counts[attr] !== undefined) {
         stats[name].attr4Counts[attr] += 1;
@@ -2233,7 +2364,7 @@ const previewCharStats = computed(() => {
   });
 
   return Object.values(stats).map((s) => {
-    s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount;
+    s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount - s.pendingSkillCount;
     s.rewardTotalCount = s.rewardThreeCount + s.rewardTwoCount;
     return s;
   });
@@ -2296,12 +2427,7 @@ const previewLimitedBanSteps = computed(() => {
   return Array.from(grouped.entries())
     .map(([count, chars]) => ({
       count,
-      chars: chars.sort((a, b) => {
-        const ao = PREVIEW_CHAR_ORDER[a.name] || 999;
-        const bo = PREVIEW_CHAR_ORDER[b.name] || 999;
-        if (ao !== bo) return ao - bo;
-        return String(a.name).localeCompare(String(b.name), 'zh-Hans-CN');
-      })
+      chars: chars.sort((a, b) => comparePreviewStepCharByKey(a.name, b.name, 'limitedBanCount'))
     }))
     .sort((a, b) => b.count - a.count);
 });
@@ -2556,18 +2682,13 @@ const buildPreviewSteps = (key) => {
   return Array.from(grouped.entries())
     .map(([count, chars]) => ({
       count,
-      chars: [...chars].sort((a, b) => {
-        const ao = PREVIEW_CHAR_ORDER[a.name] || 999;
-        const bo = PREVIEW_CHAR_ORDER[b.name] || 999;
-        if (ao !== bo) return ao - bo;
-        return String(a.name).localeCompare(String(b.name), 'zh-Hans-CN');
-      })
+      chars: [...chars].sort((a, b) => comparePreviewStepCharByKey(a.name, b.name, key))
     }))
     .sort((a, b) => b.count - a.count);
 };
 
 const getPreviewStepsByKey = (key) => {
-  if (key === 'limitedBanCount') {
+  if (key === 'limitedBanCount' && previewLimitedBanEventTypeFilter.value !== 'all') {
     return previewLimitedBanSteps.value;
   }
   const panelDef = PREVIEW_PANEL_DEFS.find((d) => d.statKey === key);
@@ -2581,6 +2702,9 @@ const getPreviewStepsByKey = (key) => {
         chars: Array.isArray(g?.chars) ? g.chars.map((c) => ({ name: c.name })) : []
       }));
     }
+  }
+  if (key === 'limitedBanCount') {
+    return previewLimitedBanSteps.value;
   }
   return buildPreviewSteps(key);
 };
@@ -2657,6 +2781,7 @@ const EVENT_FESTIVAL_EXCLUDE = new Set(['开服', '二月', '三月']);
 const EVENT_GACHA_FILTER_OPTIONS = [
   { value: 'perm', label: '常驻' },
   { value: 'limited', label: '普通限定' },
+  { value: 'limited160', label: '百六' },
   { value: 'ue', label: 'UE限定' },
   { value: 'cfes', label: 'CFES' },
   { value: 'bfes', label: 'BFES' },
@@ -3196,22 +3321,21 @@ const matchEventTypeFilter = (event, typeValue) => {
 const matchEventGachaFilter = (event, gachaValue) => {
   const gachaType = String(event?.gacha_type || '').trim();
 
-  const getEventCardTypeSet = () => {
-    const typeSet = new Set();
-    const eventCards = getEventCardsForFilter(event);
-    eventCards.forEach((card) => {
-      const t = String(card?.Type || '').trim().toLowerCase();
-      if (t) typeSet.add(t);
-    });
-
-    return typeSet;
-  };
+  const typeSet = new Set();
+  const eventCards = getEventCardsForFilter(event);
+  eventCards.forEach((card) => {
+    const t = String(card?.Type || '').trim().toLowerCase();
+    if (t) typeSet.add(t);
+  });
 
   if (gachaValue === 'perm') return gachaType === '常驻';
   if (gachaValue === 'limited') return gachaType === '普通限定';
+  if (gachaValue === 'limited160') {
+    return gachaType === '普通限定' && (typeSet.has('cfes') || typeSet.has('bfes'));
+  }
   if (gachaValue === 'ue') return gachaType === 'UE限定';
-  if (gachaValue === 'cfes') return getEventCardTypeSet().has('cfes');
-  if (gachaValue === 'bfes') return getEventCardTypeSet().has('bfes');
+  if (gachaValue === 'cfes') return typeSet.has('cfes');
+  if (gachaValue === 'bfes') return typeSet.has('bfes');
   if (gachaValue === 'collab') return gachaType.includes('联动');
   return false;
 };
@@ -3266,6 +3390,12 @@ const matchEventFilters = (event) => {
   return true;
 };
 // 重置所有筛选
+const switchFilterMode = (nextMode) => {
+  if (filterMode.value === nextMode) return;
+  filterMode.value = nextMode;
+  resetFilters();
+};
+
 const resetFilters = () => {
   filterCriteria.value = { selectedChars: [], rarities: [], attributes: [], skills: [], cardTypes: [], units: [] };
   eventFilterCriteria.value = {
@@ -4036,9 +4166,29 @@ const isUnitRelated = (ev) => {
 };
 const isSpecialFestival = (fest) => ['新年', '半周年', '情人节', '白情', '周年', '婚活'].includes(fest);
 
-const getNormalCards = (cards) => cards.filter(c => !['cfes', 'bfes'].includes(c.Type?.toLowerCase()));
-const getFesCards = (cards) => cards.filter(c => ['cfes', 'bfes'].includes(c.Type?.toLowerCase()));
-const getFesType = (cards) => cards.find(c => ['cfes', 'bfes'].includes(c.Type?.toLowerCase()))?.Type?.toLowerCase() || 'cfes';
+const getNormalCards = (cards) => {
+  const source = Array.isArray(cards) ? cards : [];
+  const rank = (card) => {
+    const rarity = Number(String(card?.Rarity || '').trim());
+    if (rarity === 4) return 0;
+    if (rarity === 3) return 1;
+    if (rarity === 2) return 2;
+    return 9;
+  };
+
+  return source
+    .filter(c => !isFesCardType(c?.Type))
+    .map((card, idx) => ({ card, idx }))
+    .sort((a, b) => {
+      const ar = rank(a.card);
+      const br = rank(b.card);
+      if (ar !== br) return ar - br;
+      return a.idx - b.idx;
+    })
+    .map((item) => item.card);
+};
+  const getFesCards = (cards) => cards.filter(c => isFesCardType(c?.Type));
+  const getFesType = (cards) => cards.find(c => isFesCardType(c?.Type))?.Type?.toLowerCase() || 'cfes';
 
 const getTypeTagStyle = (ev) => {
   if (isUnitRelated(ev)) return { backgroundColor: getUnitColor(ev.unit) };

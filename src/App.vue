@@ -1,13 +1,13 @@
 <template>
   <div class="main-app">
-    <div class="nav-tabs">
+    <div class="nav-tabs" :class="{ 'is-stats-top-compact': isStatsTopNavCompact }">
       <button 
         :class="{ active: currentTab === 'stats' }" 
         @click="setCurrentTab('stats')"
       >
         <span class="btn-with-icon">
           <img src="/data/icon/statistics.png" class="btn-icon" alt="统计" />
-          <span>{{ isCompactTopNav ? '统计' : '统计面板' }}</span>
+          <span>{{ isStatsTopNavCompact ? '统计' : '统计面板' }}</span>
         </span>
       </button>
       <button 
@@ -16,10 +16,34 @@
       >
         <span class="btn-with-icon">
           <img src="/data/icon/event.png" class="btn-icon" alt="活动" />
-          <span>{{ isCompactTopNav ? '活动' : '历史活动一览' }}</span>
+          <span>{{ isStatsTopNavCompact ? '活动' : '历史活动一览' }}</span>
         </span>
       </button>
-      <div class="username-wrap" title="导出文件命名与本地数据源命名使用该用户名">
+      <div
+        v-if="showStatsTopControlInNav"
+        class="stats-top-nav-wrap"
+        title="统计页：快速调整截止活动ID与展开菜单"
+      >
+        <span class="stats-top-label">截止ID</span>
+        <button class="stats-top-mini-btn" title="减少 1" @click="adjustStatsTopDisplayEventId(-1)">－</button>
+        <input
+          v-model="statsTopDisplayEventIdDraft"
+          class="stats-top-id-input"
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          maxlength="8"
+          placeholder="ID"
+          @focus="onStatsTopDisplayIdFocus"
+          @input="onStatsTopDisplayIdInput($event.target.value)"
+          @blur="onStatsTopDisplayIdBlur"
+        />
+        <button class="stats-top-mini-btn" title="增加 1" @click="adjustStatsTopDisplayEventId(1)">＋</button>
+        <button class="stats-top-mini-btn stats-top-reset-btn" :title="`恢复到当前参考活动 ID：${statsTopAutoCurrentId || '-'}`" @click="resetStatsTopDisplayEventId">
+          <img src="/data/icon/reset.png" class="stats-top-reset-icon" alt="复位" />
+        </button>
+      </div>
+      <div v-else class="username-wrap" title="导出文件命名与本地数据源命名使用该用户名">
         <span class="username-label">用户名</span>
         <input
           v-model="predictUserName"
@@ -32,18 +56,12 @@
         />
       </div>
       <div class="nav-tabs-spacer"></div>
-      <div class="predict-info" v-if="predictiveEvents.length > 0">
+      <div class="predict-info" v-if="showPredictInfoInNav">
         {{ isCompactTopNav ? `${predictiveEvents.length}条预测` : `${activePredictSourceName}：${predictiveEvents.length} 条预测` }}
       </div>
       <div class="predict-cleanup-info" v-if="cleanedPatchNoticeCount > 0">
         {{ isCompactTopNav ? `已清理 ${cleanedPatchNoticeCount} 条` : `已自动清理 ${cleanedPatchNoticeCount} 条过期/冲突预测` }}
       </div>
-      <button @click="addPredictSourceBranch" class="io-btn nav-create-btn" title="新增一个空白预测分支">
-        <span class="btn-with-icon">
-          <img src="/data/icon/circle_add.png" class="btn-icon" alt="新建" />
-          <span>{{ isCompactTopNav ? '新建' : '新建预测分支' }}</span>
-        </span>
-      </button>
       <div class="source-dropdown" ref="sourceDropdownRef">
         <button
           ref="sourceTriggerRef"
@@ -87,12 +105,31 @@
                 <span class="source-item-name">{{ source.name }}</span>
                 <span class="source-item-count">{{ Array.isArray(source.predictiveEvents) ? source.predictiveEvents.length : 0 }}</span>
               </button>
-              <button class="source-mini-btn" title="重命名此数据源" @click="renamePredictSource(source.id)">
+              <button class="source-mini-btn" title="重命名此数据源" @click="startRenamePredictSource(source.id)">
                 <img src="/data/icon/edit.png" class="mini-btn-icon" alt="重命名" />
               </button>
               <button class="source-order-btn" title="上移" @click.stop="movePredictSource(source.id, -1)">↑</button>
               <button class="source-order-btn" title="下移" @click.stop="movePredictSource(source.id, 1)">↓</button>
               <span class="source-drag-handle" title="拖拽排序">⋮⋮</span>
+            </div>
+          </div>
+
+          <div v-if="renameSourceTargetId" class="source-export-confirm source-rename-confirm">
+            <div class="source-export-confirm-title">重命名数据源</div>
+            <div class="source-export-confirm-row">
+              <span>名称</span>
+              <input
+                v-model="renameSourceDraftName"
+                class="source-export-name-input"
+                type="text"
+                maxlength="60"
+                @keydown.enter.prevent="confirmRenamePredictSourceAction"
+                @keydown.esc.prevent="cancelRenamePredictSourceAction"
+              />
+            </div>
+            <div class="source-export-confirm-actions">
+              <button class="io-btn" @click="cancelRenamePredictSourceAction">取消</button>
+              <button class="io-btn" @click="confirmRenamePredictSourceAction">确认重命名</button>
             </div>
           </div>
 
@@ -118,7 +155,13 @@
             >
               <span class="btn-with-icon">
                 <img src="/data/icon/camera.png" class="btn-icon" alt="截图" />
-                <span>{{ isScreenshotExporting ? '截图中…' : '导出预测截图' }}</span>
+                <span>{{ isScreenshotExporting ? '截图中…' : '预测截图' }}</span>
+              </span>
+            </button>
+            <button @click="openCreateSourceConfirm" class="io-btn" title="新建数据源（可选复制当前预测）">
+              <span class="btn-with-icon">
+                <img src="/data/icon/circle_add.png" class="btn-icon" alt="新建" />
+                <span>新建</span>
               </span>
             </button>
             <button @click="deleteActivePredictSource" class="io-btn" :disabled="predictSources.length <= 1" title="删除当前数据源">
@@ -167,6 +210,26 @@
             <div class="source-export-confirm-actions">
               <button class="io-btn" @click="cancelScreenshotExport" :disabled="isScreenshotExporting">取消</button>
               <button class="io-btn" @click="confirmScreenshotExport" :disabled="isScreenshotExporting">确认导出PNG</button>
+            </div>
+          </div>
+          <div v-if="showCreateSourceConfirmPanel" class="source-export-confirm source-create-confirm">
+            <div class="source-export-confirm-title">新建数据源</div>
+            <div class="source-export-confirm-row source-create-clone-row">
+              <label class="source-export-option source-create-clone-option">
+                <input v-model="createSourceCloneCurrent" type="checkbox" :disabled="!canCloneActivePredictSource" />
+                <span>
+                  <template v-if="canCloneActivePredictSource">
+                    复制当前数据源「{{ activePredictSourceName }}」的 {{ activePredictSourcePredictCount }} 条预测
+                  </template>
+                  <template v-else>
+                    当前数据源暂无预测，创建空白数据源
+                  </template>
+                </span>
+              </label>
+            </div>
+            <div class="source-export-confirm-actions">
+              <button class="io-btn" @click="cancelCreateSourceAction">取消</button>
+              <button class="io-btn" @click="confirmCreateSourceAction">确认新建</button>
             </div>
           </div>
           <div v-if="screenshotStatusText" class="source-export-status">{{ screenshotStatusText }}</div>
@@ -258,15 +321,25 @@ const draggedSourceId = ref('');
 const dragOverSourceId = ref('');
 const isEditingPredictUserName = ref(false);
 const isCompactTopNav = ref(false);
+const isStatsTopNavCompact = ref(false);
 const exportBirthdayRowsInPng = ref(true);
 const experimentalHighQualityPng = ref(false);
 const isScreenshotExporting = ref(false);
 const screenshotStatusText = ref('');
 const showScreenshotConfirmPanel = ref(false);
+const showCreateSourceConfirmPanel = ref(false);
+const createSourceCloneCurrent = ref(true);
 const screenshotExportFileName = ref('');
 const screenshotConfirmRange = ref({ firstId: '', lastId: '' });
 const screenshotRangeStartId = ref('');
 const screenshotRangeEndId = ref('');
+const renameSourceTargetId = ref('');
+const renameSourceDraftName = ref('');
+const statsTopDisplayEventIdDraft = ref('');
+const isEditingStatsTopDisplayEventId = ref(false);
+const statsTopNavCollapsed = ref(true);
+const statsTopNavAvailable = ref(false);
+const statsTopAutoCurrentId = ref('');
 let cleanupNoticeTimer = null;
 
 const screenshotConfirmRangeText = computed(() => {
@@ -283,6 +356,9 @@ const isHistoryPredictEditorOpen = computed(() => {
   const id = Number(previewSyncEventId.value);
   return Number.isFinite(id) && id > 0;
 });
+
+const showStatsTopControlInNav = computed(() => currentTab.value === 'stats' && isStatsTopNavCompact.value);
+const showPredictInfoInNav = computed(() => predictiveEvents.value.length > 0 && currentTab.value !== 'stats');
 
 const PREDICT_SOURCES_KEY = 'pjsk_predict_sources_v1';
 const PREDICT_ACTIVE_KEY = 'pjsk_predict_active_source_v1';
@@ -315,6 +391,76 @@ const requestHistoryJump = (eventId, retry = 18) => {
       requestHistoryJump(eventId, retry - 1);
     }, 80);
   }
+};
+
+const getStatsTabInstance = () => {
+  if (currentTab.value !== 'stats') return null;
+  return tabComponentRef.value;
+};
+
+const syncStatsTopControlState = () => {
+  if (!showStatsTopControlInNav.value) return;
+  const instance = getStatsTabInstance();
+  if (!instance || typeof instance.getTopBarState !== 'function') {
+    statsTopNavAvailable.value = false;
+    statsTopNavCollapsed.value = true;
+    return;
+  }
+
+  const state = instance.getTopBarState() || {};
+  const nextDraft = String(state.displayEventIdDraft ?? state.displayEventId ?? '');
+  if (!isEditingStatsTopDisplayEventId.value) {
+    statsTopDisplayEventIdDraft.value = nextDraft;
+  }
+  statsTopNavAvailable.value = !!state.isNavTopLayout;
+  statsTopNavCollapsed.value = !!state.navCollapsed;
+  statsTopAutoCurrentId.value = String(state.autoCurrentId ?? '');
+};
+
+const onStatsTopDisplayIdFocus = () => {
+  isEditingStatsTopDisplayEventId.value = true;
+};
+
+const onStatsTopDisplayIdInput = (rawValue) => {
+  statsTopDisplayEventIdDraft.value = String(rawValue ?? '');
+  const instance = getStatsTabInstance();
+  if (instance && typeof instance.setTopBarDisplayEventIdDraft === 'function') {
+    instance.setTopBarDisplayEventIdDraft(statsTopDisplayEventIdDraft.value);
+  }
+};
+
+const onStatsTopDisplayIdBlur = () => {
+  isEditingStatsTopDisplayEventId.value = false;
+  const instance = getStatsTabInstance();
+  if (instance && typeof instance.applyTopBarDisplayEventId === 'function') {
+    instance.applyTopBarDisplayEventId(statsTopDisplayEventIdDraft.value);
+  }
+  syncStatsTopControlState();
+};
+
+const adjustStatsTopDisplayEventId = (delta) => {
+  const instance = getStatsTabInstance();
+  if (instance && typeof instance.adjustTopBarDisplayEventId === 'function') {
+    instance.adjustTopBarDisplayEventId(delta);
+  }
+  syncStatsTopControlState();
+};
+
+const resetStatsTopDisplayEventId = () => {
+  isEditingStatsTopDisplayEventId.value = false;
+  const instance = getStatsTabInstance();
+  if (instance && typeof instance.resetTopBarDisplayEventId === 'function') {
+    instance.resetTopBarDisplayEventId();
+  }
+  syncStatsTopControlState();
+};
+
+const toggleStatsTopNavMenu = () => {
+  const instance = getStatsTabInstance();
+  if (instance && typeof instance.toggleTopBarNavCollapsed === 'function') {
+    instance.toggleTopBarNavCollapsed();
+  }
+  syncStatsTopControlState();
 };
 
 const saveStatsScroll = () => {
@@ -361,7 +507,23 @@ watch(currentTab, async (nextTab, prevTab) => {
     if (contentAreaRef.value) {
       contentAreaRef.value.scrollTop = statsScrollTop.value;
     }
+    syncStatsTopControlState();
   }
+});
+
+watch(() => tabComponentRef.value, async () => {
+  if (currentTab.value !== 'stats') return;
+  await nextTick();
+  syncStatsTopControlState();
+});
+
+watch(showStatsTopControlInNav, async (show) => {
+  if (!show) {
+    isEditingStatsTopDisplayEventId.value = false;
+    return;
+  }
+  await nextTick();
+  syncStatsTopControlState();
 });
 
 // --- 数据管理逻辑 (新增预测支持) ---
@@ -462,6 +624,11 @@ const activePredictSource = computed(() => {
 });
 
 const activePredictSourceName = computed(() => activePredictSource.value?.name || '未命名数据源');
+const activePredictSourcePredictCount = computed(() => {
+  const list = activePredictSource.value?.predictiveEvents;
+  return Array.isArray(list) ? list.length : 0;
+});
+const canCloneActivePredictSource = computed(() => activePredictSourcePredictCount.value > 0);
 
 const setCleanedPatchNoticeCount = (count, autoHideMs = 0) => {
   cleanedPatchNoticeCount.value = Math.max(0, Number(count) || 0);
@@ -539,17 +706,48 @@ const createPredictSource = ({ name, predictiveList = [], kind = 'local', ownerN
   return source;
 };
 
-const addPredictSourceBranch = () => {
+const openCreateSourceConfirm = () => {
+  if ((predictSources.value || []).length >= PREDICT_SOURCE_LIMIT) {
+    alert(`数据源数量已达到上限（${PREDICT_SOURCE_LIMIT}）。请先删除不需要的数据源。`);
+    return;
+  }
+  renameSourceTargetId.value = '';
+  renameSourceDraftName.value = '';
+  showScreenshotConfirmPanel.value = false;
+  screenshotStatusText.value = '';
+  createSourceCloneCurrent.value = canCloneActivePredictSource.value;
+  showCreateSourceConfirmPanel.value = !showCreateSourceConfirmPanel.value;
+};
+
+const cancelCreateSourceAction = () => {
+  showCreateSourceConfirmPanel.value = false;
+  createSourceCloneCurrent.value = canCloneActivePredictSource.value;
+};
+
+const confirmCreateSourceAction = () => {
   const owner = normalizeUserName(predictUserName.value);
+  const current = activePredictSource.value;
+  const currentList = Array.isArray(current?.predictiveEvents) ? current.predictiveEvents : [];
+  const shouldClone = canCloneActivePredictSource.value && createSourceCloneCurrent.value;
+  const initialList = shouldClone ? clonePredictList(currentList) : [];
+
   const created = createPredictSource({
     kind: 'local',
     ownerName: owner,
-    predictiveList: [],
+    predictiveList: initialList,
     switchTo: true
   });
   if (created) {
     setCleanedPatchNoticeCount(0);
-    alert(`已创建并切换到空白数据源：${created.name}`);
+    showCreateSourceConfirmPanel.value = false;
+    createSourceCloneCurrent.value = canCloneActivePredictSource.value;
+    const suffix = initialList.length > 0 ? `（已复制 ${initialList.length} 条预测）` : '（空白）';
+    screenshotStatusText.value = `已创建并切换到新数据源：${created.name}${suffix}`;
+    setTimeout(() => {
+      if (screenshotStatusText.value.startsWith('已创建并切换到新数据源：')) {
+        screenshotStatusText.value = '';
+      }
+    }, 1800);
   }
 };
 
@@ -575,15 +773,34 @@ const deleteActivePredictSource = () => {
 const toggleSourceMenu = () => {
   if (isHistoryPredictEditorOpen.value) return;
   sourceMenuOpen.value = !sourceMenuOpen.value;
+  if (!sourceMenuOpen.value) {
+    renameSourceTargetId.value = '';
+    renameSourceDraftName.value = '';
+  }
 };
 
-const renamePredictSource = (sourceId) => {
+const startRenamePredictSource = (sourceId) => {
   const target = (predictSources.value || []).find((s) => s.id === sourceId);
   if (!target) return;
-  const baseSuggestion = String(target.name || '').trim() || '未命名数据源';
-  const input = prompt('请输入新的数据源名称', baseSuggestion);
-  if (input === null) return;
-  const nextNameRaw = String(input || '').trim();
+  showScreenshotConfirmPanel.value = false;
+  showCreateSourceConfirmPanel.value = false;
+  renameSourceTargetId.value = target.id;
+  renameSourceDraftName.value = String(target.name || '').trim() || '未命名数据源';
+};
+
+const cancelRenamePredictSourceAction = () => {
+  renameSourceTargetId.value = '';
+  renameSourceDraftName.value = '';
+};
+
+const confirmRenamePredictSourceAction = () => {
+  const target = (predictSources.value || []).find((s) => s.id === renameSourceTargetId.value);
+  if (!target) {
+    cancelRenamePredictSourceAction();
+    return;
+  }
+
+  const nextNameRaw = String(renameSourceDraftName.value || '').trim();
   if (!nextNameRaw) {
     alert('名称不能为空。');
     return;
@@ -604,6 +821,7 @@ const renamePredictSource = (sourceId) => {
     };
   });
   persistPredictSources();
+  cancelRenamePredictSourceAction();
 };
 
 const onSourceDragStart = (sourceId, event) => {
@@ -670,6 +888,8 @@ const movePredictSource = (sourceId, delta) => {
 const updateCompactTopNav = () => {
   if (typeof window === 'undefined') return;
   isCompactTopNav.value = window.innerWidth <= 768;
+  isStatsTopNavCompact.value = window.innerWidth <= 900;
+  syncStatsTopControlState();
 };
 
 const updateSourceMenuPosition = () => {
@@ -895,6 +1115,9 @@ const prepareScreenshotExport = async () => {
 
 const openScreenshotExportConfirm = async () => {
   if (isScreenshotExporting.value) return;
+  renameSourceTargetId.value = '';
+  renameSourceDraftName.value = '';
+  showCreateSourceConfirmPanel.value = false;
   screenshotStatusText.value = '正在准备截图范围...';
   try {
     const prepared = await prepareScreenshotExport();
@@ -1364,10 +1587,9 @@ function sortPredictedCardsForDisplay(cards, bannerName) {
 
   const baseBanner = String(bannerName || '').split(' ')[0];
   const bannerIndex = cards.findIndex((c) => String(c.Name || '').split(' ')[0] === baseBanner);
-  const fixedBannerIndex = bannerIndex > -1 ? bannerIndex : 0;
-  const bannerCard = cards[fixedBannerIndex];
-
-  const rest = cards.filter((_, idx) => idx !== fixedBannerIndex);
+  const hasBanner = bannerIndex > -1;
+  const bannerCard = hasBanner ? cards[bannerIndex] : null;
+  const rest = cards.filter((_, idx) => !hasBanner || idx !== bannerIndex);
   const sortedFourStars = [];
   const unsortedBfesFourStars = [];
   const unsortedLowStars = [];
@@ -1385,7 +1607,15 @@ function sortPredictedCardsForDisplay(cards, bannerName) {
   });
 
   sortedFourStars.sort((a, b) => getCharOrder(a.Name) - getCharOrder(b.Name));
-  return [bannerCard, ...sortedFourStars, ...unsortedBfesFourStars, ...unsortedLowStars];
+  const sortedLowStars = [...unsortedLowStars].sort((a, b) => {
+    const ar = Number(String(a?.Rarity || '').trim()) || 0;
+    const br = Number(String(b?.Rarity || '').trim()) || 0;
+    if (ar !== br) return br - ar;
+    return getCharOrder(a.Name) - getCharOrder(b.Name);
+  });
+
+  const merged = [...sortedFourStars, ...unsortedBfesFourStars, ...sortedLowStars];
+  return bannerCard ? [bannerCard, ...merged] : merged;
 }
 
 const isTeamWorldLink = (eventType, typeSeriesId) => {
@@ -1396,7 +1626,7 @@ const isTeamWorldLink = (eventType, typeSeriesId) => {
 
 // App.vue 约第 135 行 savePredictEvent 替换为：
 provide('savePredictEvent', (payload) => {
-  const { eventId, eventType, gachaType, predictAttr, selectedChars, event_title } = payload;
+  const { eventId, eventType, gachaType, predictAttr, bannerName: payloadBannerName, selectedChars, event_title } = payload;
   const currentOfficialId = getCurrentPredictLockEventId();
   if (Number(eventId) <= currentOfficialId) {
     console.warn(`[predict] ignore save for event ${eventId}, current official id is ${currentOfficialId}`);
@@ -1404,15 +1634,37 @@ provide('savePredictEvent', (payload) => {
   }
   
   const nextSid = getNextSeriesId();
-  const bannerName = selectedChars[0]?.name || '';
+  const safeSelectedChars = Array.isArray(selectedChars) ? selectedChars : [];
+  const isNonFesFourStar = (char) => {
+    const rarity = String(char?.rarity || '').trim();
+    const skill = String(char?.skillType || '').trim().toLowerCase();
+    return rarity === '4' && !skill.includes('fes');
+  };
+
+  const bannerCandidates = safeSelectedChars
+    .filter((char) => isNonFesFourStar(char))
+    .map((char) => String(char?.name || '').trim())
+    .filter(Boolean);
+
+  const resolvedBannerName = eventType === 'World Link'
+    ? ''
+    : (bannerCandidates.includes(String(payloadBannerName || '').trim())
+      ? String(payloadBannerName || '').trim()
+      : (bannerCandidates[0] || ''));
+
+  if (eventType !== 'World Link' && !resolvedBannerName) {
+    alert('保存失败：Ban主必须是队伍中的 4★ 非FES 成员。');
+    return;
+  }
+
   const sourceEvent = historyData.value.find(e => Number(e.id) === Number(eventId));
   const nextTypeSeriesId = eventType === 'World Link'
     ? (sourceEvent?.type_series_id ?? null)
-    : getNextTypeSeriesId({ eventId, eventType, bannerName });
+    : getNextTypeSeriesId({ eventId, eventType, bannerName: resolvedBannerName });
   const teamWorldLink = isTeamWorldLink(eventType, nextTypeSeriesId ?? sourceEvent?.type_series_id);
 
   // 1. 内部卡片生成逻辑
-  const generatedCardsRaw = selectedChars.map((char, index) => {
+  const generatedCardsRaw = safeSelectedChars.map((char, index) => {
     const rarity = char.rarity || "4";
     const isBfes = char.skillType === 'bfes_up' && rarity === '4';
     const isVsName = ["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"].includes(char.name);
@@ -1436,14 +1688,14 @@ provide('savePredictEvent', (payload) => {
       Type: cardType,
       // 重点：使用 PredictEditor 传过来的 Affiliation (已包含 VS 的单位逻辑)
       Affiliation: (isBfes && isVsName) ? 'vs' : (char.Affiliation || ""),
-      // 第一个四星作为 Banner
-      SeriesID: eventType === 'World Link' ? null : (index === 0 ? nextSid : null)
+      // Ban主作为 Banner
+      SeriesID: eventType === 'World Link' ? null : (String(char?.name || '').trim() === resolvedBannerName ? nextSid : null)
     };
   });
 
   const generatedCards = eventType === 'World Link'
     ? generatedCardsRaw
-    : sortPredictedCardsForDisplay(generatedCardsRaw, bannerName);
+    : sortPredictedCardsForDisplay(generatedCardsRaw, resolvedBannerName);
 
   const predictedUnit = String(generatedCards?.[0]?.Affiliation || '').trim().toLowerCase();
   const sourceUnit = String(sourceEvent?.unit || '').trim().toLowerCase();
@@ -1451,7 +1703,7 @@ provide('savePredictEvent', (payload) => {
   const worldLinkUnit = teamWorldLink ? finalUnit : '';
   const finalBanner = eventType === 'World Link'
     ? ''
-    : bannerName;
+    : resolvedBannerName;
 
   const newPredictEvent = {
     id: Number(eventId),
@@ -1533,10 +1785,14 @@ watch(predictUserName, (newVal) => {
 watch(sourceMenuOpen, async (open) => {
   if (!open) {
     showScreenshotConfirmPanel.value = false;
+    showCreateSourceConfirmPanel.value = false;
+    renameSourceTargetId.value = '';
+    renameSourceDraftName.value = '';
     return;
   }
   await nextTick();
   updateSourceMenuPosition();
+  syncStatsTopControlState();
 });
 
 watch(isHistoryPredictEditorOpen, (open) => {
@@ -1595,6 +1851,154 @@ watch(isHistoryPredictEditorOpen, (open) => {
   border: 1px solid #d1d5db;
   border-radius: 10px;
   background: #f8fafc;
+}
+
+.stats-top-nav-wrap {
+  --stats-top-control-size: 30px;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-height: 42px;
+  padding: 5px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.stats-top-label {
+  font-size: 0.72rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.stats-top-id-input {
+  width: 56px;
+  height: var(--stats-top-control-size);
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 0 6px;
+  font-size: 0.74rem;
+  color: #0f172a;
+  background: #ffffff;
+  text-align: center;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.stats-top-id-input:focus {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.15);
+}
+
+.stats-top-mini-btn,
+.stats-top-menu-btn {
+  flex: 0 0 auto;
+  height: var(--stats-top-control-size);
+  min-width: var(--stats-top-control-size);
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.76rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition: filter 0.16s ease, transform 0.16s ease, background-color 0.16s ease;
+}
+
+.nav-tabs .stats-top-mini-btn,
+.nav-tabs .stats-top-menu-btn {
+  min-height: var(--stats-top-control-size);
+  padding: 0 4px;
+}
+
+.nav-tabs .stats-top-mini-btn:active,
+.nav-tabs .stats-top-menu-btn:active {
+  filter: brightness(0.82);
+  transform: translateY(1px) scale(0.96);
+}
+
+.stats-top-reset-btn {
+  min-width: var(--stats-top-control-size);
+}
+
+.stats-top-reset-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: block;
+}
+
+.stats-top-menu-btn {
+  min-width: 30px;
+  font-size: 0.88rem;
+}
+
+.stats-top-menu-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.nav-tabs.is-stats-top-compact {
+  gap: 6px;
+  padding: 8px 10px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.nav-tabs.is-stats-top-compact > button,
+.nav-tabs.is-stats-top-compact > .io-btn,
+.nav-tabs.is-stats-top-compact > .source-dropdown > .source-trigger {
+  min-height: 34px;
+  white-space: nowrap;
+}
+
+.nav-tabs.is-stats-top-compact > button {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+}
+
+.nav-tabs.is-stats-top-compact .btn-with-icon {
+  gap: 4px;
+}
+
+.nav-tabs.is-stats-top-compact .btn-icon {
+  width: 13px;
+  height: 13px;
+  flex-basis: 13px;
+}
+
+.nav-tabs.is-stats-top-compact .stats-top-nav-wrap {
+  --stats-top-control-size: 24px;
+  order: 3;
+  gap: 3px;
+  min-height: 34px;
+  padding: 3px 6px;
+}
+
+.nav-tabs.is-stats-top-compact .stats-top-label {
+  display: none;
+}
+
+.nav-tabs.is-stats-top-compact .stats-top-id-input {
+  width: 54px;
+}
+
+.nav-tabs.is-stats-top-compact .stats-top-mini-btn {
+  font-size: 0.7rem;
+}
+
+.nav-tabs.is-stats-top-compact .stats-top-reset-icon {
+  width: 13px;
+  height: 13px;
 }
 
 .username-label {
@@ -1865,9 +2269,24 @@ button.active {
 
 .source-actions {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 1px;
   margin-bottom: 8px;
+}
+
+.source-actions .io-btn {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  font-size: 0.74rem;
+  border-radius: 8px;
+}
+
+.source-actions .btn-with-icon {
+  gap: 5px;
+  white-space: nowrap;
 }
 
 .source-export-option {
@@ -1954,6 +2373,22 @@ button.active {
   display: flex;
   gap: 6px;
   justify-content: flex-end;
+}
+
+.source-create-confirm {
+  margin-top: -2px;
+}
+
+.source-rename-confirm {
+  margin-top: -2px;
+}
+
+.source-create-clone-row {
+  margin-bottom: 6px;
+}
+
+.source-create-clone-option {
+  margin-bottom: 0;
 }
 
 .io-drop-zone {
@@ -2060,6 +2495,34 @@ button.active {
     padding: 3px 6px;
   }
 
+  .stats-top-nav-wrap {
+    --stats-top-control-size: 24px;
+    order: 3;
+    gap: 3px;
+    min-height: 34px;
+    padding: 3px 6px;
+  }
+
+  .stats-top-label {
+    font-size: 0.64rem;
+  }
+
+  .stats-top-id-input {
+    width: 60px;
+    font-size: 0.7rem;
+    padding: 0 6px;
+  }
+
+  .stats-top-mini-btn,
+  .stats-top-menu-btn {
+    font-size: 0.74rem;
+  }
+
+  .stats-top-menu-btn {
+    min-width: 27px;
+    font-size: 0.82rem;
+  }
+
   .username-label {
     font-size: 0.66rem;
   }
@@ -2092,6 +2555,7 @@ button.active {
 
   /* iOS/Safari 聚焦输入框会自动放大页面，移动端统一将关键输入字号提升到 16px 以避免锁定放大态。 */
   .username-input,
+  .stats-top-id-input,
   .source-export-name-input,
   .source-export-range-input {
     font-size: 16px;
@@ -2197,6 +2661,26 @@ button.active {
     padding: 2px 5px;
   }
 
+  .stats-top-nav-wrap {
+    --stats-top-control-size: 22px;
+    min-height: 32px;
+    padding: 2px 4px;
+    gap: 2px;
+  }
+
+  .stats-top-label {
+    display: none;
+  }
+
+  .stats-top-id-input {
+    width: 54px;
+  }
+
+  .stats-top-mini-btn,
+  .stats-top-menu-btn {
+    font-size: 0.7rem;
+  }
+
   .username-input {
     width: 68px;
   }
@@ -2230,6 +2714,18 @@ button.active {
 
   .source-actions {
     gap: 4px;
+  }
+
+  .source-actions .io-btn {
+    padding: 4px 7px;
+    font-size: 0.68rem;
+    border-radius: 8px;
+  }
+
+  .source-actions .btn-icon {
+    width: 12px;
+    height: 12px;
+    flex-basis: 12px;
   }
 
   .source-export-option {

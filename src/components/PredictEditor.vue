@@ -13,7 +13,7 @@
           <button class="close-btn" @click="$emit('close')">×</button>
         </div>
         
-        <div class="global-config-bar">
+        <div class="global-config-bar" :class="{ 'has-banner': !isWorldLinkMode }">
           <div class="cfg-group">
             <label>活动类型</label>
             <select v-model="form.eventType" :disabled="form.isTypeLocked">
@@ -34,7 +34,15 @@
             <label>活动属性</label>
             <select v-model="form.predictAttr" @change="applyGlobalAttr">
               <option value="">手动分配</option>
-              <option v-for="a in ATTRS" :key="a" :value="a">{{a}}</option>
+              <option v-for="a in ATTRS" :key="a" :value="a">{{ getAttrLabel(a) }}</option>
+            </select>
+          </div>
+          <div v-if="!isWorldLinkMode" class="cfg-group">
+            <label>Ban主</label>
+            <select v-model="form.bannerName" :disabled="bannerCandidates.length === 0">
+              <option v-if="bannerCandidates.length === 0" value="">无可用</option>
+              <option v-else value="" disabled>选择 Ban主</option>
+              <option v-for="char in bannerCandidates" :key="`ban-${char.name}`" :value="char.name">{{ char.name }}</option>
             </select>
           </div>
         </div>
@@ -43,11 +51,16 @@
       <div class="selected-section">
         <div class="section-title">
           <span>当前阵容 ({{ form.selectedChars.length }})</span>
-          <span class="tip">{{ isWorldLinkMode ? 'World Link 人选固定' : '第一个角色默认为 Banner' }}</span>
+          <span class="tip">{{ isWorldLinkMode ? 'World Link 人选固定，无需 Ban主' : '第一个角色默认为 Ban主' }}</span>
         </div>
         
         <div class="selected-list" :key="selectedRenderKey">
-          <div v-for="(char, idx) in form.selectedChars" :key="char.name" class="editor-card">
+          <div
+            v-for="(char, idx) in form.selectedChars"
+            :key="char.name"
+            class="editor-card"
+            :class="{ 'is-banner-card': shouldMarkBannerCard(char) }"
+          >
             <div class="card-left">
               <div class="order-badge">{{ idx + 1 }}</div>
               <img :src="`/chars/${charMap[char.name]}.png`" class="editor-avatar" />
@@ -82,7 +95,7 @@
 
                 <select v-if="isVsFesSkillMode(char)" v-model="char.skillType" class="mini-select skill-sel">
                   <option value="unit_score">团分</option>
-                  <option value="bfes_up">BFES</option>
+                  <option :value="ACTIVE_FES_SKILL_KEY">{{ ACTIVE_FES_SKILL_LABEL }}</option>
                 </select>
                 <select v-else v-model="char.skillType" class="mini-select skill-sel" :disabled="isSkillLocked(char)">
                   <option value="-">待定</option>
@@ -91,7 +104,7 @@
                   <option value="recovery">奶卡</option>
                   <option value="accuracy">判卡</option>
                   <option v-if="isUnitScoreLocked(char)" value="unit_score">团分</option>
-                  <option v-if="isBfesSkillAvailable(char)" value="bfes_up">BFES</option>
+                  <option v-if="isBfesSkillAvailable(char)" :value="ACTIVE_FES_SKILL_KEY">{{ ACTIVE_FES_SKILL_LABEL }}</option>
                 </select>
               </div>
             </div>
@@ -135,10 +148,26 @@ const emit = defineEmits(['close', 'selection-change']);
 const savePredictEvent = inject('savePredictEvent');
 
 const ATTRS = ['Pure','Cool','Cute','Happy','Mysterious'];
+const ATTR_LABELS = {
+  Pure: '绿草',
+  Cool: '蓝星',
+  Cute: '粉花',
+  Happy: '橙心',
+  Mysterious: '紫月'
+};
 const UNITS = ['vs','ln','mmj','vbs','ws','nc'];
 const BOX_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 const VS_NAMES = ["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"];
 const FES_FESTIVALS = ['周年', '半周年', '夏活', '新年'];
+const FES_SKILL_CONFIG = Object.freeze([
+  // 将来新增 FES 时，仅需在这里替换 active 或扩展候选。
+  { key: 'bfes_up', label: 'BFES', active: true }
+]);
+const ACTIVE_FES_SKILL = Object.freeze(
+  FES_SKILL_CONFIG.find((item) => item.active) || FES_SKILL_CONFIG[0] || { key: 'bfes_up', label: 'FES' }
+);
+const ACTIVE_FES_SKILL_KEY = ACTIVE_FES_SKILL.key;
+const ACTIVE_FES_SKILL_LABEL = ACTIVE_FES_SKILL.label;
 const CHAR_UNIT_MAP = {
   "星乃一歌": "ln", "天马咲希": "ln", "望月穗波": "ln", "日野森志步": "ln",
   "花里实乃里": "mmj", "桐谷遥": "mmj", "桃井爱莉": "mmj", "日野森雫": "mmj",
@@ -151,6 +180,7 @@ const form = reactive({
   eventType: '混活',
   gachaType: 'perm',
   predictAttr: '',
+  bannerName: '',
   selectedChars: [],
   isGachaLocked: false,
   isTypeLocked: false
@@ -377,12 +407,60 @@ const isUnitLockedInCurrentRound = (unit, options = {}) => {
   return normalizedBoxLockedUnits.value.includes(String(unit || '').trim().toLowerCase());
 };
 const isFesFestival = () => FES_FESTIVALS.includes(String(props.event?.festival || '').trim());
-const isBfesSkillAvailable = (char) => isFesFestival() && String(char?.rarity) === '4';
+const isBfesSkillAvailable = (char) => !!ACTIVE_FES_SKILL_KEY && isFesFestival() && String(char?.rarity) === '4';
 const isPScoreAvailable = (char) => String(char?.rarity) === '4';
 const isVsFesSkillMode = (char) => isBfesSkillAvailable(char) && VS_NAMES.includes(char?.name);
+const isActiveFesSkill = (skillType) => String(skillType || '').trim() === ACTIVE_FES_SKILL_KEY;
+
+const isFesSkillTag = (skillType) => {
+  const raw = String(skillType || '').trim().toLowerCase();
+  return raw.includes('fes') || isActiveFesSkill(raw);
+};
+
+const isBannerEligibleChar = (char) => {
+  if (!char) return false;
+  if (String(char?.rarity || '') !== '4') return false;
+  if (isFesSkillTag(char?.skillType)) return false;
+  if (form.eventType === '箱活') {
+    if (VS_NAMES.includes(char?.name)) return false;
+    if (isUnitLockedInCurrentRound(getOCUnit(char?.name), { ignoreFesBypass: true })) return false;
+  }
+  return true;
+};
+
+const bannerCandidates = computed(() => form.selectedChars.filter((char) => isBannerEligibleChar(char)));
+
+const activeBannerName = computed(() => {
+  if (isWorldLinkMode.value) return '';
+  const names = bannerCandidates.value.map((char) => String(char?.name || '').trim()).filter(Boolean);
+  if (!names.length) return '';
+  if (names.includes(form.bannerName)) return form.bannerName;
+  return names[0];
+});
+
+const syncBannerName = () => {
+  if (isWorldLinkMode.value) {
+    form.bannerName = '';
+    return;
+  }
+  const next = activeBannerName.value;
+  if (form.bannerName !== next) {
+    form.bannerName = next;
+  }
+};
+
+const shouldMarkBannerCard = (char) => {
+  if (isWorldLinkMode.value) return false;
+  return String(char?.name || '').trim() === String(activeBannerName.value || '').trim();
+};
+
 const getBannerUnit = () => {
-  if (!form.selectedChars.length) return 'vs';
-  return getOCUnit(form.selectedChars[0].name);
+  const banner = form.selectedChars.find((char) => String(char?.name || '').trim() === String(activeBannerName.value || '').trim());
+  if (banner && banner.name) return getOCUnit(banner.name);
+  const fallback = form.selectedChars.find((char) => !VS_NAMES.includes(char?.name));
+  if (fallback?.name) return getOCUnit(fallback.name);
+  if (form.selectedChars[0]?.name) return getOCUnit(form.selectedChars[0].name);
+  return '';
 };
 
 const getDisplayUnit = (char) => {
@@ -399,17 +477,21 @@ const getDisplayUnit = (char) => {
 };
 
 const isVSUnitLocked = (char) => {
-  return isWorldLinkMode.value || isBfesVsUnitLocked(char) || (form.eventType === '箱活' && VS_NAMES.includes(char.name) && form.selectedChars.length > 0);
+  return isWorldLinkMode.value
+    || isBfesVsUnitLocked(char)
+    || (form.eventType === '箱活' && VS_NAMES.includes(char.name) && !!getBannerUnit());
 };
 
 const isBfesLocked = (char) => {
-  return String(char?.skillType || '') === 'bfes_up' && String(char?.rarity) === '4';
+  return isActiveFesSkill(char?.skillType) && String(char?.rarity) === '4';
 };
 
 const isForcedBfesInBox = (char) => {
   if (form.eventType !== '箱活' || !isFesFestival() || form.selectedChars.length === 0) return false;
   if (VS_NAMES.includes(char?.name)) return false;
-  return getOCUnit(char?.name) !== getBannerUnit();
+  const bannerUnit = getBannerUnit();
+  if (!bannerUnit) return false;
+  return getOCUnit(char?.name) !== bannerUnit;
 };
 
 const isBfesVsUnitLocked = (char) => {
@@ -448,7 +530,7 @@ const getCharDisableReason = (name) => {
   }
 
   if (isFirstPick) {
-    return VS_NAMES.includes(name) ? '箱活ban主禁止选v' : '';
+    return VS_NAMES.includes(name) ? '箱活Ban主禁止选v' : '';
   }
 
   if (isFesFestival()) return '';
@@ -460,13 +542,15 @@ const getCharDisableReason = (name) => {
 
 const clearInvalidBoxBanner = () => {
   if (form.eventType !== '箱活') return;
-  while (
-    form.selectedChars.length > 0 && (
-      VS_NAMES.includes(form.selectedChars[0].name)
-      || isUnitLockedInCurrentRound(getOCUnit(form.selectedChars[0].name), { ignoreFesBypass: true })
-    )
+  const bannerIdx = form.selectedChars.findIndex((char) => String(char?.name || '').trim() === String(form.bannerName || '').trim());
+  if (bannerIdx < 0) return;
+  const bannerChar = form.selectedChars[bannerIdx];
+  if (!bannerChar) return;
+  if (
+    VS_NAMES.includes(bannerChar.name)
+    || isUnitLockedInCurrentRound(getOCUnit(bannerChar.name), { ignoreFesBypass: true })
   ) {
-    form.selectedChars.splice(0, 1);
+    form.selectedChars.splice(bannerIdx, 1);
   }
 };
 
@@ -491,7 +575,7 @@ const applyGlobalAttrToFourStars = () => {
 
 const applyFesRules = () => {
   form.selectedChars.forEach((c) => {
-    if (!isBfesSkillAvailable(c) && c.skillType === 'bfes_up') {
+    if (!isBfesSkillAvailable(c) && isActiveFesSkill(c.skillType)) {
       c.skillType = '-';
     }
     if (isBfesVsUnitLocked(c)) {
@@ -509,14 +593,14 @@ const applyAutoSkillRules = () => {
 
     if (isForcedBfesInBox(c)) {
       c.rarity = '4';
-      c.skillType = 'bfes_up';
-    } else if (isVsFesSkillMode(c) && !['unit_score', 'bfes_up'].includes(c.skillType)) {
+      c.skillType = ACTIVE_FES_SKILL_KEY;
+    } else if (isVsFesSkillMode(c) && !['unit_score', ACTIVE_FES_SKILL_KEY].includes(c.skillType)) {
       c.skillType = 'unit_score';
     } else if (isBfesLocked(c)) {
-      c.skillType = 'bfes_up';
+      c.skillType = ACTIVE_FES_SKILL_KEY;
     } else if (isUnitScoreLocked(c)) {
       c.skillType = 'unit_score';
-    } else if (!isVsFesSkillMode(c) && (c.skillType === 'unit_score' || c.skillType === 'bfes_up')) {
+    } else if (!isVsFesSkillMode(c) && (c.skillType === 'unit_score' || isActiveFesSkill(c.skillType))) {
       c.skillType = '-';
     }
 
@@ -529,6 +613,7 @@ const applyAutoSkillRules = () => {
 const lockVSUnitToBanner = () => {
   if (form.eventType !== '箱活' || form.selectedChars.length === 0) return;
   const bannerUnit = getBannerUnit();
+  if (!bannerUnit) return;
   form.selectedChars.forEach((c) => {
     if (isBfesVsUnitLocked(c)) {
       c.selectedUnit = 'vs';
@@ -544,9 +629,11 @@ const applyAllRules = () => {
   try {
     clearInvalidBoxBanner();
     applyBoxPoolRestriction();
+    syncBannerName();
     applyGlobalAttrToFourStars();
     applyFesRules();
     applyAutoSkillRules();
+    syncBannerName();
     lockVSUnitToBanner();
   } finally {
     isApplyingRules = false;
@@ -567,6 +654,8 @@ const normalizeAttr = (attr) => {
   if (raw === '-') return '-';
   return map[raw.toLowerCase()] || '';
 };
+
+const getAttrLabel = (attr) => ATTR_LABELS[attr] || String(attr || '');
 
 // 监听打开并初始化数据
 watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
@@ -595,6 +684,7 @@ watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
     form.isGachaLocked = hasFixedGacha;
 
     form.predictAttr = normalizeAttr(newVal.event_attribute);
+    form.bannerName = '';
 
     if (newVal.memberCards && (newVal.isPredict || isWorldLinkMode.value)) {
       form.selectedChars = newVal.memberCards.map(card => ({
@@ -604,6 +694,7 @@ watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
         selectedUnit: card.Affiliation,
         skillType: card.Skill || '-'
       }));
+      form.bannerName = String(newVal.banner || '').trim();
     } else {
       form.selectedChars = [];
     }
@@ -642,7 +733,7 @@ watch(
 );
 
 watch(
-  () => form.selectedChars[0]?.name,
+  () => [form.bannerName, form.selectedChars.map((c) => c.name).join('|')],
   () => {
     applyAllRules();
   }
@@ -677,6 +768,13 @@ watch(
 );
 
 watch(
+  () => form.selectedChars.map(c => `${c.name}:${c.rarity}:${c.skillType}`).join('|'),
+  () => {
+    syncBannerName();
+  }
+);
+
+watch(
   () => [props.isOpen, form.selectedChars.map((c) => c.name).join('|')],
   ([open]) => {
     if (!open) {
@@ -704,8 +802,9 @@ const toggleChar = (name) => {
     const count = form.selectedChars.length;
     let autoRarity = count < 3 ? "4" : (count === 3 ? "3" : "2");
     const isVS = VS_NAMES.includes(name);
-    const autoUnit = (form.eventType === '箱活' && isVS && form.selectedChars.length > 0)
-      ? getBannerUnit()
+    const bannerUnit = getBannerUnit();
+    const autoUnit = (form.eventType === '箱活' && isVS && !!bannerUnit)
+      ? bannerUnit
       : getOCUnit(name);
     const autoAttr = (form.predictAttr && autoRarity === '4') ? form.predictAttr : '-';
     const autoSkill = (form.gachaType === 'limited' && isVS && autoRarity === '4') ? 'unit_score' : '-';
@@ -732,18 +831,26 @@ const applyGlobalAttr = () => {
 };
 
 const submit = () => {
+  const finalBannerName = String(activeBannerName.value || '').trim();
+  if (!isWorldLinkMode.value && !finalBannerName) {
+    alert('请先选择一个 Ban主。');
+    return;
+  }
+
   const processedChars = form.selectedChars.map(char => {
     let finalUnit = char.selectedUnit;
     let finalSkill = char.skillType;
 
-    if (isVsFesSkillMode(char) && finalSkill !== 'bfes_up') {
+    if (isVsFesSkillMode(char) && finalSkill !== ACTIVE_FES_SKILL_KEY) {
       finalSkill = 'unit_score';
     }
 
     // 如果是箱活，VS 自动强制跟随第一个角色的 Unit
     if (form.eventType === '箱活' && VS_NAMES.includes(char.name)) {
-      const bannerUnit = getOCUnit(form.selectedChars[0].name);
-      finalUnit = bannerUnit;
+      const bannerUnit = getBannerUnit();
+      if (bannerUnit) {
+        finalUnit = bannerUnit;
+      }
     }
 
     if (isBfesVsUnitLocked(char)) {
@@ -758,6 +865,7 @@ const submit = () => {
     eventType: form.eventType,
     gachaType: form.gachaType,
     predictAttr: form.predictAttr,
+    bannerName: finalBannerName,
     selectedChars: processedChars,
     event_title: `[预测] ${form.eventType}`
   });
@@ -812,6 +920,7 @@ const submit = () => {
 .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #94a3b8; }
 
 .global-config-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.global-config-bar.has-banner { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .cfg-group label { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: bold; }
 .cfg-group select { width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; }
 
@@ -824,7 +933,7 @@ const submit = () => {
   display: flex; gap: 12px; padding: 10px; background: #fff; 
   border: 1px solid #e2e8f0; border-radius: 10px; transition: 0.2s;
 }
-.editor-card:first-child { border-left: 5px solid #ff7722; }
+.editor-card.is-banner-card { border-left: 5px solid #ff7722; }
 
 .card-left { position: relative; }
 .editor-avatar { width: 50px; height: 50px; border-radius: 8px; }
@@ -926,6 +1035,10 @@ const submit = () => {
   .global-config-bar {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
+  }
+
+  .global-config-bar.has-banner {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .cfg-group label {
