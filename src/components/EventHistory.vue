@@ -130,6 +130,17 @@
               <input v-model="previewIncludeCollabReward" type="checkbox" />
               <span>联动</span>
             </label>
+            <label
+              v-if="panel.id === 'pure-score'"
+              class="preview-head-toggle"
+              title="勾选后，分卡统计会计入团分卡。"
+              @mousedown.stop
+              @touchstart.stop
+              @click.stop
+            >
+              <input v-model="previewIncludeUnitScoreInPureScore" type="checkbox" />
+              <span>团分</span>
+            </label>
             <div
               v-if="panel.id === 'limited-ban'"
               class="preview-head-filters"
@@ -142,6 +153,19 @@
                 :title="previewLimitedBanFilterButtonTitle"
                 @click="cyclePreviewLimitedBanEventTypeFilter"
               >{{ previewLimitedBanFilterButtonText }}</button>
+            </div>
+            <div
+              v-if="panel.id === 'banner'"
+              class="preview-head-filters"
+              @mousedown.stop
+              @touchstart.stop
+              @click.stop
+            >
+              <button
+                class="preview-head-filter-btn"
+                :title="previewBannerFilterButtonTitle"
+                @click="cyclePreviewBannerEventTypeFilter"
+              >{{ previewBannerFilterButtonText }}</button>
             </div>
             <button
               class="preview-collapse-btn"
@@ -327,13 +351,13 @@
     </transition>
     <div class="event-history" ref="historyContainer" @scroll.passive="handleHistoryScroll">
       <div ref="filterStickyRef" class="filter-sticky">
-        <div class="filter-bar">
+        <div class="filter-bar" :class="{ 'is-compact': isCompactFilterBar }">
           <button @click="sortDesc = !sortDesc" class="sort-btn" :title="sortDesc ? '最新在前' : '最早在前'">
             {{ sortDesc ? '最新在前' : '最早在前' }}
           </button>
           <button
-            @click="hideBirthdayRows = !hideBirthdayRows"
-            :class="['nav-btn', { 'compact-tip': isCompactFilterBar, 'active-highlight': !hideBirthdayRows }]"
+            @click="toggleBirthdayRowsVisibility"
+            :class="['nav-btn', { 'compact-tip': isCompactFilterBar, 'is-icon-only': isCompactFilterBar, 'active-highlight': !hideBirthdayRows }]"
             :title="hideBirthdayRows ? '已隐藏生日行' : '显示生日行'"
             :data-tip="isCompactFilterBar ? '生日行' : null"
           >
@@ -341,8 +365,8 @@
             <span v-if="!isCompactFilterBar">生日行：{{ hideBirthdayRows ? '隐藏' : '显示' }}</span>
           </button>
           <button
-            @click="hidePreviewRows = !hidePreviewRows"
-            :class="['nav-btn', { 'compact-tip': isCompactFilterBar, 'active-highlight': !hidePreviewRows }]"
+            @click="togglePreviewRowsVisibility"
+            :class="['nav-btn', { 'compact-tip': isCompactFilterBar, 'is-icon-only': isCompactFilterBar, 'active-highlight': !hidePreviewRows }]"
             :title="hidePreviewRows ? '已隐藏生放送行' : '显示生放送行'"
             :data-tip="isCompactFilterBar ? '生放送' : null"
           >
@@ -350,29 +374,29 @@
             <span v-if="!isCompactFilterBar">生放送：{{ hidePreviewRows ? '隐藏' : '显示' }}</span>
           </button>
           <button
-            @click="hideCollabPools = !hideCollabPools"
-            :class="['nav-btn', { 'compact-tip': isCompactFilterBar, 'active-highlight': !hideCollabPools }]"
+            @click="toggleCollabPoolsVisibility"
+            :class="['nav-btn', { 'compact-tip': isCompactFilterBar, 'is-icon-only': isCompactFilterBar, 'active-highlight': !hideCollabPools }]"
             :title="hideCollabPools ? '已隐藏联动卡池' : '显示联动卡池'"
             :data-tip="isCompactFilterBar ? '联动卡池' : null"
           >
             <img src="/data/icon/collaboration.png" class="compact-btn-icon" alt="联动" />
             <span v-if="!isCompactFilterBar">联动卡池：{{ hideCollabPools ? '隐藏' : '显示' }}</span>
           </button>
-          <button @click="scrollTo('top')" class="nav-btn compact-tip" title="顶部" data-tip="回到顶部">
+          <button @click="scrollTo('top')" :class="['nav-btn', 'compact-tip', { 'is-icon-only': isCompactFilterBar }]" title="顶部" data-tip="回到顶部">
             <img src="/data/icon/top.png" class="compact-btn-icon" alt="顶部" />
             <span v-if="!isCompactFilterBar">顶部</span>
           </button>
           <button @click="scrollTo('current')" class="nav-btn current-btn compact-tip" title="当前活动" data-tip="当前活动">
             当期
           </button>
-          <button @click="scrollTo('bottom')" class="nav-btn compact-tip" title="底部" data-tip="前往底部">
+          <button @click="scrollTo('bottom')" :class="['nav-btn', 'compact-tip', { 'is-icon-only': isCompactFilterBar }]" title="底部" data-tip="前往底部">
             <img src="/data/icon/bottom.png" class="compact-btn-icon" alt="底部" />
             <span v-if="!isCompactFilterBar">底部</span>
           </button>
           <button 
             @click="showFilter = !showFilter" 
             :title="hasActiveFilters ? '已启用筛选' : '筛选面板'"
-            :class="['nav-btn', 'compact-tip', { 'active-highlight': hasActiveFilters || showFilter }]"
+            :class="['nav-btn', 'compact-tip', { 'is-icon-only': isCompactFilterBar && !hasActiveFilters, 'has-count': isCompactFilterBar && hasActiveFilters, 'active-highlight': hasActiveFilters || showFilter }]"
             data-tip="筛选面板"
           >
             <img src="/data/icon/filter.png" class="compact-btn-icon" alt="筛选" />
@@ -641,9 +665,16 @@
                 <span class="banner-tag" :style="{ backgroundColor: getCharColor(row.event.banner) }">BAN</span>
               </template>
             </div>
+            <div
+              v-if="isEditorOpen && formatSeriesCompact(row.event)"
+              class="editor-series-chip"
+              :style="getEditorSeriesStyle(row.event)"
+            >
+              {{ formatSeriesCompact(row.event) }}
+            </div>
           </div>
 
-          <div class="event-main-content">
+          <div v-if="!isEditorOpen" class="event-main-content">
             <div class="event-title-row">
               <span class="event-title">{{ row.event.event_title }}</span>
             </div>
@@ -711,7 +742,7 @@
             </div>
           </div>
 
-          <div class="vs-section">
+          <div v-if="!isEditorOpen" class="vs-section">
             <div v-if="row.event.virtual_singer" class="vs-list">
               <img v-for="vs in parseVS(row.event.virtual_singer)" :key="vs" :src="`/chars/${getCharAbbr(vs)}.png`" :title="vs" class="vs-avatar" />
             </div>
@@ -732,7 +763,7 @@
             </div>
           </div>
 
-          <div class="attr-section">
+          <div v-if="!isEditorOpen" class="attr-section">
             <img v-if="hasAttributeIcon(row.event.event_attribute)" :src="`/elements/${row.event.event_attribute.toLowerCase()}.png`" class="attr-icon" />
           </div>
         </div>
@@ -1464,11 +1495,13 @@ const PREVIEW_DAILY_SKILL_BASE = {
 const PREVIEW_PANEL_DEFS = [
   { id: 'four', title: '四星', icon: '⭐', statKey: 'fourStarCount', externalKey: 'fourStarCount' },
   { id: 'limited', title: '限定', icon: '🎀', statKey: 'limitedCount', externalKey: 'limitedCount' },
+  { id: 'banner', title: 'Banner', icon: 'B', statKey: 'bannerCount', externalKey: 'bannerCount' },
   { id: 'limited-ban', title: '限Ban', icon: '🚫', statKey: 'limitedBanCount', externalKey: 'limitedBanCount' },
   { id: 'vs-last-four', title: 'V上次四星', icon: 'V', statKey: 'vsLastFour' },
   { id: 'vs-unit-score', title: '团分', icon: 'U', statKey: 'vsUnitScore' },
-  { id: 'p-score', title: 'P分', icon: 'P', statKey: 'pScoreCount' },
   { id: 'pure-score', title: '分卡', icon: 'S', statKey: 'pureScoreCount' },
+  { id: 'p-score', title: 'P分', icon: 'P', statKey: 'pScoreCount' },
+  { id: 'score-up', title: '普分', icon: 'N', statKey: 'scoreUpCount', externalKey: 'scoreUpCount' },
   { id: 'recovery', title: '奶卡', icon: '❤', statKey: 'recoveryCount' },
   { id: 'accuracy', title: '判卡', icon: '✓', statKey: 'accuracyCount' },
   { id: 'three', title: '三星', icon: '3', statKey: 'threeStarCount' },
@@ -1492,7 +1525,9 @@ const selectedPreviewAttrChars = ref([]);
 const selectedPreviewDailyLineupChars = ref([]);
 const currentEditingSelectionNames = ref([]);
 const previewIncludeCollabReward = ref(false);
+const previewIncludeUnitScoreInPureScore = ref(false);
 const previewLimitedBanEventTypeFilter = ref('all');
+const previewBannerEventTypeFilter = ref('all');
 const previewFestivalMergeHigherRanks = ref(false);
 const selectedPreviewFestival = ref(PREVIEW_FESTIVAL_TYPES[0]);
 const previewFestivalFesToggles = ref({
@@ -1665,6 +1700,29 @@ const cyclePreviewLimitedBanEventTypeFilter = () => {
   previewLimitedBanEventTypeFilter.value = 'all';
 };
 
+const setPreviewBannerEventTypeFilter = (targetType, checked) => {
+  if (checked) {
+    previewBannerEventTypeFilter.value = targetType;
+    return;
+  }
+  if (previewBannerEventTypeFilter.value === targetType) {
+    previewBannerEventTypeFilter.value = 'all';
+  }
+};
+
+const cyclePreviewBannerEventTypeFilter = () => {
+  const current = previewBannerEventTypeFilter.value;
+  if (current === 'all') {
+    previewBannerEventTypeFilter.value = '箱活';
+    return;
+  }
+  if (current === '箱活') {
+    previewBannerEventTypeFilter.value = '混活';
+    return;
+  }
+  previewBannerEventTypeFilter.value = 'all';
+};
+
 const previewLimitedBanFilterButtonText = computed(() => {
   const current = previewLimitedBanEventTypeFilter.value;
   if (current === '箱活') return '仅箱';
@@ -1677,6 +1735,20 @@ const previewLimitedBanFilterButtonTitle = computed(() => {
   if (current === '箱活') return '当前仅统计箱活，点击切换到混活';
   if (current === '混活') return '当前仅统计混活，点击切换到全体';
   return '当前统计全体，点击切换到箱活';
+});
+
+const previewBannerFilterButtonText = computed(() => {
+  const current = previewBannerEventTypeFilter.value;
+  if (current === '箱活') return '仅箱';
+  if (current === '混活') return '仅混';
+  return '箱混';
+});
+
+const previewBannerFilterButtonTitle = computed(() => {
+  const current = previewBannerEventTypeFilter.value;
+  if (current === '箱活') return '当前仅统计箱活Banner，点击切换到混活';
+  if (current === '混活') return '当前仅统计混活Banner，点击切换到全体';
+  return '当前统计全体Banner，点击切换到箱活';
 });
 
 const isFesCardType = (typeValue) => FES_CARD_TYPES.has(String(typeValue || '').trim().toLowerCase());
@@ -1737,7 +1809,9 @@ const previewPanelOptions = computed(() => PREVIEW_PANEL_DEFS.map((def) => {
     ? `节日人选·${activePreviewFestivalName.value}`
     : (isLimitedBan && previewLimitedBanEventTypeFilter.value !== 'all'
       ? `限Ban·${previewLimitedBanEventTypeFilter.value === '箱活' ? '箱' : '混'}`
-      : def.title);
+      : (def.id === 'banner' && previewBannerEventTypeFilter.value !== 'all'
+        ? `Banner·${previewBannerEventTypeFilter.value === '箱活' ? '箱' : '混'}`
+        : def.title));
   return {
     ...def,
     title: dynamicTitle,
@@ -2242,9 +2316,13 @@ const previewStepProgressOrderMap = computed(() => {
     if (rarity === '4') {
       row.lastFourStarOrderId = Math.max(Number(row.lastFourStarOrderId || 0), progressOrderId);
       if (skill === 'p_score') row.lastPScoreOrderId = Math.max(Number(row.lastPScoreOrderId || 0), progressOrderId);
+      if (skill === 'score_up') row.lastScoreUpOrderId = Math.max(Number(row.lastScoreUpOrderId || 0), progressOrderId);
       if (skill === 'accuracy') row.lastAccuracyOrderId = Math.max(Number(row.lastAccuracyOrderId || 0), progressOrderId);
       if (skill === 'recovery') row.lastRecoveryOrderId = Math.max(Number(row.lastRecoveryOrderId || 0), progressOrderId);
-      if (!['accuracy', 'recovery', 'unit_score'].includes(skill)) {
+      const excludedPureSkills = previewIncludeUnitScoreInPureScore.value
+        ? ['accuracy', 'recovery', '-', '']
+        : ['accuracy', 'recovery', 'unit_score', '-', ''];
+      if (!excludedPureSkills.includes(skill)) {
         row.lastPureScoreOrderId = Math.max(Number(row.lastPureScoreOrderId || 0), progressOrderId);
       }
     }
@@ -2266,19 +2344,32 @@ const previewStepProgressOrderMap = computed(() => {
   });
 
   const typeFilter = previewLimitedBanEventTypeFilter.value;
+  const bannerTypeFilter = previewBannerEventTypeFilter.value;
   (props.allEvents || []).forEach((ev) => {
     if (!isNumericEventId(ev?.id)) return;
     const eid = Number(ev.id);
     if (!Number.isFinite(eid) || eid <= 0) return;
     if (Number.isFinite(maxId) && maxId > 0 && eid > maxId) return;
+
+    const bannerName = normalizeCharName(ev?.banner);
+    if (bannerName && PREVIEW_CHAR_ORDER[bannerName] && !isVirtualSinger(bannerName)) {
+      const eventType = String(ev?.event_type || '').trim();
+      if (['箱活', '混活'].includes(eventType) && (bannerTypeFilter === 'all' || bannerTypeFilter === eventType)) {
+        const row = ensure(bannerName);
+        if (row) {
+          row.lastBannerOrderId = Math.max(Number(row.lastBannerOrderId || 0), eid);
+        }
+      }
+    }
+
     if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
 
     const eventType = String(ev?.event_type || '').trim();
     if (typeFilter !== 'all' && eventType !== typeFilter) return;
 
-    const bannerName = normalizeCharName(ev?.banner);
-    if (!bannerName || !PREVIEW_CHAR_ORDER[bannerName] || isVirtualSinger(bannerName)) return;
-    const row = ensure(bannerName);
+    const bannerNameLimited = bannerName;
+    if (!bannerNameLimited || !PREVIEW_CHAR_ORDER[bannerNameLimited] || isVirtualSinger(bannerNameLimited)) return;
+    const row = ensure(bannerNameLimited);
     if (!row) return;
     row.lastLimitedBanOrderId = Math.max(Number(row.lastLimitedBanOrderId || 0), eid);
   });
@@ -2291,12 +2382,14 @@ const getPreviewStepProgressOrderKey = (name, key) => {
   if (key === 'fourStarCount') return Number(row.lastFourStarOrderId || 0);
   if (key === 'limitedCount') return Number(row.lastLimitedOrderId || 0);
   if (key === 'pScoreCount') return Number(row.lastPScoreOrderId || 0);
+  if (key === 'scoreUpCount') return Number(row.lastScoreUpOrderId || 0);
   if (key === 'pureScoreCount') return Number(row.lastPureScoreOrderId || 0);
   if (key === 'recoveryCount') return Number(row.lastRecoveryOrderId || 0);
   if (key === 'accuracyCount') return Number(row.lastAccuracyOrderId || 0);
   if (key === 'threeStarCount') return Number(row.lastThreeStarOrderId || 0);
   if (key === 'twoStarCount') return Number(row.lastTwoStarOrderId || 0);
   if (key === 'rewardTotalCount') return Number(row.lastRewardOrderId || 0);
+  if (key === 'bannerCount') return Number(row.lastBannerOrderId || 0);
   if (key === 'limitedBanCount') return Number(row.lastLimitedBanOrderId || 0);
   return Number(row.lastCardOrderId || 0);
 };
@@ -2325,6 +2418,8 @@ const previewCharStats = computed(() => {
         fourStarCount: 0,
         limitedCount: 0,
         pScoreCount: 0,
+        scoreUpCount: 0,
+        bannerCount: 0,
         twoStarCount: 0,
         threeStarCount: 0,
         rewardTwoCount: 0,
@@ -2345,6 +2440,7 @@ const previewCharStats = computed(() => {
     if (rarity === '4') {
       stats[name].fourStarCount += 1;
       if (skill === 'p_score') stats[name].pScoreCount += 1;
+      if (skill === 'score_up') stats[name].scoreUpCount += 1;
       if (skill === 'accuracy') stats[name].accuracyCount += 1;
       if (skill === 'recovery') stats[name].recoveryCount += 1;
       if (skill === 'unit_score') stats[name].unitScoreCount += 1;
@@ -2363,8 +2459,49 @@ const previewCharStats = computed(() => {
     if (PREVIEW_LIMITED_TYPES.has(type)) stats[name].limitedCount += 1;
   });
 
+  const bannerTypeFilter = previewBannerEventTypeFilter.value;
+  (props.allEvents || []).forEach((ev) => {
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (!Number.isFinite(eid) || eid <= 0) return;
+    if (Number.isFinite(maxId) && maxId > 0 && eid > maxId) return;
+
+    const eventType = String(ev?.event_type || '').trim();
+    if (!['箱活', '混活'].includes(eventType)) return;
+    if (bannerTypeFilter !== 'all' && bannerTypeFilter !== eventType) return;
+
+    const bannerName = normalizeCharName(ev?.banner);
+    if (!bannerName || !PREVIEW_CHAR_ORDER[bannerName] || isVirtualSinger(bannerName)) return;
+
+    if (!stats[bannerName]) {
+      stats[bannerName] = {
+        name: bannerName,
+        fourStarCount: 0,
+        limitedCount: 0,
+        pScoreCount: 0,
+        scoreUpCount: 0,
+        bannerCount: 0,
+        twoStarCount: 0,
+        threeStarCount: 0,
+        rewardTwoCount: 0,
+        rewardThreeCount: 0,
+        accuracyCount: 0,
+        recoveryCount: 0,
+        unitScoreCount: 0,
+        pendingSkillCount: 0,
+        pureScoreCount: 0,
+        rewardTotalCount: 0,
+        attr4Counts: { Pure: 0, Cool: 0, Cute: 0, Happy: 0, Mysterious: 0 }
+      };
+    }
+    stats[bannerName].bannerCount += 1;
+  });
+
   return Object.values(stats).map((s) => {
-    s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount - s.pendingSkillCount;
+    const pureSubtract = previewIncludeUnitScoreInPureScore.value
+      ? (s.accuracyCount + s.recoveryCount + s.pendingSkillCount)
+      : (s.accuracyCount + s.recoveryCount + s.unitScoreCount + s.pendingSkillCount);
+    s.pureScoreCount = s.fourStarCount - pureSubtract;
     s.rewardTotalCount = s.rewardThreeCount + s.rewardTwoCount;
     return s;
   });
@@ -2428,6 +2565,24 @@ const previewLimitedBanSteps = computed(() => {
     .map(([count, chars]) => ({
       count,
       chars: chars.sort((a, b) => comparePreviewStepCharByKey(a.name, b.name, 'limitedBanCount'))
+    }))
+    .sort((a, b) => b.count - a.count);
+});
+
+const previewBannerSteps = computed(() => {
+  const grouped = new Map();
+  previewCharStats.value
+    .filter((row) => !isVirtualSinger(String(row?.name || '').trim().split(/\s+/)[0]))
+    .forEach((row) => {
+      const count = Number(row?.bannerCount || 0);
+      if (!grouped.has(count)) grouped.set(count, []);
+      grouped.get(count).push({ name: row.name });
+    });
+
+  return Array.from(grouped.entries())
+    .map(([count, chars]) => ({
+      count,
+      chars: chars.sort((a, b) => comparePreviewStepCharByKey(a.name, b.name, 'bannerCount'))
     }))
     .sort((a, b) => b.count - a.count);
 });
@@ -2691,6 +2846,9 @@ const getPreviewStepsByKey = (key) => {
   if (key === 'limitedBanCount' && previewLimitedBanEventTypeFilter.value !== 'all') {
     return previewLimitedBanSteps.value;
   }
+  if (key === 'bannerCount' && previewBannerEventTypeFilter.value !== 'all') {
+    return previewBannerSteps.value;
+  }
   const panelDef = PREVIEW_PANEL_DEFS.find((d) => d.statKey === key);
   const external = props.statsPreviewData;
   const externalMaxId = Number(external?.maxEventId);
@@ -2705,6 +2863,9 @@ const getPreviewStepsByKey = (key) => {
   }
   if (key === 'limitedBanCount') {
     return previewLimitedBanSteps.value;
+  }
+  if (key === 'bannerCount') {
+    return previewBannerSteps.value;
   }
   return buildPreviewSteps(key);
 };
@@ -3422,7 +3583,7 @@ let resizeRafId = 0;
 let jumpRetryTimer = 0;
 
 const updateCompactFilterState = () => {
-  isCompactFilterBar.value = window.innerWidth <= 768;
+  isCompactFilterBar.value = window.innerWidth <= 900;
 };
 
 const saveHistoryScroll = () => {
@@ -3466,16 +3627,43 @@ const updateViewportAnchor = () => {
 const restoreViewportAnchor = () => {
   const container = historyContainer.value;
   const anchor = viewportAnchor.value;
-  if (!container || !anchor?.id) return;
+  if (!container || !anchor?.id) return false;
 
   const el = findRowElementInContainer(anchor.id);
-  if (!el) return;
+  if (!el) return false;
 
   const containerTop = container.getBoundingClientRect().top;
   const nextTop = el.getBoundingClientRect().top - containerTop;
   container.scrollTop += (nextTop - anchor.top);
   saveHistoryScroll();
+  return true;
 };
+
+const toggleVisibilityWithViewportAnchor = (targetRef) => {
+  const container = historyContainer.value;
+  if (!container) {
+    targetRef.value = !targetRef.value;
+    return;
+  }
+
+  updateViewportAnchor();
+  const prevScrollTop = container.scrollTop;
+  const prevScrollHeight = container.scrollHeight;
+  targetRef.value = !targetRef.value;
+
+  nextTick(() => {
+    const restored = restoreViewportAnchor();
+    if (!restored) {
+      const delta = container.scrollHeight - prevScrollHeight;
+      container.scrollTop = Math.max(0, prevScrollTop + delta);
+      saveHistoryScroll();
+    }
+  });
+};
+
+const toggleBirthdayRowsVisibility = () => toggleVisibilityWithViewportAnchor(hideBirthdayRows);
+const togglePreviewRowsVisibility = () => toggleVisibilityWithViewportAnchor(hidePreviewRows);
+const toggleCollabPoolsVisibility = () => toggleVisibilityWithViewportAnchor(hideCollabPools);
 
 const handleWindowResize = () => {
   if (resizeRafId) cancelAnimationFrame(resizeRafId);
@@ -4100,6 +4288,14 @@ const CHAR_MAP = {
   "初音未来": "MIKU", "镜音铃": "RIN", "镜音连": "LEN", "巡音流歌": "LUKA", "MEIKO": "MEIKO", "KAITO": "KAITO",
 //  "初音未来 ln": "miku_ln", "初音未来 mmj": "miku_mmj", "初音未来 vbs": "miku_vbs", "初音未来 ws": "miku_ws", "初音未来 nc": "miku_nc"
 };
+const CHAR_SINGLE_MAP = {
+  "星乃一歌": "一", "天马咲希": "溪", "望月穗波": "萍", "日野森志步": "吸",
+  "花里实乃里": "花", "桐谷遥": "遥", "桃井爱莉": "桃", "日野森雫": "雫",
+  "小豆泽心羽": "豆", "白石杏": "杏", "东云彰人": "彰", "青柳冬弥": "冬",
+  "天马司": "司", "凤笑梦": "姆", "草薙宁宁": "宁", "神代类": "类",
+  "宵崎奏": "奏", "朝比奈真冬": "马", "东云绘名": "画", "晓山瑞希": "糖",
+  "初音未来": "葱", "镜音铃": "橘", "镜音连": "蕉", "巡音流歌": "鱼", "MEIKO": "酒", "KAITO": "冰"
+};
 const CHAR_COLORS = {
   "星乃一歌": "#33AAEE", "天马咲希": "#FFDD44", "望月穗波": "#EE6666", "日野森志步": "#BBDD22",
   "花里实乃里": "#FFCCAA", "桐谷遥": "#99CCFF", "桃井爱莉": "#FFAACC", "日野森雫": "#99EEDD",
@@ -4199,8 +4395,77 @@ const formatSeries = (ev) => {
   if (!ev.type_series_id) return '';
   if (ev.event_type === '箱活') return `${ev.banner.split(' ')[0]} ${ev.type_series_id}箱`;
   if (ev.event_type === '混活') return `${ev.banner.split(' ')[0]} ${ev.type_series_id}混`;
-  if (ev.event_type === 'World Link') return `${ev.unit} WL${ev.type_series_id}`;
+  if (ev.event_type === 'World Link') return `${ev.unit} WL${ev.type_series_id}${getWl3PartSuffix(ev)}`;
   return ev.type_series_id;
+};
+
+const getSingleCharLabel = (name) => {
+  const raw = String(name || '').trim();
+  if (!raw) return '';
+  const main = raw.split(' ')[0] || raw;
+  return CHAR_SINGLE_MAP[main] || main.slice(0, 1);
+};
+
+const isWl3Event = (ev) => {
+  const t = String(ev?.event_type || '').trim();
+  if (t !== 'World Link') return false;
+  const cards = Array.isArray(ev?.memberCards) ? ev.memberCards : [];
+  return cards.some((card) => String(card?.Type || '').trim().toLowerCase() === 'wl3');
+};
+
+const getWl3PartSuffix = (ev) => {
+  if (!isWl3Event(ev)) return '';
+  const currentId = Number(ev?.id);
+  if (!Number.isFinite(currentId)) return '';
+
+  const wl3Ids = (props.allEvents || [])
+    .filter((item) => {
+      if (!isNumericEventId(item?.id)) return false;
+      if (String(item?.event_type || '').trim() !== 'World Link') return false;
+      const ts = Number(String(item?.type_series_id || '').trim());
+      return Number.isFinite(ts) && ts === 3;
+    })
+    .map((item) => Number(item.id))
+    .sort((a, b) => a - b);
+
+  const idx = wl3Ids.indexOf(currentId);
+  if (idx < 0) return '';
+  return ` P${idx + 1}`;
+};
+
+const formatSeriesCompact = (ev) => {
+  if (!ev?.type_series_id) return '';
+  const sid = String(ev.type_series_id).trim();
+  if (!sid) return '';
+  if (ev.event_type === '箱活') return `${getSingleCharLabel(ev.banner)}${sid}箱`;
+  if (ev.event_type === '混活') return `${getSingleCharLabel(ev.banner)}${sid}混`;
+  if (ev.event_type === 'World Link') return `${String(ev.unit || '').toUpperCase()} WL${sid}${getWl3PartSuffix(ev)}`;
+  return sid;
+};
+
+const getEditorSeriesStyle = (ev) => {
+  if (!ev) return {};
+  const eventType = String(ev.event_type || '').trim();
+  if (eventType === '混活' || isWl3Event(ev)) {
+    return {
+      background: 'linear-gradient(45deg, #FD7CC1 0%, #87C0FF 50%, #F8FF87 100%)',
+      borderColor: 'transparent',
+      color: '#ffffff',
+      fontWeight: '700'
+    };
+  }
+
+  if (eventType === '箱活' || (eventType === 'World Link' && !isWl3Event(ev))) {
+    const base = getUnitColor(ev.unit);
+    return {
+      backgroundColor: base,
+      borderColor: base,
+      color: '#ffffff',
+      fontWeight: '700'
+    };
+  }
+
+  return {};
 };
 
 const parseVS = (vsStr) => {
@@ -4233,8 +4498,11 @@ const getFestivalPreviewUnitLogo = (name) => {
   top: 0;
   left: 0;
   overflow: hidden;
-  --editor-drawer-width: 380px;
+  --editor-drawer-width: clamp(320px, 30vw, 380px);
   --preview-config-top: 16px;
+  --eh-radius-card: 16px;
+  --eh-radius-panel: 16px;
+  --eh-radius-btn: 12px;
 }
 
 .predict-preview-floating {
@@ -4956,258 +5224,21 @@ const getFestivalPreviewUnitLogo = (name) => {
 .event-history > h1 {
   display: none;
 }
+
+button:not(:disabled) {
+  transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+button:not(:disabled):active {
+  filter: brightness(0.86);
+  transform: translateY(1px) scale(0.97);
+}
+
 /* 如果你希望编辑器是覆盖式的（Overlapping），则维持 position: fixed 
    但给左侧列表增加 marginRight */
 @media (min-width: 1001px) {
   .event-history-wrapper.with-editor .event-history {
     margin-right: var(--editor-drawer-width); /* 强制拉开距离，绝不重叠 */
-  }
-
-  /* 预测抽屉打开时启用紧凑模式，直接压缩关键尺寸，保证肉眼可见。 */
-  .event-history-wrapper.with-editor .history-list {
-    gap: 10px;
-    margin-top: 16px;
-  }
-
-  .event-history-wrapper.with-editor .event-item {
-    padding: clamp(10px, 1vw, 14px) clamp(12px, 1.2vw, 20px);
-    border-left-width: 6px;
-  }
-
-  .event-history-wrapper.with-editor .event-item,
-  .event-history-wrapper.with-editor .event-item *,
-  .event-history-wrapper.with-editor .preview-row,
-  .event-history-wrapper.with-editor .preview-row *,
-  .event-history-wrapper.with-editor .birthday-row,
-  .event-history-wrapper.with-editor .birthday-row * {
-    transition: none !important;
-  }
-
-  .event-history-wrapper.with-editor .event-basic {
-    width: clamp(48px, 4.4vw, 60px);
-    gap: 3px;
-  }
-
-  .event-history-wrapper.with-editor .event-id {
-    font-size: clamp(0.92rem, 0.98vw, 1.08rem);
-  }
-
-  .event-history-wrapper.with-editor .event-date {
-    font-size: clamp(0.64rem, 0.72vw, 0.74rem);
-  }
-
-  .event-history-wrapper.with-editor .box-turn-tag {
-    font-size: 0.56rem;
-    padding: 1px 5px;
-  }
-
-  .event-history-wrapper.with-editor .banner-section {
-    width: clamp(66px, 6vw, 80px);
-    margin: 0 clamp(4px, 0.7vw, 8px);
-  }
-
-  .event-history-wrapper.with-editor .banner-avatar {
-    width: clamp(52px, 4.8vw, 64px);
-    height: clamp(52px, 4.8vw, 64px);
-  }
-
-  .event-history-wrapper.with-editor .unit-logo-banner {
-    width: clamp(56px, 5.2vw, 68px);
-    height: clamp(56px, 5.2vw, 68px);
-  }
-
-  .event-history-wrapper.with-editor .event-main-content {
-    width: clamp(138px, 13.2vw, 176px);
-    padding: 0 4px;
-    min-width: 0;
-  }
-
-  .event-history-wrapper.with-editor .event-title {
-    font-size: clamp(0.9rem, 1.02vw, 1rem);
-    line-height: 1.26;
-  }
-
-  .event-history-wrapper.with-editor .type-tag {
-    font-size: clamp(0.66rem, 1vw, 0.74rem);
-    padding: 1px 7px;
-    white-space: nowrap;
-    flex: 0 0 auto;
-  }
-
-  .event-history-wrapper.with-editor .series-text {
-    font-size: clamp(0.76rem, 1.05vw, 0.9rem);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    flex: 1 1 auto;
-  }
-
-  .event-history-wrapper.with-editor .fest-tag {
-    font-size: 0.62rem;
-    padding: 1px 5px;
-  }
-
-  .event-history-wrapper.with-editor .type-indicator {
-    margin-top: 3px;
-    gap: 6px;
-    min-width: 0;
-    flex-wrap: nowrap;
-  }
-
-  .event-history-wrapper.with-editor .event-members {
-    --with-editor-gap: 4px;
-    --with-editor-slot-size: clamp(64px, calc((100% - (var(--with-editor-gap) * 5)) / 6), 118px);
-    gap: 8px;
-    padding: 0 8px;
-  }
-
-  .event-history-wrapper.with-editor .member-row:not(.fes-row) {
-    display: flex;
-    flex-wrap: wrap;
-    column-gap: var(--with-editor-gap);
-    row-gap: 6px;
-    align-items: flex-start;
-    justify-content: flex-start;
-  }
-
-  .event-history-wrapper.with-editor .fes-row {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: var(--with-editor-gap);
-    padding-left: 10px;
-  }
-
-  .event-history-wrapper.with-editor .member-row .member-card-box {
-    flex: 0 0 var(--with-editor-slot-size);
-    width: var(--with-editor-slot-size);
-    max-width: var(--with-editor-slot-size);
-    justify-self: start;
-  }
-
-  .event-history-wrapper.with-editor .fes-row .member-card-box {
-    flex: 0 0 var(--with-editor-slot-size);
-    width: var(--with-editor-slot-size);
-    max-width: var(--with-editor-slot-size);
-  }
-
-  .event-history-wrapper.with-editor .fes-type-icon {
-    height: 52px;
-    flex: 0 0 auto;
-    margin-right: 8px;
-  }
-
-  .event-history-wrapper.with-editor .avatar-container {
-    width: min(100%, var(--with-editor-slot-size));
-    height: min(100%, var(--with-editor-slot-size));
-    aspect-ratio: 1 / 1;
-    border-width: 3px;
-    box-sizing: border-box;
-    margin: 0 auto;
-  }
-
-  .event-history-wrapper.with-editor .avatar-container .star-icon {
-    width: clamp(8px, calc(var(--with-editor-slot-size) * 0.16), 11px);
-    height: clamp(8px, calc(var(--with-editor-slot-size) * 0.16), 11px);
-  }
-
-  .event-history-wrapper.with-editor .lim-tag {
-    top: -2px;
-    right: calc(var(--with-editor-slot-size) * 0.2);
-    width: auto;
-    height: auto;
-    line-height: 1.1;
-    padding: 1px 4px;
-    font-size: clamp(6px, calc(var(--with-editor-slot-size) * 0.11), 8px);
-    border-radius: 8px;
-    transform: none;
-    clip-path: none;
-  }
-
-  .event-history-wrapper.with-editor .vs-section {
-    width: 56px;
-    max-width: 56px;
-    flex: 0 0 56px;
-    gap: 4px;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .event-history-wrapper.with-editor .vs-avatar,
-  .event-history-wrapper.with-editor .vs-list img {
-    width: clamp(22px, calc(var(--with-editor-slot-size) * 0.4), 30px);
-    height: clamp(22px, calc(var(--with-editor-slot-size) * 0.4), 30px);
-    max-width: 30px;
-    max-height: 30px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
-
-  .event-history-wrapper.with-editor .song-tooltip,
-  .event-history-wrapper.with-editor .attr-section {
-    display: none;
-  }
-
-  .event-history-wrapper.with-editor .card-attr-icon {
-    width: clamp(14px, calc(var(--with-editor-slot-size) * 0.28), 20px);
-    height: clamp(14px, calc(var(--with-editor-slot-size) * 0.28), 20px);
-  }
-
-  .event-history-wrapper.with-editor .sub-unit-logo {
-    width: clamp(18px, calc(var(--with-editor-slot-size) * 0.34), 24px);
-    height: clamp(18px, calc(var(--with-editor-slot-size) * 0.34), 24px);
-    right: -7px;
-    bottom: -4px;
-  }
-
-  .event-history-wrapper.with-editor .birthday-row {
-    min-height: 34px;
-    padding: 4px 10px;
-    gap: 10px;
-  }
-
-  .event-history-wrapper.with-editor .birthday-date {
-    width: 78px;
-    font-size: 0.72rem;
-  }
-
-  .event-history-wrapper.with-editor .birthday-name {
-    min-width: 74px;
-    font-size: 0.9rem;
-  }
-
-  .event-history-wrapper.with-editor .birthday-row-icon {
-    width: 18px;
-    height: 18px;
-  }
-
-  .event-history-wrapper.with-editor .preview-row {
-    min-height: 36px;
-    padding: 4px 10px;
-    gap: 8px;
-  }
-
-  .event-history-wrapper.with-editor .preview-label {
-    min-width: 56px;
-    font-size: 0.68rem;
-    padding: 1px 6px;
-  }
-
-  .event-history-wrapper.with-editor .preview-date {
-    font-size: 0.72rem;
-  }
-
-  .event-history-wrapper.with-editor .preview-members {
-    margin-left: 0;
-    justify-content: center;
-    flex: 1 1 auto;
-    gap: 6px;
-  }
-
-  .event-history-wrapper.with-editor .preview-member-avatar {
-    width: 40px;
-    height: 40px;
   }
 }
 
@@ -5240,20 +5271,28 @@ const getFestivalPreviewUnitLogo = (name) => {
   justify-content: center;
   gap: 6px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 999px;
   border: 1px solid #ddd;
   background: #fff;
   transition: 0.2s;
   white-space: nowrap;
+  min-height: 36px;
+  line-height: 1;
 }
-.nav-btn:hover { background: #eee; }
+
+.nav-btn.is-icon-only {
+  width: 36px;
+  padding: 0;
+  border-radius: 999px;
+  aspect-ratio: 1 / 1;
+}
 
 
 .filter-bar { margin-bottom: 15px; }
 .sort-btn {
   padding: 8px 16px;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 999px;
   border: 1px solid #ddd;
   background: #fff;
   flex: 0 0 auto;
@@ -5261,6 +5300,13 @@ const getFestivalPreviewUnitLogo = (name) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 36px;
+  line-height: 1;
+}
+
+.current-btn {
+  min-width: 58px;
+  font-weight: 700;
 }
 
 .compact-btn-icon {
@@ -5317,7 +5363,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   scroll-margin-top: 80px; /* 对应 .sticky-filter 的高度 */
   position: relative; /* 必须为 relative 以便伪元素定位 */
   z-index: 1;
-  display: flex; align-items: center; padding: 12px 20px; border-radius: 12px;
+  display: flex; align-items: center; padding: 12px 20px; border-radius: var(--eh-radius-card);
   background: var(--bg-color); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   transition: all 0.2s; border-left: 6px solid transparent;
   box-sizing: border-box;
@@ -5329,7 +5375,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   align-items: center;
   gap: 14px;
   min-height: 42px;
-  border-radius: 10px;
+  border-radius: var(--eh-radius-panel);
   padding: 6px 14px;
   border: 1px solid rgba(15, 23, 42, 0.12);
   box-sizing: border-box;
@@ -5536,7 +5582,7 @@ const getFestivalPreviewUnitLogo = (name) => {
 .filter-panel {
   background: #fff;
   border: 1px solid #ddd;
-  border-radius: 12px;
+  border-radius: var(--eh-radius-panel);
   position: relative;
   z-index: 1510;
   padding: 15px;
@@ -5588,7 +5634,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   border: 1px solid #eee;
   background: #f9f9f9;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 999px;
   white-space: nowrap; /* 确保按钮文字不会在内部换行 */
   transition: all 0.2s;
   /* margin-right: 5px;  <-- 建议删掉这一行，改用父级的 gap */
@@ -5676,7 +5722,7 @@ const getFestivalPreviewUnitLogo = (name) => {
 .rarity-item {
   padding: 4px 8px;
   border: 1px solid #eee;
-  border-radius: 6px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -5700,7 +5746,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   color: white;
   border: none;
   padding: 8px 15px;
-  border-radius: 6px;
+  border-radius: 999px;
   cursor: pointer;
 }
 
@@ -5711,6 +5757,25 @@ const getFestivalPreviewUnitLogo = (name) => {
   background: #f3f4f6;
   color: #6b7280;
   border: 1px solid #d1d5db;
+  border-radius: 999px;
+}
+
+.sort-btn:hover,
+.nav-btn:hover,
+.btn-group button:hover,
+.btn-group-sm button:hover,
+.panel-reset-btn:hover {
+  background: #e5e7eb;
+}
+
+.btn-group button.active:hover,
+.btn-group-sm button.active:hover,
+.nav-btn.active-highlight:hover {
+  background: #33ccbb;
+}
+
+.clear-btn:hover {
+  filter: brightness(0.92);
 }
 
 .panel-reset-btn.is-ready {
@@ -5751,6 +5816,28 @@ const getFestivalPreviewUnitLogo = (name) => {
 .banner-avatar { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 .banner-tag { position: absolute; bottom: 2px; right: -6px; color: white; font-size: 9px; padding: 1px 4px; border-radius: 4px; font-weight: bold; border: 1px solid white; }
 .unit-logo-banner { width: 68px; height: 68px; object-fit: contain; }
+
+.editor-series-chip {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 18px;
+  padding: 1px 7px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.event-history-wrapper.with-editor .banner-section {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
 
 /* 3. 标题 */
 .event-main-content { width: 160px; padding: 0 5px; }
@@ -5857,15 +5944,15 @@ const getFestivalPreviewUnitLogo = (name) => {
     height: 19px;
   }
 
-  .event-history-wrapper.with-editor .event-history {
-    margin-right: 0;
-  }
-
   .event-item { flex-wrap: wrap; }
   .event-members { width: 100%; border-left: none; border-top: 1px solid #eee; padding: 10px 0; }
 }
 
 @media (max-width: 900px) {
+  .event-history-wrapper.with-editor .event-history {
+    margin-right: 0;
+  }
+
   .event-history-wrapper {
     --preview-config-top: calc(env(safe-area-inset-top) + 62px);
   }
@@ -5875,8 +5962,8 @@ const getFestivalPreviewUnitLogo = (name) => {
   }
 
   .filter-bar {
-    padding: 6px 3px;
-    gap: 4px;
+    padding: 4px 2px;
+    gap: 3px;
     margin-bottom: 4px;
   }
 
@@ -5885,7 +5972,8 @@ const getFestivalPreviewUnitLogo = (name) => {
   .clear-btn {
     min-width: 0;
     height: 31px;
-    padding: 0 8px;
+    min-height: 31px;
+    padding: 0 6px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -5894,9 +5982,47 @@ const getFestivalPreviewUnitLogo = (name) => {
     white-space: nowrap;
   }
 
+  .filter-bar .nav-btn.is-icon-only {
+    width: 31px;
+    min-width: 31px;
+    height: 31px;
+    min-height: 31px;
+    padding: 0;
+    border-radius: 999px;
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
+  }
+
+  .filter-bar .nav-btn.compact-tip.has-count {
+    width: auto;
+    min-width: 56px;
+    height: 31px;
+    min-height: 31px;
+    padding: 0 8px;
+    gap: 4px;
+    border-radius: 999px;
+    aspect-ratio: auto;
+    box-sizing: border-box;
+  }
+
+  .sort-btn {
+    min-width: 86px;
+  }
+
+  .current-btn {
+    min-width: 58px;
+  }
+
   .compact-btn-icon {
     width: 15px;
     height: 15px;
+  }
+
+  .compact-filter-count {
+    min-width: 22px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 0.68rem;
   }
 
   .compact-tip {
@@ -5922,7 +6048,92 @@ const getFestivalPreviewUnitLogo = (name) => {
   }
 }
 
+@media (min-width: 769px) and (max-width: 900px) {
+  .sort-btn,
+  .nav-btn,
+  .clear-btn {
+    height: 29px;
+    min-height: 29px;
+    font-size: 0.72rem;
+  }
+
+  .filter-bar .nav-btn.is-icon-only {
+    width: 29px;
+    min-width: 29px;
+    height: 29px;
+    min-height: 29px;
+  }
+
+  .filter-bar .nav-btn.compact-tip.has-count {
+    min-width: 50px;
+    height: 29px;
+    min-height: 29px;
+    padding: 0 7px;
+  }
+
+  .sort-btn {
+    min-width: 82px;
+  }
+
+  .current-btn {
+    min-width: 56px;
+  }
+
+  .compact-btn-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
 @media (max-width: 768px) {
+  .sort-btn,
+  .nav-btn,
+  .clear-btn {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 6px;
+    font-size: 0.72rem;
+  }
+
+  .filter-bar .nav-btn.is-icon-only {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+    border-radius: 999px;
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
+  }
+
+  .filter-bar .nav-btn.compact-tip.has-count {
+    width: auto;
+    min-width: 52px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 8px;
+    gap: 3px;
+    border-radius: 999px;
+    aspect-ratio: auto;
+    box-sizing: border-box;
+  }
+
+  .current-btn {
+    min-width: 56px;
+  }
+
+  .compact-btn-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .compact-filter-count {
+    min-width: 20px;
+    height: 19px;
+    padding: 0 5px;
+    font-size: 0.66rem;
+  }
+
   .event-history {
     --member-avatar-size: clamp(62px, 10.2vw, 54px);
   }
@@ -5974,7 +6185,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   .btn-group-sm button {
     font-size: 0.74rem;
     padding: 3px 8px;
-    border-radius: 6px;
+    border-radius: 999px;
   }
 
   .icon-group.attributes {

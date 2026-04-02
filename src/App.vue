@@ -57,7 +57,7 @@
       </div>
       <div class="nav-tabs-spacer"></div>
       <div class="predict-info" v-if="showPredictInfoInNav">
-        {{ isCompactTopNav ? `${predictiveEvents.length}条预测` : `${activePredictSourceName}：${predictiveEvents.length} 条预测` }}
+        {{ `${predictiveEvents.length}条预测` }}
       </div>
       <div class="predict-cleanup-info" v-if="cleanedPatchNoticeCount > 0">
         {{ isCompactTopNav ? `已清理 ${cleanedPatchNoticeCount} 条` : `已自动清理 ${cleanedPatchNoticeCount} 条过期/冲突预测` }}
@@ -887,7 +887,7 @@ const movePredictSource = (sourceId, delta) => {
 
 const updateCompactTopNav = () => {
   if (typeof window === 'undefined') return;
-  isCompactTopNav.value = window.innerWidth <= 768;
+  isCompactTopNav.value = window.innerWidth <= 900;
   isStatsTopNavCompact.value = window.innerWidth <= 900;
   syncStatsTopControlState();
 };
@@ -900,7 +900,7 @@ const updateSourceMenuPosition = () => {
   const rect = trigger.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const compact = vw <= 768;
+  const compact = vw <= 900;
   const minWidth = compact ? 250 : 320;
   const maxWidth = compact ? 360 : 420;
   const width = Math.max(Math.min(maxWidth, vw - 12), Math.min(minWidth, vw - 12));
@@ -1847,10 +1847,12 @@ watch(isHistoryPredictEditorOpen, (open) => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  min-height: 42px;
+  padding: 5px 8px;
   border: 1px solid #d1d5db;
-  border-radius: 10px;
+  border-radius: 999px;
   background: #f8fafc;
+  box-sizing: border-box;
 }
 
 .stats-top-nav-wrap {
@@ -1862,7 +1864,7 @@ watch(isHistoryPredictEditorOpen, (open) => {
   min-height: 42px;
   padding: 5px 8px;
   border: 1px solid #d1d5db;
-  border-radius: 10px;
+  border-radius: 999px;
   background: #f8fafc;
   box-sizing: border-box;
 }
@@ -1877,7 +1879,7 @@ watch(isHistoryPredictEditorOpen, (open) => {
   width: 56px;
   height: var(--stats-top-control-size);
   border: 1px solid #cbd5e1;
-  border-radius: 7px;
+  border-radius: 999px;
   padding: 0 6px;
   font-size: 0.74rem;
   color: #0f172a;
@@ -1895,11 +1897,12 @@ watch(isHistoryPredictEditorOpen, (open) => {
 .stats-top-mini-btn,
 .stats-top-menu-btn {
   flex: 0 0 auto;
+  width: var(--stats-top-control-size);
   height: var(--stats-top-control-size);
   min-width: var(--stats-top-control-size);
   padding: 0 4px;
   box-sizing: border-box;
-  border-radius: 7px;
+  border-radius: 999px;
   border: 1px solid #cbd5e1;
   background: #ffffff;
   color: #334155;
@@ -2008,14 +2011,16 @@ watch(isHistoryPredictEditorOpen, (open) => {
 }
 
 .username-input {
-  width: 92px;
+  width: 112px;
+  height: 34px;
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 3px 7px;
+  border-radius: 999px;
+  padding: 0 8px;
   font-size: 0.78rem;
   color: #0f172a;
   background: #ffffff;
   outline: none;
+  box-sizing: border-box;
 }
 
 .username-input:focus {
@@ -2036,6 +2041,25 @@ watch(isHistoryPredictEditorOpen, (open) => {
   order: 99;
 }
 
+.nav-tabs button:not(:disabled),
+.io-btn:not(:disabled),
+.source-item:not(:disabled),
+.source-mini-btn:not(:disabled),
+.source-order-btn:not(:disabled),
+.floating-top-btn:not(:disabled) {
+  transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-tabs button:not(:disabled):active,
+.io-btn:not(:disabled):active,
+.source-item:not(:disabled):active,
+.source-mini-btn:not(:disabled):active,
+.source-order-btn:not(:disabled):active,
+.floating-top-btn:not(:disabled):active {
+  filter: brightness(0.86);
+  transform: translateY(1px) scale(0.97);
+}
+
 /* 修改并替换 App.vue 中的 .content-area 相关样式 */
 .content-area {
   flex: 1;
@@ -2054,7 +2078,7 @@ button {
   padding: 10px 20px;
   border: none;
   background: #f0f0f0;
-  border-radius: 5px;
+  border-radius: 999px;
   cursor: pointer;
   font-weight: bold;
   transition: 0.3s;
@@ -2066,15 +2090,23 @@ button.active {
 }
 
 .predict-info {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  box-sizing: border-box;
   font-size: 0.85rem;
   color: #eb2f96;
   background: #fff0f6;
   padding: 5px 12px;
-  border-radius: 15px;
+  border-radius: 999px;
   border: 1px solid #ffadd2;
 }
 
 .predict-cleanup-info {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  box-sizing: border-box;
   font-size: 0.8rem;
   color: #065f46;
   background: #ecfdf5;
@@ -2086,7 +2118,7 @@ button.active {
 .io-btn {
   padding: 6px 10px;
   font-size: 0.8rem;
-  border-radius: 10px;
+  border-radius: 999px;
   background: #f8fafc;
   border: 1px solid #cbd5e1;
 }
@@ -2148,7 +2180,7 @@ button.active {
   max-width: min(92vw, 420px);
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
+  border-radius: 18px;
   padding: 10px;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.16);
   z-index: 2800;
@@ -2183,7 +2215,7 @@ button.active {
   gap: 8px;
   background: #f8fafc;
   border: 1px solid #dbe4ef;
-  border-radius: 9px;
+  border-radius: 999px;
   padding: 6px 8px;
   font-size: 0.78rem;
 }
@@ -2202,8 +2234,13 @@ button.active {
 
 .source-mini-btn {
   flex: 0 0 auto;
-  padding: 4px 6px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
   border: 1px solid #d1d5db;
   background: #ffffff;
   font-size: 0.72rem;
@@ -2222,7 +2259,10 @@ button.active {
   width: 24px;
   height: 24px;
   padding: 0;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
   border: 1px solid #d1d5db;
   background: #ffffff;
   font-size: 0.72rem;
@@ -2281,7 +2321,21 @@ button.active {
   flex: 0 0 auto;
   padding: 5px 8px;
   font-size: 0.74rem;
-  border-radius: 8px;
+  border-radius: 999px;
+}
+
+.nav-tabs > button:hover:not(.active),
+.io-btn:hover:not(:disabled),
+.source-item:hover:not(.active),
+.source-mini-btn:hover:not(:disabled),
+.source-order-btn:hover:not(:disabled),
+.stats-top-mini-btn:hover:not(:disabled),
+.stats-top-menu-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.source-item.active:hover {
+  background: #ecfeff;
 }
 
 .source-actions .btn-with-icon {
@@ -2421,10 +2475,6 @@ button.active {
   display: none;
 }
 
-.content-area {
-  padding: 20px;
-}
-
 .floating-top-btn {
   position: fixed;
   right: 14px;
@@ -2454,6 +2504,107 @@ button.active {
 
 .floating-top-btn:hover {
   background: #0d9488;
+}
+
+@media (min-width: 901px) and (max-width: 1200px) {
+  .nav-tabs > button,
+  .nav-tabs > .io-btn,
+  .nav-tabs > .source-dropdown > .source-trigger,
+  .username-wrap,
+  .stats-top-nav-wrap,
+  .predict-info,
+  .predict-cleanup-info {
+    min-height: 36px;
+  }
+
+  .nav-tabs {
+    gap: 10px;
+    padding: 10px 16px;
+  }
+
+  .nav-tabs > button {
+    padding: 7px 12px;
+    font-size: 0.86rem;
+  }
+
+  .username-wrap,
+  .stats-top-nav-wrap {
+    padding: 3px 7px;
+  }
+
+  .stats-top-nav-wrap {
+    --stats-top-control-size: 24px;
+    gap: 3px;
+  }
+
+  .stats-top-id-input {
+    width: 52px;
+    padding: 0 5px;
+    font-size: 0.72rem;
+  }
+
+  .username-input {
+    height: 30px;
+    width: 96px;
+    font-size: 0.74rem;
+  }
+
+  .predict-info {
+    padding: 3px 9px;
+    font-size: 0.74rem;
+  }
+
+  .predict-cleanup-info {
+    padding: 2px 7px;
+    font-size: 0.64rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 900px) {
+  .nav-tabs.is-stats-top-compact > button,
+  .nav-tabs.is-stats-top-compact > .io-btn,
+  .nav-tabs.is-stats-top-compact > .source-dropdown > .source-trigger,
+  .nav-tabs.is-stats-top-compact .username-wrap,
+  .nav-tabs.is-stats-top-compact .stats-top-nav-wrap,
+  .nav-tabs.is-stats-top-compact .predict-info,
+  .nav-tabs.is-stats-top-compact .predict-cleanup-info {
+    min-height: 32px;
+  }
+
+  .nav-tabs.is-stats-top-compact > button {
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+  }
+
+  .nav-tabs.is-stats-top-compact .btn-with-icon {
+    gap: 4px;
+  }
+
+  .nav-tabs.is-stats-top-compact .btn-icon {
+    width: 13px;
+    height: 13px;
+    flex-basis: 13px;
+  }
+
+  .nav-tabs.is-stats-top-compact .username-wrap,
+  .nav-tabs.is-stats-top-compact .stats-top-nav-wrap {
+    padding: 2px 6px;
+  }
+
+  .nav-tabs.is-stats-top-compact .stats-top-nav-wrap {
+    --stats-top-control-size: 22px;
+  }
+
+  .nav-tabs.is-stats-top-compact .predict-info {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+  }
+
+  .nav-tabs.is-stats-top-compact .predict-cleanup-info {
+    padding: 2px 6px;
+    font-size: 0.62rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -2492,7 +2643,9 @@ button.active {
   .username-wrap {
     order: 3;
     gap: 4px;
+    min-height: 34px;
     padding: 3px 6px;
+    border-radius: 999px;
   }
 
   .stats-top-nav-wrap {
@@ -2548,9 +2701,11 @@ button.active {
   }
 
   .username-input {
-    width: 78px;
+    width: 56px;
+    height: var(--stats-top-control-size);
     font-size: 0.7rem;
     padding: 2px 6px;
+    border-radius: 999px;
   }
 
   /* iOS/Safari 聚焦输入框会自动放大页面，移动端统一将关键输入字号提升到 16px 以避免锁定放大态。 */
@@ -2567,17 +2722,21 @@ button.active {
 
   .predict-info {
     order: 4;
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
     width: auto;
     min-width: fit-content;
     border-radius: 999px;
-    font-size: 0.7rem;
-    padding: 4px 8px;
+    font-size: 0.72rem;
+    padding: 4px 10px;
     white-space: nowrap;
     flex: 0 0 auto;
   }
 
   .predict-cleanup-info {
     order: 5;
+    min-height: 34px;
     font-size: 0.66rem;
     padding: 3px 7px;
     white-space: nowrap;
@@ -2658,7 +2817,9 @@ button.active {
   }
 
   .username-wrap {
+    min-height: 32px;
     padding: 2px 5px;
+    border-radius: 999px;
   }
 
   .stats-top-nav-wrap {
@@ -2682,7 +2843,9 @@ button.active {
   }
 
   .username-input {
-    width: 68px;
+    width: 52px;
+    height: var(--stats-top-control-size);
+    border-radius: 999px;
   }
 
   .nav-tabs button,
@@ -2693,11 +2856,13 @@ button.active {
   }
 
   .predict-info {
-    font-size: 0.65rem;
-    padding: 3px 6px;
+    min-height: 32px;
+    font-size: 0.68rem;
+    padding: 3px 8px;
   }
 
   .predict-cleanup-info {
+    min-height: 32px;
     font-size: 0.6rem;
     padding: 2px 6px;
   }
@@ -2719,7 +2884,7 @@ button.active {
   .source-actions .io-btn {
     padding: 4px 7px;
     font-size: 0.68rem;
-    border-radius: 8px;
+    border-radius: 999px;
   }
 
   .source-actions .btn-icon {

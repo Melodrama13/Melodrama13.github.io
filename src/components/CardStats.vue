@@ -1,21 +1,24 @@
 <template>
-  <div class="pjsk-stats">
-    <div class="stats-layout" :class="{ 'nav-collapsed': navCollapsed, 'mobile-nav-overlay': isNavTopLayout, 'mobile-nav-open': isNavTopLayout && !navCollapsed }">
+  <div class="pjsk-stats" :class="{ 'matrix-sort-anchor-suppressed': suppressMatrixViewportAnchor }">
+    <div class="stats-layout" :class="{ 'nav-collapsed': navCollapsed, 'mobile-nav-overlay': isNavTopLayout, 'mobile-nav-open': !navCollapsed }">
       <button
-        v-if="isNavTopLayout"
-        class="mobile-floating-menu-btn export-hide"
-        :title="navCollapsed ? '展开统计菜单' : '收起统计菜单'"
+        v-if="navCollapsed"
+        class="floating-menu-btn export-hide"
+        title="展开统计菜单"
         @click="navCollapsed = !navCollapsed"
       >
-        <img v-if="navCollapsed" src="/data/icon/menu.png" class="mobile-floating-menu-icon" alt="菜单" />
-        <span v-else class="mobile-floating-menu-close">×</span>
+        <img src="/data/icon/menu.png" class="floating-menu-icon" alt="菜单" />
       </button>
-      <aside class="stats-nav card-panel" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': isMiniFloatingNav, 'is-open': isNavTopLayout && !navCollapsed }">
-        <button v-if="!isNavTopLayout" class="nav-toggle" @click="navCollapsed = !navCollapsed">{{ navCollapsed ? '>' : '<' }}</button>
+      <aside class="stats-nav card-panel" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
+        <button v-if="!navCollapsed" class="nav-collapse-fab export-hide" @click="navCollapsed = true" title="收起统计菜单">
+          <img src="/data/icon/menu_open.png" class="nav-collapse-fab-icon" alt="收起菜单" />
+        </button>
 
         <div v-if="!navCollapsed" class="nav-cutoff" :class="{ 'mini-cutoff': isMiniFloatingNav }">
-          <div class="nav-cutoff-title">统计截止活动 ID</div>
-          <div class="nav-cutoff-controls">
+          <div class="nav-cutoff-title" v-if="!isNavTopLayout">统计截止活动 ID</div>
+          <div v-if="isNavTopLayout" class="mini-cutoff-line">统计截止活动ID：{{ safeMaxEventId }}</div>
+          <div v-else class="nav-cutoff-controls">
+            <button class="id-step-btn" @click="adjustDisplayEventId(-1)" title="减少 1">－</button>
             <input
               type="number"
               step="1"
@@ -27,13 +30,12 @@
               class="id-input"
               placeholder="输入活动 ID"
             />
-            <button class="id-step-btn" @click="adjustDisplayEventId(-1)" title="减少 1">－</button>
             <button class="id-step-btn" @click="adjustDisplayEventId(1)" title="增加 1">＋</button>
             <button @click="manualEventId = null" class="reset-mini-btn" :title="`恢复到当前参考活动 ID：${autoCurrentId}`">
               <img src="/data/icon/reset.png" class="reset-mini-icon" alt="复位" />
             </button>
           </div>
-          <p class="config-tips">系统时间：{{ nowStr }} | 输入更大ID可查看预测统计。</p>
+          <p class="config-tips">{{ isNavTopLayout ? `系统时间：${nowStr} | 在顶栏中输入更大ID可查看预测统计。` : `系统时间：${nowStr} | 输入更大ID可查看预测统计。` }}</p>
         </div>
 
         <template v-if="!navCollapsed">
@@ -50,28 +52,29 @@
               </label>
             </div>
           </div>
-          <div class="nav-title">快速跳转</div>
-          <div class="nav-scroll">
-            <div v-for="group in navGroups" :key="group.id" class="nav-group">
-              <button
-                class="nav-link nav-link-main"
-                :class="{ active: isGroupActive(group) }"
-                :title="group.title"
-                @click="scrollToSection(group.id)"
-              >
-                {{ group.title }}
-              </button>
-              <div v-if="group.children?.length && isGroupExpanded(group)" class="nav-sub-list">
+          <div class="nav-quick-wrap">
+            <div class="nav-scroll">
+              <div v-for="group in navGroups" :key="group.id" class="nav-group">
                 <button
-                  v-for="item in group.children"
-                  :key="item.id"
-                  class="nav-link nav-link-sub"
-                  :class="{ active: activeNavId === item.id }"
-                  :title="item.title"
-                  @click="scrollToSection(item.id)"
+                  class="nav-link nav-link-main"
+                  :class="{ active: isGroupActive(group) }"
+                  :title="group.title"
+                  @click="scrollToSection(group.id)"
                 >
-                  {{ item.title }}
+                  {{ group.title }}
                 </button>
+                <div v-if="group.children?.length && isGroupExpanded(group)" class="nav-sub-list">
+                  <button
+                    v-for="item in group.children"
+                    :key="item.id"
+                    class="nav-link nav-link-sub"
+                    :class="{ active: activeNavId === item.id }"
+                    :title="item.title"
+                    @click="scrollToSection(item.id)"
+                  >
+                    {{ item.title }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -113,6 +116,14 @@
                     统计联动
                   </label>
                   <label
+                    v-if="panel.id === 'pure-score'"
+                    class="reward-collab-toggle"
+                    title="勾选后，4星分卡会计入团分卡。"
+                  >
+                    <input v-model="includeUnitScoreInPureScore" type="checkbox" />
+                    统计团分
+                  </label>
+                  <label
                     v-if="panel.id === 'fes-limited'"
                     class="reward-collab-toggle"
                     title="勾选后，百六限定次数会额外计入当期FES卡。"
@@ -138,8 +149,26 @@
                       只看混活
                     </label>
                   </div>
+                  <div v-if="panel.id === 'banner'" class="head-inline-filters">
+                    <label class="head-filter-toggle" title="只统计箱活Banner个数。">
+                      <input
+                        type="checkbox"
+                        :checked="bannerEventTypeFilter === '箱活'"
+                        @change="setBannerEventTypeFilter('箱活', $event.target.checked)"
+                      />
+                      只看箱活
+                    </label>
+                    <label class="head-filter-toggle" title="只统计混活Banner个数。">
+                      <input
+                        type="checkbox"
+                        :checked="bannerEventTypeFilter === '混活'"
+                        @change="setBannerEventTypeFilter('混活', $event.target.checked)"
+                      />
+                      只看混活
+                    </label>
+                  </div>
                   <div v-if="panel.id === 'fes-limited-ban'" class="head-inline-filters">
-                    <label class="head-filter-toggle" title="只统计箱活百六Ban个数。">
+                    <label class="head-filter-toggle" title="只统计百六箱限Ban个数。">
                       <input
                         type="checkbox"
                         :checked="fesLimitedBanEventTypeFilter === '箱活'"
@@ -147,7 +176,7 @@
                       />
                       只看箱活
                     </label>
-                    <label class="head-filter-toggle" title="只统计混活百六Ban个数。">
+                    <label class="head-filter-toggle" title="只统计百六混限Ban个数。">
                       <input
                         type="checkbox"
                         :checked="fesLimitedBanEventTypeFilter === '混活'"
@@ -159,7 +188,7 @@
                 </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(`panel-${panel.id}`, `阶梯分布_${panel.title}`)">PNG</button>
               </div>
-              <table class="count-table" :class="{ 'compact-char-table': hideDistCharNames }">
+              <table class="count-table" :class="{ 'compact-char-table': hideDistCharNames, 'reward-breakdown-table': panel.showRewardBreakdown }">
                 <thead>
                   <tr><th width="50">数量</th><th>持有角色</th></tr>
                 </thead>
@@ -951,7 +980,13 @@
         
         <div id="panel-matrix" class="stats-section card-panel matrix-panel">
           <div class="section-head">
-            <h2>角色矩阵</h2>
+            <div class="section-head-left">
+              <h2>角色矩阵</h2>
+              <label class="matrix-pure-toggle" title="勾选后，分卡统计会计入团分卡。">
+                <input v-model="includeUnitScoreInPureScore" type="checkbox" />
+                分卡统计团分
+              </label>
+            </div>
             <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-matrix', '角色矩阵')">PNG</button>
           </div>
           <div class="matrix-wrap">
@@ -967,6 +1002,9 @@
                   </th>
                   <th :class="matrixGroupClass(0, 4)">
                     <button class="matrix-sort-btn" @click="toggleMatrixSort('pureScoreCount')"><span>分卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pureScoreCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('scoreUpCount')"><span>普分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('scoreUpCount') }}</span></button>
                   </th>
                   <th>
                     <button class="matrix-sort-btn" @click="toggleMatrixSort('pScoreCount')"><span>P 分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pScoreCount') }}</span></button>
@@ -1018,6 +1056,7 @@
                     {{ row[attr] }}
                   </td>
                   <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ row.pureScoreCount }}</td>
+                  <td class="matrix-num">{{ row.scoreUpCount }}</td>
                   <td class="matrix-num">{{ row.pScoreCount }}</td>
                   <td class="matrix-num">{{ row.accuracyCount }}</td>
                   <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ row.recoveryCount }}</td>
@@ -1025,6 +1064,21 @@
                   <td class="matrix-num">{{ row.threeStarCount }}</td>
                   <td class="matrix-num">{{ row.twoStarCount }}</td>
                   <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ row.rewardTotalCount }}</td>
+                </tr>
+                <tr class="matrix-total-row">
+                  <td class="row-char matrix-total-label">总计</td>
+                  <td v-for="(attr, idx) in ATTRS" :key="`attr-total-${attr}`" class="matrix-num" :class="matrixGroupClass(idx, ATTRS.length)">
+                    {{ attrMatrixTotalRow[attr] }}
+                  </td>
+                  <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ attrMatrixTotalRow.pureScoreCount }}</td>
+                  <td class="matrix-num">{{ attrMatrixTotalRow.scoreUpCount }}</td>
+                  <td class="matrix-num">{{ attrMatrixTotalRow.pScoreCount }}</td>
+                  <td class="matrix-num">{{ attrMatrixTotalRow.accuracyCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ attrMatrixTotalRow.recoveryCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ attrMatrixTotalRow.fourStarCount }}</td>
+                  <td class="matrix-num">{{ attrMatrixTotalRow.threeStarCount }}</td>
+                  <td class="matrix-num">{{ attrMatrixTotalRow.twoStarCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ attrMatrixTotalRow.rewardTotalCount }}</td>
                 </tr>
               </tbody>
             </table>
@@ -1048,7 +1102,10 @@
                     </button>
                   </th>
                   <th :class="matrixGroupClass(0, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pureScoreCount')"><span>分卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pureScoreCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('unitScoreCount')"><span>团分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('unitScoreCount') }}</span></button>
+                  </th>
+                  <th>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('scoreUpCount')"><span>普分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('scoreUpCount') }}</span></button>
                   </th>
                   <th>
                     <button class="matrix-sort-btn" @click="toggleMatrixSort('pScoreCount')"><span>P 分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pScoreCount') }}</span></button>
@@ -1108,14 +1165,37 @@
                   >
                     {{ row[attr] }}
                   </td>
-                  <td class="matrix-num" :class="[matrixGroupClass(0, 4), getVsMatrixValueClass(row.pureScoreCount)]">{{ row.pureScoreCount }}</td>
+                  <td class="matrix-num" :class="[matrixGroupClass(0, 4), getVsMatrixValueClass(row.unitScoreCount)]">{{ row.unitScoreCount }}</td>
+                  <td class="matrix-num" :class="getVsMatrixValueClass(row.scoreUpCount)">{{ row.scoreUpCount }}</td>
                   <td class="matrix-num" :class="getVsMatrixValueClass(row.pScoreCount)">{{ row.pScoreCount }}</td>
                   <td class="matrix-num" :class="getVsMatrixValueClass(row.accuracyCount)">{{ row.accuracyCount }}</td>
                   <td class="matrix-num" :class="[matrixGroupClass(3, 4), getVsMatrixValueClass(row.recoveryCount)]">{{ row.recoveryCount }}</td>
-                  <td class="matrix-num" :class="[matrixGroupClass(0, 4), getVsMatrixFourStarClass(row.fourStarCount)]">{{ row.fourStarCount }}</td>
+                  <td class="matrix-num" :class="[matrixGroupClass(0, 4), getVsMatrixValueClass(row.fourStarCount)]">{{ row.fourStarCount }}</td>
                   <td class="matrix-num" :class="getVsMatrixValueClass(row.threeStarCount)">{{ row.threeStarCount }}</td>
                   <td class="matrix-num" :class="getVsMatrixValueClass(row.twoStarCount)">{{ row.twoStarCount }}</td>
                   <td class="matrix-num" :class="[matrixGroupClass(3, 4), getVsMatrixValueClass(row.rewardTotalCount)]">{{ row.rewardTotalCount }}</td>
+                </tr>
+                <tr
+                  v-for="unitTotal in virtualSingerUnitTotalRows"
+                  :key="`vs-unit-total-${unitTotal.unit}`"
+                  class="matrix-vs-unit-total-row"
+                  :style="{ '--matrix-vs-total-bg': getVsUnitTotalTint(unitTotal.unit), '--matrix-unit-border-color': UNIT_COLORS[unitTotal.unit] || '#9ca3af' }"
+                >
+                  <td class="row-char matrix-vs-unit-total-char">
+                    <img :src="unitLogoMap[unitTotal.unit]" class="matrix-vs-unit-total-logo" :alt="unitTotal.unit" :title="unitTotal.unit.toUpperCase()" />
+                  </td>
+                  <td v-for="(attr, idx) in ATTRS" :key="`vs-total-${unitTotal.unit}-${attr}`" class="matrix-num" :class="matrixGroupClass(idx, ATTRS.length)">
+                    {{ unitTotal[attr] }}
+                  </td>
+                  <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ unitTotal.unitScoreCount }}</td>
+                  <td class="matrix-num">{{ unitTotal.scoreUpCount }}</td>
+                  <td class="matrix-num">{{ unitTotal.pScoreCount }}</td>
+                  <td class="matrix-num">{{ unitTotal.accuracyCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ unitTotal.recoveryCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(0, 4)">{{ unitTotal.fourStarCount }}</td>
+                  <td class="matrix-num">{{ unitTotal.threeStarCount }}</td>
+                  <td class="matrix-num">{{ unitTotal.twoStarCount }}</td>
+                  <td class="matrix-num" :class="matrixGroupClass(3, 4)">{{ unitTotal.rewardTotalCount }}</td>
                 </tr>
               </tbody>
             </table>
@@ -1147,6 +1227,7 @@ const navCollapsed = ref(false);
 const activeNavId = ref('panel-dist');
 const matrixSortKey = ref('');
 const matrixSortOrder = ref('');
+const suppressMatrixViewportAnchor = ref(false);
 const vsUnitLastFourSort = ref('char');
 const vsUnitLastFourCompact = ref(true);
 const includeCollabRewardCards = ref(false);
@@ -1154,9 +1235,11 @@ const hideDistCharNames = ref(true);
 const hideFestivalCharNames = ref(true);
 const navNameFormat = ref('single');
 const banEventTypeFilter = ref('all');
+const bannerEventTypeFilter = ref('all');
 const limitedBanEventTypeFilter = ref('all');
 const fesLimitedBanEventTypeFilter = ref('all');
 const fesLimitedIncludeFes = ref(false);
+const includeUnitScoreInPureScore = ref(false);
 const festivalMergeToggles = reactive({
   新年: false,
   婚活: false,
@@ -1185,6 +1268,7 @@ const festivalFesToggles = reactive({
 });
 let sectionObserver = null;
 const isExportingPng = ref(false);
+let matrixSortAnchorTimer = 0;
 
 const CHAR_MAP = {
   "星乃一歌": "ICK", "天马咲希": "SAKI", "望月穗波": "HNM", "日野森志步": "SHIHO",
@@ -1507,7 +1591,19 @@ const getMatrixUnitColor = (name) => UNIT_COLORS[getUnitByChar(name)] || '#9ca3a
 
 const getUnitMatrixTint = (name) => hexToSoftSolid(getMatrixUnitColor(name));
 
+const disableMatrixViewportAnchorTemporarily = () => {
+  suppressMatrixViewportAnchor.value = true;
+  if (matrixSortAnchorTimer) {
+    clearTimeout(matrixSortAnchorTimer);
+  }
+  matrixSortAnchorTimer = setTimeout(() => {
+    suppressMatrixViewportAnchor.value = false;
+    matrixSortAnchorTimer = 0;
+  }, 200);
+};
+
 const toggleMatrixSort = (key) => {
+  disableMatrixViewportAnchorTemporarily();
   if (matrixSortKey.value !== key) {
     matrixSortKey.value = key;
     matrixSortOrder.value = 'desc';
@@ -2082,6 +2178,10 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateMobileNavState);
   if (sectionObserver) sectionObserver.disconnect();
+  if (matrixSortAnchorTimer) {
+    clearTimeout(matrixSortAnchorTimer);
+    matrixSortAnchorTimer = 0;
+  }
 });
 
 const normalizeAttr = (attr) => {
@@ -2120,6 +2220,16 @@ const setBanEventTypeFilter = (targetType, checked) => {
   }
   if (banEventTypeFilter.value === targetType) {
     banEventTypeFilter.value = 'all';
+  }
+};
+
+const setBannerEventTypeFilter = (targetType, checked) => {
+  if (checked) {
+    bannerEventTypeFilter.value = targetType;
+    return;
+  }
+  if (bannerEventTypeFilter.value === targetType) {
+    bannerEventTypeFilter.value = 'all';
   }
 };
 
@@ -2265,6 +2375,54 @@ const fesLimitedBanLastEventIdMap = computed(() => {
   return map;
 });
 
+const bannerCountMap = computed(() => {
+  const map = {};
+  const maxEid = safeMaxEventId.value;
+  const typeFilter = bannerEventTypeFilter.value;
+
+  (props.allEvents || []).forEach((ev) => {
+    if (shouldSkipPredictEvent(ev)) return;
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (eid > maxEid) return;
+
+    const eventType = String(ev?.event_type || '').trim();
+    if (!['箱活', '混活'].includes(eventType)) return;
+    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+
+    const bannerName = normalizeBannerName(ev?.banner);
+    if (!CHAR_ORDER[bannerName]) return;
+    if (VS_NAMES.includes(bannerName)) return;
+    map[bannerName] = (map[bannerName] || 0) + 1;
+  });
+
+  return map;
+});
+
+const bannerLastEventIdMap = computed(() => {
+  const map = {};
+  const maxEid = safeMaxEventId.value;
+  const typeFilter = bannerEventTypeFilter.value;
+
+  (props.allEvents || []).forEach((ev) => {
+    if (shouldSkipPredictEvent(ev)) return;
+    if (!isNumericEventId(ev?.id)) return;
+    const eid = Number(ev.id);
+    if (eid > maxEid) return;
+
+    const eventType = String(ev?.event_type || '').trim();
+    if (!['箱活', '混活'].includes(eventType)) return;
+    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+
+    const bannerName = normalizeBannerName(ev?.banner);
+    if (!CHAR_ORDER[bannerName]) return;
+    if (VS_NAMES.includes(bannerName)) return;
+    map[bannerName] = Math.max(Number(map[bannerName] || 0), eid);
+  });
+
+  return map;
+});
+
 const now = new Date();
 const nowStr = now.toLocaleDateString();
 
@@ -2379,7 +2537,6 @@ const resetTopBarDisplayEventId = () => {
 };
 
 const toggleTopBarNavCollapsed = () => {
-  if (!isNavTopLayout.value) return !!navCollapsed.value;
   navCollapsed.value = !navCollapsed.value;
   return !!navCollapsed.value;
 };
@@ -3269,6 +3426,7 @@ const getStatProgressOrderKey = (row, key) => {
   if (key === 'fourStarCount') return Number(row?.lastFourStarOrderId || 0);
   if (key === 'limitedCount') return Number(row?.lastLimitedOrderId || 0);
   if (key === 'fesLimitedCount') return Number(row?.lastFesLimitedOrderId || 0);
+  if (key === 'scoreUpCount') return Number(row?.lastScoreUpOrderId || 0);
   if (key === 'pScoreCount') return Number(row?.lastPScoreOrderId || 0);
   if (key === 'pureScoreCount') return Number(row?.lastPureScoreOrderId || 0);
   if (key === 'recoveryCount') return Number(row?.lastRecoveryOrderId || 0);
@@ -3276,6 +3434,7 @@ const getStatProgressOrderKey = (row, key) => {
   if (key === 'threeStarCount') return Number(row?.lastThreeStarOrderId || 0);
   if (key === 'twoStarCount') return Number(row?.lastTwoStarOrderId || 0);
   if (key === 'rewardTotalCount') return Number(row?.lastRewardOrderId || 0);
+  if (key === 'bannerCount') return Number(row?.lastBannerOrderId || 0);
   if (key === 'limitedBanCount') return Number(row?.lastLimitedBanOrderId || 0);
   if (key === 'fesLimitedBanCount') return Number(row?.lastFesLimitedBanOrderId || 0);
   return Number(row?.lastCardOrderId || 0);
@@ -3307,10 +3466,12 @@ const processedStats = computed(() => {
         fourStarCount: 0, 
         limitedCount: 0,
         pScoreCount: 0,
+        scoreUpCount: 0,
         twoStarCount: 0,
         threeStarCount: 0,
         rewardTwoCount: 0,
         rewardThreeCount: 0,
+        bannerCount: 0,
         limitedBanCount: 0,
         fesLimitedCount: 0,
         fesLimitedBanCount: 0,
@@ -3323,12 +3484,14 @@ const processedStats = computed(() => {
         lastFourStarOrderId: 0,
         lastLimitedOrderId: 0,
         lastPScoreOrderId: 0,
+        lastScoreUpOrderId: 0,
         lastPureScoreOrderId: 0,
         lastRecoveryOrderId: 0,
         lastAccuracyOrderId: 0,
         lastThreeStarOrderId: 0,
         lastTwoStarOrderId: 0,
         lastRewardOrderId: 0,
+        lastBannerOrderId: 0,
         lastLimitedBanOrderId: 0,
         lastFesLimitedOrderId: 0,
         lastFesLimitedBanOrderId: 0,
@@ -3362,6 +3525,10 @@ const processedStats = computed(() => {
         stats[name].pScoreCount++;
         stats[name].lastPScoreOrderId = Math.max(Number(stats[name].lastPScoreOrderId || 0), progressOrderId);
       }
+      if (skill === 'score_up') {
+        stats[name].scoreUpCount++;
+        stats[name].lastScoreUpOrderId = Math.max(Number(stats[name].lastScoreUpOrderId || 0), progressOrderId);
+      }
       if (skill === 'accuracy') {
         stats[name].accuracyCount++;
         stats[name].lastAccuracyOrderId = Math.max(Number(stats[name].lastAccuracyOrderId || 0), progressOrderId);
@@ -3372,7 +3539,10 @@ const processedStats = computed(() => {
       }
       if (skill === 'unit_score') stats[name].unitScoreCount++;
       if (!skill || skill === '-') stats[name].pendingSkillCount++;
-      if (!['accuracy', 'recovery', 'unit_score', '-', ''].includes(skill)) {
+      const excludedPureSkills = includeUnitScoreInPureScore.value
+        ? ['accuracy', 'recovery', '-', '']
+        : ['accuracy', 'recovery', 'unit_score', '-', ''];
+      if (!excludedPureSkills.includes(skill)) {
         stats[name].lastPureScoreOrderId = Math.max(Number(stats[name].lastPureScoreOrderId || 0), progressOrderId);
       }
 
@@ -3407,8 +3577,13 @@ const processedStats = computed(() => {
   return Object.values(stats).map(s => {
     // 计算“纯分卡”数量：四星总数 - (判定 + 奶卡 + 团分)
     // 同时剔除技能待定的 4 星卡，避免被误记为分卡。
-    s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount - s.pendingSkillCount;
+    const pureSubtract = includeUnitScoreInPureScore.value
+      ? (s.accuracyCount + s.recoveryCount + s.pendingSkillCount)
+      : (s.accuracyCount + s.recoveryCount + s.unitScoreCount + s.pendingSkillCount);
+    s.pureScoreCount = s.fourStarCount - pureSubtract;
     s.rewardTotalCount = s.rewardThreeCount + s.rewardTwoCount;
+    s.bannerCount = bannerCountMap.value[normalizeBannerName(s.name)] || 0;
+    s.lastBannerOrderId = Number(bannerLastEventIdMap.value[normalizeBannerName(s.name)] || 0);
     s.limitedBanCount = limitedBanCountMap.value[normalizeBannerName(s.name)] || 0;
     s.lastLimitedBanOrderId = Number(limitedBanLastEventIdMap.value[normalizeBannerName(s.name)] || 0);
     s.fesLimitedBanCount = fesLimitedBanCountMap.value[normalizeBannerName(s.name)] || 0;
@@ -3444,45 +3619,29 @@ const groupByCount = (data, key) => {
 const groupPanels = computed(() => [
   { id: 'four', title: '4星总数分布', cellClass: '', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'fourStarCount') },
   { id: 'limited', title: '限定总数分布', cellClass: 'lim', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'limitedCount') },
+  { id: 'pure-score', title: '4星分卡数量分布', cellClass: 'pure-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pureScoreCount') },
+  { id: 'reward', title: '报酬总数分布', cellClass: 'reward', showRewardBreakdown: true, groups: groupByCount(processedStats.value, 'rewardTotalCount') },
   { id: 'p-score', title: '4星P分数量分布', cellClass: 'p-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pScoreCount') },
-  { id: 'pure-score', title: '4星分卡数量分布 (非判非奶非团分)', cellClass: 'pure-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pureScoreCount') },
+  { id: 'score-up', title: '4星普分数量分布', cellClass: 'score-up', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'scoreUpCount') },
   { id: 'recovery', title: '4星奶卡数量分布', cellClass: 'recovery', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'recoveryCount') },
   { id: 'accuracy', title: '4星判卡数量分布', cellClass: 'accuracy', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'accuracyCount') },
   { id: 'three', title: '3星总数分布', cellClass: 'three-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'threeStarCount') },
   { id: 'two', title: '2星总数分布', cellClass: 'two-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'twoStarCount') },
-  {
-    id: 'reward',
-    title: '报酬总数分布',
-    cellClass: 'reward',
-    showRewardBreakdown: true,
-    groups: groupByCount(processedStats.value, 'rewardTotalCount')
-  },
-  {
-    id: 'limited-ban',
-    title: '限Ban数量分布',
-    cellClass: 'limited-ban',
-    showRewardBreakdown: false,
+  { id: 'banner', title: 'Banner数量分布', cellClass: 'banner', showRewardBreakdown: false,
     groups: groupByCount(
       processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
-      'limitedBanCount'
-    )
+      'bannerCount')
   },
-  {
-    id: 'fes-limited',
-    title: '百六限定次数分布',
-    cellClass: 'fes-limited',
-    showRewardBreakdown: false,
-    groups: groupByCount(processedStats.value, 'fesLimitedCount')
-  },
-  {
-    id: 'fes-limited-ban',
-    title: '百六Ban次数分布',
-    cellClass: 'fes-limited-ban',
-    showRewardBreakdown: false,
+  { id: 'limited-ban', title: '限Ban数量分布', cellClass: 'limited-ban', showRewardBreakdown: false, 
     groups: groupByCount(
       processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
-      'fesLimitedBanCount'
-    )
+      'limitedBanCount')
+  },
+  { id: 'fes-limited', title: '百六限定次数分布', cellClass: 'fes-limited', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'fesLimitedCount') },
+  { id: 'fes-limited-ban', title: '百六限Ban次数分布', cellClass: 'fes-limited-ban', showRewardBreakdown: false,
+    groups: groupByCount(
+      processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
+      'fesLimitedBanCount')
   }
 ]);
 
@@ -3632,6 +3791,7 @@ const previewDailyLineupMap = computed(() => {
 const statsPreviewPayload = computed(() => {
   const fourPanel = groupPanels.value.find((p) => p.id === 'four');
   const limitedPanel = groupPanels.value.find((p) => p.id === 'limited');
+  const scoreUpPanel = groupPanels.value.find((p) => p.id === 'score-up');
   const limitedBanPanel = groupPanels.value.find((p) => p.id === 'limited-ban');
   const fesLimitedPanel = groupPanels.value.find((p) => p.id === 'fes-limited');
   const fesLimitedBanPanel = groupPanels.value.find((p) => p.id === 'fes-limited-ban');
@@ -3643,9 +3803,11 @@ const statsPreviewPayload = computed(() => {
     groups: {
       fourStarCount: fourPanel?.groups || [],
       limitedCount: limitedPanel?.groups || [],
+      scoreUpCount: scoreUpPanel?.groups || [],
       limitedBanCount: limitedBanPanel?.groups || [],
       fesLimitedCount: fesLimitedPanel?.groups || [],
       fesLimitedBanCount: fesLimitedBanPanel?.groups || [],
+      bannerCount: groupPanels.value.find((p) => p.id === 'banner')?.groups || [],
       festival: festivalGroups,
       dailyLineup: previewDailyLineupMap.value
     }
@@ -3667,6 +3829,7 @@ const attrMatrixRows = computed(() => {
       Happy: s.attrCounts.Happy,
       Mysterious: s.attrCounts.Mysterious,
       pureScoreCount: s.pureScoreCount,
+      scoreUpCount: s.scoreUpCount,
       pScoreCount: s.pScoreCount,
       accuracyCount: s.accuracyCount,
       recoveryCount: s.recoveryCount,
@@ -3702,6 +3865,7 @@ const createMatrixStatSeed = (name) => ({
   unitScoreCount: 0,
   pendingSkillCount: 0,
   pureScoreCount: 0,
+  scoreUpCount: 0,
   rewardTotalCount: 0,
   attrCounts: { Pure: 0, Cool: 0, Cute: 0, Happy: 0, Mysterious: 0 }
 });
@@ -3757,6 +3921,7 @@ const virtualSingerMatrixRows = computed(() => {
     if (rarity === '4') {
       target.fourStarCount += 1;
       if (skill === 'p_score') target.pScoreCount += 1;
+      if (skill === 'score_up') target.scoreUpCount += 1;
       if (skill === 'accuracy') target.accuracyCount += 1;
       if (skill === 'recovery') target.recoveryCount += 1;
       if (skill === 'unit_score') target.unitScoreCount += 1;
@@ -3775,7 +3940,10 @@ const virtualSingerMatrixRows = computed(() => {
 
   const baseRows = Object.values(matrixStats)
     .map((s) => {
-      s.pureScoreCount = s.fourStarCount - s.accuracyCount - s.recoveryCount - s.unitScoreCount - s.pendingSkillCount;
+      const pureSubtract = includeUnitScoreInPureScore.value
+        ? (s.accuracyCount + s.recoveryCount + s.pendingSkillCount)
+        : (s.accuracyCount + s.recoveryCount + s.unitScoreCount + s.pendingSkillCount);
+      s.pureScoreCount = s.fourStarCount - pureSubtract;
       s.rewardTotalCount = s.rewardThreeCount + s.rewardTwoCount;
       return {
         name: s.name,
@@ -3784,7 +3952,9 @@ const virtualSingerMatrixRows = computed(() => {
         Cute: s.attrCounts.Cute,
         Happy: s.attrCounts.Happy,
         Mysterious: s.attrCounts.Mysterious,
+        unitScoreCount: s.unitScoreCount,
         pureScoreCount: s.pureScoreCount,
+        scoreUpCount: s.scoreUpCount,
         pScoreCount: s.pScoreCount,
         accuracyCount: s.accuracyCount,
         recoveryCount: s.recoveryCount,
@@ -3806,6 +3976,101 @@ const virtualSingerMatrixRows = computed(() => {
     const bv = Number(b?.[key] || 0);
     if (av !== bv) return (av - bv) * orderFactor;
     return compareVsMatrixName(a.name, b.name);
+  });
+});
+
+const attrMatrixTotalRow = computed(() => {
+  const seed = {
+    Pure: 0,
+    Cool: 0,
+    Cute: 0,
+    Happy: 0,
+    Mysterious: 0,
+    unitScoreCount: 0,
+    pureScoreCount: 0,
+    scoreUpCount: 0,
+    pScoreCount: 0,
+    accuracyCount: 0,
+    recoveryCount: 0,
+    fourStarCount: 0,
+    threeStarCount: 0,
+    twoStarCount: 0,
+    rewardTotalCount: 0
+  };
+
+  return (attrMatrixRows.value || []).reduce((acc, row) => {
+    ATTRS.forEach((attr) => {
+      acc[attr] += Number(row?.[attr] || 0);
+    });
+    acc.unitScoreCount += Number(row?.unitScoreCount || 0);
+    acc.pureScoreCount += Number(row?.pureScoreCount || 0);
+    acc.scoreUpCount += Number(row?.scoreUpCount || 0);
+    acc.pScoreCount += Number(row?.pScoreCount || 0);
+    acc.accuracyCount += Number(row?.accuracyCount || 0);
+    acc.recoveryCount += Number(row?.recoveryCount || 0);
+    acc.fourStarCount += Number(row?.fourStarCount || 0);
+    acc.threeStarCount += Number(row?.threeStarCount || 0);
+    acc.twoStarCount += Number(row?.twoStarCount || 0);
+    acc.rewardTotalCount += Number(row?.rewardTotalCount || 0);
+    return acc;
+  }, seed);
+});
+
+const getVsUnitTotalTint = (unit) => hexToRgba(UNIT_COLORS[unit] || '#64748b', 0.2);
+
+const virtualSingerUnitTotalRows = computed(() => {
+  const unitRows = Object.fromEntries(VS_UNIT_SORT_ORDER.map((unit) => [unit, {
+    unit,
+    Pure: 0,
+    Cool: 0,
+    Cute: 0,
+    Happy: 0,
+    Mysterious: 0,
+    unitScoreCount: 0,
+    pureScoreCount: 0,
+    scoreUpCount: 0,
+    pScoreCount: 0,
+    accuracyCount: 0,
+    recoveryCount: 0,
+    fourStarCount: 0,
+    threeStarCount: 0,
+    twoStarCount: 0,
+    rewardTotalCount: 0
+  }]));
+
+  (virtualSingerMatrixRows.value || []).forEach((row) => {
+    const unit = parseVsMatrixRowName(row?.name).unit;
+    if (!unitRows[unit]) return;
+    ATTRS.forEach((attr) => {
+      unitRows[unit][attr] += Number(row?.[attr] || 0);
+    });
+    unitRows[unit].unitScoreCount += Number(row?.unitScoreCount || 0);
+    unitRows[unit].pureScoreCount += Number(row?.pureScoreCount || 0);
+    unitRows[unit].scoreUpCount += Number(row?.scoreUpCount || 0);
+    unitRows[unit].pScoreCount += Number(row?.pScoreCount || 0);
+    unitRows[unit].accuracyCount += Number(row?.accuracyCount || 0);
+    unitRows[unit].recoveryCount += Number(row?.recoveryCount || 0);
+    unitRows[unit].fourStarCount += Number(row?.fourStarCount || 0);
+    unitRows[unit].threeStarCount += Number(row?.threeStarCount || 0);
+    unitRows[unit].twoStarCount += Number(row?.twoStarCount || 0);
+    unitRows[unit].rewardTotalCount += Number(row?.rewardTotalCount || 0);
+  });
+
+  const baseRows = VS_UNIT_SORT_ORDER.map((unit) => unitRows[unit]);
+  const key = matrixSortKey.value;
+  const order = matrixSortOrder.value;
+  if (!key || !order) return baseRows;
+
+  const orderFactor = order === 'desc' ? -1 : 1;
+  return [...baseRows].sort((a, b) => {
+    const av = Number(a?.[key] || 0);
+    const bv = Number(b?.[key] || 0);
+    if (av !== bv) return (av - bv) * orderFactor;
+    const au = VS_UNIT_SORT_ORDER.indexOf(String(a?.unit || ''));
+    const bu = VS_UNIT_SORT_ORDER.indexOf(String(b?.unit || ''));
+    const ao = au >= 0 ? au : 999;
+    const bo = bu >= 0 ? bu : 999;
+    return ao - bo;
   });
 });
 
@@ -3840,21 +4105,7 @@ const getAttrExtremeClass = (attr, value, name) => {
   return '';
 };
 
-const vsMatrixMaxFourStarCount = computed(() => {
-  const values = (virtualSingerMatrixRows.value || []).map((row) => Number(row?.fourStarCount || 0));
-  return values.length ? Math.max(...values) : 0;
-});
-
 const getVsMatrixValueClass = (value) => (Number(value || 0) === 0 ? 'matrix-vs-zero' : '');
-
-const getVsMatrixFourStarClass = (value) => {
-  const classes = [];
-  const numericValue = Number(value || 0);
-  if (numericValue === 0) classes.push('matrix-vs-zero');
-  const maxFour = Number(vsMatrixMaxFourStarCount.value || 0);
-  if (maxFour > 0 && numericValue === maxFour) classes.push('matrix-vs-four-max');
-  return classes;
-};
 
 const virtualSingerSongStats = computed(() => {
   const maxEid = safeMaxEventId.value;
@@ -4544,49 +4795,93 @@ defineExpose({
   background: linear-gradient(45deg, rgba(253, 124, 193, 0.30) 0%, rgba(135, 192, 255, 0.30) 50%, rgba(248, 255, 135, 0.30) 100%);
   min-height: 100vh;
   --matrix-sticky-top: 0px;
+  --stats-radius-panel: 18px;
+  --stats-radius-btn: 12px;
+  --stats-nav-width: 220px;
+  --stats-nav-left: 44px;
+  --stats-nav-top: 78px;
+}
+
+.pjsk-stats.matrix-sort-anchor-suppressed {
+  overflow-anchor: none;
+}
+
+.pjsk-stats button:not(:disabled) {
+  transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.pjsk-stats button:not(:disabled):active {
+  filter: brightness(0.86);
+  transform: translateY(1px) scale(0.97);
 }
 
 .stats-layout {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: var(--stats-nav-width) 1fr;
   gap: 16px;
 }
 
 .stats-layout.nav-collapsed {
-  grid-template-columns: 56px 1fr;
+  grid-template-columns: 1fr;
+}
+
+.stats-layout.nav-collapsed .stats-nav {
+  display: none;
+}
+
+.stats-layout:not(.nav-collapsed) .stats-main {
+  grid-column: 2;
 }
 
 .stats-nav {
-  position: sticky;
-  top: 8px;
-  align-self: start;
-  max-height: calc(100vh - 72px);
+  position: fixed;
+  top: var(--stats-nav-top);
+  left: var(--stats-nav-left);
+  width: var(--stats-nav-width);
+  height: calc(100vh - var(--stats-nav-top) - 10px);
+  max-height: calc(100vh - var(--stats-nav-top) - 10px);
   min-height: 0;
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  z-index: 10;
 }
 
 .nav-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding-bottom: 4px;
   padding-right: 2px;
 }
 
+.nav-quick-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--stats-radius-panel);
+  background: #ffffff;
+  padding: 8px 6px 6px;
+}
+
 .nav-cutoff {
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: var(--stats-radius-panel);
   background: #ffffff;
   padding: 8px;
 }
 
 .nav-name-format {
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: var(--stats-radius-panel);
   background: #ffffff;
   padding: 8px;
   display: inline-flex;
@@ -4635,31 +4930,48 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 5px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
-.nav-toggle {
-  width: 100%;
-  min-height: 38px;
+.nav-group:last-child {
+  margin-bottom: 0;
+}
+
+.nav-collapse-fab {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  min-height: 32px;
+  height: 32px;
   padding: 0;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 2px solid #b91c1c;
+  border-radius: 999px;
+  background: #ef4444;
   cursor: pointer;
   font-weight: 700;
   line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  z-index: 5;
 }
 
-.mobile-floating-menu-btn {
+.nav-collapse-fab-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
+  filter: brightness(0) saturate(100%) invert(100%);
+}
+
+.floating-menu-btn {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 54px);
   left: 8px;
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
   border: 2px solid #0f766e;
   background: #33ccbb;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
@@ -4672,7 +4984,7 @@ defineExpose({
   cursor: pointer;
 }
 
-.mobile-floating-menu-icon {
+.floating-menu-icon {
   width: 17px;
   height: 17px;
   object-fit: contain;
@@ -4680,28 +4992,20 @@ defineExpose({
   filter: brightness(0) saturate(100%) invert(96%) sepia(6%) saturate(243%) hue-rotate(182deg) brightness(103%) contrast(96%);
 }
 
-.mobile-floating-menu-close {
-  font-size: 1.08rem;
-  line-height: 1;
-  font-weight: 700;
-}
-
-.nav-title {
-  font-weight: 700;
-  color: #374151;
-  margin: 2px 0 4px;
-}
-
 .nav-link {
   width: 100%;
   text-align: left;
-  padding: 6px 8px;
+  min-height: 32px;
+  padding: 6px 12px;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 999px;
   background: #ffffff;
   color: #374151;
   cursor: pointer;
   font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nav-link-main {
@@ -4716,12 +5020,21 @@ defineExpose({
 }
 
 .nav-link-sub {
-  padding: 5px 8px 5px 18px;
+  padding: 5px 12px 5px 24px;
   font-size: 0.78rem;
 }
 
-.nav-link:hover {
-  background: #eef2ff;
+.nav-collapse-fab:hover,
+.id-step-btn:hover,
+.reset-mini-btn:hover,
+.nav-link:hover,
+.lineup-toggle-btn:hover,
+.record-sort-btn:hover:not(.active) {
+  background: #e5e7eb;
+}
+
+.nav-collapse-fab:hover {
+  background: #dc2626;
 }
 
 .nav-link.active {
@@ -4749,7 +5062,7 @@ defineExpose({
 
 .card-export-btn {
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  border-radius: var(--stats-radius-btn);
   background: #f8fafc;
   color: #334155;
   font-size: 0.72rem;
@@ -4876,9 +5189,9 @@ defineExpose({
 .stats-section { flex: 1; }
 
 .card-panel {
-  background: #ffffffd9;
+  background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: var(--stats-radius-panel);
   padding: 14px;
   box-shadow: 0 6px 20px rgba(17, 24, 39, 0.06);
 }
@@ -4900,12 +5213,12 @@ defineExpose({
 
 .count-table th, .count-table td {
   border: 1px solid #f0f0f0;
-  padding: 10px;
+  padding: 8px;
   text-align: left;
 }
 
 .count-cell {
-  font-size: 1.8em;
+  font-size: 1.5em;
   font-weight: bold;
   text-align: center;
   background: #fafafa;
@@ -4913,9 +5226,11 @@ defineExpose({
 }
 
 .count-cell.lim { color: #ff4d4f; }
-.count-cell.p-score { color: #eb2f96; } /* P分粉色 */
-.count-cell.pure-score { color: #f5222d; } /* 分卡红色 */
+.count-cell.p-score { color: #eb2f96; }
+.count-cell.score-up { color: #fa8c16; }
+.count-cell.pure-score { color: #f5222d; }
 .count-cell.reward { color: #f97316; }
+.count-cell.banner { color: #7c3aed; }
 .count-cell.limited-ban { color: #0f766e; }
 .count-cell.fes-limited { color: #dc2626; }
 .count-cell.fes-limited-ban { color: #9333ea; }
@@ -4937,6 +5252,7 @@ defineExpose({
 
 .count-table.compact-char-table .char-avatar-box {
   width: 50px;
+  height: 50px;
 }
 
 .count-table.compact-char-table .avatar-img,
@@ -4947,6 +5263,16 @@ defineExpose({
 
 .count-table.compact-char-table .sub-stat {
   margin-top: 1px;
+}
+
+.count-table.compact-char-table.reward-breakdown-table .char-avatar-box {
+  height: auto;
+  min-height: 56px;
+}
+
+.count-table.compact-char-table.reward-breakdown-table .sub-stat {
+  margin-top: 2px;
+  line-height: 1.08;
 }
 
 .char-avatar-box {
@@ -4993,9 +5319,17 @@ defineExpose({
   width: 58px;
   padding: 3px 5px;
   border: 2px solid #33ccbb;
-  border-radius: 4px;
+  border-radius: var(--stats-radius-btn);
   font-size: 0.82rem;
   text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.id-input::-webkit-outer-spin-button,
+.id-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .id-step-btn {
@@ -5003,7 +5337,7 @@ defineExpose({
   height: 24px;
   box-sizing: border-box;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border-radius: 999px;
   background: #f8fafc;
   color: #334155;
   font-size: 0.78rem;
@@ -5030,7 +5364,7 @@ defineExpose({
   box-sizing: border-box;
   background: #f8fafc;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border-radius: 999px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -5266,7 +5600,7 @@ defineExpose({
 .lineup-total-cell,
 .lineup-member-cell {
   border: 1px solid var(--lineup-row-border, #cbd5e1);
-  border-radius: 7px;
+  border-radius: 10px;
   background: var(--lineup-row-bg, rgba(255, 255, 255, 0.88));
   color: var(--lineup-row-fg, #111827);
   min-height: 54px;
@@ -5702,11 +6036,11 @@ defineExpose({
 }
 
 .matrix-group-start {
-  border-left: 2px solid #94a3b8 !important;
+  border-left: 2px solid #c5ccd6 !important;
 }
 
 .matrix-group-end {
-  border-right: 2px solid #94a3b8 !important;
+  border-right: 2px solid #c5ccd6 !important;
 }
 
 .matrix-table td.matrix-num.matrix-max {
@@ -5726,13 +6060,46 @@ defineExpose({
 }
 
 .matrix-table td.matrix-num.matrix-vs-zero {
-  color: #2563eb;
+  color: #ffffff;
   font-weight: 800;
+  background-color: rgba(100, 116, 139, 0.35);
 }
 
-.matrix-table td.matrix-num.matrix-vs-four-max {
-  color: #dc2626;
+.matrix-pure-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+}
+
+.matrix-total-row td {
+  background: #ffffff !important;
+}
+
+.matrix-total-row .matrix-num,
+.matrix-total-row .matrix-total-label {
   font-weight: 900;
+  color: #111827;
+}
+
+.matrix-vs-unit-total-row td {
+  background: var(--matrix-vs-total-bg) !important;
+}
+
+.matrix-vs-unit-total-row .matrix-num {
+  font-weight: 900;
+  color: #111827;
+}
+
+.matrix-vs-unit-total-char {
+  text-align: center;
+}
+
+.matrix-vs-unit-total-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .song-grid {
@@ -6042,6 +6409,8 @@ defineExpose({
   flex-wrap: wrap;
   justify-content: center;
   gap: 3px;
+  border-radius: 10px;
+  padding: 2px 4px;
 }
 
 .score-attr-icon {
@@ -6136,7 +6505,7 @@ defineExpose({
   appearance: none;
   -webkit-appearance: none;
   border: 1px solid rgba(15, 23, 42, 0.18);
-  border-radius: 6px;
+  border-radius: var(--stats-radius-btn);
   padding: 2px 7px;
   font-size: 0.72rem;
   line-height: 1.35;
@@ -6206,10 +6575,31 @@ defineExpose({
 }
 
 @media (max-width: 1200px) {
-  .stats-layout { grid-template-columns: 196px 1fr; }
-  .stats-layout.nav-collapsed { grid-template-columns: 48px 1fr; }
-  .stats-nav { max-height: calc(100vh - 56px); }
+  .pjsk-stats {
+    --stats-nav-width: 196px;
+    --stats-nav-left: 34px;
+    --stats-nav-top: 78px;
+  }
+
+  .stats-layout { grid-template-columns: var(--stats-nav-width) 1fr; }
+  .stats-layout.nav-collapsed { grid-template-columns: 1fr; }
+  .stats-nav {
+    height: calc(100vh - var(--stats-nav-top) - 10px);
+    max-height: calc(100vh - var(--stats-nav-top) - 10px);
+  }
   .pjsk-stats { padding: 14px; }
+}
+
+@media (min-width: 1201px) {
+  .nav-cutoff-controls {
+    justify-content: flex-start;
+  }
+
+  .nav-cutoff-controls .id-input {
+    width: 72px;
+    padding: 2px 0;
+    text-align: center;
+  }
 }
 
 @media (min-width: 901px) and (max-width: 1200px) {
@@ -6222,25 +6612,25 @@ defineExpose({
   }
 
   .id-input {
-    width: 52px;
+    width: 56px;
     padding: 2px 4px;
-    font-size: 0.76rem;
+    font-size: 0.8rem;
   }
 
   .id-step-btn {
-    width: 22px;
-    height: 22px;
-    font-size: 0.72rem;
+    width: 26px;
+    height: 26px;
+    font-size: 0.78rem;
   }
 
   .reset-mini-btn {
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
   }
 
   .reset-mini-icon {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
   }
 
   .config-tips {
@@ -6280,18 +6670,25 @@ defineExpose({
     gap: 10px;
   }
 
+  .stats-layout:not(.nav-collapsed) .stats-main {
+    grid-column: auto;
+  }
+
   .stats-layout.mobile-nav-open .stats-main {
     padding-top: 0;
   }
 
-  .stats-layout.mobile-nav-open .mobile-floating-menu-btn {
-    background: #2bbbad;
-    border-color: #0f766e;
+  .stats-layout.mobile-nav-open .floating-menu-btn {
+    background: #ef4444;
+    border-color: #b91c1c;
     color: #ffffff;
   }
 
   .stats-nav {
     position: static;
+    left: auto;
+    width: auto;
+    height: auto;
     max-height: none;
     top: auto;
   }
@@ -6301,8 +6698,17 @@ defineExpose({
     top: calc(env(safe-area-inset-top, 0px) + 52px);
     left: 8px;
     right: 8px;
+    max-height: calc(100dvh - 60px);
     z-index: 4200;
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.22);
+    background: #ffffff;
+    opacity: 1;
+    backdrop-filter: none;
+    overflow: hidden;
+  }
+
+  .nav-collapse-fab {
+    z-index: 4201;
   }
 
   .stats-nav.mobile-floating.is-collapsed {
@@ -6312,12 +6718,7 @@ defineExpose({
   .stats-nav.mobile-floating.is-open {
     right: 8px;
     left: 8px;
-    max-height: calc(100dvh - 16px);
-  }
-
-  .nav-toggle {
-    padding: 5px 8px;
-    font-size: 0.9rem;
+    max-height: calc(100dvh - 64px);
   }
 
   .nav-cutoff {
@@ -6351,14 +6752,14 @@ defineExpose({
 
   .id-step-btn,
   .reset-mini-btn {
-    width: 22px;
-    height: 22px;
-    font-size: 0.72rem;
+    width: 24px;
+    height: 24px;
+    font-size: 0.74rem;
   }
 
   .reset-mini-icon {
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
   }
 
   .reset-mini-btn {
@@ -6370,26 +6771,21 @@ defineExpose({
     font-size: 0.68rem;
   }
 
-  .nav-title {
-    font-size: 0.82rem;
-  }
-
-  .nav-scroll {
-    max-height: 180px;
-  }
+  .nav-scroll { max-height: none; }
 
   .nav-group {
     margin-bottom: 4px;
   }
 
   .nav-link {
-    font-size: 0.74rem;
-    padding: 5px 7px;
+    min-height: 26px;
+    font-size: 0.72rem;
+    padding: 4px 8px;
   }
 
   .nav-link-sub {
-    padding: 4px 7px 4px 14px;
-    font-size: 0.7rem;
+    padding: 3px 8px 3px 22px;
+    font-size: 0.68rem;
   }
 
   .stats-main h1 {
@@ -6458,6 +6854,15 @@ defineExpose({
 
   .chars-cell {
     gap: 2px;
+  }
+
+  .count-table.compact-char-table .char-avatar-box {
+    height: auto;
+    min-height: 42px;
+  }
+
+  .count-table.compact-char-table.reward-breakdown-table .char-avatar-box {
+    min-height: 48px;
   }
 
   .char-avatar-box {
@@ -6804,10 +7209,16 @@ defineExpose({
     padding: 6px;
   }
 
-  .mobile-floating-menu-btn {
+  .floating-menu-btn {
     top: calc(env(safe-area-inset-top, 0px) + 48px);
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .nav-collapse-fab {
+    width: 30px;
+    min-height: 30px;
+    height: 30px;
   }
 
   .stats-main h1 {
@@ -6819,12 +7230,26 @@ defineExpose({
     padding: 8px;
   }
 
-  .nav-scroll {
-    max-height: 160px;
-  }
+  .nav-scroll { max-height: none; }
 
   .count-table {
     min-width: 0;
+  }
+
+  .count-table.compact-char-table .char-avatar-box {
+    width: 34px;
+    height: auto;
+    min-height: 34px;
+  }
+
+  .count-table.compact-char-table .avatar-img,
+  .count-table.compact-char-table .festival-avatar-wrap {
+    width: 34px;
+    height: 34px;
+  }
+
+  .count-table.compact-char-table.reward-breakdown-table .char-avatar-box {
+    min-height: 42px;
   }
 
   .char-avatar-box {
