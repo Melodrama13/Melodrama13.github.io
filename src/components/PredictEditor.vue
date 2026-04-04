@@ -73,6 +73,11 @@
               </div>
               
               <div class="config-row">
+                <select v-if="VS_NAMES.includes(char.name) && !isVSUnitLocked(char)" v-model="char.selectedUnit" class="mini-select unit-sel">
+                  <option v-for="u in UNITS" :key="u" :value="u">{{u.toUpperCase()}}</option>
+                </select>
+                <span v-else class="unit-tag">{{ getDisplayUnit(char).toUpperCase() }}</span>
+
                 <select v-model="char.rarity" class="mini-select rarity-sel" :disabled="isRarityLocked(char)">
                   <option value="4">4★</option>
                   <option value="3">3★</option>
@@ -87,11 +92,6 @@
                   <option value="Cool">蓝星</option>
                   <option value="Happy">橙心</option>
                 </select>
-
-                <select v-if="VS_NAMES.includes(char.name) && !isVSUnitLocked(char)" v-model="char.selectedUnit" class="mini-select unit-sel">
-                  <option v-for="u in UNITS" :key="u" :value="u">{{u.toUpperCase()}}</option>
-                </select>
-                <span v-else class="unit-tag">{{ getDisplayUnit(char).toUpperCase() }}</span>
 
                 <select v-if="isVsFesSkillMode(char)" v-model="char.skillType" class="mini-select skill-sel">
                   <option value="unit_score">团分</option>
@@ -143,7 +143,13 @@
 <script setup>
 import { reactive, inject, watch, computed, ref, onMounted, onBeforeUnmount } from 'vue';
 
-const props = defineProps(['isOpen', 'event', 'charMap', 'boxLockedUnits']);
+const props = defineProps({
+  isOpen: { type: Boolean, default: false },
+  event: { type: Object, default: null },
+  charMap: { type: Object, default: () => ({}) },
+  boxLockedUnits: { type: Array, default: () => [] },
+  allCharacters: { type: Array, default: () => [] }
+});
 const emit = defineEmits(['close', 'selection-change']);
 const savePredictEvent = inject('savePredictEvent');
 
@@ -157,7 +163,6 @@ const ATTR_LABELS = {
 };
 const UNITS = ['vs','ln','mmj','vbs','ws','nc'];
 const BOX_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
-const VS_NAMES = ["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"];
 const FES_FESTIVALS = ['周年', '半周年', '夏活', '新年'];
 const FES_SKILL_CONFIG = Object.freeze([
   // 将来新增 FES 时，仅需在这里替换 active 或扩展候选。
@@ -168,13 +173,55 @@ const ACTIVE_FES_SKILL = Object.freeze(
 );
 const ACTIVE_FES_SKILL_KEY = ACTIVE_FES_SKILL.key;
 const ACTIVE_FES_SKILL_LABEL = ACTIVE_FES_SKILL.label;
-const CHAR_UNIT_MAP = {
-  "星乃一歌": "ln", "天马咲希": "ln", "望月穗波": "ln", "日野森志步": "ln",
-  "花里实乃里": "mmj", "桐谷遥": "mmj", "桃井爱莉": "mmj", "日野森雫": "mmj",
-  "小豆泽心羽": "vbs", "白石杏": "vbs", "东云彰人": "vbs", "青柳冬弥": "vbs",
-  "天马司": "ws", "凤笑梦": "ws", "草薙宁宁": "ws", "神代类": "ws",
-  "宵崎奏": "nc", "朝比奈真冬": "nc", "东云绘名": "nc", "晓山瑞希": "nc",
+const VS_NAMES = [];
+const CHAR_UNIT_MAP = {};
+
+const replaceObject = (target, next) => {
+  Object.keys(target).forEach((key) => {
+    delete target[key];
+  });
+  Object.assign(target, next);
 };
+
+const replaceArray = (target, next) => {
+  target.splice(0, target.length, ...next);
+};
+
+const applyCharacterMetaSource = (characters) => {
+  if (!Array.isArray(characters) || characters.length === 0) {
+    replaceObject(CHAR_UNIT_MAP, {});
+    replaceArray(VS_NAMES, []);
+    return;
+  }
+
+  const nextCharUnit = {};
+  const nextVsNames = [];
+
+  characters.forEach((char) => {
+    const name = String(char?.zh_name || '').trim();
+    if (!name) return;
+    const unit = String(char?.unit || '').trim().toLowerCase() || 'vs';
+    nextCharUnit[name] = unit;
+    if (unit === 'vs') nextVsNames.push(name);
+  });
+
+  if (Object.keys(nextCharUnit).length === 0) {
+    replaceObject(CHAR_UNIT_MAP, {});
+    replaceArray(VS_NAMES, []);
+    return;
+  }
+
+  replaceObject(CHAR_UNIT_MAP, nextCharUnit);
+  replaceArray(VS_NAMES, nextVsNames);
+};
+
+watch(
+  () => props.allCharacters,
+  (characters) => {
+    applyCharacterMetaSource(characters);
+  },
+  { immediate: true }
+);
 
 const form = reactive({
   eventType: '混活',
@@ -924,7 +971,25 @@ const submit = () => {
 .global-config-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .global-config-bar.has-banner { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .cfg-group label { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: bold; }
-.cfg-group select { width: 100%; padding: 6px; border-radius: var(--pe-radius-btn); border: 1px solid #cbd5e1; font-size: 12px; }
+.cfg-group select {
+  width: 100%;
+  padding: 6px 26px 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  font-size: 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position:
+    calc(100% - 13px) 50%,
+    calc(100% - 8px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
 
 .selected-section { flex: 1; overflow-y: auto; padding: 10px; }
 .section-title { font-size: 13px; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; }
@@ -950,9 +1015,52 @@ const submit = () => {
 .char-name { font-weight: bold; font-size: 13px; }
 .remove-btn { background: #fee2e2; color: #ef4444; border: none; border-radius: var(--pe-radius-btn); padding: 0 6px; cursor: pointer; }
 
-.config-row { display: flex; gap: 6px; align-items: center; }
-.mini-select { padding: 3px; font-size: 11px; border-radius: var(--pe-radius-btn); border: 1px solid #cbd5e1; }
-.unit-tag { font-size: 10px; background: #f1f5f9; padding: 2px 6px; border-radius: var(--pe-radius-btn); color: #64748b; }
+.config-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  align-items: center;
+}
+.mini-select {
+  width: 100%;
+  min-width: 0;
+  padding: 3px 22px 3px 10px;
+  font-size: 11px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position:
+    calc(100% - 12px) 50%,
+    calc(100% - 7px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.cfg-group select:disabled,
+.mini-select:disabled {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+.unit-tag {
+  width: 100%;
+  min-width: 0;
+  min-height: 23px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: var(--pe-radius-btn);
+  color: #64748b;
+  box-sizing: border-box;
+}
 
 .pool-section {
   height: auto;
@@ -1048,7 +1156,7 @@ const submit = () => {
 
   .cfg-group select {
     font-size: 11px;
-    padding: 5px;
+    padding: 5px 24px 5px 9px;
   }
 
   .selected-section {
@@ -1092,7 +1200,7 @@ const submit = () => {
 
   .cfg-group select {
     font-size: 11px;
-    padding: 4px;
+    padding: 4px 22px 4px 8px;
   }
 
   .selected-section {
@@ -1158,7 +1266,15 @@ const submit = () => {
     box-sizing: border-box;
     text-align: center;
     font-size: 10px;
-    padding: 2px 3px;
+  }
+
+  .mini-select {
+    padding: 2px 20px 2px 8px;
+  }
+
+  .unit-tag {
+    padding: 2px 8px;
+    min-height: 22px;
   }
 
   .pool-section {

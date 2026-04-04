@@ -406,13 +406,13 @@
         </div>
         <transition name="slide-fade">
           <div v-if="showFilter" class="filter-panel">
-          <div class="filter-row">
+          <div class="filter-row filter-mode-row">
             <span class="row-label">模式</span>
             <div class="btn-group">
-              <button :class="{active: filterMode === 'single'}" @click="switchFilterMode('single')">卡片筛选</button>
-              <button :class="{active: filterMode === 'event'}" @click="switchFilterMode('event')">活动筛选</button>
-              <button class="clear-btn panel-reset-btn" :class="{ 'is-ready': hasActiveFilters }" :disabled="!hasActiveFilters" @click="resetFilters">{{ isCompactFilterBar ? '重置' : '重置筛选' }}</button>
-              <button class="clear-btn panel-reset-btn panel-collapse-btn" @click="showFilter = false">收起</button>
+              <button class="filter-mode-btn" :class="{active: filterMode === 'event'}" @click="switchFilterMode('event')">活动筛选</button>
+              <button class="filter-mode-btn" :class="{active: filterMode === 'single'}" @click="switchFilterMode('single')">卡片筛选</button>
+              <button class="filter-mode-btn clear-btn panel-reset-btn" :class="{ 'is-ready': hasActiveFilters }" :disabled="!hasActiveFilters" @click="resetFilters">{{ isCompactFilterBar ? '重置' : '重置筛选' }}</button>
+              <button class="filter-mode-btn clear-btn panel-reset-btn panel-collapse-btn" @click="showFilter = false">收起</button>
             </div>
             <span v-if="hasActiveFilters" class="filter-mode-hit-count">{{ activeFilteredEventCount }}个活动</span>
           </div>
@@ -743,28 +743,39 @@
           </div>
 
           <div v-if="!isEditorOpen" class="vs-section">
-            <div v-if="row.event.virtual_singer" class="vs-list">
-              <img v-for="vs in parseVS(row.event.virtual_singer)" :key="vs" :src="`/chars/${getCharAbbr(vs)}.png`" :title="vs" class="vs-avatar" />
-            </div>
-            <div
-              class="song-tooltip"
-              v-if="row.event.event_song"
-              @mouseenter="setTooltipRaisedEvent(row.key)"
-              @mouseleave="clearTooltipRaisedEvent(row.key)"
-              @focusin="setTooltipRaisedEvent(row.key)"
-              @focusout="clearTooltipRaisedEvent(row.key)"
-            >
-              <span class="info-icon">🎵</span>
-              <div class="tooltip-content">
-                <p><strong>书下曲：</strong>{{ row.event.event_song }}</p>
-                <p v-if="row.event.song_alias"><strong>别名：</strong>{{ row.event.song_alias }}</p>
-                <p><strong>P主：</strong>{{ row.event.composer }}</p>
+            <div class="vs-top-row">
+              <div v-if="row.event.virtual_singer" class="vs-list">
+                <img v-for="vs in parseVS(row.event.virtual_singer)" :key="vs" :src="`/chars/${getCharAbbr(vs)}.png`" :title="vs" class="vs-avatar" />
               </div>
+              <div
+                class="song-tooltip"
+                v-if="hasSongTooltip(row.event)"
+                @mouseenter="setTooltipRaisedEvent(row.key)"
+                @mouseleave="clearTooltipRaisedEvent(row.key)"
+                @focusin="setTooltipRaisedEvent(row.key)"
+                @focusout="clearTooltipRaisedEvent(row.key)"
+              >
+                <span class="info-icon">🎵</span>
+                <div class="tooltip-content">
+                  <p v-if="getSongIdText(row.event)"><strong>歌曲ID：</strong>{{ getSongIdText(row.event) }}</p>
+                  <p><strong>书下曲：</strong>{{ getSongTitleText(row.event) }}</p>
+                  <p v-if="row.event.song_alias"><strong>别名：</strong>{{ row.event.song_alias }}</p>
+                  <p><strong>作曲：</strong>{{ getSongComposerText(row.event) }}</p>
+                  <p><strong>作词：</strong>{{ getSongLyricistText(row.event) }}</p>
+                  <p><strong>编曲：</strong>{{ getSongArrangerText(row.event) }}</p>
+                </div>
+              </div>
+              <img
+                v-if="hasAttributeIcon(row.event.event_attribute)"
+                :src="`/elements/${row.event.event_attribute.toLowerCase()}.png`"
+                class="attr-icon attr-icon-inline"
+                :title="translateAttr(row.event.event_attribute)"
+              />
             </div>
-          </div>
-
-          <div v-if="!isEditorOpen" class="attr-section">
-            <img v-if="hasAttributeIcon(row.event.event_attribute)" :src="`/elements/${row.event.event_attribute.toLowerCase()}.png`" class="attr-icon" />
+            <div class="song-mv-grid" v-if="hasSongTooltip(row.event)">
+              <span class="song-mv-pill is-3d" :class="{ 'is-empty': !hasSong3DMV(row.event) }">3D</span>
+              <span class="song-mv-pill is-2d" :class="{ 'is-empty': !hasSong2DMV(row.event) }">2D</span>
+            </div>
           </div>
         </div>
         <div
@@ -811,6 +822,7 @@
         :is-open="isEditorOpen" 
         :event="currentEditingEvent"
         :char-map="CHAR_MAP"
+        :all-characters="props.allCharacters"
         :box-locked-units="currentEditingBoxLockedUnits"
         @selection-change="handlePredictSelectionChange"
         @close="handleCloseEditor"
@@ -829,6 +841,8 @@ import html2canvas from 'html2canvas';
 const props = defineProps({
   allEvents: { type: Array, default: () => [] },
   allCards: { type: Array, default: () => [] },
+  allSongs: { type: Array, default: () => [] },
+  allCharacters: { type: Array, default: () => [] },
   allBaseCards: { type: Array, default: () => [] },
   statsPreviewData: { type: Object, default: null },
   jumpEventId: { type: [Number, String], default: null },
@@ -876,6 +890,80 @@ const parseDateSafe = (dateStr) => {
   const d = new Date(String(dateStr || '').replace(/\//g, '-'));
   const t = d.getTime();
   return Number.isFinite(t) ? d : null;
+};
+
+const toFiniteSongId = (value) => {
+  if (value === null || value === undefined) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return n > 0 ? n : null;
+};
+
+const songsById = computed(() => {
+  const map = new Map();
+  (props.allSongs || []).forEach((song) => {
+    const id = toFiniteSongId(song?.id);
+    if (id === null) return;
+    map.set(id, song);
+  });
+  return map;
+});
+
+const getSongByEvent = (event) => {
+  const id = toFiniteSongId(event?.song_id);
+  if (id === null) return null;
+  return songsById.value.get(id) || null;
+};
+
+const getSongCategories = (song) => {
+  if (!Array.isArray(song?.categories)) return [];
+  return song.categories.map((item) => String(item || '').trim().toUpperCase()).filter(Boolean);
+};
+
+const hasSong3DMV = (event) => {
+  const song = getSongByEvent(event);
+  if (!song) return false;
+  const categories = getSongCategories(song);
+  return categories.includes('3DMV');
+};
+
+const hasSong2DMV = (event) => {
+  const song = getSongByEvent(event);
+  if (!song) return false;
+  const categories = getSongCategories(song);
+  return categories.includes('2DMV');
+};
+
+const getSongIdText = (event) => {
+  const id = toFiniteSongId(event?.song_id);
+  return id === null ? '' : String(id);
+};
+
+const getSongTitleText = (event) => {
+  return String(getSongByEvent(event)?.title || '').trim();
+};
+
+const normalizeSongCreditText = (value) => {
+  const text = String(value || '').trim();
+  return text || '-';
+};
+
+const getSongComposerText = (event) => {
+  return normalizeSongCreditText(getSongByEvent(event)?.composer);
+};
+
+const getSongLyricistText = (event) => {
+  return normalizeSongCreditText(getSongByEvent(event)?.lyricist);
+};
+
+const getSongArrangerText = (event) => {
+  return normalizeSongCreditText(getSongByEvent(event)?.arranger);
+};
+
+const hasSongTooltip = (event) => {
+  return !!getSongByEvent(event);
 };
 
 const getDateValue = (dateStr) => parseDateSafe(dateStr)?.getTime() || 0;
@@ -1428,7 +1516,7 @@ const openPredictEditor = (event) => {
   lastFocusedEventId.value = event.id;
   currentEditingEvent.value = event;
   currentEditingSelectionNames.value = Array.isArray(event?.memberCards)
-    ? [...new Set(event.memberCards.map((card) => normalizeCharName(card?.Name)).filter((name) => !!CHAR_MAP[name]))]
+    ? [...new Set(event.memberCards.map((card) => normalizeCharName(card?.Name)).filter((name) => !!CHAR_MAP.value[name]))]
     : [];
   emit('sync-preview-event-id', Number(event.id));
   preserveAnchorWhileLayoutChanges(event.id, () => {
@@ -1475,13 +1563,16 @@ const PREVIEW_DAILY_ATTR_COLOR = {
   Happy: '#f59e0b',
   Mysterious: '#8b5cf6'
 };
-const PREVIEW_DAILY_CHAR_UNIT_MAP = {
-  '星乃一歌': 'ln', '天马咲希': 'ln', '望月穗波': 'ln', '日野森志步': 'ln',
-  '花里实乃里': 'mmj', '桐谷遥': 'mmj', '桃井爱莉': 'mmj', '日野森雫': 'mmj',
-  '小豆泽心羽': 'vbs', '白石杏': 'vbs', '东云彰人': 'vbs', '青柳冬弥': 'vbs',
-  '天马司': 'ws', '凤笑梦': 'ws', '草薙宁宁': 'ws', '神代类': 'ws',
-  '宵崎奏': 'nc', '朝比奈真冬': 'nc', '东云绘名': 'nc', '晓山瑞希': 'nc'
-};
+const PREVIEW_DAILY_CHAR_UNIT_MAP = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const name = String(char?.zh_name || '').trim();
+    const unit = String(char?.unit || '').trim().toLowerCase();
+    if (!name) return;
+    map[name] = unit || 'vs';
+  });
+  return map;
+});
 const PREVIEW_DAILY_SKILL_BASE = {
   bfes_up: 160,
   cfes: 140,
@@ -1511,14 +1602,17 @@ const PREVIEW_PANEL_DEFS = [
   { id: 'attr-five', title: '花色', icon: '🧩', statKey: 'attrFive' },
   { id: 'festival', title: '节日人选', icon: '🎊', statKey: 'festival', externalKey: 'festival' }
 ];
-const PREVIEW_CHAR_ORDER = {
-  '星乃一歌': 1, '天马咲希': 2, '望月穗波': 3, '日野森志步': 4,
-  '花里实乃里': 5, '桐谷遥': 6, '桃井爱莉': 7, '日野森雫': 8,
-  '小豆泽心羽': 9, '白石杏': 10, '东云彰人': 11, '青柳冬弥': 12,
-  '天马司': 13, '凤笑梦': 14, '草薙宁宁': 15, '神代类': 16,
-  '宵崎奏': 17, '朝比奈真冬': 18, '东云绘名': 19, '晓山瑞希': 20,
-  '初音未来': 21, '镜音铃': 22, '镜音连': 23, '巡音流歌': 24, 'MEIKO': 25, 'KAITO': 26
-};
+const PREVIEW_CHAR_ORDER = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const name = String(char?.zh_name || '').trim();
+    const order = Number(char?.id);
+    if (!name || !Number.isFinite(order)) return;
+    map[name] = order;
+  });
+  return map;
+});
+const getPreviewCharOrder = (name) => Number(PREVIEW_CHAR_ORDER.value[String(name || '').trim()] || 999);
 const PREVIEW_FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
 const selectedPreviewPanelIds = ref([]);
 const selectedPreviewAttrChars = ref([]);
@@ -1540,14 +1634,14 @@ const compareFestivalPreviewName = (a, b) => {
   const bName = String(b || '').trim();
   const aBase = aName.split(' ')[0] || aName;
   const bBase = bName.split(' ')[0] || bName;
-  const ao = PREVIEW_CHAR_ORDER[aBase] || 999;
-  const bo = PREVIEW_CHAR_ORDER[bBase] || 999;
+  const ao = getPreviewCharOrder(aBase);
+  const bo = getPreviewCharOrder(bBase);
   if (ao !== bo) return ao - bo;
   return aName.localeCompare(bName, 'zh-Hans-CN');
 };
 
 const previewSelectableChars = computed(() => {
-  return Object.keys(CHAR_MAP).sort((a, b) => (PREVIEW_CHAR_ORDER[a] || 999) - (PREVIEW_CHAR_ORDER[b] || 999));
+  return Object.keys(CHAR_MAP.value).sort((a, b) => getPreviewCharOrder(a) - getPreviewCharOrder(b));
 });
 
 const togglePreviewAttrChar = (name) => {
@@ -1592,7 +1686,7 @@ const getCurrentLineupCharNames = () => {
 
   const pushName = (raw) => {
     const name = normalizeCharName(raw);
-    if (!name || !CHAR_MAP[name] || seen.has(name)) return;
+    if (!name || !CHAR_MAP.value[name] || seen.has(name)) return;
     seen.add(name);
     names.push(name);
   };
@@ -1617,7 +1711,7 @@ const getCurrentLineupFourStarCharNames = () => {
   cards.forEach((card) => {
     if (String(card?.Rarity || '').trim() !== '4') return;
     const name = normalizeCharName(card?.Name);
-    if (!name || !CHAR_MAP[name] || seen.has(name)) return;
+    if (!name || !CHAR_MAP.value[name] || seen.has(name)) return;
     seen.add(name);
     names.push(name);
   });
@@ -1667,7 +1761,7 @@ const appendPreviewDailyLineupCharsFromCurrentLineup = () => {
 
 const handlePredictSelectionChange = (names) => {
   const list = Array.isArray(names)
-    ? names.map((name) => normalizeCharName(name)).filter((name) => !!CHAR_MAP[name])
+    ? names.map((name) => normalizeCharName(name)).filter((name) => !!CHAR_MAP.value[name])
     : [];
   currentEditingSelectionNames.value = [...new Set(list)];
 };
@@ -1768,7 +1862,7 @@ const parseFestivalPreviewCharKey = (charKey) => {
 const buildFestivalPreviewCharKey = (card) => {
   const fullName = String(card?.Name || '').trim();
   const [baseName] = fullName.split(/\s+/);
-  if (!baseName || !PREVIEW_CHAR_ORDER[baseName]) return '';
+  if (!baseName || getPreviewCharOrder(baseName) >= 999) return '';
   if (!isVirtualSinger(baseName)) return baseName;
 
   const unit = String(card?.Affiliation || '').trim().toLowerCase();
@@ -1781,7 +1875,7 @@ const buildFestivalPreviewCharKey = (card) => {
 const compareFestivalPreviewCharKey = (aKey, bKey) => {
   const a = parseFestivalPreviewCharKey(aKey);
   const b = parseFestivalPreviewCharKey(bKey);
-  const baseDiff = (PREVIEW_CHAR_ORDER[a.baseName] || 999) - (PREVIEW_CHAR_ORDER[b.baseName] || 999);
+  const baseDiff = getPreviewCharOrder(a.baseName) - getPreviewCharOrder(b.baseName);
   if (baseDiff !== 0) return baseDiff;
 
   if (a.isVs && b.isVs) {
@@ -2049,8 +2143,8 @@ const previewFestivalRowsLocal = computed(() => {
     }
   });
 
-  const allBaseNames = Object.keys(CHAR_MAP)
-    .sort((a, b) => (PREVIEW_CHAR_ORDER[a] || 999) - (PREVIEW_CHAR_ORDER[b] || 999));
+  const allBaseNames = Object.keys(CHAR_MAP.value)
+    .sort((a, b) => getPreviewCharOrder(a) - getPreviewCharOrder(b));
 
   const toRowList = (mapObj, options = {}) => Object.entries(mapObj || {})
     .map(([name, count]) => {
@@ -2270,7 +2364,7 @@ const getPreviewCardProgressOrderId = (card) => {
 
 const getPreviewStepBaseOrder = (name) => {
   const base = String(name || '').trim().split(/\s+/)[0] || '';
-  return PREVIEW_CHAR_ORDER[base] || 999;
+  return getPreviewCharOrder(base);
 };
 
 const previewStepProgressOrderMap = computed(() => {
@@ -2352,7 +2446,7 @@ const previewStepProgressOrderMap = computed(() => {
     if (Number.isFinite(maxId) && maxId > 0 && eid > maxId) return;
 
     const bannerName = normalizeCharName(ev?.banner);
-    if (bannerName && PREVIEW_CHAR_ORDER[bannerName] && !isVirtualSinger(bannerName)) {
+    if (bannerName && getPreviewCharOrder(bannerName) < 999 && !isVirtualSinger(bannerName)) {
       const eventType = String(ev?.event_type || '').trim();
       if (['箱活', '混活'].includes(eventType) && (bannerTypeFilter === 'all' || bannerTypeFilter === eventType)) {
         const row = ensure(bannerName);
@@ -2368,7 +2462,7 @@ const previewStepProgressOrderMap = computed(() => {
     if (typeFilter !== 'all' && eventType !== typeFilter) return;
 
     const bannerNameLimited = bannerName;
-    if (!bannerNameLimited || !PREVIEW_CHAR_ORDER[bannerNameLimited] || isVirtualSinger(bannerNameLimited)) return;
+    if (!bannerNameLimited || getPreviewCharOrder(bannerNameLimited) >= 999 || isVirtualSinger(bannerNameLimited)) return;
     const row = ensure(bannerNameLimited);
     if (!row) return;
     row.lastLimitedBanOrderId = Math.max(Number(row.lastLimitedBanOrderId || 0), eid);
@@ -2471,7 +2565,7 @@ const previewCharStats = computed(() => {
     if (bannerTypeFilter !== 'all' && bannerTypeFilter !== eventType) return;
 
     const bannerName = normalizeCharName(ev?.banner);
-    if (!bannerName || !PREVIEW_CHAR_ORDER[bannerName] || isVirtualSinger(bannerName)) return;
+    if (!bannerName || getPreviewCharOrder(bannerName) >= 999 || isVirtualSinger(bannerName)) return;
 
     if (!stats[bannerName]) {
       stats[bannerName] = {
@@ -2525,7 +2619,7 @@ const previewAttrFiveRows = computed(() => {
         Mysterious: s?.attr4Counts?.Mysterious || 0
       };
     })
-    .sort((a, b) => (PREVIEW_CHAR_ORDER[a.name] || 999) - (PREVIEW_CHAR_ORDER[b.name] || 999));
+    .sort((a, b) => getPreviewCharOrder(a.name) - getPreviewCharOrder(b.name));
 });
 
 const previewLimitedBanSteps = computed(() => {
@@ -2534,7 +2628,7 @@ const previewLimitedBanSteps = computed(() => {
 
   const typeFilter = previewLimitedBanEventTypeFilter.value;
   const countMap = Object.fromEntries(
-    Object.keys(PREVIEW_CHAR_ORDER)
+    Object.keys(PREVIEW_CHAR_ORDER.value)
       .filter((name) => !isVirtualSinger(name))
       .map((name) => [name, 0])
   );
@@ -2549,7 +2643,7 @@ const previewLimitedBanSteps = computed(() => {
     if (typeFilter !== 'all' && eventType !== typeFilter) return;
 
     const bannerName = normalizeCharName(ev?.banner);
-    if (!bannerName || !PREVIEW_CHAR_ORDER[bannerName]) return;
+    if (!bannerName || getPreviewCharOrder(bannerName) >= 999) return;
     if (isVirtualSinger(bannerName)) return;
     countMap[bannerName] = Number(countMap[bannerName] || 0) + 1;
   });
@@ -2630,9 +2724,9 @@ const previewDailyLineupRows = computed(() => {
   const getDailyCardUnit = (card, baseName) => {
     if (isVirtualSinger(baseName)) {
       const aff = String(card?.Affiliation || '').trim().toLowerCase();
-      return aff && UNIT_COLORS[aff] ? aff : 'vs';
+      return aff && UNIT_COLORS.value[aff] ? aff : 'vs';
     }
-    return PREVIEW_DAILY_CHAR_UNIT_MAP[baseName] || 'vs';
+    return PREVIEW_DAILY_CHAR_UNIT_MAP.value[baseName] || 'vs';
   };
 
   const calcDailyUnitScore = (unit, members) => {
@@ -2709,7 +2803,7 @@ const previewDailyLineupRows = computed(() => {
       if (String(card?.Rarity || '').trim() !== '4') return;
 
       const baseName = normalizeCharName(card?.Name);
-      if (!baseName || !PREVIEW_CHAR_ORDER[baseName]) return;
+      if (!baseName || getPreviewCharOrder(baseName) >= 999) return;
 
       const attr = normalizeAttr(card?.Attribute);
       if (!PREVIEW_ATTRS.includes(attr)) return;
@@ -2793,7 +2887,7 @@ const previewDailyLineupRows = computed(() => {
       return { name, plans };
     })
     .filter(Boolean)
-    .sort((a, b) => (PREVIEW_CHAR_ORDER[a.name] || 999) - (PREVIEW_CHAR_ORDER[b.name] || 999));
+    .sort((a, b) => getPreviewCharOrder(a.name) - getPreviewCharOrder(b.name));
 });
 
 const getPreviewDailyPlanStyle = (attr) => {
@@ -2925,7 +3019,7 @@ watch(() => [props.jumpEventSeq, props.jumpEventId], ([seqValue, idValue]) => {
 }, { flush: 'post' });
 // 新增筛选相关的状态
 const showFilter = ref(false);
-const filterMode = ref('single'); // 'single' | 'event'
+const filterMode = ref('event'); // 'single' | 'event'
 const EVENT_TYPE_FILTER_OPTIONS = [
   { value: 'box', label: '箱活' },
   { value: 'mix', label: '混活' },
@@ -3153,7 +3247,7 @@ const previewRows = computed(() => {
     const date = String(item?.date || '').trim();
     const week = String(item?.week || '').trim();
     const members = Array.isArray(item?.members)
-      ? item.members.map((name) => String(name || '').trim()).filter((name) => !!CHAR_MAP[name]).slice(0, 4)
+      ? item.members.map((name) => String(name || '').trim()).filter((name) => !!CHAR_MAP.value[name]).slice(0, 4)
       : [];
     const safeId = Number.isFinite(idNum) ? idNum : `x${Math.random().toString(36).slice(2, 8)}`;
     return {
@@ -4090,14 +4184,11 @@ const restoreHistoryScroll = () => {
 };
 
 onMounted(() => {
-  fetch('/data/pjsk_preview.json')
-    .then((res) => (res.ok ? res.json() : []))
-    .then((rows) => {
-      previewDataRows.value = Array.isArray(rows) ? rows : [];
-    })
-    .catch(() => {
-      previewDataRows.value = [];
-    });
+  Promise.all([
+    fetch('/data/pjsk_preview.json').then((res) => (res.ok ? res.json() : [])).catch(() => [])
+  ]).then(([previewRows]) => {
+    previewDataRows.value = Array.isArray(previewRows) ? previewRows : [];
+  });
 
   window.addEventListener('mousemove', handleDragPreviewConfig);
   window.addEventListener('mouseup', stopDragPreviewConfig);
@@ -4279,34 +4370,65 @@ const scrollTo = (target) => {
   }
 };
 
-const CHAR_MAP = {
-  "星乃一歌": "ICK", "天马咲希": "SAKI", "望月穗波": "HNM", "日野森志步": "SHIHO",
-  "花里实乃里": "MNR", "桐谷遥": "HRK", "桃井爱莉": "AIRI", "日野森雫": "SZK",
-  "小豆泽心羽": "KHN", "白石杏": "AN", "东云彰人": "AKT", "青柳冬弥": "TOYA",
-  "天马司": "TKS", "凤笑梦": "EMU", "草薙宁宁": "NENE", "神代类": "RUI",
-  "宵崎奏": "KND", "朝比奈真冬": "MFY", "东云绘名": "ENA", "晓山瑞希": "MZK",
-  "初音未来": "MIKU", "镜音铃": "RIN", "镜音连": "LEN", "巡音流歌": "LUKA", "MEIKO": "MEIKO", "KAITO": "KAITO",
-//  "初音未来 ln": "miku_ln", "初音未来 mmj": "miku_mmj", "初音未来 vbs": "miku_vbs", "初音未来 ws": "miku_ws", "初音未来 nc": "miku_nc"
+const FALLBACK_UNIT_COLORS = {
+  ln: '#4455DD',
+  mmj: '#88DD44',
+  vbs: '#EE1166',
+  ws: '#FF9900',
+  nc: '#884499',
+  vs: '#000000'
 };
-const CHAR_SINGLE_MAP = {
-  "星乃一歌": "一", "天马咲希": "溪", "望月穗波": "萍", "日野森志步": "吸",
-  "花里实乃里": "花", "桐谷遥": "遥", "桃井爱莉": "桃", "日野森雫": "雫",
-  "小豆泽心羽": "豆", "白石杏": "杏", "东云彰人": "彰", "青柳冬弥": "冬",
-  "天马司": "司", "凤笑梦": "姆", "草薙宁宁": "宁", "神代类": "类",
-  "宵崎奏": "奏", "朝比奈真冬": "马", "东云绘名": "画", "晓山瑞希": "糖",
-  "初音未来": "葱", "镜音铃": "橘", "镜音连": "蕉", "巡音流歌": "鱼", "MEIKO": "酒", "KAITO": "冰"
-};
-const CHAR_COLORS = {
-  "星乃一歌": "#33AAEE", "天马咲希": "#FFDD44", "望月穗波": "#EE6666", "日野森志步": "#BBDD22",
-  "花里实乃里": "#FFCCAA", "桐谷遥": "#99CCFF", "桃井爱莉": "#FFAACC", "日野森雫": "#99EEDD",
-  "小豆泽心羽": "#FF6699", "白石杏": "#00BBDD", "东云彰人": "#FF7722", "青柳冬弥": "#0077DD",
-  "天马司": "#FFBB00", "凤笑梦": "#FF66BB", "草薙宁宁": "#33DD99", "神代类": "#BB88EE",
-  "宵崎奏": "#BB6688", "朝比奈真冬": "#8888CC", "东云绘名": "#CCAA88", "晓山瑞希": "#DDAACC",
-  "初音未来": "#33CCBB", "镜音铃": "#FFCC11", "镜音连": "#FFEE11", "巡音流歌": "#FFBBCC", "MEIKO": "#DD4444", "KAITO": "#3366CC"
-};
-const UNIT_COLORS = {
-  "ln": "#4455DD", "mmj": "#88DD44", "vbs": "#EE1166", "ws": "#FF9900", "nc": "#884499", "vs": "#000000"
-};
+
+const CHAR_MAP = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const key = String(char?.zh_name || '').trim();
+    const abbr = String(char?.en_abbr || '').trim();
+    if (!key || !abbr) return;
+    map[key] = abbr;
+  });
+  return map;
+});
+
+const CHAR_SINGLE_MAP = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const key = String(char?.zh_name || '').trim();
+    const mark = String(char?.single_mark || '').trim();
+    if (!key || !mark) return;
+    map[key] = mark;
+  });
+  return map;
+});
+
+const CHAR_COLORS = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const key = String(char?.zh_name || '').trim();
+    const color = String(char?.color || '').trim();
+    if (!key || !color) return;
+    map[key] = color;
+  });
+  return map;
+});
+
+const UNIT_COLORS = computed(() => {
+  const map = { ...FALLBACK_UNIT_COLORS };
+  (props.allCharacters || []).forEach((char) => {
+    const unit = String(char?.unit || '').trim().toLowerCase();
+    const color = String(char?.unit_color || '').trim();
+    if (!unit || !color) return;
+    map[unit] = color;
+  });
+  return map;
+});
+
+const VS_NAMES = computed(() => {
+  return (props.allCharacters || [])
+    .filter((char) => String(char?.unit || '').trim().toLowerCase() === 'vs')
+    .map((char) => String(char?.zh_name || '').trim())
+    .filter(Boolean);
+});
 
 // 转换函数
 const translateType = (t) => {
@@ -4331,19 +4453,20 @@ const getCharAbbr = (name) => {
   const mainName = parts[0]; // 角色本体名字
   const unitSuffix = parts.length > 1 ? parts[1].toLowerCase() : null; // 团队后缀
   if (isVirtualSinger(mainName)) {  // 利用 isVirtualSinger 判断是否为虚拟歌手
-    const abbr = CHAR_MAP[mainName]; // 从映射表获取基础缩写，如 MIKU, RIN    
+    const abbr = CHAR_MAP.value[mainName]; // 从映射表获取基础缩写，如 MIKU, RIN
+    if (!abbr) return mainName.toUpperCase();
     if (unitSuffix && unitSuffix !== 'vs') {    // 如果有团队后缀，且后缀不是 'vs'
       return `${abbr.toLowerCase()}_${unitSuffix}`;      // 返回通用格式：缩写小写_团队名（如 miku_ln）
     }
     return abbr;    // 没有后缀或属于 vs 团队，返回原始大写缩写（如 MIKU）
   }
   // 非虚拟歌手角色，直接按全名查找映射
-  return CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
+  return CHAR_MAP.value[name] || name.toUpperCase() || name.toLowerCase();
 };
 //const getUnitColor = (unit) => UNIT_COLORS[unit?.toLowerCase()] || '#999999';
 const getUnitColor = (unit) => {
   if (!unit) return 'transparent'; // 如果 unit 为空，返回透明或默认背景色
-  return UNIT_COLORS[unit.toLowerCase()] || '#999999';
+  return UNIT_COLORS.value[String(unit).toLowerCase()] || '#999999';
 };
 //const getCharColor = (name) => CHAR_COLORS[name] || '#999999';
 // 修改后的获取颜色逻辑
@@ -4351,10 +4474,10 @@ const getCharColor = (name) => {
   if (!name) return '#999999';
   // 提取真正的角色名：取空格前的部分（例如从 "初音未来 LN" 中提取 "初音未来"）
   const realName = name.split(' ')[0];   
-  return CHAR_COLORS[realName] || CHAR_COLORS[name] || '#999999';
+  return CHAR_COLORS.value[realName] || CHAR_COLORS.value[name] || '#999999';
 };
 
-const isVirtualSinger = (name) => ["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"].includes(name);
+const isVirtualSinger = (name) => VS_NAMES.value.includes(String(name || '').trim());
 //const isUnitRelated = (ev) => ['箱活','World Link'].includes(ev.event_type);
 const isUnitRelated = (ev) => {
   const isTypeMatch = ['箱活', 'WL', 'World Link'].includes(ev.event_type);
@@ -4403,7 +4526,7 @@ const getSingleCharLabel = (name) => {
   const raw = String(name || '').trim();
   if (!raw) return '';
   const main = raw.split(' ')[0] || raw;
-  return CHAR_SINGLE_MAP[main] || main.slice(0, 1);
+  return CHAR_SINGLE_MAP.value[main] || main.slice(0, 1);
 };
 
 const isWl3Event = (ev) => {
@@ -5269,14 +5392,14 @@ button:not(:disabled):active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   cursor: pointer;
   border-radius: 999px;
   border: 1px solid #ddd;
   background: #fff;
   transition: 0.2s;
   white-space: nowrap;
-  min-height: 36px;
+  min-height: 32px;
   line-height: 1;
 }
 
@@ -5288,7 +5411,7 @@ button:not(:disabled):active {
 }
 
 
-.filter-bar { margin-bottom: 15px; }
+.filter-bar { margin-bottom: 0; }
 .sort-btn {
   padding: 8px 16px;
   cursor: pointer;
@@ -5586,11 +5709,52 @@ button:not(:disabled):active {
   position: relative;
   z-index: 1510;
   padding: 15px;
+  margin-top: -6px;
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.filter-mode-row {
+  align-items: center;
+}
+
+.filter-mode-row .row-label {
+  align-self: center;
+  padding-top: 0;
+}
+
+.filter-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 11px;
+  font-size: 0.76rem;
+  font-weight: 400;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+.filter-mode-row .btn-group {
+  align-items: center;
+}
+
+.filter-mode-row .btn-group > .filter-mode-btn {
+  height: 30px;
+  min-height: 30px;
+  padding: 0 11px;
+  font-size: 0.76rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.filter-mode-row .panel-reset-btn {
+  margin-left: 0;
+  padding: 0 11px;
 }
 
 .filter-row {
@@ -5752,8 +5916,8 @@ button:not(:disabled):active {
 
 .panel-reset-btn {
   margin-left: 2px;
-  padding: 4px 10px;
-  font-size: 0.78rem;
+  padding: 0 10px;
+  font-size: inherit;
   background: #f3f4f6;
   color: #6b7280;
   border: 1px solid #d1d5db;
@@ -5847,7 +6011,8 @@ button:not(:disabled):active {
 .series-text { white-space: nowrap; overflow: visible; text-overflow: clip; min-width: 0; flex: 1 1 auto; }
 
 /* 4. 角色卡片展示逻辑 */
-.event-members { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 0 15px; border-left: 1px solid #eee; }
+.event-members { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 0 15px; border-left: 1px solid transparent; }
+.event-history-wrapper.with-editor .event-members { border-left-color: #d6dde8; }
 .member-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .fes-row { padding-top: 8px; border-top: 1px dashed #eee; }
 .fes-type-icon { height: 70px; margin-right: 5px; }
@@ -5907,10 +6072,65 @@ button:not(:disabled):active {
 .star-icon { width: 11px; height: 11px; }
 
 /* 5. VS & 音乐 */
-.vs-section { width: 80px; display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
-.vs-list { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.vs-section {
+  width: 116px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.vs-top-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.vs-list { display: flex; gap: 2px; justify-content: flex-end; }
 .vs-avatar { width: 45px; height: 45px; border-radius: 50%; border: 1px solid #ddd; }
-.song-tooltip { cursor: help; position: relative; }
+.song-tooltip {
+  cursor: help;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.song-tooltip .info-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+.song-mv-grid {
+  width: auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.song-mv-pill {
+  width: 52px;
+  height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16.5px;
+  font-weight: 500;
+  line-height: 1;
+  isolation: isolate;
+}
+.song-mv-pill.is-3d {
+  background: linear-gradient(0deg, rgba(255, 187, 204, 0.88), rgba(255, 187, 204, 0.88)), #ffffff;
+  border-color: #ea086a;
+  color: #000000;
+}
+.song-mv-pill.is-2d {
+  background: linear-gradient(0deg, rgba(51, 204, 187, 0.88), rgba(51, 204, 187, 0.88)), #ffffff;
+  border-color: #0f766e;
+  color: #ffffff;
+}
+.song-mv-pill.is-empty {
+  visibility: hidden;
+}
 .tooltip-content {
   visibility: hidden; position: absolute; bottom: 125%; right: 0;
   background: #333; color: white; padding: 10px; border-radius: 10px; width: fit-content;
@@ -5920,7 +6140,11 @@ button:not(:disabled):active {
 }
 .song-tooltip:hover .tooltip-content { visibility: visible; opacity: 1; }
 
-.attr-section { width: 50px; text-align: right; }
+.attr-icon-inline {
+  width: 32px;
+  height: 32px;
+}
+
 .attr-icon { width: 35px; height: 35px; }
 
 @media (max-width: 1000px) {
@@ -5945,7 +6169,110 @@ button:not(:disabled):active {
   }
 
   .event-item { flex-wrap: wrap; }
-  .event-members { width: 100%; border-left: none; border-top: 1px solid #eee; padding: 10px 0; }
+  .event-members { width: 100%; border-left: none; border-top: 1px solid transparent; padding: 10px 0; }
+  .event-history-wrapper.with-editor .event-members { border-top-color: #d6dde8; }
+}
+
+@media (min-width: 901px) and (max-width: 1100px) {
+  .filter-bar {
+    padding: 9px 4px;
+    gap: 8px;
+  }
+
+  .filter-bar .sort-btn,
+  .filter-bar .nav-btn,
+  .filter-bar .clear-btn {
+    height: 33px;
+    min-height: 33px;
+    padding: 0 10px;
+    font-size: 0.79rem;
+  }
+
+  .filter-bar .nav-btn.is-icon-only {
+    width: 33px;
+    min-width: 33px;
+    height: 33px;
+    min-height: 33px;
+    padding: 0;
+  }
+
+  .filter-bar .nav-btn.compact-tip.has-count {
+    min-width: 58px;
+    height: 33px;
+    min-height: 33px;
+    padding: 0 9px;
+  }
+
+  .sort-btn {
+    min-width: 94px;
+  }
+
+  .current-btn {
+    min-width: 60px;
+  }
+
+  .compact-btn-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (min-width: 1001px) and (max-width: 1366px) and (pointer: coarse) {
+  .filter-panel .chip-group {
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+  }
+
+  .filter-panel .char-chip {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+  }
+
+  .filter-panel .chip-img {
+    width: 100%;
+    height: 100%;
+  }
+
+  .filter-bar {
+    padding: 10px 4px;
+    gap: 8px;
+  }
+
+  .filter-bar .sort-btn,
+  .filter-bar .nav-btn,
+  .filter-bar .clear-btn {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0.8rem;
+  }
+
+  .filter-bar .nav-btn.is-icon-only {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+  }
+
+  .filter-bar .nav-btn.compact-tip.has-count {
+    min-width: 60px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0 10px;
+  }
+
+  .sort-btn {
+    min-width: 96px;
+  }
+
+  .current-btn {
+    min-width: 62px;
+  }
 }
 
 @media (max-width: 900px) {
@@ -5967,9 +6294,9 @@ button:not(:disabled):active {
     margin-bottom: 4px;
   }
 
-  .sort-btn,
-  .nav-btn,
-  .clear-btn {
+  .filter-bar .sort-btn,
+  .filter-bar .nav-btn,
+  .filter-bar .clear-btn {
     min-width: 0;
     height: 31px;
     min-height: 31px;
@@ -6049,46 +6376,86 @@ button:not(:disabled):active {
 }
 
 @media (min-width: 769px) and (max-width: 900px) {
-  .sort-btn,
-  .nav-btn,
-  .clear-btn {
+  .filter-mode-btn {
     height: 29px;
     min-height: 29px;
-    font-size: 0.72rem;
+    font-size: 0.74rem;
+    padding: 0 9px;
+  }
+
+  .filter-mode-row .panel-reset-btn {
+    padding: 0 9px;
+  }
+
+  .filter-mode-row .btn-group {
+    gap: 5px;
+  }
+
+  .filter-bar {
+    padding: 7px 3px;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .filter-bar .sort-btn,
+  .filter-bar .nav-btn,
+  .filter-bar .clear-btn {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 9px;
+    font-size: 0.76rem;
   }
 
   .filter-bar .nav-btn.is-icon-only {
-    width: 29px;
-    min-width: 29px;
-    height: 29px;
-    min-height: 29px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
   }
 
   .filter-bar .nav-btn.compact-tip.has-count {
-    min-width: 50px;
-    height: 29px;
-    min-height: 29px;
-    padding: 0 7px;
+    min-width: 56px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 8px;
   }
 
   .sort-btn {
-    min-width: 82px;
+    min-width: 90px;
   }
 
   .current-btn {
-    min-width: 56px;
+    min-width: 60px;
   }
 
   .compact-btn-icon {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
+  }
+
+  .compact-filter-count {
+    min-width: 21px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 0.67rem;
+  }
+
+  .fes-row {
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .fes-type-icon {
+    height: 54px;
+    margin-right: 6px;
+    align-self: center;
   }
 }
 
-@media (max-width: 768px) {
-  .sort-btn,
-  .nav-btn,
-  .clear-btn {
+@media (max-width: 900px) {
+  .filter-bar .sort-btn,
+  .filter-bar .nav-btn,
+  .filter-bar .clear-btn {
     height: 30px;
     min-height: 30px;
     padding: 0 6px;
@@ -6148,9 +6515,8 @@ button:not(:disabled):active {
   }
 
   .filter-panel {
-    max-height: 52vh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    max-height: none;
+    overflow: visible;
     padding: 8px;
     margin-bottom: 8px;
     gap: 8px;
@@ -6186,6 +6552,21 @@ button:not(:disabled):active {
     font-size: 0.74rem;
     padding: 3px 8px;
     border-radius: 999px;
+  }
+
+  .filter-mode-btn {
+    height: 28px;
+    min-height: 28px;
+    font-size: 0.72rem;
+    padding: 0 8px;
+  }
+
+  .filter-mode-row .panel-reset-btn {
+    padding: 0 8px;
+  }
+
+  .filter-mode-row .btn-group {
+    gap: 4px;
   }
 
   .icon-group.attributes {
@@ -6254,10 +6635,10 @@ button:not(:disabled):active {
 
   .event-item {
     display: grid;
-    grid-template-columns: 44px 52px minmax(0, 1fr) auto auto;
+    grid-template-columns: 44px 52px minmax(0, 1fr) auto;
     grid-template-areas:
-      "basic banner main vs attr"
-      "members members members members members";
+      "basic banner main vs"
+      "members members members members";
     align-items: center;
     column-gap: 8px;
     row-gap: 8px;
@@ -6373,22 +6754,35 @@ button:not(:disabled):active {
     gap: 4px;
   }
 
+  .vs-top-row {
+    gap: 4px;
+  }
+
   .vs-avatar {
     width: 26px;
     height: 26px;
   }
 
   .song-tooltip .info-icon {
-    font-size: 10px;
+    font-size: 11px;
   }
 
-  .attr-section {
-    grid-area: attr;
-    width: auto;
-    text-align: center;
+  .song-mv-pill {
+    width: 33px;
+    height: 20px;
+    font-size: 12px;
+  }
+
+  .song-mv-grid {
+    gap: 4px;
   }
 
   .attr-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .attr-icon-inline {
     width: 22px;
     height: 22px;
   }
@@ -6489,7 +6883,7 @@ button:not(:disabled):active {
   }
 
   .event-item {
-    grid-template-columns: 40px 46px minmax(0, 1fr) auto auto;
+    grid-template-columns: 40px 46px minmax(0, 1fr) auto;
     column-gap: 6px;
     row-gap: 6px;
     padding: 8px;
@@ -6521,7 +6915,7 @@ button:not(:disabled):active {
   }
 
   .filter-panel {
-    max-height: 56vh;
+    max-height: none;
   }
 
   .chip-group {

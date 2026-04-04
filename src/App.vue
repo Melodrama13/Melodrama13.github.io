@@ -19,6 +19,15 @@
           <span>{{ isStatsTopNavCompact ? '活动' : '历史活动一览' }}</span>
         </span>
       </button>
+      <button
+        :class="{ active: currentTab === 'songs' }"
+        @click="setCurrentTab('songs')"
+      >
+        <span class="btn-with-icon">
+          <img src="/data/icon/music.png" class="btn-icon" alt="乐曲" />
+          <span>{{ isStatsTopNavCompact ? '乐曲' : '乐曲统计' }}</span>
+        </span>
+      </button>
       <div
         v-if="showStatsTopControlInNav"
         class="stats-top-nav-wrap"
@@ -267,6 +276,8 @@
           :is="tabs[currentTab]" 
           :all-events="totalEventData" 
           :all-cards="totalCardsData"
+          :all-songs="songsData"
+          :all-characters="charactersData"
           :all-base-cards="baseCards"
           :stats-preview-data="statsPreviewData"
           :preview-sync-event-id="previewSyncEventId"
@@ -294,12 +305,14 @@
 import { ref, computed, provide, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import CardStats from './components/CardStats.vue';
 import EventHistory from './components/EventHistory.vue';
+import SongStats from './components/SongStats.vue';
 
 // --- 界面切换逻辑 (恢复原样) ---
 const currentTab = ref('history');
 const tabs = {
   stats: CardStats,
-  history: EventHistory
+  history: EventHistory,
+  songs: SongStats
 };
 const historyJumpEventId = ref(null);
 const historyJumpSeq = ref(0);
@@ -308,6 +321,8 @@ const previewSyncEventId = ref(null);
 const tabComponentRef = ref(null);
 const contentAreaRef = ref(null);
 const statsScrollTop = ref(0);
+const songsScrollTop = ref(0);
+const tabCenterRatioMap = ref({ stats: 0.5, songs: 0.5 });
 const showBackToTopBtn = ref(false);
 const predictImportInputRef = ref(null);
 const isImportDragOver = ref(false);
@@ -341,6 +356,10 @@ const statsTopNavCollapsed = ref(true);
 const statsTopNavAvailable = ref(false);
 const statsTopAutoCurrentId = ref('');
 let cleanupNoticeTimer = null;
+let tabReflowObserver = null;
+let tabReflowRaf = 0;
+
+const TAB_REFLOW_TRACK_KEYS = new Set(['stats', 'songs']);
 
 const screenshotConfirmRangeText = computed(() => {
   const firstId = String(screenshotRangeStartId.value || screenshotConfirmRange.value.firstId || '').trim();
@@ -358,7 +377,7 @@ const isHistoryPredictEditorOpen = computed(() => {
 });
 
 const showStatsTopControlInNav = computed(() => currentTab.value === 'stats' && isStatsTopNavCompact.value);
-const showPredictInfoInNav = computed(() => predictiveEvents.value.length > 0 && currentTab.value !== 'stats');
+const showPredictInfoInNav = computed(() => predictiveEvents.value.length > 0 && currentTab.value === 'history');
 
 const PREDICT_SOURCES_KEY = 'pjsk_predict_sources_v1';
 const PREDICT_ACTIVE_KEY = 'pjsk_predict_active_source_v1';
@@ -469,11 +488,88 @@ const saveStatsScroll = () => {
   statsScrollTop.value = contentAreaRef.value.scrollTop || 0;
 };
 
+const saveSongsScroll = () => {
+  if (currentTab.value !== 'songs') return;
+  if (!contentAreaRef.value) return;
+  songsScrollTop.value = contentAreaRef.value.scrollTop || 0;
+};
+
+const saveActiveTabCenterRatio = () => {
+  if (!TAB_REFLOW_TRACK_KEYS.has(currentTab.value)) return;
+  const el = contentAreaRef.value;
+  if (!el) return;
+  const ratio = (el.scrollTop + el.clientHeight / 2) / Math.max(1, el.scrollHeight);
+  tabCenterRatioMap.value = {
+    ...tabCenterRatioMap.value,
+    [currentTab.value]: Math.max(0, Math.min(1, ratio))
+  };
+};
+
+const restoreActiveTabCenterRatio = () => {
+  if (!TAB_REFLOW_TRACK_KEYS.has(currentTab.value)) return;
+  const el = contentAreaRef.value;
+  if (!el) return;
+  const ratio = Number(tabCenterRatioMap.value[currentTab.value]);
+  if (!Number.isFinite(ratio)) return;
+  const targetTop = ratio * el.scrollHeight - el.clientHeight / 2;
+  const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
+  const nextTop = Math.max(0, Math.min(maxTop, targetTop));
+  el.scrollTop = nextTop;
+  if (currentTab.value === 'stats') {
+    statsScrollTop.value = nextTop;
+  } else if (currentTab.value === 'songs') {
+    songsScrollTop.value = nextTop;
+  }
+};
+
+const scheduleRestoreActiveTabCenterRatio = () => {
+  if (tabReflowRaf) {
+    cancelAnimationFrame(tabReflowRaf);
+  }
+  tabReflowRaf = requestAnimationFrame(() => {
+    tabReflowRaf = 0;
+    restoreActiveTabCenterRatio();
+  });
+};
+
+const bindActiveTabReflowObserver = async () => {
+  if (tabReflowObserver) {
+    tabReflowObserver.disconnect();
+    tabReflowObserver = null;
+  }
+  if (!TAB_REFLOW_TRACK_KEYS.has(currentTab.value)) return;
+  if (typeof ResizeObserver === 'undefined') return;
+
+  await nextTick();
+  const host = contentAreaRef.value;
+  if (!host) return;
+  const root = host.querySelector('.pjsk-stats, .pjsk-song-stats');
+  if (!root) return;
+
+  tabReflowObserver = new ResizeObserver(() => {
+    scheduleRestoreActiveTabCenterRatio();
+  });
+
+  const targets = [
+    root,
+    root.querySelector('.stats-nav'),
+    root.querySelector('.stats-layout'),
+    root.querySelector('.stats-main'),
+    root.querySelector('.stats-grid')
+  ].filter(Boolean);
+
+  Array.from(new Set(targets)).forEach((target) => {
+    tabReflowObserver.observe(target);
+  });
+};
+
 const handleContentScroll = () => {
   if (contentAreaRef.value) {
     showBackToTopBtn.value = contentAreaRef.value.scrollTop > 260;
   }
   saveStatsScroll();
+  saveSongsScroll();
+  saveActiveTabCenterRatio();
 };
 
 const scrollContentToTop = () => {
@@ -483,8 +579,11 @@ const scrollContentToTop = () => {
 
 const setCurrentTab = (tab) => {
   if (tab === currentTab.value) return;
+  saveActiveTabCenterRatio();
   if (currentTab.value === 'stats') {
     saveStatsScroll();
+  } else if (currentTab.value === 'songs') {
+    saveSongsScroll();
   }
   currentTab.value = tab;
 };
@@ -508,8 +607,23 @@ watch(currentTab, async (nextTab, prevTab) => {
       contentAreaRef.value.scrollTop = statsScrollTop.value;
     }
     syncStatsTopControlState();
+    return;
   }
+  if (nextTab === 'songs') {
+    await nextTick();
+    if (contentAreaRef.value) {
+      contentAreaRef.value.scrollTop = songsScrollTop.value;
+    }
+  }
+  saveActiveTabCenterRatio();
+  await bindActiveTabReflowObserver();
 });
+
+const handleStatsSongsViewportResize = () => {
+  if (!TAB_REFLOW_TRACK_KEYS.has(currentTab.value)) return;
+  saveActiveTabCenterRatio();
+  scheduleRestoreActiveTabCenterRatio();
+};
 
 watch(() => tabComponentRef.value, async () => {
   if (currentTab.value !== 'stats') return;
@@ -529,6 +643,8 @@ watch(showStatsTopControlInNav, async (show) => {
 // --- 数据管理逻辑 (新增预测支持) ---
 const historyData = ref([]);      // 既定的历史 JSON 数据
 const baseCards = ref([]); // 新增：存储基础卡片库
+const songsData = ref([]);
+const charactersData = ref([]);
 const predictiveEvents = ref([]); // 用户填写的预测数据
 const cleanedPatchNoticeCount = ref(0);
 const predictSources = ref([]);
@@ -1410,14 +1526,18 @@ onMounted(async () => {
     predictiveEvents.value = clonePredictList((loadedSources.find((s) => s.id === activeId) || loadedSources[0]).predictiveEvents);
     persistPredictSources();
 
-    // 同时请求活动和卡片数据
-    const [resEvents, resCards] = await Promise.all([
+    // 同时请求活动、卡片、歌曲与角色数据
+    const [resEvents, resCards, resSongs, resCharacters] = await Promise.all([
       fetch('/data/pjsk_events.json'),
-      fetch('/data/pjsk_cards.json')
+      fetch('/data/pjsk_cards.json'),
+      fetch('/data/pjsk_songs.json'),
+      fetch('/data/pjsk_characters.json')
     ]);
     
     historyData.value = await resEvents.json();
     baseCards.value = await resCards.json();
+    songsData.value = await resSongs.json();
+    charactersData.value = await resCharacters.json();
     const beforeCount = predictiveEvents.value.length;
     const reconciled = reconcilePredictiveEvents(predictiveEvents.value);
     predictiveEvents.value = reconciled;
@@ -1754,14 +1874,28 @@ onMounted(() => {
   document.addEventListener('pointerdown', handleGlobalPointerDown);
   window.addEventListener('resize', updateCompactTopNav);
   window.addEventListener('resize', updateSourceMenuPosition);
+  window.addEventListener('resize', handleStatsSongsViewportResize);
   window.addEventListener('scroll', updateSourceMenuPosition, true);
+  nextTick(() => {
+    saveActiveTabCenterRatio();
+    bindActiveTabReflowObserver();
+  });
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleGlobalPointerDown);
   window.removeEventListener('resize', updateCompactTopNav);
   window.removeEventListener('resize', updateSourceMenuPosition);
+  window.removeEventListener('resize', handleStatsSongsViewportResize);
   window.removeEventListener('scroll', updateSourceMenuPosition, true);
+  if (tabReflowObserver) {
+    tabReflowObserver.disconnect();
+    tabReflowObserver = null;
+  }
+  if (tabReflowRaf) {
+    cancelAnimationFrame(tabReflowRaf);
+    tabReflowRaf = 0;
+  }
   if (cleanupNoticeTimer) {
     clearTimeout(cleanupNoticeTimer);
     cleanupNoticeTimer = null;
@@ -1970,7 +2104,7 @@ watch(isHistoryPredictEditorOpen, (open) => {
 }
 
 .nav-tabs.is-stats-top-compact .btn-with-icon {
-  gap: 4px;
+  gap: 2px;
 }
 
 .nav-tabs.is-stats-top-compact .btn-icon {
@@ -1982,9 +2116,9 @@ watch(isHistoryPredictEditorOpen, (open) => {
 .nav-tabs.is-stats-top-compact .stats-top-nav-wrap {
   --stats-top-control-size: 24px;
   order: 3;
-  gap: 3px;
+  gap: 1px;
   min-height: 34px;
-  padding: 3px 6px;
+  padding: 3px 5px;
 }
 
 .nav-tabs.is-stats-top-compact .stats-top-label {
@@ -1992,7 +2126,7 @@ watch(isHistoryPredictEditorOpen, (open) => {
 }
 
 .nav-tabs.is-stats-top-compact .stats-top-id-input {
-  width: 54px;
+  width: 50px;
 }
 
 .nav-tabs.is-stats-top-compact .stats-top-mini-btn {
@@ -2012,7 +2146,7 @@ watch(isHistoryPredictEditorOpen, (open) => {
 
 .username-input {
   width: 112px;
-  height: 34px;
+  height: 30px;
   border: 1px solid #cbd5e1;
   border-radius: 999px;
   padding: 0 8px;
@@ -2092,7 +2226,7 @@ button.active {
 .predict-info {
   display: inline-flex;
   align-items: center;
-  min-height: 42px;
+  min-height: 40px;
   box-sizing: border-box;
   font-size: 0.85rem;
   color: #eb2f96;
@@ -2105,7 +2239,7 @@ button.active {
 .predict-cleanup-info {
   display: inline-flex;
   align-items: center;
-  min-height: 42px;
+  min-height: 40px;
   box-sizing: border-box;
   font-size: 0.8rem;
   color: #065f46;
@@ -2127,7 +2261,7 @@ button.active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
   line-height: 1;
 }
 
@@ -2614,19 +2748,19 @@ button.active {
   }
 
   .nav-tabs {
-    gap: 5px;
-    padding: 8px 10px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    gap: 3px;
+    padding: 5px 6px;
+    flex-wrap: wrap;
+    overflow-x: hidden;
     overflow-y: visible;
   }
 
   .nav-tabs button,
   .reset-btn {
     flex: 0 0 auto;
-    padding: 7px 10px;
-    font-size: 0.82rem;
-    min-height: 34px;
+    padding: 5px 7px;
+    font-size: 0.74rem;
+    min-height: 31px;
     white-space: nowrap;
   }
 
@@ -2642,18 +2776,18 @@ button.active {
 
   .username-wrap {
     order: 3;
-    gap: 4px;
-    min-height: 34px;
-    padding: 3px 6px;
+    gap: 3px;
+    min-height: 31px;
+    padding: 2px 4px;
     border-radius: 999px;
   }
 
   .stats-top-nav-wrap {
-    --stats-top-control-size: 24px;
+    --stats-top-control-size: 21px;
     order: 3;
-    gap: 3px;
-    min-height: 34px;
-    padding: 3px 6px;
+    gap: 2px;
+    min-height: 31px;
+    padding: 2px 3px;
   }
 
   .stats-top-label {
@@ -2661,9 +2795,9 @@ button.active {
   }
 
   .stats-top-id-input {
-    width: 60px;
-    font-size: 0.7rem;
-    padding: 0 6px;
+    width: 50px;
+    font-size: 0.64rem;
+    padding: 0 4px;
   }
 
   .stats-top-mini-btn,
@@ -2701,10 +2835,10 @@ button.active {
   }
 
   .username-input {
-    width: 56px;
+    width: 52px;
     height: var(--stats-top-control-size);
-    font-size: 0.7rem;
-    padding: 2px 6px;
+    font-size: 0.64rem;
+    padding: 2px 4px;
     border-radius: 999px;
   }
 
@@ -2717,52 +2851,55 @@ button.active {
   }
 
   .nav-tabs-spacer {
-    min-width: 2px;
+    display: none;
   }
 
   .predict-info {
-    order: 4;
+    order: 5;
     display: inline-flex;
     align-items: center;
-    min-height: 34px;
+    min-height: 32px;
     width: auto;
     min-width: fit-content;
     border-radius: 999px;
-    font-size: 0.72rem;
-    padding: 4px 10px;
+    font-size: 0.64rem;
+    padding: 2px 6px;
     white-space: nowrap;
     flex: 0 0 auto;
   }
 
   .predict-cleanup-info {
-    order: 5;
-    min-height: 34px;
-    font-size: 0.66rem;
-    padding: 3px 7px;
+    order: 6;
+    min-height: 32px;
+    font-size: 0.58rem;
+    padding: 2px 5px;
     white-space: nowrap;
     flex: 0 0 auto;
   }
 
   .nav-tabs > .io-btn {
-    order: 6;
-    font-size: 0.74rem;
-    padding: 6px 10px;
-    min-height: 34px;
+    order: 7;
+    font-size: 0.66rem;
+    padding: 4px 7px;
+    min-height: 32px;
     white-space: nowrap;
     flex: 0 0 auto;
   }
 
   .nav-tabs > .nav-create-btn {
-    order: 7;
+    order: 8;
   }
 
   .nav-tabs > .source-dropdown {
-    order: 8;
+    order: 99;
     margin-left: auto;
   }
 
   .source-trigger {
-    max-width: 88px;
+    max-width: 66px;
+    min-height: 31px;
+    padding: 4px 6px;
+    font-size: 0.62rem;
   }
 
   .source-item {
@@ -2812,8 +2949,8 @@ button.active {
 
 @media (max-width: 520px) {
   .nav-tabs {
-    gap: 5px;
-    padding: 6px 8px;
+    gap: 3px;
+    padding: 5px 6px;
   }
 
   .username-wrap {
@@ -2823,9 +2960,9 @@ button.active {
   }
 
   .stats-top-nav-wrap {
-    --stats-top-control-size: 22px;
-    min-height: 32px;
-    padding: 2px 4px;
+    --stats-top-control-size: 20px;
+    min-height: 30px;
+    padding: 2px 3px;
     gap: 2px;
   }
 
@@ -2834,7 +2971,7 @@ button.active {
   }
 
   .stats-top-id-input {
-    width: 54px;
+    width: 46px;
   }
 
   .stats-top-mini-btn,
@@ -2850,31 +2987,33 @@ button.active {
 
   .nav-tabs button,
   .reset-btn {
-    padding: 6px 8px;
-    font-size: 0.76rem;
-    min-height: 32px;
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    min-height: 30px;
   }
 
   .predict-info {
-    min-height: 32px;
-    font-size: 0.68rem;
-    padding: 3px 8px;
-  }
-
-  .predict-cleanup-info {
-    min-height: 32px;
-    font-size: 0.6rem;
+    min-height: 30px;
+    font-size: 0.62rem;
     padding: 2px 6px;
   }
 
+  .predict-cleanup-info {
+    min-height: 30px;
+    font-size: 0.56rem;
+    padding: 2px 5px;
+  }
+
   .nav-tabs > .io-btn {
-    font-size: 0.7rem;
-    padding: 5px 8px;
-    min-height: 32px;
+    font-size: 0.64rem;
+    padding: 4px 6px;
+    min-height: 30px;
   }
 
   .source-trigger {
-    max-width: 76px;
+    max-width: 60px;
+    padding: 3px 5px;
+    font-size: 0.6rem;
   }
 
   .source-actions {

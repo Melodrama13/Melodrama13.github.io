@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local AI skill clones (keep local, do not commit full vendor repo)
+.github/skills/
+
+# Local private data source (do not commit)
+other_source/

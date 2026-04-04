@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:other": "node scripts/sync-other-source.mjs",
+    "sync:other:dry": "node scripts/sync-other-source.mjs --dry-run"
   },
   "dependencies": {
     "element-plus": "^2.13.5",

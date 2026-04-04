@@ -5,12 +5,12 @@
         v-if="navCollapsed"
         class="floating-menu-btn export-hide"
         title="展开统计菜单"
-        @click="navCollapsed = !navCollapsed"
+        @click="setNavCollapsed(false)"
       >
         <img src="/data/icon/menu.png" class="floating-menu-icon" alt="菜单" />
       </button>
       <aside class="stats-nav card-panel" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
-        <button v-if="!navCollapsed" class="nav-collapse-fab export-hide" @click="navCollapsed = true" title="收起统计菜单">
+        <button v-if="!navCollapsed" class="nav-collapse-fab export-hide" @click="setNavCollapsed(true)" title="收起统计菜单">
           <img src="/data/icon/menu_open.png" class="nav-collapse-fab-icon" alt="收起菜单" />
         </button>
 
@@ -786,39 +786,6 @@
           </div>
         </div>
 
-        <div id="panel-vs-song" class="stats-section card-panel song-panel">
-          <div class="section-head">
-            <h2>虚拟歌手参与书下</h2>
-            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-vs-song', '虚拟歌手参与书下')">PNG</button>
-          </div>
-          <div class="song-grid">
-            <div v-for="vs in virtualSingerSongStats" :key="`song-${vs.name}`" :id="`song-${getCharAbbr(vs.name).toLowerCase()}`" class="song-card" :style="{ backgroundColor: getRecordTint(vs.name, 0.2) }">
-              <div class="song-head">
-                <div class="song-head-main">
-                  <img :src="`/chibi_s/${getCharAbbr(vs.name)}.webp`" class="song-avatar" :style="{ borderColor: getCharColor(vs.name) }" />
-                  <div>
-                    <div class="song-name">{{ vs.name }}</div>
-                    <div class="song-count">{{ vs.count }} 首</div>
-                  </div>
-                </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(`song-${getCharAbbr(vs.name).toLowerCase()}`, `虚拟歌手参与书下_${vs.name}`)">PNG</button>
-              </div>
-              <div class="unit-counts">
-                <span v-for="u in ['ln','mmj','vbs','ws','nc']" :key="`${vs.name}-${u}`" class="unit-chip" :style="{ backgroundColor: getUnitTint(u) }">
-                  <img :src="unitLogoMap[u]" class="unit-logo" :alt="u" />
-                  <span class="unit-count-num">{{ vs.unitCounts[u] }}</span>
-                </span>
-              </div>
-              <ul class="song-list">
-                <li v-for="s in vs.songs" :key="`${vs.name}-${s.tag}`">
-                  <span class="song-tag" :style="{ color: s.color }">{{ s.tag }}</span>
-                  <span class="song-title">{{ s.songName }}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>   
-
         <div id="panel-lineup" class="stats-section card-panel lineup-panel">
           <div class="section-head">
             <div class="section-head-left">
@@ -1214,6 +1181,8 @@ import html2canvas from 'html2canvas';
 const props = defineProps({
   allEvents: { type: Array, default: () => [] },
   allCards: { type: Array, default: () => [] },
+  allSongs: { type: Array, default: () => [] },
+  allCharacters: { type: Array, default: () => [] },
   jumpEventId: { type: [Number, String], default: null },
   previewSyncEventId: { type: [Number, String], default: null }
 });
@@ -1270,23 +1239,6 @@ let sectionObserver = null;
 const isExportingPng = ref(false);
 let matrixSortAnchorTimer = 0;
 
-const CHAR_MAP = {
-  "星乃一歌": "ICK", "天马咲希": "SAKI", "望月穗波": "HNM", "日野森志步": "SHIHO",
-  "花里实乃里": "MNR", "桐谷遥": "HRK", "桃井爱莉": "AIRI", "日野森雫": "SZK",
-  "小豆泽心羽": "KHN", "白石杏": "AN", "东云彰人": "AKT", "青柳冬弥": "TOYA",
-  "天马司": "TKS", "凤笑梦": "EMU", "草薙宁宁": "NENE", "神代类": "RUI",
-  "宵崎奏": "KND", "朝比奈真冬": "MFY", "东云绘名": "ENA", "晓山瑞希": "MZK",
-  "初音未来": "MIKU", "镜音铃": "RIN", "镜音连": "LEN", "巡音流歌": "LUKA", "MEIKO": "MEIKO", "KAITO": "KAITO"
-};
-const CHAR_SINGLE_MAP = {
-  "星乃一歌": "一", "天马咲希": "溪", "望月穗波": "萍", "日野森志步": "吸",
-  "花里实乃里": "花", "桐谷遥": "遥", "桃井爱莉": "桃", "日野森雫": "雫",
-  "小豆泽心羽": "豆", "白石杏": "杏", "东云彰人": "彰", "青柳冬弥": "冬",
-  "天马司": "司", "凤笑梦": "姆", "草薙宁宁": "宁", "神代类": "类",
-  "宵崎奏": "奏", "朝比奈真冬": "马", "东云绘名": "画", "晓山瑞希": "糖",
-  "初音未来": "葱", "镜音铃": "橘", "镜音连": "蕉", "巡音流歌": "鱼", "MEIKO": "酒", "KAITO": "冰"
-};
-
 //const getCharAbbr = (name) => CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
 const getCharAbbr = (name) => {
   if (!name) return '';
@@ -1295,7 +1247,7 @@ const getCharAbbr = (name) => {
   const mainName = parts[0]; // 角色本体名字
   const unitSuffix = parts.length > 1 ? parts[1].toLowerCase() : null; // 团队后缀
   if (isVirtualSinger(mainName)) {  // 利用 isVirtualSinger 判断是否为虚拟歌手
-    const abbr = CHAR_MAP[mainName]; // 从映射表获取基础缩写，如 MIKU, RIN    
+    const abbr = CHAR_MAP[mainName] || String(mainName || '').toUpperCase(); // 从映射表获取基础缩写，如 MIKU, RIN
     if (unitSuffix && unitSuffix !== 'vs') {    // 如果有团队后缀，且后缀不是 'vs'
       return `${abbr.toLowerCase()}_${unitSuffix}`;      // 返回通用格式：缩写小写_团队名（如 miku_ln）
     }
@@ -1335,8 +1287,7 @@ const showDesktopNameControls = computed(() => !isNavTopLayout.value);
 const isMiniFloatingNav = computed(() => isNavTopLayout.value && navCollapsed.value);
 const isSupportAttrIcon = (attr) => ATTRS.includes(String(attr || ''));
 
-const VS_NAMES = ["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"];
-const UNIT_COLORS = {
+const BASE_UNIT_COLORS = {
   ln: '#4455DD',
   mmj: '#88DD44',
   vbs: '#EE1166',
@@ -1352,30 +1303,128 @@ const unitLogoMap = {
   nc: '/elements/nc.png',
   vs: '/elements/vs.png'
 };
-const CHAR_COLORS = {
-  "星乃一歌": "#33AAEE", "天马咲希": "#FFDD44", "望月穗波": "#EE6666", "日野森志步": "#BBDD22",
-  "花里实乃里": "#FFCCAA", "桐谷遥": "#99CCFF", "桃井爱莉": "#FFAACC", "日野森雫": "#99EEDD",
-  "小豆泽心羽": "#FF6699", "白石杏": "#00BBDD", "东云彰人": "#FF7722", "青柳冬弥": "#0077DD",
-  "天马司": "#FFBB00", "凤笑梦": "#FF66BB", "草薙宁宁": "#33DD99", "神代类": "#BB88EE",
-  "宵崎奏": "#BB6688", "朝比奈真冬": "#8888CC", "东云绘名": "#CCAA88", "晓山瑞希": "#DDAACC",
-  "初音未来": "#33CCBB", "镜音铃": "#FFCC11", "镜音连": "#FFEE11", "巡音流歌": "#FFBBCC", "MEIKO": "#DD4444", "KAITO": "#3366CC"
+const CHAR_MAP = {};
+const CHAR_SINGLE_MAP = {};
+const CHAR_COLORS = {};
+const CHAR_UNIT_MAP = {};
+const CHAR_ORDER = {};
+const VS_NAMES = [];
+const VS_ALIAS_MAP = {};
+const UNIT_COLORS = { ...BASE_UNIT_COLORS };
+
+const replaceObject = (target, next) => {
+  Object.keys(target).forEach((key) => {
+    delete target[key];
+  });
+  Object.assign(target, next);
 };
-const CHAR_UNIT_MAP = {
-  "星乃一歌": "ln", "天马咲希": "ln", "望月穗波": "ln", "日野森志步": "ln",
-  "花里实乃里": "mmj", "桐谷遥": "mmj", "桃井爱莉": "mmj", "日野森雫": "mmj",
-  "小豆泽心羽": "vbs", "白石杏": "vbs", "东云彰人": "vbs", "青柳冬弥": "vbs",
-  "天马司": "ws", "凤笑梦": "ws", "草薙宁宁": "ws", "神代类": "ws",
-  "宵崎奏": "nc", "朝比奈真冬": "nc", "东云绘名": "nc", "晓山瑞希": "nc"
+
+const replaceArray = (target, next) => {
+  target.splice(0, target.length, ...next);
 };
-const CHAR_ORDER = {
-  "星乃一歌": 1, "天马咲希": 2, "望月穗波": 3, "日野森志步": 4,
-  "花里实乃里": 5, "桐谷遥": 6, "桃井爱莉": 7, "日野森雫": 8,
-  "小豆泽心羽": 9, "白石杏": 10, "东云彰人": 11, "青柳冬弥": 12,
-  "天马司": 13, "凤笑梦": 14, "草薙宁宁": 15, "神代类": 16,
-  "宵崎奏": 17, "朝比奈真冬": 18, "东云绘名": 19, "晓山瑞希": 20,
-  "初音未来": 21, "镜音铃": 22, "镜音连": 23, "巡音流歌": 24, "MEIKO": 25, "KAITO": 26
+
+const applyCharacterMetaSource = (characters) => {
+  if (!Array.isArray(characters) || characters.length === 0) {
+    replaceObject(CHAR_MAP, {});
+    replaceObject(CHAR_SINGLE_MAP, {});
+    replaceObject(CHAR_COLORS, {});
+    replaceObject(CHAR_UNIT_MAP, {});
+    replaceObject(CHAR_ORDER, {});
+    replaceObject(UNIT_COLORS, BASE_UNIT_COLORS);
+    replaceObject(VS_ALIAS_MAP, {});
+    replaceArray(VS_NAMES, []);
+    return;
+  }
+
+  const nextCharMap = {};
+  const nextSingleMap = {};
+  const nextCharColors = {};
+  const nextCharUnit = {};
+  const nextCharOrder = {};
+  const nextVsNames = [];
+  const nextVsAliasMap = {};
+  const nextUnitColors = { ...BASE_UNIT_COLORS };
+
+  const addVsAlias = (aliasRaw, canonicalRaw) => {
+    const alias = String(aliasRaw || '').trim();
+    const canonical = String(canonicalRaw || '').trim();
+    if (!alias || !canonical) return;
+    nextVsAliasMap[alias] = canonical;
+    nextVsAliasMap[alias.toUpperCase()] = canonical;
+  };
+
+  const sortedChars = [...characters]
+    .map((char, idx) => ({ char, idx }))
+    .filter(({ char }) => !!String(char?.zh_name || '').trim())
+    .sort((a, b) => {
+      const ao = Number(a.char?.id);
+      const bo = Number(b.char?.id);
+      const av = Number.isFinite(ao) && ao > 0 ? ao : 9999 + a.idx;
+      const bv = Number.isFinite(bo) && bo > 0 ? bo : 9999 + b.idx;
+      return av - bv;
+    });
+
+  sortedChars.forEach(({ char }, index) => {
+    const name = String(char?.zh_name || '').trim();
+    const unit = String(char?.unit || '').trim().toLowerCase() || 'vs';
+    const abbr = String(char?.en_abbr || '').trim() || name.toUpperCase();
+    const singleMark = String(char?.single_mark || '').trim() || name.slice(0, 1);
+    const color = String(char?.color || '').trim();
+    const unitColor = String(char?.unit_color || '').trim();
+    const orderId = Number(char?.id);
+
+    nextCharMap[name] = abbr;
+    nextSingleMap[name] = singleMark;
+    if (color) nextCharColors[name] = color;
+    nextCharUnit[name] = unit;
+    nextCharOrder[name] = Number.isFinite(orderId) && orderId > 0 ? orderId : index + 1;
+
+    if (unit === 'vs') {
+      nextVsNames.push(name);
+      addVsAlias(name, name);
+      addVsAlias(char?.ja_name, name);
+      addVsAlias(char?.en_abbr, name);
+      addVsAlias(char?.given_name_english, name);
+      addVsAlias(char?.given_name, name);
+      addVsAlias(`${String(char?.first_name_english || '').trim()} ${String(char?.given_name_english || '').trim()}`.trim(), name);
+      addVsAlias(`${String(char?.first_name || '').trim()}${String(char?.given_name || '').trim()}`.trim(), name);
+    }
+    if (unitColor) {
+      nextUnitColors[unit] = unitColor;
+    }
+  });
+
+  if (Object.keys(nextCharMap).length === 0) {
+    replaceObject(CHAR_MAP, {});
+    replaceObject(CHAR_SINGLE_MAP, {});
+    replaceObject(CHAR_COLORS, {});
+    replaceObject(CHAR_UNIT_MAP, {});
+    replaceObject(CHAR_ORDER, {});
+    replaceObject(UNIT_COLORS, BASE_UNIT_COLORS);
+    replaceObject(VS_ALIAS_MAP, {});
+    replaceArray(VS_NAMES, []);
+    return;
+  }
+
+  replaceObject(CHAR_MAP, nextCharMap);
+  replaceObject(CHAR_SINGLE_MAP, nextSingleMap);
+  replaceObject(CHAR_COLORS, nextCharColors);
+  replaceObject(CHAR_UNIT_MAP, nextCharUnit);
+  replaceObject(CHAR_ORDER, nextCharOrder);
+  replaceObject(UNIT_COLORS, nextUnitColors);
+  replaceObject(VS_ALIAS_MAP, nextVsAliasMap);
+  replaceArray(VS_NAMES, nextVsNames);
 };
-const LINEUP_CHAR_NAMES = (() => {
+
+watch(
+  () => props.allCharacters,
+  (characters) => {
+    applyCharacterMetaSource(characters);
+  },
+  { immediate: true }
+);
+
+const LINEUP_CHAR_NAMES = computed(() => {
   const names = Object.keys(CHAR_ORDER).sort((a, b) => (CHAR_ORDER[a] || 999) - (CHAR_ORDER[b] || 999));
   const lukaIdx = names.indexOf('巡音流歌');
   const mikuIdx = names.indexOf('初音未来');
@@ -1384,7 +1433,7 @@ const LINEUP_CHAR_NAMES = (() => {
     names.splice(mikuIdx + 1, 0, '巡音流歌');
   }
   return names;
-})();
+});
 const ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
 const SUPPORT_WL_ATTR = 'wl';
 const LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t', 'wl3']);//加入wl3为限定卡
@@ -1429,29 +1478,6 @@ const supportUnitTitleLogoMap = Object.freeze({
 });
 
 const isVirtualSinger = (name) => VS_NAMES.includes(name);
-
-const parseVS = (vsStr) => {
-  if (!vsStr) return [];
-  const aliasMap = {
-    MIKU: '初音未来',
-    RIN: '镜音铃',
-    LEN: '镜音连',
-    LUKA: '巡音流歌',
-    MEIKO: 'MEIKO',
-    KAITO: 'KAITO',
-    '初音未来': '初音未来',
-    '镜音铃': '镜音铃',
-    '镜音连': '镜音连',
-    '巡音流歌': '巡音流歌'
-  };
-
-  return String(vsStr)
-    .split(/[,，/、\s]+/)
-    .map((token) => token.trim())
-    .filter(Boolean)
-    .map((token) => aliasMap[token.toUpperCase()] || aliasMap[token] || token)
-    .filter((name) => VS_NAMES.includes(name));
-};
 
 const getUnitByChar = (name) => {
   const raw = String(name || '').trim();
@@ -1655,23 +1681,6 @@ const getMatrixUnitFrameClass = (name, matrixType = 'char') => {
     info.start ? 'matrix-unit-group-start-row' : '',
     info.end ? 'matrix-unit-group-end-row' : ''
   ].filter(Boolean);
-};
-
-const getUnitTint = (unit) => hexToRgba(UNIT_COLORS[unit] || '#9ca3af', 0.3);
-
-const makeSongTag = (ev) => {
-  const sid = String(ev?.type_series_id || '').trim();
-  const bannerName = String(ev?.banner || '').trim();
-  const unit = String(ev?.unit || '').trim().toLowerCase();
-  if (bannerName) return `${getCharAbbr(bannerName).toLowerCase()}${sid}`;
-  if (unit) return `${unit}${sid}`;
-  return sid ? `ev${sid}` : 'unknown';
-};
-
-const getSongTagColor = (ev) => {
-  const bannerName = String(ev?.banner || '').trim();
-  const unit = bannerName ? getUnitByChar(bannerName) : String(ev?.unit || '').trim().toLowerCase();
-  return UNIT_COLORS[unit] || '#111827';
 };
 
 const toggleVsUnitLastFourSort = () => {
@@ -1893,11 +1902,6 @@ const navGroups = computed(() => {
       children: RELATED_RECORD_ITEMS.map((item) => ({ id: item.id, title: item.title }))
     },
     {
-      id: 'panel-vs-song',
-      title: '虚拟歌手书下',
-      children: []
-    },
-    {
       id: 'panel-lineup',
       title: '日挑配队',
       children: []
@@ -1936,27 +1940,71 @@ const isGroupActive = (group) => {
 
 const isGroupExpanded = (group) => isMobileNav.value || isGroupActive(group);
 
+const getScrollContainer = () => {
+  const content = document.querySelector('.content-area');
+  if (content instanceof HTMLElement) return content;
+  if (document.scrollingElement instanceof HTMLElement) return document.scrollingElement;
+  return document.documentElement;
+};
+
+const withPreservedScrollCenter = async (applyChange) => {
+  const host = getScrollContainer();
+  const ratio = (host.scrollTop + host.clientHeight / 2) / Math.max(1, host.scrollHeight);
+  applyChange();
+  await nextTick();
+  await waitNextPaint();
+  const targetTop = ratio * host.scrollHeight - host.clientHeight / 2;
+  const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
+  host.scrollTop = Math.max(0, Math.min(maxTop, targetTop));
+};
+
+const setNavCollapsed = (nextCollapsed, preserveCenter = true) => {
+  const next = !!nextCollapsed;
+  if (navCollapsed.value === next) return;
+  if (!preserveCenter) {
+    navCollapsed.value = next;
+    return;
+  }
+  void withPreservedScrollCenter(() => {
+    navCollapsed.value = next;
+  });
+};
+
 const updateMobileNavState = () => {
   if (typeof window === 'undefined') return;
   const isTopLayout = window.innerWidth <= 900;
   const prev = navTopLayoutPrev.value;
-  isNavTopLayout.value = isTopLayout;
-  isMobileNav.value = isTopLayout;
-  if (prev === null) {
-    navCollapsed.value = isTopLayout;
-  } else if (prev !== isTopLayout) {
-    navCollapsed.value = isTopLayout;
+  const nextCollapsed = prev === null
+    ? isTopLayout
+    : (prev !== isTopLayout ? isTopLayout : navCollapsed.value);
+  const needPreserve = prev !== null
+    && (isNavTopLayout.value !== isTopLayout || navCollapsed.value !== nextCollapsed);
+
+  const applyState = () => {
+    isNavTopLayout.value = isTopLayout;
+    isMobileNav.value = isTopLayout;
+    navCollapsed.value = nextCollapsed;
+    navTopLayoutPrev.value = isTopLayout;
+  };
+
+  if (needPreserve) {
+    void withPreservedScrollCenter(applyState);
+    return;
   }
-  navTopLayoutPrev.value = isTopLayout;
+  applyState();
 };
 
 const scrollToSection = (id) => {
   const el = document.getElementById(id);
   if (!el) return;
   activeNavId.value = id;
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const targetRect = el.getBoundingClientRect();
+  const nextTop = host.scrollTop + (targetRect.top - hostRect.top) - 8;
+  host.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
   if (isNavTopLayout.value) {
-    navCollapsed.value = true;
+    setNavCollapsed(true, false);
   }
 };
 
@@ -2080,10 +2128,10 @@ const resolveExportElementById = (id) => {
 
   const exact = document.getElementById(targetId);
   if (!exact) return null;
-  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('festival-card') || exact.classList.contains('song-card') || exact.classList.contains('lineup-card') || exact.classList.contains('support-card')) {
+  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('festival-card') || exact.classList.contains('lineup-card') || exact.classList.contains('support-card')) {
     return exact;
   }
-  return exact.closest('.record-block, .festival-card, .song-card, .lineup-card, .support-card, .card-panel');
+  return exact.closest('.record-block, .festival-card, .lineup-card, .support-card, .card-panel');
 };
 
 const exportElementPng = async (id, title) => {
@@ -2537,7 +2585,7 @@ const resetTopBarDisplayEventId = () => {
 };
 
 const toggleTopBarNavCollapsed = () => {
-  navCollapsed.value = !navCollapsed.value;
+  setNavCollapsed(!navCollapsed.value);
   return !!navCollapsed.value;
 };
 
@@ -3264,7 +3312,7 @@ const lineupCardPoolByAttr = computed(() => {
 });
 
 const characterLineupRows = computed(() => {
-  const names = [...LINEUP_CHAR_NAMES];
+  const names = [...LINEUP_CHAR_NAMES.value];
 
   return names.map((name) => {
     const plans = ATTRS
@@ -4106,55 +4154,6 @@ const getAttrExtremeClass = (attr, value, name) => {
 };
 
 const getVsMatrixValueClass = (value) => (Number(value || 0) === 0 ? 'matrix-vs-zero' : '');
-
-const virtualSingerSongStats = computed(() => {
-  const maxEid = safeMaxEventId.value;
-  const map = Object.fromEntries(VS_NAMES.map((n) => [n, []]));
-  const unitOrder = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5 };
-
-  (props.allEvents || []).forEach((ev) => {
-    if (ev?.isPredict) return;
-    if (!isNumericEventId(ev?.id)) return;
-    if (Number(ev.id) > maxEid) return;
-    if (!String(ev?.event_song || '').trim()) return;
-
-    const bannerName = String(ev?.banner || '').trim();
-    const unitRaw = String(ev?.unit || '').trim().toLowerCase();
-    const inferredUnit = bannerName ? getUnitByChar(bannerName) : unitRaw;
-    const songItem = {
-      tag: makeSongTag(ev),
-      songName: String(ev?.event_song || '').trim(),
-      color: getSongTagColor(ev),
-      unit: inferredUnit,
-      eventId: Number(ev.id)
-    };
-    parseVS(ev?.virtual_singer).forEach((vs) => {
-      if (!map[vs]) return;
-      map[vs].push(songItem);
-    });
-  });
-
-  return VS_NAMES.map((name) => {
-    const songs = [...map[name]].sort((a, b) => {
-      const ua = unitOrder[a.unit] || 99;
-      const ub = unitOrder[b.unit] || 99;
-      if (ua !== ub) return ua - ub;
-      return a.eventId - b.eventId;
-    });
-
-    const unitCounts = { ln: 0, mmj: 0, vbs: 0, ws: 0, nc: 0 };
-    songs.forEach((s) => {
-      if (unitCounts[s.unit] !== undefined) unitCounts[s.unit] += 1;
-    });
-
-    return {
-      name,
-      count: songs.length,
-      songs,
-      unitCounts
-    };
-  });
-});
 
 const charEventBuckets = computed(() => {
   const maxEid = safeMaxEventId.value;
@@ -6060,9 +6059,9 @@ defineExpose({
 }
 
 .matrix-table td.matrix-num.matrix-vs-zero {
-  color: #ffffff;
-  font-weight: 800;
-  background-color: rgba(100, 116, 139, 0.35);
+  color: #64748b;
+  font-weight: 650;
+  background-color: rgba(148, 163, 184, 0.1);
 }
 
 .matrix-pure-toggle {
@@ -6100,111 +6099,6 @@ defineExpose({
   width: 28px;
   height: 28px;
   object-fit: contain;
-}
-
-.song-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
-}
-
-.song-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 10px;
-  background: #ffffff;
-}
-
-.song-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.song-head-main {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.song-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 2px solid #d1d5db;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    inset 0 -2px 3px rgba(15, 23, 42, 0.2),
-    0 2px 5px rgba(15, 23, 42, 0.2);
-}
-
-.song-name {
-  font-weight: 700;
-  color: #111827;
-}
-
-.song-count {
-  font-size: 0.82rem;
-  color: #6b7280;
-}
-
-.song-list {
-  margin: 0;
-  padding-left: 0;
-  list-style: none;
-  max-height: 180px;
-  overflow-y: auto;
-}
-
-.unit-counts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.unit-chip {
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: 1px solid #e5e7eb;
-  border-radius: 999px;
-  padding: 2px 8px 2px 4px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.unit-logo {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-}
-
-.unit-count-num {
-  color: #111827;
-}
-
-.song-list li {
-  font-size: 0.82rem;
-  line-height: 1.4;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  white-space: nowrap;
-}
-
-.song-tag {
-  font-weight: 700;
-  min-width: 4.4em;
-  font-family: Consolas, 'Courier New', monospace;
-}
-
-.song-title {
-  font-size: 0.7rem;
-  color: #111827;
 }
 
 .record-grid {
@@ -6967,11 +6861,6 @@ defineExpose({
     font-size: 0.88rem;
   }
 
-  .song-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
   .festival-grid {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -7072,18 +6961,6 @@ defineExpose({
 
   .festival-card {
     padding: 8px;
-  }
-
-  .song-card {
-    padding: 8px;
-  }
-
-  .song-list {
-    max-height: 130px;
-  }
-
-  .song-list li {
-    font-size: 0.74rem;
   }
 
   .record-grid {
