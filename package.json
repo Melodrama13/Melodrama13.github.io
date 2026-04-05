@@ -8,7 +8,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "sync:other": "node scripts/sync-other-source.mjs",
-    "sync:other:dry": "node scripts/sync-other-source.mjs --dry-run"
+    "sync:other:dry": "node scripts/sync-other-source.mjs --dry-run",
+    "fetch:other-source": "node scripts/fetch-other-source.mjs",
+    "fetch:other-source:dry": "node scripts/fetch-other-source.mjs --dry-run",
+    "sync:cards-other": "node scripts/sync-cards-other-source.mjs",
+    "sync:cards-other:dry": "node scripts/sync-cards-other-source.mjs --dry-run",
+    "sync:song-covers": "node scripts/sync-song-covers.mjs",
+    "sync:song-covers:dry": "node scripts/sync-song-covers.mjs --dry-run",
+    "sync:card-thumbnails": "node scripts/sync-card-thumbnails.mjs",
+    "sync:card-thumbnails:dry": "node scripts/sync-card-thumbnails.mjs --dry-run"
   },
   "dependencies": {
     "element-plus": "^2.13.5",

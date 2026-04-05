@@ -790,9 +790,11 @@
           <div class="section-head">
             <div class="section-head-left">
               <h2>日挑配队</h2>
-              <button class="lineup-toggle-btn" @click="toggleLineupExpandedAll">{{ getLineupGlobalToggleLabel() }}</button>
             </div>
-            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-lineup', '日挑配队')">PNG</button>
+            <div class="lineup-section-actions">
+              <button class="lineup-toggle-btn lineup-toggle-btn-global" @click="toggleLineupExpandedAll">{{ getLineupGlobalToggleLabel() }}</button>
+              <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-lineup', '日挑配队')">PNG</button>
+            </div>
           </div>
           <div class="lineup-tip">注意：仅从技能分值角度考虑最佳配队，不考虑其他影响（如综合力、歌曲、难度等）。配队不唯一，新卡优先显示。</div>
           <div class="lineup-grid">
@@ -3440,8 +3442,8 @@ const getLineupToggleLabel = (name, count = 0) => {
 };
 
 const getLineupGlobalToggleLabel = () => {
-  if (isMobileNav.value) return isLineupAllExpanded.value ? '全部收起' : '全部展开';
-  return isLineupAllExpanded.value ? '收起其余属性（全部）' : '展开其余属性（全部）';
+  if (isMobileNav.value) return isLineupAllExpanded.value ? '收起全部' : '展开全部';
+  return isLineupAllExpanded.value ? '收起全部其余属性' : '展开全部其余属性';
 };
 
 const toggleLineupExpanded = (name) => {
@@ -5546,12 +5548,20 @@ defineExpose({
   justify-content: flex-end;
 }
 
+.lineup-section-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
 .lineup-toggle-btn {
   border: 1px solid #cbd5e1;
   border-radius: 999px;
-  background: #f8fafc;
+  background: #ffffff;
   color: #334155;
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   line-height: 1;
   padding: 4px 8px;
   cursor: pointer;
@@ -5559,6 +5569,13 @@ defineExpose({
 
 .lineup-toggle-btn:hover {
   background: #e2e8f0;
+}
+
+.lineup-toggle-btn-global {
+  border-radius: var(--stats-radius-btn);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
 }
 
 .lineup-char-avatar {
@@ -6927,6 +6944,12 @@ defineExpose({
     font-size: 0.58rem;
     padding: 3px 5px;
     white-space: nowrap;
+  }
+
+  .lineup-toggle-btn-global {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+    line-height: 1;
   }
 
   .lineup-head-actions .card-export-btn {

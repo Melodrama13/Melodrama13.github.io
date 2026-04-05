@@ -49,6 +49,24 @@
           <h1>乐曲统计</h1>
         </div>
 
+        <section class="song-disclaimer" aria-label="素材声明">
+          <p>
+            本页面为非官方、非商业的个人研究与交流项目，不拥有所展示素材的版权。
+            相关版权归其合法权利人所有，包括但不限于 Sega、Colorful Palette、Crypton 等。
+          </p>
+          <p>
+            如有版权或使用问题，请通过
+            <a
+              :href="PROJECT_GITHUB_ISSUES_URL"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub Issues
+            </a>
+            联系维护者处理。
+          </p>
+        </section>
+
         <section id="panel-song-stats" class="stats-section card-panel section-main">
           <div class="section-head">
             <div class="section-head-left">
@@ -105,14 +123,15 @@
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-vs-song-stats') }}</h2>
+                  <label class="song-duo-image-toggle">
+                    <input :checked="vsSongImageMode" type="checkbox" @change="onVsSongImageModeChange" />
+                    <span>曲绘显示</span>
+                  </label>
                 </div>
                 <div class="section-head-actions">
                   <div class="anvo-mode-switch">
                     <button class="anvo-mode-btn" @click="toggleAllVsSongExpandCollapse">
                       {{ vsSongGlobalToggleLabel }}
-                    </button>
-                    <button class="anvo-mode-btn" :class="{ active: vsSongAllFixed }" @click="setAllVsSongFixedMode">
-                      全部固定高度
                     </button>
                   </div>
                   <button class="card-export-btn song-export-btn" :disabled="isExportingPng" @click="exportSongPanelPng('panel-vs-song-stats', getSongSectionTitle('panel-vs-song-stats'))">PNG</button>
@@ -124,57 +143,296 @@
                   v-for="row in virtualSingerSongStats"
                   :key="`song-vs-${row.name}`"
                   :ref="(el) => setVsSongCardRef(row.name, el)"
-                  class="song-role-card song-stat-card"
+                  :class="['song-role-card', 'song-stat-card', 'song-vs-event-card', { 'is-image-mode': vsSongImageMode }]"
                   :style="{ backgroundColor: row.tint }"
                 >
-                  <div class="song-role-head">
-                    <div class="song-role-main song-stat-main">
-                      <img
-                        v-if="row.avatar"
-                        :src="row.avatar"
-                        :alt="row.name"
-                        class="song-role-avatar song-vs-avatar"
-                      />
-                      <div class="song-role-text">
-                        <div class="song-role-name">{{ row.name }}</div>
-                        <div class="song-role-count">{{ row.count }} 首</div>
+                  <div v-if="vsSongImageMode" class="song-vs-event-image-layout">
+                    <div class="song-vs-event-image-head">
+                      <div class="song-vs-event-image-head-main">
+                        <img
+                          v-if="row.avatar"
+                          :src="row.avatar"
+                          :alt="row.name"
+                          class="song-role-avatar song-image-main-avatar"
+                        />
+                        <div class="song-vs-event-image-head-stats">
+                          <div class="song-vs-event-image-name">{{ row.name }}</div>
+                          <div class="song-image-count song-vs-event-image-total">{{ row.count }} 首</div>
+                        </div>
+                      </div>
+                      <div class="song-role-card-tools">
+                        <button class="song-mini-icon-btn" @click="toggleVsSongCardExpandCollapse(row.name)">
+                          <img
+                            :src="getVsSongCardMode(row.name) === 'collapsed' ? '/data/icon/expand.png' : '/data/icon/collapse.png'"
+                            :alt="getVsSongCardMode(row.name) === 'collapsed' ? '展开' : '收起'"
+                            class="song-mini-icon-btn-img"
+                          />
+                        </button>
+                        <button class="card-export-btn song-export-btn song-mini-png-btn" :disabled="isExportingPng" @click="exportVirtualSingerCardPng(row)">PNG</button>
+                      </div>
+                      <div class="song-vs-event-unit-counts song-vs-event-unit-counts-image">
+                        <div
+                          v-for="unitKey in VS_UNIT_ORDER"
+                          :key="`${row.name}-image-${unitKey}`"
+                          class="song-vs-event-unit-stack"
+                        >
+                          <span
+                            class="song-vs-event-unit-chip"
+                            :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.2) }"
+                          >
+                            <img :src="UNIT_TAG_ICON_MAP[unitKey]" class="song-vs-event-unit-logo" :alt="unitKey" />
+                            <span class="song-vs-event-unit-count">{{ row.unitCounts[unitKey] }}</span>
+                          </span>
+                          <div class="song-vs-event-unit-mv-chips">
+                            <span class="song-vs-event-unit-mv-chip is-compact" :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.22) }">
+                              <span class="song-vs-event-unit-mv-num">{{ row.unit2dCounts[unitKey] }}</span>
+                              <span class="song-vs-event-unit-mv-sep">|</span>
+                              <span class="song-vs-event-unit-mv-num song-vs-event-unit-mv-num-3d">{{ row.unit3dCounts[unitKey] }}</span>
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div class="song-role-card-tools">
-                      <button class="song-mini-icon-btn" @click="toggleVsSongCardExpandCollapse(row.name)">
+
+                    <div v-if="!isVsSongCardCollapsed(row.name)" class="song-vs-event-image-groups">
+                      <section
+                        v-for="group in getVsSongImageGroups(row)"
+                        :key="`vs-image-group-${row.name}-${group.unit}`"
+                        class="song-vs-event-image-group"
+                        :style="{ backgroundColor: group.tint }"
+                      >
+                        <div class="song-event-image-grid song-vs-event-image-grid">
+                          <div
+                            v-for="song in group.songs"
+                            :key="`vs-song-jacket-${row.name}-${song.songId}-${song.eventId}`"
+                            class="song-image-jacket-tile song-vs-event-image-jacket-tile"
+                            :title="song.songName || '-'"
+                          >
+                            <div :class="['song-jacket-media', 'song-duo-song-jacket-item', { 'is-3d-frame': song.has3d }]">
+                              <img
+                                v-if="song.jacketUrl"
+                                :src="song.jacketUrl"
+                                :alt="`${song.songName || '歌曲'} 封面`"
+                                class="song-jacket-img song-duo-song-jacket-img"
+                                loading="lazy"
+                                decoding="async"
+                                @error="onSongJacketError"
+                              />
+                              <span class="song-jacket-fallback">-</span>
+                            </div>
+                            <span class="song-image-jacket-caption song-vs-event-image-tag-pill" :style="{ backgroundColor: hexToRgba(song.imageColor, 0.28) }">{{ song.textTag }}</span>
+                          </div>
+                        </div>
+                      </section>
+                    </div>
+                  </div>
+                  <template v-else>
+                    <div class="song-role-head">
+                      <div class="song-role-main song-stat-main">
                         <img
-                          :src="getVsSongCardMode(row.name) === 'collapsed' ? '/data/icon/expand.png' : '/data/icon/collapse.png'"
-                          :alt="getVsSongCardMode(row.name) === 'collapsed' ? '展开' : '收起'"
+                          v-if="row.avatar"
+                          :src="row.avatar"
+                          :alt="row.name"
+                          class="song-role-avatar song-vs-event-avatar"
+                        />
+                        <div class="song-role-text">
+                          <div class="song-role-name">{{ row.name }}</div>
+                          <div class="song-role-count">{{ row.count }} 首</div>
+                        </div>
+                      </div>
+                      <div class="song-role-card-tools">
+                        <button class="song-mini-icon-btn" @click="toggleVsSongCardExpandCollapse(row.name)">
+                          <img
+                            :src="getVsSongCardMode(row.name) === 'collapsed' ? '/data/icon/expand.png' : '/data/icon/collapse.png'"
+                            :alt="getVsSongCardMode(row.name) === 'collapsed' ? '展开' : '收起'"
+                            class="song-mini-icon-btn-img"
+                          />
+                        </button>
+                        <button class="card-export-btn song-export-btn song-mini-png-btn" :disabled="isExportingPng" @click="exportVirtualSingerCardPng(row)">PNG</button>
+                      </div>
+                    </div>
+
+                    <div class="song-vs-event-unit-counts">
+                      <div
+                        v-for="unitKey in VS_UNIT_ORDER"
+                        :key="`${row.name}-${unitKey}`"
+                        class="song-vs-event-unit-stack"
+                      >
+                        <span
+                          class="song-vs-event-unit-chip"
+                          :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.2) }"
+                        >
+                          <img :src="UNIT_TAG_ICON_MAP[unitKey]" class="song-vs-event-unit-logo" :alt="unitKey" />
+                          <span class="song-vs-event-unit-count">{{ row.unitCounts[unitKey] }}</span>
+                        </span>
+                        <div class="song-vs-event-unit-mv-chips">
+                          <span class="song-vs-event-unit-mv-chip is-compact" :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.22) }">
+                            <span class="song-vs-event-unit-mv-num">{{ row.unit2dCounts[unitKey] }}</span>
+                            <span class="song-vs-event-unit-mv-sep">|</span>
+                            <span class="song-vs-event-unit-mv-num song-vs-event-unit-mv-num-3d">{{ row.unit3dCounts[unitKey] }}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <ul
+                      v-if="getVsSongCardMode(row.name) !== 'collapsed'"
+                      :class="['song-role-list', 'song-stat-list', 'song-stat-list-vs-event', `is-${getVsSongCardMode(row.name)}`]"
+                    >
+                      <li v-for="song in row.songs" :key="`${row.name}-${song.tag}-${song.eventId}-${song.songId}`" class="song-vs-event-text-row">
+                        <span class="song-vs-event-tag" :style="{ color: song.color }">{{ song.textTag }}</span>
+                        <span class="song-vs-event-title" :class="{ 'is-no-2dmv': song.no2dMv }">{{ song.songName }}</span>
+                        <div class="song-event-mv-col song-vs-event-mv-col">
+                          <span v-if="song.has3d" class="song-mv-chip is-3d song-event-mv-chip">3D</span>
+                          <span v-else class="song-event-mv-empty song-vs-event-mv-empty"></span>
+                        </div>
+                      </li>
+                    </ul>
+                  </template>
+                </article>
+                <div v-if="virtualSingerSongStats.length === 0" class="song-empty">暂无虚拟歌手参与歌曲数据</div>
+              </div>
+            </article>
+
+            <article id="panel-oc-book-stats" class="stats-section card-panel">
+              <div class="section-head section-head-sub">
+                <div class="section-head-left">
+                  <h2>{{ getSongSectionTitle('panel-oc-book-stats') }}</h2>
+                  <label class="song-duo-image-toggle">
+                    <input :checked="ocBookImageMode" type="checkbox" @change="onOcBookImageModeChange" />
+                    <span>曲绘显示</span>
+                  </label>
+                </div>
+                <div class="section-head-actions">
+                  <div class="anvo-mode-switch">
+                    <button class="anvo-mode-btn" @click="toggleAllOcBookExpandCollapse">
+                      {{ ocBookGlobalToggleLabel }}
+                    </button>
+                  </div>
+                  <button class="card-export-btn song-export-btn" :disabled="isExportingPng" @click="exportSongPanelPng('panel-oc-book-stats', getSongSectionTitle('panel-oc-book-stats'))">PNG</button>
+                </div>
+              </div>
+
+              <div class="song-oc-event-unit-grid">
+                <article
+                  v-for="unitGroup in ocBookStatsByUnit"
+                  :key="`oc-book-${unitGroup.unit}`"
+                  :ref="(el) => setOcBookUnitCardRef(unitGroup.unit, el)"
+                  :class="['song-oc-event-unit-card', { 'is-collapsed': !isOcBookUnitExpanded(unitGroup.unit) }]"
+                  :style="{ backgroundColor: unitGroup.tint }"
+                >
+                  <div class="song-oc-event-unit-head">
+                    <img
+                      v-if="UNIT_TITLE_LOGO_MAP[unitGroup.unit]"
+                      :src="UNIT_TITLE_LOGO_MAP[unitGroup.unit]"
+                      :alt="unitGroup.label"
+                      class="song-oc-unit-logo"
+                    />
+                    <span class="song-oc-event-unit-count">{{ unitGroup.totalSongs }} 首</span>
+                    <div class="song-oc-event-unit-mv-chips">
+                      <span class="song-oc-event-mv-stat-chip is-2d" :style="{ backgroundColor: hexToRgba(unitColorMap[unitGroup.unit] || '#94a3b8', 0.22) }">2D | {{ unitGroup.total2d }}</span>
+                      <span class="song-oc-event-mv-stat-chip is-3d" :style="{ backgroundColor: hexToRgba(unitColorMap[unitGroup.unit] || '#94a3b8', 0.22) }">3D | {{ unitGroup.total3d }}</span>
+                    </div>
+                    <div class="song-oc-event-unit-tools">
+                      <button class="song-mini-icon-btn" @click="toggleOcBookUnitExpandCollapse(unitGroup.unit)">
+                        <img
+                          :src="isOcBookUnitExpanded(unitGroup.unit) ? '/data/icon/collapse.png' : '/data/icon/expand.png'"
+                          :alt="isOcBookUnitExpanded(unitGroup.unit) ? '收起' : '展开'"
                           class="song-mini-icon-btn-img"
                         />
                       </button>
-                      <button class="card-export-btn song-mini-png-btn" :disabled="isExportingPng" @click="exportVirtualSingerCardPng(row)">PNG</button>
+                      <button class="card-export-btn song-export-btn song-mini-png-btn" :disabled="isExportingPng" @click="exportOcBookUnitCardPng(unitGroup)">PNG</button>
                     </div>
                   </div>
 
-                  <div class="song-vs-unit-counts">
-                    <span
-                      v-for="unitKey in VS_UNIT_ORDER"
-                      :key="`${row.name}-${unitKey}`"
-                      class="song-vs-unit-chip"
-                      :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.2) }"
+                  <div v-if="isOcBookUnitExpanded(unitGroup.unit)" class="song-role-card-grid song-stat-grid song-oc-event-members-grid">
+                    <article
+                      v-for="member in unitGroup.members"
+                      :key="`oc-book-${unitGroup.unit}-${member.name}`"
+                      class="song-role-card song-stat-card song-oc-event-member-card"
+                      :style="{ backgroundColor: member.tint }"
                     >
-                      <img :src="UNIT_TAG_ICON_MAP[unitKey]" class="song-vs-unit-logo" :alt="unitKey" />
-                      <span class="song-vs-unit-count">{{ row.unitCounts[unitKey] }}</span>
-                    </span>
-                  </div>
+                      <div class="song-role-head">
+                        <div class="song-role-main song-stat-main">
+                          <img
+                            v-if="member.avatar"
+                            :src="member.avatar"
+                            :alt="member.name"
+                            class="song-role-avatar"
+                          />
+                          <div class="song-role-text">
+                            <div class="song-role-name">{{ member.name }}</div>
+                            <div class="song-role-count">{{ member.count }} 首</div>
+                          </div>
+                        </div>
+                        <div class="song-oc-event-member-mv-chips">
+                          <span class="song-oc-event-mv-stat-chip is-2d" :style="{ backgroundColor: hexToRgba(unitColorMap[member.unit] || '#94a3b8', 0.22) }">2D | {{ member.count2d }}</span>
+                          <span class="song-oc-event-mv-stat-chip is-3d" :style="{ backgroundColor: hexToRgba(unitColorMap[member.unit] || '#94a3b8', 0.22) }">3D | {{ member.count3d }}</span>
+                        </div>
+                      </div>
 
-                  <ul
-                    v-if="getVsSongCardMode(row.name) !== 'collapsed'"
-                    :class="['song-role-list', 'song-stat-list', 'song-stat-list-vs', `is-${getVsSongCardMode(row.name)}`]"
-                  >
-                    <li v-for="song in row.songs" :key="`${row.name}-${song.tag}-${song.eventId}-${song.songId}`">
-                      <span class="song-vs-tag" :style="{ color: song.color }">{{ song.tag }}</span>
-                      <span class="song-vs-title" :class="{ 'is-no-2dmv': song.no2dMv }">{{ song.songName }}</span>
-                    </li>
-                  </ul>
+                      <div v-if="ocBookImageMode" class="song-event-image-grid song-oc-event-image-grid">
+                        <div
+                          v-for="song in member.songs"
+                          :key="`oc-book-image-${member.name}-${song.songId}-${song.eventId}`"
+                          class="song-oc-event-image-item"
+                          :title="song.songName || '-'"
+                        >
+                          <div :class="['song-jacket-media', 'song-duo-song-jacket-item', 'song-oc-event-jacket', { 'is-3d-frame': song.has3d }]">
+                            <img
+                              v-if="song.jacketUrl"
+                              :src="song.jacketUrl"
+                              :alt="`${song.songName || '歌曲'} 封面`"
+                              class="song-jacket-img song-duo-song-jacket-img"
+                              loading="lazy"
+                              decoding="async"
+                              @error="onSongJacketError"
+                            />
+                            <span class="song-jacket-fallback">-</span>
+                            <div class="song-oc-event-vs-icons is-mini is-overlay">
+                              <img
+                                v-for="vs in song.vsIcons"
+                                :key="`oc-book-image-vs-${member.name}-${song.songId}-${vs.name}`"
+                                :src="vs.icon"
+                                :alt="vs.name"
+                                :title="vs.name"
+                                class="song-oc-event-vs-icon"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <ul v-else class="song-role-list song-stat-list song-oc-event-text-list">
+                        <li
+                          v-for="song in member.songs"
+                          :key="`oc-book-text-${member.name}-${song.songId}-${song.eventId}`"
+                          class="song-oc-event-text-row"
+                        >
+                          <div class="song-oc-event-tag-vs-col">
+                            <span class="song-oc-event-tag" :style="{ color: song.tagColor }">{{ song.tagNumber }}</span>
+                            <div class="song-oc-event-vs-icons is-text-col">
+                              <img
+                                v-for="vs in song.vsIcons"
+                                :key="`oc-book-text-vs-${member.name}-${song.songId}-${vs.name}`"
+                                :src="vs.icon"
+                                :alt="vs.name"
+                                :title="vs.name"
+                                class="song-oc-event-vs-icon"
+                              />
+                            </div>
+                          </div>
+                          <span class="song-role-song-title song-oc-event-song-title" :class="{ 'is-no-2dmv': !song.has2d }">{{ song.songName }}</span>
+                          <div class="song-event-mv-col song-oc-event-mv-col">
+                            <span v-if="song.has3d" class="song-mv-chip is-3d song-event-mv-chip">3D</span>
+                            <span v-else class="song-event-mv-empty song-oc-event-mv-empty"></span>
+                          </div>
+                        </li>
+                      </ul>
+                    </article>
+                  </div>
                 </article>
-                <div v-if="virtualSingerSongStats.length === 0" class="song-empty">暂无虚拟歌手参与歌曲数据</div>
+                <div v-if="ocBookStatsByUnit.length === 0" class="song-empty">暂无各团书下数据</div>
               </div>
             </article>
 
@@ -182,14 +440,18 @@
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-another-vocal') }}</h2>
+                  <label class="song-duo-image-toggle">
+                    <input :checked="anotherImageMode" type="checkbox" @change="onAnotherImageModeChange" />
+                    <span>曲绘显示</span>
+                  </label>
                 </div>
                 <div class="section-head-actions">
-                  <div class="anvo-mode-switch">
+                  <div v-if="!anotherImageMode" class="anvo-mode-switch">
                     <button class="anvo-mode-btn" @click="toggleAllAnotherExpandCollapse">
                       {{ anotherGlobalToggleLabel }}
                     </button>
                     <button class="anvo-mode-btn" :class="{ active: anotherAllFixed }" @click="setAllAnotherFixedMode">
-                      全部固定高度
+                      固定高度
                     </button>
                   </div>
                   <button class="card-export-btn song-export-btn" :disabled="isExportingPng" @click="exportSongPanelPng('panel-another-vocal', getSongSectionTitle('panel-another-vocal'))">PNG</button>
@@ -201,43 +463,75 @@
                   v-for="row in anotherVocalCards"
                   :key="`another-card-${row.name}`"
                   :ref="(el) => setAnvoCardRef(row.name, el)"
-                  class="song-role-card song-stat-card"
+                  :class="['song-role-card', 'song-stat-card', 'song-anvo-card', { 'is-image-mode': anotherImageMode }]"
                   :style="getAnotherCardStyle(row)"
                 >
-                  <div class="song-role-head">
-                    <div class="song-role-main">
+                  <div v-if="anotherImageMode" class="song-anvo-image-layout">
+                    <div class="song-anvo-image-head" :title="row.name">
                       <img
                         v-if="row.avatar"
                         :src="row.avatar"
                         :alt="row.name"
-                        class="song-role-avatar"
+                        class="song-role-avatar song-image-main-avatar"
                       />
-                      <div class="song-role-text">
-                        <div class="song-role-name">{{ row.name }}</div>
-                        <div class="song-role-count">{{ row.count }} 首</div>
+                      <div class="song-image-count">{{ row.count }} 首</div>
+                    </div>
+                    <div class="song-image-jacket-grid">
+                      <div
+                        v-for="song in row.songs"
+                        :key="`anvo-song-jacket-${row.name}-${song.id}-${song.vocalId}`"
+                        class="song-jacket-media song-duo-song-jacket-item"
+                        :title="song.title || '-'"
+                      >
+                        <img
+                          v-if="song.jacketUrl"
+                          :src="song.jacketUrl"
+                          :alt="`${song.title || '歌曲'} 封面`"
+                          class="song-jacket-img song-duo-song-jacket-img"
+                          loading="lazy"
+                          decoding="async"
+                          @error="onSongJacketError"
+                        />
+                        <span class="song-jacket-fallback">-</span>
                       </div>
                     </div>
-                    <div class="song-role-card-tools">
-                      <button class="song-mini-icon-btn" @click="toggleAnotherCardExpandCollapse(row.name)">
-                        <img
-                          :src="getAnotherCardMode(row.name) === 'collapsed' ? '/data/icon/expand.png' : '/data/icon/collapse.png'"
-                          :alt="getAnotherCardMode(row.name) === 'collapsed' ? '展开' : '收起'"
-                          class="song-mini-icon-btn-img"
-                        />
-                      </button>
-                      <button class="card-export-btn song-mini-png-btn" :disabled="isExportingPng" @click="exportAnotherCardPng(row)">PNG</button>
-                    </div>
                   </div>
+                  <template v-else>
+                    <div class="song-role-head">
+                      <div class="song-role-main">
+                        <img
+                          v-if="row.avatar"
+                          :src="row.avatar"
+                          :alt="row.name"
+                          class="song-role-avatar"
+                        />
+                        <div class="song-role-text">
+                          <div class="song-role-name">{{ row.name }}</div>
+                          <div class="song-role-count">{{ row.count }} 首</div>
+                        </div>
+                      </div>
+                      <div class="song-role-card-tools">
+                        <button class="song-mini-icon-btn" @click="toggleAnotherCardExpandCollapse(row.name)">
+                          <img
+                            :src="getAnotherCardMode(row.name) === 'collapsed' ? '/data/icon/expand.png' : '/data/icon/collapse.png'"
+                            :alt="getAnotherCardMode(row.name) === 'collapsed' ? '展开' : '收起'"
+                            class="song-mini-icon-btn-img"
+                          />
+                        </button>
+                        <button class="card-export-btn song-export-btn song-mini-png-btn" :disabled="isExportingPng" @click="exportAnotherCardPng(row)">PNG</button>
+                      </div>
+                    </div>
 
-                  <ul
-                    v-if="getAnotherCardMode(row.name) !== 'collapsed'"
-                    :class="['song-role-list', 'song-stat-list', `is-${getAnotherCardMode(row.name)}`]"
-                  >
-                    <li v-for="song in row.songs" :key="`another-song-${row.name}-${song.id}-${song.vocalId}`" :class="{ 'is-deleted-song': song.isDeletedSong }">
-                      <span class="song-role-song-id">#{{ song.id }}</span>
-                      <span class="song-role-song-title">{{ song.title || '-' }}</span>
-                    </li>
-                  </ul>
+                    <ul
+                      v-if="getAnotherCardMode(row.name) !== 'collapsed'"
+                      :class="['song-role-list', 'song-stat-list', `is-${getAnotherCardMode(row.name)}`]"
+                    >
+                      <li v-for="song in row.songs" :key="`another-song-${row.name}-${song.id}-${song.vocalId}`" :class="{ 'is-deleted-song': song.isDeletedSong }">
+                        <span class="song-role-song-id">#{{ song.id }}</span>
+                        <span class="song-role-song-title">{{ song.title || '-' }}</span>
+                      </li>
+                    </ul>
+                  </template>
                 </article>
                 <div v-if="anotherVocalCards.length === 0" class="song-empty">暂无 Another Vocal 数据</div>
               </div>
@@ -247,9 +541,13 @@
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-duo-stats') }}</h2>
+                  <label class="song-duo-image-toggle">
+                    <input :checked="duoImageMode" type="checkbox" @change="onDuoImageModeChange" />
+                    <span>曲绘显示</span>
+                  </label>
                 </div>
                 <div class="section-head-actions">
-                  <div class="anvo-mode-switch">
+                  <div v-if="!duoImageMode" class="anvo-mode-switch">
                     <button class="anvo-mode-btn" @click="toggleAllDuoExpandCollapse">
                       {{ duoGlobalToggleLabel }}
                     </button>
@@ -263,46 +561,78 @@
                   v-for="unitCard in sameUnitPairUnitCards"
                   :key="`duo-unit-${unitCard.unit}`"
                   :id="unitCard.anchorId"
-                  :class="['song-duo-unit-card', { 'is-ws-split': unitCard.isWsSplit }]"
+                  :class="['song-duo-unit-card', { 'is-ws-split': unitCard.isWsSplit && !duoImageMode }]"
                   :style="{ backgroundColor: unitCard.tint }"
                 >
                   <div
-                    :class="['song-duo-pair-grid', 'song-stat-grid', { 'is-ws-split-grid': unitCard.isWsSplit }]"
+                    :class="['song-duo-pair-grid', 'song-stat-grid', { 'is-ws-split-grid': unitCard.isWsSplit && !duoImageMode, 'is-image-compact': duoImageMode }]"
                     :ref="(el) => setDuoPairGridRef(unitCard.unit, el)"
                   >
                     <article
                       v-for="card in unitCard.pairs"
                       :key="card.key"
-                      class="song-role-card song-duo-card song-stat-card"
-                      :style="{ backgroundImage: card.gradientBg }"
+                      :class="['song-role-card', 'song-duo-card', 'song-stat-card', { 'is-image-mode': duoImageMode }]"
+                      :style="duoImageMode
+                        ? { backgroundImage: card.gradientBg, borderColor: unitColorMap[unitCard.unit] || '#334155' }
+                        : { backgroundImage: card.gradientBg }"
                     >
-                      <div class="song-role-head">
-                        <div class="song-role-main song-stat-main">
-                          <img :src="getCharacterAvatarSrc(card.memberA.name)" :alt="card.memberA.name" class="song-role-avatar" />
-                          <img :src="getCharacterAvatarSrc(card.memberB.name)" :alt="card.memberB.name" class="song-role-avatar" />
-                          <div class="song-role-text">
-                                <div class="song-role-name song-duo-name">
-                              <span :ref="(el) => setDuoNameRef(card.key, el)" class="duo-name-probe">{{ card.memberA.name }} & {{ card.memberB.name }}</span>
-                              <span v-if="!isDuoNameCompact(card.key)" class="duo-name-full">{{ card.memberA.name }} & {{ card.memberB.name }}</span>
-                              <span v-else class="duo-name-short">{{ getCharacterSingleMark(card.memberA.name) }} & {{ getCharacterSingleMark(card.memberB.name) }}</span>
-                                </div>
-                            <div class="song-role-count">{{ card.count }} 首</div>
+                      <div v-if="duoImageMode" class="song-duo-image-row">
+                        <div class="song-image-identity song-duo-image-identity" :title="`${card.memberA.name} & ${card.memberB.name}`">
+                          <div class="song-duo-image-avatars">
+                            <img :src="getCharacterAvatarSrc(card.memberA.name)" :alt="card.memberA.name" class="song-role-avatar song-duo-image-avatar" />
+                            <img :src="getCharacterAvatarSrc(card.memberB.name)" :alt="card.memberB.name" class="song-role-avatar song-duo-image-avatar" />
+                          </div>
+                          <div class="song-image-count">{{ card.count }} 首</div>
+                        </div>
+                        <div class="song-image-jacket-grid song-duo-jacket-grid">
+                          <div
+                            v-for="song in card.songs"
+                            :key="`duo-song-jacket-${card.key}-${song.id}`"
+                            class="song-jacket-media song-duo-song-jacket-item"
+                            :title="song.title || '-'"
+                          >
+                            <img
+                              v-if="song.jacketUrl"
+                              :src="song.jacketUrl"
+                              :alt="`${song.title || '歌曲'} 封面`"
+                              class="song-jacket-img song-duo-song-jacket-img"
+                              loading="lazy"
+                              decoding="async"
+                              @error="onSongJacketError"
+                            />
+                            <span class="song-jacket-fallback">-</span>
                           </div>
                         </div>
-                        <button class="song-mini-icon-btn" @click="toggleDuoCardExpandCollapse(card.key)">
-                              <img
-                                :src="isDuoCardExpanded(card.key) ? '/data/icon/collapse.png' : '/data/icon/expand.png'"
-                                :alt="isDuoCardExpanded(card.key) ? '收起' : '展开'"
-                                class="song-mini-icon-btn-img"
-                              />
-                        </button>
                       </div>
-                      <ul v-if="isDuoCardExpanded(card.key)" class="song-role-list song-stat-list song-stat-list-duo">
-                        <li v-for="song in card.songs" :key="`duo-song-${card.key}-${song.id}`">
-                          <span class="song-role-song-id">#{{ song.id }}</span>
-                          <span class="song-role-song-title">{{ song.title || '-' }}</span>
-                        </li>
-                      </ul>
+                      <template v-else>
+                        <div class="song-role-head">
+                          <div class="song-role-main song-stat-main">
+                            <img :src="getCharacterAvatarSrc(card.memberA.name)" :alt="card.memberA.name" class="song-role-avatar" />
+                            <img :src="getCharacterAvatarSrc(card.memberB.name)" :alt="card.memberB.name" class="song-role-avatar" />
+                            <div class="song-role-text">
+                                  <div class="song-role-name song-duo-name">
+                                <span :ref="(el) => setDuoNameRef(card.key, el)" class="duo-name-probe">{{ card.memberA.name }} & {{ card.memberB.name }}</span>
+                                <span v-if="!isDuoNameCompact(card.key)" class="duo-name-full">{{ card.memberA.name }} & {{ card.memberB.name }}</span>
+                                <span v-else class="duo-name-short">{{ getCharacterSingleMark(card.memberA.name) }} & {{ getCharacterSingleMark(card.memberB.name) }}</span>
+                                  </div>
+                              <div class="song-role-count">{{ card.count }} 首</div>
+                            </div>
+                          </div>
+                          <button class="song-mini-icon-btn" @click="toggleDuoCardExpandCollapse(card.key)">
+                                <img
+                                  :src="isDuoCardExpanded(card.key) ? '/data/icon/collapse.png' : '/data/icon/expand.png'"
+                                  :alt="isDuoCardExpanded(card.key) ? '收起' : '展开'"
+                                  class="song-mini-icon-btn-img"
+                                />
+                          </button>
+                        </div>
+                        <ul v-if="isDuoCardExpanded(card.key)" class="song-role-list song-stat-list song-stat-list-duo">
+                          <li v-for="song in card.songs" :key="`duo-song-${card.key}-${song.id}`">
+                            <span class="song-role-song-id">#{{ song.id }}</span>
+                            <span class="song-role-song-title">{{ song.title || '-' }}</span>
+                          </li>
+                        </ul>
+                      </template>
                     </article>
                   </div>
                 </article>
@@ -324,15 +654,18 @@
               v-model.trim="keyword"
               class="song-search"
               type="text"
-              placeholder="按歌曲名 / 词曲作者搜索（ID请用#）"
+              placeholder="按歌曲名 / 词曲作者搜索（ID 用 #，如 #241）"
             />
-            <p class="song-search-tip">ID 检索请使用 # 前缀，例如 #241。</p>
           </section>
 
-          <section class="song-list-wrap">
+          <section
+            ref="songListWrapRef"
+            :class="['song-list-wrap', { 'is-h-scroll': isSongTableOverflowing }]"
+          >
             <table class="song-table">
               <colgroup>
                 <col class="song-col-id" />
+                <col class="song-col-jacket" />
                 <col class="song-col-song" />
                 <col class="song-col-group" />
                 <col class="song-col-mv" />
@@ -344,6 +677,7 @@
               <thead>
                 <tr>
                   <th>ID</th>
+                  <th>封面</th>
                   <th>歌曲</th>
                   <th class="song-th-filter">
                     <div class="song-th-title">团体</div>
@@ -397,6 +731,20 @@
               <tbody>
                 <tr v-for="song in pagedSongs" :key="`song-${song.id}-${song.title}`">
                   <td>{{ song.id }}</td>
+                  <td class="song-jacket-cell">
+                    <div class="song-jacket-media">
+                      <img
+                        v-if="song.jacketUrl"
+                        :src="song.jacketUrl"
+                        :alt="`${song.title || '歌曲'} 封面`"
+                        class="song-jacket-img"
+                        loading="lazy"
+                        decoding="async"
+                        @error="onSongJacketError"
+                      />
+                      <span class="song-jacket-fallback">-</span>
+                    </div>
+                  </td>
                   <td class="song-title-cell">
                     <span class="song-title-text">{{ song.title || '-' }}</span>
                   </td>
@@ -445,14 +793,14 @@
                   <td class="song-credit-cell">{{ song.arranger || '-' }}</td>
                 </tr>
                 <tr v-if="filteredSongs.length === 0">
-                  <td colspan="8" class="song-empty">暂无匹配歌曲</td>
+                  <td colspan="9" class="song-empty">暂无匹配歌曲</td>
                 </tr>
                 <tr
                   v-for="n in emptyPagedRowCount"
                   :key="`song-placeholder-${n}`"
                   class="song-placeholder-row"
                 >
-                  <td colspan="8"></td>
+                  <td colspan="9"></td>
                 </tr>
               </tbody>
             </table>
@@ -499,17 +847,29 @@ const isExportingPng = ref(false);
 const currentSongPage = ref(1);
 const songPageSize = ref(10);
 const anotherCardModeMap = ref({});
+const anotherImageMode = ref(false);
 const duoCardExpandedMap = ref({});
 const duoNameCompactMap = ref({});
+const duoImageMode = ref(false);
 const duoNameRefMap = new Map();
 const duoPairGridRefMap = new Map();
 const duoPairGridColumnMap = ref({});
+const songListWrapRef = ref(null);
+const isSongTableOverflowing = ref(false);
 const anvoCardRefMap = new Map();
 const vsSongCardModeMap = ref({});
+const vsSongImageMode = ref(false);
+const ocBookImageMode = ref(false);
+const ocBookUnitExpandedMap = ref({});
 const vsSongCardRefMap = new Map();
+const ocBookUnitCardRefMap = new Map();
 let duoNameRaf = 0;
 let duoPairGridRaf = 0;
 let duoPairGridResizeObserver = null;
+let songTableResizeObserver = null;
+let resizeViewportRaf = 0;
+let viewportScrollHost = null;
+let lastViewportAnchorSnapshot = null;
 
 const DELETED_SONG_ID_SET = new Set([241, 290]);
 
@@ -558,6 +918,8 @@ const UNIT_TAG_ICON_MAP = Object.freeze({
   nc: '/elements/nc.png',
   vs: '/elements/vs.png'
 });
+const LOCAL_SONG_JACKET_BASE_PATH = '/songs';
+const PROJECT_GITHUB_ISSUES_URL = 'https://github.com/Melodrama13/Melodrama13.github.io/issues';
 
 const UNIT_TITLE_LOGO_MAP = Object.freeze({
   ln: '/elements/Leo_need.png',
@@ -596,6 +958,15 @@ const UNIT_NAV_LABEL_MAP = Object.freeze({
   nc: 'NC'
 });
 
+const UNIT_TAG_ABBR_MAP = Object.freeze({
+  ln: 'ln',
+  mmj: 'mmj',
+  vbs: 'vbs',
+  ws: 'ws',
+  nc: 'nc',
+  vs: 'vs'
+});
+
 const OC_UNIT_OPTIONS = Object.freeze([
   { key: 'ln', label: 'Leo/need' },
   { key: 'mmj', label: 'MORE MORE JUMP!' },
@@ -611,9 +982,10 @@ const VS_UNIT_ORDER_MAP = Object.freeze({ ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5 })
 const SONG_SECTION_TITLE_MAP = Object.freeze({
   'panel-song-stats': '乐曲统计',
   'panel-oc-stats': '各团歌曲统计',
-  'panel-vs-song-stats': '虚拟歌手书下',
-  'panel-another-vocal': 'Anvo数量统计',
-  'panel-duo-stats': '各团双人歌曲统计',
+  'panel-vs-song-stats': 'VS书下统计',
+  'panel-oc-book-stats': 'OC书下统计',
+  'panel-another-vocal': 'Anvo统计',
+  'panel-duo-stats': '双人歌曲统计',
   'panel-song-search': '乐曲检索'
 });
 
@@ -633,6 +1005,7 @@ const navGroups = computed(() => {
       children: [
         { id: 'panel-oc-stats', title: getSongSectionTitle('panel-oc-stats') },
         { id: 'panel-vs-song-stats', title: getSongSectionTitle('panel-vs-song-stats') },
+        { id: 'panel-oc-book-stats', title: getSongSectionTitle('panel-oc-book-stats') },
         { id: 'panel-another-vocal', title: getSongSectionTitle('panel-another-vocal') },
         { id: 'panel-duo-stats', title: getSongSectionTitle('panel-duo-stats') },
         ...duoUnitChildren
@@ -689,15 +1062,101 @@ const getScrollContainer = () => {
   return document.documentElement;
 };
 
-const withPreservedScrollCenter = async (applyChange) => {
+const snapshotViewportAnchor = () => {
   const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const anchorId = activeNavId.value;
+  const anchorEl = anchorId ? document.getElementById(anchorId) : null;
   const ratio = (host.scrollTop + host.clientHeight / 2) / Math.max(1, host.scrollHeight);
+  return {
+    anchorId,
+    hasAnchor: !!anchorEl,
+    anchorTop: anchorEl ? (anchorEl.getBoundingClientRect().top - hostRect.top) : 0,
+    scrollTop: host.scrollTop,
+    ratio
+  };
+};
+
+const restoreViewportAnchor = (snapshot) => {
+  if (!snapshot) return;
+  const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const anchorEl = snapshot.anchorId ? document.getElementById(snapshot.anchorId) : null;
+  if (snapshot.hasAnchor && anchorEl) {
+    const afterTop = anchorEl.getBoundingClientRect().top - hostRect.top;
+    const nextTop = snapshot.scrollTop + (afterTop - snapshot.anchorTop);
+    const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
+    host.scrollTop = Math.max(0, Math.min(maxTop, nextTop));
+    return;
+  }
+  const targetTop = snapshot.ratio * host.scrollHeight - host.clientHeight / 2;
+  const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
+  host.scrollTop = Math.max(0, Math.min(maxTop, targetTop));
+};
+
+const rememberViewportAnchor = () => {
+  lastViewportAnchorSnapshot = snapshotViewportAnchor();
+};
+
+const bindViewportScrollTracking = () => {
+  const host = getScrollContainer();
+  if (viewportScrollHost && viewportScrollHost !== host) {
+    viewportScrollHost.removeEventListener('scroll', rememberViewportAnchor);
+  }
+  viewportScrollHost = host;
+  viewportScrollHost.addEventListener('scroll', rememberViewportAnchor, { passive: true });
+};
+
+const handleWindowResize = () => {
+  const snapshot = lastViewportAnchorSnapshot || snapshotViewportAnchor();
+  if (resizeViewportRaf) cancelAnimationFrame(resizeViewportRaf);
+  resizeViewportRaf = requestAnimationFrame(() => {
+    resizeViewportRaf = 0;
+    updateMobileNavState();
+    void (async () => {
+      await nextTick();
+      await waitNextPaint();
+      restoreViewportAnchor(snapshot);
+      rememberViewportAnchor();
+    })();
+  });
+};
+
+const withPreservedScrollCenter = async (applyChange) => {
+  const snapshot = snapshotViewportAnchor();
   applyChange();
   await nextTick();
   await waitNextPaint();
-  const targetTop = ratio * host.scrollHeight - host.clientHeight / 2;
-  const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
-  host.scrollTop = Math.max(0, Math.min(maxTop, targetTop));
+  restoreViewportAnchor(snapshot);
+  rememberViewportAnchor();
+};
+
+const onVsSongImageModeChange = (event) => {
+  const checked = !!event?.target?.checked;
+  void withPreservedScrollCenter(() => {
+    vsSongImageMode.value = checked;
+  });
+};
+
+const onOcBookImageModeChange = (event) => {
+  const checked = !!event?.target?.checked;
+  void withPreservedScrollCenter(() => {
+    ocBookImageMode.value = checked;
+  });
+};
+
+const onAnotherImageModeChange = (event) => {
+  const checked = !!event?.target?.checked;
+  void withPreservedScrollCenter(() => {
+    anotherImageMode.value = checked;
+  });
+};
+
+const onDuoImageModeChange = (event) => {
+  const checked = !!event?.target?.checked;
+  void withPreservedScrollCenter(() => {
+    duoImageMode.value = checked;
+  });
 };
 
 const setNavCollapsed = (nextCollapsed, preserveCenter = true) => {
@@ -731,9 +1190,11 @@ const updateMobileNavState = () => {
 
   if (needPreserve) {
     void withPreservedScrollCenter(applyState);
+    recalcSongTableOverflow();
     return;
   }
   applyState();
+  recalcSongTableOverflow();
 };
 
 const scrollSectionIntoHost = (id, behavior = 'smooth') => {
@@ -767,6 +1228,15 @@ const backToSongHome = () => {
   currentSongPage.value = 1;
 };
 
+const recalcSongTableOverflow = () => {
+  const wrap = songListWrapRef.value;
+  if (!(wrap instanceof HTMLElement)) {
+    isSongTableOverflowing.value = false;
+    return;
+  }
+  isSongTableOverflowing.value = wrap.scrollWidth - wrap.clientWidth > 1;
+};
+
 const bindSectionObserver = async () => {
   if (sectionObserver) {
     sectionObserver.disconnect();
@@ -797,7 +1267,9 @@ const bindSectionObserver = async () => {
 
 onMounted(() => {
   updateMobileNavState();
-  window.addEventListener('resize', updateMobileNavState);
+  window.addEventListener('resize', handleWindowResize);
+  bindViewportScrollTracking();
+  rememberViewportAnchor();
   if (typeof ResizeObserver !== 'undefined') {
     duoPairGridResizeObserver = new ResizeObserver(() => {
       scheduleRecalcDuoPairGridColumns();
@@ -805,18 +1277,34 @@ onMounted(() => {
     duoPairGridRefMap.forEach((el) => {
       duoPairGridResizeObserver.observe(el);
     });
+    songTableResizeObserver = new ResizeObserver(() => {
+      recalcSongTableOverflow();
+    });
+    if (songListWrapRef.value) {
+      songTableResizeObserver.observe(songListWrapRef.value);
+    }
   }
   nextTick(() => {
     scheduleRecalcDuoPairGridColumns();
+    recalcSongTableOverflow();
   });
   bindSectionObserver();
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateMobileNavState);
+  window.removeEventListener('resize', handleWindowResize);
+  if (viewportScrollHost) {
+    viewportScrollHost.removeEventListener('scroll', rememberViewportAnchor);
+    viewportScrollHost = null;
+  }
+  if (resizeViewportRaf) cancelAnimationFrame(resizeViewportRaf);
   if (duoPairGridResizeObserver) {
     duoPairGridResizeObserver.disconnect();
     duoPairGridResizeObserver = null;
+  }
+  if (songTableResizeObserver) {
+    songTableResizeObserver.disconnect();
+    songTableResizeObserver = null;
   }
   if (duoPairGridRaf) cancelAnimationFrame(duoPairGridRaf);
   if (sectionObserver) sectionObserver.disconnect();
@@ -845,6 +1333,20 @@ const hexToRgba = (hex, alpha = 1) => {
   const g = (num >> 8) & 255;
   const b = num & 255;
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+};
+
+const mixHexWithWhite = (hex, strength = 0.2) => {
+  const safe = normalizeHexColor(hex);
+  const s = Math.max(0, Math.min(1, Number(strength)));
+  if (!safe) return 'rgb(226, 232, 240)';
+  const num = Number.parseInt(safe.slice(1), 16);
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  const blendedR = Math.round(255 * (1 - s) + r * s);
+  const blendedG = Math.round(255 * (1 - s) + g * s);
+  const blendedB = Math.round(255 * (1 - s) + b * s);
+  return `rgb(${blendedR}, ${blendedG}, ${blendedB})`;
 };
 
 const normalizeCategoryKey = (value) => String(value || '').trim().toLowerCase();
@@ -909,6 +1411,19 @@ const buildMvTags = (categories) => {
   return tags;
 };
 
+const buildSongJacketIdText = (songIdRaw) => {
+  const id = Number(songIdRaw);
+  if (!Number.isFinite(id) || id <= 0) return null;
+  return String(Math.trunc(id)).padStart(3, '0');
+};
+
+const buildLocalSongJacketUrl = (songIdRaw) => {
+  const idText = buildSongJacketIdText(songIdRaw);
+  if (!idText) return '';
+  const fileName = `song_${idText}.webp`;
+  return `${LOCAL_SONG_JACKET_BASE_PATH}/${fileName}`;
+};
+
 const normalizeSongRow = (row) => {
   const idNum = Number(row?.id);
   const categories = Array.isArray(row?.categories)
@@ -918,6 +1433,7 @@ const normalizeSongRow = (row) => {
     ? row.tags.map((tag) => normalizeCategoryKey(tag)).filter(Boolean)
     : [];
   const groupKeys = buildOrderedGroupKeys(Array.isArray(row?.tags) ? row.tags : []);
+  const localJacketUrl = buildLocalSongJacketUrl(row?.id);
 
   return {
     id: row?.id ?? '-',
@@ -933,7 +1449,8 @@ const normalizeSongRow = (row) => {
     groupKeys,
     vocals: Array.isArray(row?.vocals) ? row.vocals : [],
     mvTags: buildMvTags(categories),
-    groupTags: buildGroupTags(groupKeys)
+    groupTags: buildGroupTags(groupKeys),
+    jacketUrl: localJacketUrl
   };
 };
 
@@ -1031,6 +1548,8 @@ const getCharacterAbbr = (rawName) => {
   return String(characterByName.value.get(normalized)?.abbr || normalized || rawName || '').trim();
 };
 
+const asArray = (value) => (Array.isArray(value) ? value : []);
+
 const toFiniteSongId = (value) => {
   if (value === null || value === undefined) return null;
   const raw = String(value).trim();
@@ -1108,19 +1627,197 @@ const hasSong2DMVCategory = (song) => {
   return song.categoryKeys.includes('2dmv');
 };
 
-const makeSongTag = (ev) => {
+const hasSong3DMVCategory = (song) => {
+  if (!Array.isArray(song?.categoryKeys)) return false;
+  return song.categoryKeys.includes('3dmv');
+};
+
+const normalizeAsciiAbbr = (raw) => String(raw || '').trim().replace(/[^a-zA-Z]/g, '').toLowerCase();
+
+const makeSongTagSingle = (ev) => {
   const sid = String(ev?.type_series_id || '').trim();
   const bannerName = String(ev?.banner || '').trim();
   const unit = String(ev?.unit || '').trim().toLowerCase();
-  if (bannerName) return `${getCharacterAbbr(bannerName).toLowerCase()}${sid}`;
-  if (unit) return `${unit}${sid}`;
-  return sid ? `ev${sid}` : 'unknown';
+  if (bannerName) return `${getCharacterSingleMark(bannerName)}${sid}`;
+  if (unit) return `${String(unit).slice(0, 1)}${sid}`;
+  return sid ? `曲${sid}` : '未知';
+};
+
+const makeSongTagAbbr = (ev) => {
+  const sid = String(ev?.type_series_id || '').trim();
+  const bannerName = String(ev?.banner || '').trim();
+  const unit = String(ev?.unit || '').trim().toLowerCase();
+  if (bannerName) {
+    const abbr = normalizeAsciiAbbr(getCharacterAbbr(bannerName));
+    return `${abbr || 'char'}${sid}`;
+  }
+  if (unit) {
+    const unitAbbr = UNIT_TAG_ABBR_MAP[unit] || normalizeAsciiAbbr(unit) || 'song';
+    return `${unitAbbr}${sid}`;
+  }
+  return sid ? `song${sid}` : 'unknown';
+};
+
+const makeSongTagNumber = (ev) => {
+  const sid = String(ev?.type_series_id || '').trim();
+  if (sid) return sid;
+  const matched = String(makeSongTagSingle(ev)).match(/(\d+)$/);
+  return matched ? matched[1] : '-';
 };
 
 const getSongTagColor = (ev) => {
   const bannerName = String(ev?.banner || '').trim();
   const unit = bannerName ? getUnitByChar(bannerName) : String(ev?.unit || '').trim().toLowerCase();
   return unitColorMap.value[unit] || '#111827';
+};
+
+const getSongTagImageColor = (ev) => {
+  const bannerName = String(ev?.banner || '').trim();
+  const byCharacter = bannerName ? getCharacterColor(bannerName) : '';
+  if (byCharacter) return byCharacter;
+  return getSongTagColor(ev);
+};
+
+const characterColorByAbbr = computed(() => {
+  const map = new Map();
+  characters.value.forEach((char) => {
+    const abbr = String(char?.abbr || '').trim().toLowerCase();
+    if (!abbr) return;
+    map.set(abbr, char?.color || '#334155');
+  });
+  return map;
+});
+
+const getTagColorByTag = (tagRaw) => {
+  const raw = String(tagRaw || '').trim().toLowerCase();
+  const matched = raw.match(/^[a-z]+/);
+  const abbr = matched ? matched[0] : '';
+  return characterColorByAbbr.value.get(abbr) || '#334155';
+};
+
+const buildVsIconsFromNames = (vsNames) => {
+  return asArray(vsNames)
+    .map((name) => {
+      const icon = getCharacterAvatarSrc(name);
+      if (!icon) return null;
+      return { name, icon };
+    })
+    .filter(Boolean);
+};
+
+const parseSeriesOrder = (ev) => {
+  const rawSeries = Number(ev?.type_series_id);
+  if (Number.isFinite(rawSeries) && rawSeries > 0) return Math.trunc(rawSeries);
+
+  const tag = makeSongTagNumber(ev);
+  const matched = String(tag).match(/(\d+)$/);
+  if (matched) return Number(matched[1]);
+  return Number.MAX_SAFE_INTEGER;
+};
+
+const ocBookStatsByUnit = computed(() => {
+  const groupMap = Object.fromEntries(OC_UNIT_KEYS.map((unitKey) => [unitKey, new Map()]));
+  const orderMap = Object.fromEntries(
+    OC_UNIT_KEYS.map((unitKey) => [
+      unitKey,
+      new Map((charactersByUnit.value[unitKey] || []).map((char, idx) => [char.name, idx]))
+    ])
+  );
+
+  asArray(props.allEvents).forEach((ev) => {
+    if (ev?.isPredict) return;
+    if (!Number.isFinite(Number(ev?.id))) return;
+
+    const songId = toFiniteSongId(ev?.song_id);
+    if (songId === null) return;
+    const song = songsById.value.get(songId);
+    const songName = String(song?.title || '').trim();
+    if (!songName) return;
+
+    const bannerName = String(ev?.banner || '').trim();
+    if (!bannerName) return;
+    const unitKey = getUnitByChar(bannerName);
+    if (!OC_UNIT_KEYS.includes(unitKey)) return;
+
+    const normalizedName = normalizeCharacterName(bannerName);
+    const memberName = normalizedName || bannerName;
+    const memberMap = groupMap[unitKey];
+    if (!memberMap.has(memberName)) {
+      memberMap.set(memberName, {
+        name: memberName,
+        unit: unitKey,
+        avatar: getCharacterAvatarSrc(memberName),
+        tint: mixHexWithWhite(getCharacterColor(memberName), SONG_STAT_CARD_TINT_ALPHA),
+        songs: []
+      });
+    }
+
+    const tag = makeSongTagSingle(ev);
+    memberMap.get(memberName).songs.push({
+      tag,
+      tagNumber: makeSongTagNumber(ev),
+      tagColor: unitColorMap.value[unitKey] || BASE_UNIT_COLOR_MAP[unitKey] || '#334155',
+      songId,
+      songName,
+      jacketUrl: String(song?.jacketUrl || '').trim(),
+      eventId: Number(ev.id),
+      seriesOrder: parseSeriesOrder(ev),
+      vsIcons: buildVsIconsFromNames(parseVS(ev?.virtual_singer)),
+      has2d: hasSong2DMVCategory(song),
+      has3d: hasSong3DMVCategory(song)
+    });
+  });
+
+  return OC_UNIT_OPTIONS.map((unitItem) => {
+    const memberMap = groupMap[unitItem.key];
+    const memberOrder = orderMap[unitItem.key];
+    const members = [...memberMap.values()]
+      .map((member) => {
+        const songs = [...member.songs].sort((a, b) => {
+          if (a.seriesOrder !== b.seriesOrder) return a.seriesOrder - b.seriesOrder;
+          if (a.eventId !== b.eventId) return a.eventId - b.eventId;
+          return a.songId - b.songId;
+        });
+        const count3d = songs.filter((song) => song.has3d).length;
+        return {
+          ...member,
+          songs,
+          count: songs.length,
+          count3d,
+          count2d: songs.length - count3d
+        };
+      })
+      .filter((member) => member.count > 0)
+      .sort((a, b) => {
+        const ai = memberOrder.has(a.name) ? memberOrder.get(a.name) : Number.MAX_SAFE_INTEGER;
+        const bi = memberOrder.has(b.name) ? memberOrder.get(b.name) : Number.MAX_SAFE_INTEGER;
+        if (ai !== bi) return ai - bi;
+        return a.name.localeCompare(b.name, 'zh-Hans-CN');
+      });
+
+    return {
+      unit: unitItem.key,
+      label: unitItem.label,
+      tint: mixHexWithWhite(unitColorMap.value[unitItem.key] || BASE_UNIT_COLOR_MAP[unitItem.key] || '#cbd5e1', 0.18),
+      members,
+      totalSongs: members.reduce((sum, member) => sum + member.count, 0),
+      total3d: members.reduce((sum, member) => sum + member.count3d, 0),
+      total2d: members.reduce((sum, member) => sum + member.count2d, 0)
+    };
+  }).filter((unitGroup) => unitGroup.members.length > 0);
+});
+
+const getVsSongImageGroups = (row) => {
+  const songs = Array.isArray(row?.songs) ? row.songs : [];
+  return VS_UNIT_ORDER.map((unitKey) => {
+    const unitSongs = songs.filter((song) => song.unit === unitKey);
+    if (!unitSongs.length) return null;
+    return {
+      unit: unitKey,
+      tint: mixHexWithWhite(unitColorMap.value[unitKey] || BASE_UNIT_COLOR_MAP[unitKey] || '#cbd5e1', 0.14),
+      songs: unitSongs
+    };
+  }).filter(Boolean);
 };
 
 const virtualSingerSongStats = computed(() => {
@@ -1140,12 +1837,16 @@ const virtualSingerSongStats = computed(() => {
     const inferredUnit = bannerName ? getUnitByChar(bannerName) : unitRaw;
 
     const songItem = {
-      tag: makeSongTag(ev),
+      tag: makeSongTagSingle(ev),
+      textTag: makeSongTagAbbr(ev),
       songId,
       songName: songTitle,
+      jacketUrl: String(song?.jacketUrl || '').trim(),
       color: getSongTagColor(ev),
+      imageColor: getSongTagImageColor(ev),
       unit: inferredUnit,
       eventId: Number(ev.id),
+      has3d: hasSong3DMVCategory(song),
       no2dMv: !hasSong2DMVCategory(song)
     };
 
@@ -1165,50 +1866,60 @@ const virtualSingerSongStats = computed(() => {
     });
 
     const unitCounts = { ln: 0, mmj: 0, vbs: 0, ws: 0, nc: 0 };
+    const unit3dCounts = { ln: 0, mmj: 0, vbs: 0, ws: 0, nc: 0 };
     songsList.forEach((songItem) => {
       if (Object.prototype.hasOwnProperty.call(unitCounts, songItem.unit)) {
         unitCounts[songItem.unit] += 1;
+        if (songItem.has3d) {
+          unit3dCounts[songItem.unit] += 1;
+        }
       }
     });
+    const unit2dCounts = {
+      ln: unitCounts.ln - unit3dCounts.ln,
+      mmj: unitCounts.mmj - unit3dCounts.mmj,
+      vbs: unitCounts.vbs - unit3dCounts.vbs,
+      ws: unitCounts.ws - unit3dCounts.ws,
+      nc: unitCounts.nc - unit3dCounts.nc
+    };
 
     return {
       name,
       avatar: getCharacterAvatarSrc(name),
-      tint: hexToRgba(getCharacterColor(name), SONG_STAT_CARD_TINT_ALPHA),
+      tint: mixHexWithWhite(getCharacterColor(name), SONG_STAT_CARD_TINT_ALPHA),
       count: songsList.length,
       songs: songsList,
-      unitCounts
+      unitCounts,
+      unit3dCounts,
+      unit2dCounts
     };
   });
 });
 
-const getVsSongCardMode = (name) => vsSongCardModeMap.value[String(name || '')] || 'fixed';
+const getVsSongCardMode = (name) => vsSongCardModeMap.value[String(name || '')] || 'expanded';
+
+const isOcBookUnitExpanded = (unit) => ocBookUnitExpandedMap.value[String(unit || '')] !== false;
 
 const isVsSongCardCollapsed = (name) => getVsSongCardMode(name) === 'collapsed';
 
 const vsSongGlobalToggleLabel = computed(() => {
   const cards = virtualSingerSongStats.value;
-  if (!cards.length) return '全部展开';
-  const allCollapsedOrFixed = cards.every((card) => {
-    const mode = getVsSongCardMode(card.name);
-    return mode === 'collapsed' || mode === 'fixed';
-  });
-  return allCollapsedOrFixed ? '全部展开' : '全部收起';
+  if (!cards.length) return '展开全部';
+  const allCollapsed = cards.every((card) => getVsSongCardMode(card.name) === 'collapsed');
+  return allCollapsed ? '展开全部' : '收起全部';
 });
 
-const vsSongAllFixed = computed(() => {
-  const cards = virtualSingerSongStats.value;
-  if (!cards.length) return false;
-  return cards.every((card) => getVsSongCardMode(card.name) === 'fixed');
+const ocBookGlobalToggleLabel = computed(() => {
+  const groups = ocBookStatsByUnit.value;
+  if (!groups.length) return '收起全部';
+  const allCollapsed = groups.every((group) => !isOcBookUnitExpanded(group.unit));
+  return allCollapsed ? '展开全部' : '收起全部';
 });
 
 const toggleAllVsSongExpandCollapse = () => {
   const cards = virtualSingerSongStats.value;
   if (!cards.length) return;
-  const shouldExpandAll = cards.every((card) => {
-    const mode = getVsSongCardMode(card.name);
-    return mode === 'collapsed' || mode === 'fixed';
-  });
+  const shouldExpandAll = cards.every((card) => getVsSongCardMode(card.name) === 'collapsed');
   const nextMode = shouldExpandAll ? 'expanded' : 'collapsed';
   const next = {};
   cards.forEach((card) => {
@@ -1217,21 +1928,31 @@ const toggleAllVsSongExpandCollapse = () => {
   vsSongCardModeMap.value = next;
 };
 
-const setAllVsSongFixedMode = () => {
-  const cards = virtualSingerSongStats.value;
-  if (!cards.length) return;
+const toggleAllOcBookExpandCollapse = () => {
+  const groups = ocBookStatsByUnit.value;
+  if (!groups.length) return;
+  const shouldExpandAll = groups.every((group) => !isOcBookUnitExpanded(group.unit));
   const next = {};
-  cards.forEach((card) => {
-    next[card.name] = 'fixed';
+  groups.forEach((group) => {
+    next[group.unit] = shouldExpandAll;
   });
-  vsSongCardModeMap.value = next;
+  ocBookUnitExpandedMap.value = next;
+};
+
+const toggleOcBookUnitExpandCollapse = (unit) => {
+  const key = String(unit || '');
+  if (!key) return;
+  ocBookUnitExpandedMap.value = {
+    ...ocBookUnitExpandedMap.value,
+    [key]: !isOcBookUnitExpanded(key)
+  };
 };
 
 const toggleVsSongCardExpandCollapse = (name) => {
   const key = String(name || '');
   if (!key) return;
   const current = getVsSongCardMode(key);
-  const nextMode = current === 'collapsed' ? 'expanded' : (current === 'fixed' ? 'expanded' : 'collapsed');
+  const nextMode = current === 'collapsed' ? 'expanded' : 'collapsed';
   vsSongCardModeMap.value = {
     ...vsSongCardModeMap.value,
     [key]: nextMode
@@ -1243,6 +1964,16 @@ const setVsSongCardRef = (name, el) => {
     vsSongCardRefMap.set(name, el);
   } else {
     vsSongCardRefMap.delete(name);
+  }
+};
+
+const setOcBookUnitCardRef = (unit, el) => {
+  const key = String(unit || '');
+  if (!key) return;
+  if (el && el instanceof HTMLElement) {
+    ocBookUnitCardRefMap.set(key, el);
+  } else {
+    ocBookUnitCardRefMap.delete(key);
   }
 };
 
@@ -1402,7 +2133,13 @@ const anotherVocalCards = computed(() => {
         const songKey = `${song.id}-${song.title}`;
         const prev = row.songs.get(songKey);
         if (!prev || vocalId < prev.vocalId) {
-          row.songs.set(songKey, { id: song.id, title: song.title || '-', vocalId, isDeletedSong: song.isDeletedSong });
+          row.songs.set(songKey, {
+            id: song.id,
+            title: song.title || '-',
+            jacketUrl: String(song.jacketUrl || '').trim(),
+            vocalId,
+            isDeletedSong: song.isDeletedSong
+          });
         }
       });
     });
@@ -1438,12 +2175,12 @@ const isAnotherCardCollapsed = (name) => getAnotherCardMode(name) === 'collapsed
 
 const anotherGlobalToggleLabel = computed(() => {
   const cards = anotherVocalCards.value;
-  if (cards.length === 0) return '全部展开';
+  if (cards.length === 0) return '展开全部';
   const allCollapsedOrFixed = cards.every((card) => {
     const mode = getAnotherCardMode(card.name);
     return mode === 'collapsed' || mode === 'fixed';
   });
-  return allCollapsedOrFixed ? '全部展开' : '全部收起';
+  return allCollapsedOrFixed ? '展开全部' : '收起全部';
 });
 
 const anotherAllFixed = computed(() => {
@@ -1519,7 +2256,11 @@ const sameUnitPairUnitCardsRaw = computed(() => {
           });
 
           if (!hasPair) return;
-          songMap.set(`${song.id}-${song.title}`, { id: song.id, title: song.title || '-' });
+          songMap.set(`${song.id}-${song.title}`, {
+            id: song.id,
+            title: song.title || '-',
+            jacketUrl: song.jacketUrl || ''
+          });
         });
 
         if (songMap.size === 0) continue;
@@ -1571,9 +2312,9 @@ const isDuoCardExpanded = (key) => duoCardExpandedMap.value[key] !== false;
 
 const duoGlobalToggleLabel = computed(() => {
   const keys = sameUnitPairUnitCards.value.flatMap((unitCard) => unitCard.pairs.map((pair) => pair.key));
-  if (keys.length === 0) return '全部展开';
+  if (keys.length === 0) return '展开全部';
   const allCollapsed = keys.every((key) => !isDuoCardExpanded(key));
-  return allCollapsed ? '全部展开' : '全部收起';
+  return allCollapsed ? '展开全部' : '收起全部';
 });
 
 const toggleAllDuoExpandCollapse = () => {
@@ -1683,6 +2424,18 @@ const changeSongPage = (delta) => {
   currentSongPage.value = next;
 };
 
+const onSongJacketError = (event) => {
+  const img = event?.target;
+  if (!(img instanceof HTMLImageElement)) return;
+  if (img.dataset.failed === '1') return;
+  img.dataset.failed = '1';
+  img.style.display = 'none';
+  const holder = img.closest('.song-jacket-media');
+  if (holder instanceof HTMLElement) {
+    holder.classList.add('is-failed');
+  }
+};
+
 const waitNextPaint = () => new Promise((resolve) => {
   requestAnimationFrame(() => {
     requestAnimationFrame(resolve);
@@ -1737,6 +2490,7 @@ const exportElementPng = async (targetEl, title) => {
 const snapshotAnotherCardModes = () => ({ ...anotherCardModeMap.value });
 const snapshotDuoExpandedMap = () => ({ ...duoCardExpandedMap.value });
 const snapshotVsSongCardModes = () => ({ ...vsSongCardModeMap.value });
+const snapshotOcBookExpandedMap = () => ({ ...ocBookUnitExpandedMap.value });
 
 const expandAnotherCardsForExport = (targetName = '') => {
   const next = { ...anotherCardModeMap.value };
@@ -1768,6 +2522,16 @@ const expandVsSongCardsForExport = (targetName = '') => {
   vsSongCardModeMap.value = next;
 };
 
+const expandOcBookUnitsForExport = (targetUnit = '') => {
+  const next = { ...ocBookUnitExpandedMap.value };
+  ocBookStatsByUnit.value.forEach((group) => {
+    if (!targetUnit || group.unit === targetUnit) {
+      next[group.unit] = true;
+    }
+  });
+  ocBookUnitExpandedMap.value = next;
+};
+
 const exportSongPanelPng = async (panelId, title) => {
   if (isExportingPng.value) return;
   const targetEl = document.getElementById(panelId);
@@ -1779,6 +2543,7 @@ const exportSongPanelPng = async (panelId, title) => {
   const prevAnotherModes = snapshotAnotherCardModes();
   const prevDuoExpanded = snapshotDuoExpandedMap();
   const prevVsSongModes = snapshotVsSongCardModes();
+  const prevOcBookExpanded = snapshotOcBookExpandedMap();
   isExportingPng.value = true;
 
   try {
@@ -1786,6 +2551,8 @@ const exportSongPanelPng = async (panelId, title) => {
       expandAnotherCardsForExport();
     } else if (panelId === 'panel-vs-song-stats') {
       expandVsSongCardsForExport();
+    } else if (panelId === 'panel-oc-book-stats') {
+      expandOcBookUnitsForExport();
     } else if (panelId === 'panel-duo-stats') {
       expandAllDuoCardsForExport();
     }
@@ -1800,6 +2567,7 @@ const exportSongPanelPng = async (panelId, title) => {
     anotherCardModeMap.value = prevAnotherModes;
     duoCardExpandedMap.value = prevDuoExpanded;
     vsSongCardModeMap.value = prevVsSongModes;
+    ocBookUnitExpandedMap.value = prevOcBookExpanded;
     await nextTick();
     isExportingPng.value = false;
   }
@@ -1855,6 +2623,42 @@ const exportAnotherCardPng = async (row) => {
   }
 };
 
+const exportOcBookUnitCardPng = async (unitGroup) => {
+  if (isExportingPng.value) return;
+  const unitKey = String(unitGroup?.unit || '');
+  const targetEl = ocBookUnitCardRefMap.get(unitKey);
+  if (!targetEl) {
+    alert('未找到可导出的团体卡片。');
+    return;
+  }
+
+  const prevOcBookExpanded = snapshotOcBookExpandedMap();
+  isExportingPng.value = true;
+  try {
+    expandOcBookUnitsForExport(unitKey);
+    await nextTick();
+    await waitNextPaint();
+    await exportElementPng(targetEl, `OC书下_${unitGroup?.label || unitKey || '团体'}`);
+  } catch (error) {
+    console.error('导出 OC 书下团体 PNG 失败', error);
+    alert('导出 PNG 失败，请稍后重试。');
+  } finally {
+    ocBookUnitExpandedMap.value = prevOcBookExpanded;
+    await nextTick();
+    isExportingPng.value = false;
+  }
+};
+
+watch(vsSongImageMode, (enabled) => {
+  if (!enabled) return;
+  expandVsSongCardsForExport();
+});
+
+watch(ocBookImageMode, (enabled) => {
+  if (!enabled) return;
+  expandOcBookUnitsForExport();
+});
+
 watch(anotherVocalCards, (cards) => {
   const next = {};
   cards.forEach((card) => {
@@ -1885,12 +2689,25 @@ watch(songPageSize, () => {
   currentSongPage.value = 1;
 });
 
+watch([songPageSize, filteredSongs], async () => {
+  await nextTick();
+  recalcSongTableOverflow();
+}, { deep: false });
+
 watch(virtualSingerSongStats, (cards) => {
   const next = {};
   cards.forEach((card) => {
-    next[card.name] = vsSongCardModeMap.value[card.name] || 'fixed';
+    next[card.name] = vsSongCardModeMap.value[card.name] || 'expanded';
   });
   vsSongCardModeMap.value = next;
+}, { immediate: true });
+
+watch(ocBookStatsByUnit, (groups) => {
+  const next = {};
+  groups.forEach((group) => {
+    next[group.unit] = ocBookUnitExpandedMap.value[group.unit] !== false;
+  });
+  ocBookUnitExpandedMap.value = next;
 }, { immediate: true });
 
 watch(navCollapsed, () => {
@@ -1918,10 +2735,19 @@ watch(totalSongPages, (nextTotal) => {
   --stats-nav-width: 220px;
   --stats-nav-left: 44px;
   --stats-nav-top: 78px;
-  --song-btn-height: 24px;
   --song-btn-pad-x: 8px;
-  --song-mini-toggle-size: 22px;
+  --song-mini-toggle-size: 20px;
   --song-stat-min-card-width: 250px;
+  --song-event-mv-col-width: 22px;
+  --song-event-mv-chip-width: 26px;
+  --song-event-mv-chip-height: 14px;
+  --song-event-mv-chip-font-size: 0.52rem;
+  --song-event-mv-chip-pad-x: 4px;
+  --song-vs-text-tag-width: 3.4em;
+  --song-jacket-default-size: 64px;
+  --song-jacket-track-size: 68px;
+  --song-oc-tag-vs-gap: 4px;
+  --song-oc-vs-col-width: 14px;
 }
 
 .pjsk-song-stats button:not(:disabled) {
@@ -2151,8 +2977,7 @@ watch(totalSongPages, (nextTotal) => {
   color: #334155;
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 0 var(--song-btn-pad-x);
-  min-height: var(--song-btn-height);
+  padding: 4px 8px;
   line-height: 1;
   cursor: pointer;
   flex: 0 0 auto;
@@ -2170,14 +2995,16 @@ watch(totalSongPages, (nextTotal) => {
   cursor: not-allowed;
 }
 
-.song-mini-png-btn {
-  min-height: var(--song-btn-height);
-  padding: 0 var(--song-btn-pad-x);
-  border-radius: var(--stats-radius-btn);
-  font-size: 0.72rem;
+.song-deleted-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.74rem;
+  color: #475569;
+  user-select: none;
 }
 
-.song-deleted-toggle {
+.song-duo-image-toggle {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -2190,10 +3017,18 @@ watch(totalSongPages, (nextTotal) => {
   margin: 0;
 }
 
+.song-duo-image-toggle input {
+  margin: 0;
+}
+
 .pjsk-song-stats.is-exporting .song-export-btn,
 .pjsk-song-stats.is-exporting .song-role-card-tools,
-.pjsk-song-stats.is-exporting .anvo-mode-switch,
-.pjsk-song-stats.is-exporting .song-mini-png-btn {
+.pjsk-song-stats.is-exporting .song-oc-event-unit-tools,
+.pjsk-song-stats.is-exporting .anvo-mode-switch{
+  display: none !important;
+}
+
+.pjsk-song-stats.is-exporting #panel-duo-stats .song-mini-icon-btn {
   display: none !important;
 }
 
@@ -2275,18 +3110,20 @@ watch(totalSongPages, (nextTotal) => {
 }
 
 .anvo-mode-btn {
-  min-height: var(--song-btn-height);
-  padding: 0 10px;
   border: 1px solid #cbd5e1;
   border-radius: 999px;
   background: #ffffff;
   color: #334155;
   font-size: 0.72rem;
   font-weight: 700;
+  padding: 4px 8px;
+  line-height: 1;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.anvo-mode-btn:hover {
+  background: #e2e8f0;
 }
 
 .anvo-mode-btn.active {
@@ -2306,53 +3143,159 @@ watch(totalSongPages, (nextTotal) => {
   gap: 10px;
 }
 
-.song-vs-avatar {
+.song-vs-event-avatar {
   width: 30px;
   height: 30px;
   flex-basis: 30px;
 }
 
-.song-vs-unit-counts {
-  display: flex;
-  flex-wrap: wrap;
+.song-vs-event-unit-counts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   margin-bottom: 7px;
 }
 
-.song-vs-unit-chip {
+.song-vs-event-unit-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.song-vs-event-unit-chip {
   font-size: 0.72rem;
   font-weight: 700;
   border: 1px solid #e5e7eb;
   border-radius: 999px;
-  padding: 2px 8px 2px 4px;
+  padding: 2px 6px 2px 4px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
 }
 
-.song-vs-unit-logo {
+.song-vs-event-unit-logo {
   width: 16px;
   height: 16px;
   object-fit: contain;
 }
 
-.song-vs-unit-count {
+.song-vs-event-unit-count {
   color: #111827;
 }
 
+.song-vs-event-unit-mv-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
-.song-stat-list-vs li {
+.song-vs-event-unit-mv-chip {
+  min-height: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(51, 65, 85, 0.24);
+  padding: 0 6px;
+  color: #0f172a;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.song-vs-event-unit-mv-chip.is-compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.song-vs-event-unit-mv-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.song-vs-event-unit-mv-num-3d {
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.song-vs-event-unit-mv-sep {
+  color: #475569;
+}
+
+.song-vs-event-image-name {
+  color: #111827;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.song-stat-list-vs-event li {
   white-space: normal;
 }
 
-.song-vs-tag {
-  font-size: 0.8rem;
-  font-weight: 700;
-  min-width: 4.4em;
-  font-family: Consolas, 'Courier New', monospace;
+.song-vs-event-text-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) var(--song-event-mv-col-width);
+  align-items: center;
+  gap: 4px;
 }
 
-.song-vs-title {
+.song-event-mv-col {
+  width: var(--song-event-mv-col-width);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: center;
+}
+
+.song-event-mv-empty {
+  display: inline-block;
+  width: var(--song-event-mv-chip-width);
+  height: var(--song-event-mv-chip-height);
+}
+
+.song-event-mv-chip {
+  font-size: var(--song-event-mv-chip-font-size);
+  font-weight: 200;
+  min-height: var(--song-event-mv-chip-height);
+  height: var(--song-event-mv-chip-height);
+  min-width: var(--song-event-mv-chip-width);
+  width: var(--song-event-mv-chip-width);
+  padding: 0 var(--song-event-mv-chip-pad-x);
+  line-height: 1;
+}
+
+.song-vs-event-unit-counts:not(.song-vs-event-unit-counts-image) .song-vs-event-unit-mv-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  box-sizing: border-box;
+}
+
+.song-vs-event-tag,
+.song-oc-event-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.song-vs-event-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: var(--song-vs-text-tag-width);
+  min-width: var(--song-vs-text-tag-width);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.song-vs-event-title,
+.song-oc-event-song-title {
   font-size: 0.75rem;
   color: #111827;
   min-width: 0;
@@ -2363,7 +3306,12 @@ watch(totalSongPages, (nextTotal) => {
   line-height: 1.35;
 }
 
-.song-vs-title.is-no-2dmv {
+.song-vs-event-title.is-no-2dmv {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.song-oc-event-song-title.is-no-2dmv {
   color: #dc2626;
   font-weight: 700;
 }
@@ -2458,8 +3406,8 @@ watch(totalSongPages, (nextTotal) => {
 }
 
 .song-mini-icon-btn-img {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   object-fit: contain;
   display: block;
 }
@@ -2566,6 +3514,487 @@ watch(totalSongPages, (nextTotal) => {
   gap: 10px;
 }
 
+.song-vs-event-card.is-image-mode,
+.song-anvo-card.is-image-mode {
+  grid-column: 1 / -1;
+}
+
+.song-vs-event-card.is-image-mode,
+.song-anvo-card.is-image-mode,
+.song-duo-card.is-image-mode {
+  padding: 7px;
+}
+
+.song-duo-image-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px;
+  align-items: start;
+}
+
+.song-vs-event-image-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  align-items: start;
+}
+
+.song-anvo-image-layout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.song-vs-event-image-head {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding-top: 0;
+}
+
+.song-vs-event-image-head-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.song-vs-event-image-head .song-role-card-tools {
+  margin-left: auto;
+  align-self: flex-start;
+  flex: 0 0 auto;
+}
+
+.song-anvo-image-head {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  min-width: 68px;
+  padding-top: 2px;
+}
+
+.song-vs-event-image-head-stats {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.song-vs-event-image-total {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+}
+
+.song-vs-event-unit-counts-image {
+  margin-left: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  justify-content: stretch;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  grid-column: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.song-vs-event-unit-counts-image .song-vs-event-unit-stack {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.song-vs-event-unit-counts-image .song-vs-event-unit-chip {
+  width: auto;
+  min-width: 56px;
+  flex: 0 0 auto;
+  justify-content: center;
+  padding: 1px 6px 1px 3px;
+}
+
+.song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip {
+  min-width: 56px;
+  width: auto;
+}
+
+.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-chip {
+  font-size: 0.8rem;
+  min-height: 24px;
+}
+
+.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-logo {
+  width: 18px;
+  height: 18px;
+}
+
+.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip {
+  min-height: 20px;
+  font-size: 0.72rem;
+  line-height: 20px;
+}
+
+.song-vs-event-image-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 4px;
+}
+
+.song-vs-event-image-group {
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 6px;
+  display: block;
+}
+
+.song-image-identity {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  min-width: 62px;
+  padding-top: 2px;
+}
+
+.song-image-main-avatar {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  flex: 0 0 30px;
+}
+
+.song-image-name {
+  color: #111827;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.song-image-count {
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.song-duo-image-identity {
+  min-width: 56px;
+}
+
+.song-duo-image-avatars {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.song-duo-image-avatar {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  flex: 0 0 28px;
+}
+
+.song-event-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--song-jacket-track-size));
+  justify-content: space-between;
+  align-items: flex-start;
+  row-gap: 6px;
+  column-gap: 0;
+  min-width: 0;
+}
+
+.song-image-jacket-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--song-jacket-track-size));
+  justify-content: space-between;
+  align-items: flex-start;
+  row-gap: 6px;
+  column-gap: 0;
+  min-width: 0;
+}
+
+.song-image-jacket-tile,
+.song-oc-event-image-item {
+  width: var(--song-jacket-track-size);
+  max-width: var(--song-jacket-track-size);
+}
+
+.song-event-image-grid .song-jacket-media,
+.song-event-image-grid .song-duo-song-jacket-item {
+  width: var(--song-jacket-track-size);
+  height: var(--song-jacket-track-size);
+  min-width: var(--song-jacket-track-size);
+  min-height: var(--song-jacket-track-size);
+  box-sizing: border-box;
+}
+
+.song-oc-event-image-grid {
+  row-gap: 2px;
+}
+
+.song-duo-jacket-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  row-gap: 6px;
+  column-gap: 4px;
+  min-width: 0;
+}
+
+.song-duo-card.is-image-mode .song-duo-jacket-grid {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.song-duo-card.is-image-mode {
+  min-width: 0;
+  border: 2px solid #334155;
+}
+
+.song-duo-pair-grid.is-image-compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.song-duo-pair-grid.is-image-compact > .song-duo-card.is-image-mode {
+  width: fit-content;
+  max-width: 100%;
+  min-width: 100px;
+  flex: 0 1 auto;
+}
+
+.song-duo-song-jacket-item {
+  width: var(--song-jacket-track-size);
+  height: var(--song-jacket-track-size);
+  min-width: var(--song-jacket-track-size);
+  min-height: var(--song-jacket-track-size);
+  border-radius: 8px;
+  flex: 0 0 auto;
+}
+
+.song-duo-song-jacket-img {
+  border-radius: 8px;
+}
+
+.song-image-jacket-tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.song-image-jacket-caption {
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-top: 2px;
+  max-width: var(--song-jacket-track-size);
+  color: #1f2937;
+  word-break: break-word;
+}
+
+.song-vs-event-image-tag-pill {
+  min-width: 4em;
+  max-width: 4em;
+  min-height: 1.45em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 999px;
+  color: #111827;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.song-oc-event-unit-count {
+  margin-left: 0;
+  color: #334155;
+  font-weight: 700;
+}
+
+.song-oc-event-unit-mv-chips,
+.song-oc-event-member-mv-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  flex-wrap: wrap;
+}
+
+.song-oc-event-mv-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(51, 65, 85, 0.24);
+  padding: 0 6px;
+  color: #0f172a;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.song-oc-event-mv-stat-chip.is-3d {
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.song-oc-event-member-mv-chips {
+  justify-content: flex-end;
+}
+
+.song-oc-event-unit-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.song-oc-event-members-grid {
+  gap: 2px;
+}
+
+.song-oc-event-member-card {
+  padding: 8px;
+}
+
+.song-oc-event-text-list {
+  max-height: none;
+  overflow: visible;
+}
+
+.song-oc-event-text-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) var(--song-event-mv-col-width);
+  align-items: center;
+  gap: 4px;
+}
+
+.song-oc-event-tag-vs-col {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--song-oc-tag-vs-gap);
+  min-width: 0;
+}
+
+.song-oc-event-tag {
+  min-width: 0.8em;
+  text-align: right;
+}
+
+.song-oc-event-vs-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.song-oc-event-vs-icons.is-mini {
+  gap: 0px;
+}
+
+.song-oc-event-vs-icons.is-text-col {
+  width: var(--song-oc-vs-col-width);
+  min-width: var(--song-oc-vs-col-width);
+  display: grid;
+  grid-auto-rows: var(--song-oc-vs-col-width);
+  align-content: start;
+  justify-items: start;
+  gap: 1px;
+}
+
+.song-oc-event-vs-icon {
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.18);
+}
+
+.song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.song-vs-event-mv-col,
+.song-oc-event-mv-col {
+  justify-content: flex-end;
+}
+
+.song-vs-event-mv-empty,
+.song-oc-event-mv-empty {
+  width: var(--song-event-mv-chip-width);
+}
+
+.song-oc-event-image-grid {
+  row-gap: 2px;
+}
+
+.song-oc-event-image-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.song-oc-event-jacket {
+  position: relative;
+  overflow: hidden;
+}
+
+.song-oc-event-vs-icons.is-overlay {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  z-index: 2;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.song-oc-event-image-meta {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 .song-home-btn {
   width: 30px;
   height: 30px;
@@ -2587,6 +4016,48 @@ watch(totalSongPages, (nextTotal) => {
   height: 14px;
   object-fit: contain;
   display: block;
+}
+
+.song-oc-event-unit-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.song-oc-event-unit-card {
+  border: 1px solid rgba(51, 65, 85, 0.34);
+  border-radius: 10px;
+  padding: 8px;
+  background: #ffffff;
+  min-width: 0;
+}
+
+.song-oc-event-unit-head {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 8px;
+  row-gap: 4px;
+  margin-bottom: 8px;
+}
+
+.song-oc-event-unit-card.is-collapsed .song-oc-event-unit-head {
+  margin-bottom: 0;
+}
+
+.song-oc-event-unit-head .song-oc-event-unit-count {
+  white-space: nowrap;
+}
+
+.song-oc-event-unit-head .song-oc-event-unit-mv-chips {
+  margin-left: 0;
+  min-width: 0;
+}
+
+.song-oc-event-unit-head .song-oc-event-unit-tools {
+  margin-left: 0;
+  justify-self: end;
+  align-self: start;
 }
 
 .song-duo-unit-card.is-ws-split .song-duo-pair-grid > .song-duo-card:nth-child(1) {
@@ -2632,10 +4103,34 @@ watch(totalSongPages, (nextTotal) => {
   flex-wrap: wrap;
 }
 
-.song-search-tip {
+.song-disclaimer {
+  margin: 0 0 10px;
+  padding: 9px 10px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.song-disclaimer p {
   margin: 0;
-  font-size: 0.74rem;
-  color: #64748b;
+}
+
+.song-disclaimer p + p {
+  margin-top: 4px;
+}
+
+.song-disclaimer a {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.song-disclaimer a:hover {
+  color: #1d4ed8;
 }
 
 .song-search {
@@ -2685,7 +4180,7 @@ watch(totalSongPages, (nextTotal) => {
 .song-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
   min-width: 980px;
 }
 
@@ -2693,8 +4188,12 @@ watch(totalSongPages, (nextTotal) => {
   width: 56px;
 }
 
+.song-col-jacket {
+  width: 78px;
+}
+
 .song-col-song {
-  width: 20%;
+  width: 18%;
 }
 
 .song-col-group {
@@ -2706,7 +4205,7 @@ watch(totalSongPages, (nextTotal) => {
 }
 
 .song-col-diff {
-  width: 286px;
+  width: 1%;
 }
 
 .song-col-credit {
@@ -2716,7 +4215,7 @@ watch(totalSongPages, (nextTotal) => {
 .song-table th,
 .song-table td {
   border-bottom: 1px solid #e5e7eb;
-  padding: 8px 10px;
+  padding: 10px 10px;
   text-align: left;
   font-size: 0.84rem;
   vertical-align: middle;
@@ -2768,6 +4267,85 @@ watch(totalSongPages, (nextTotal) => {
 
 .song-title-cell {
   min-width: 0;
+}
+
+.song-jacket-cell {
+  text-align: center;
+}
+
+.song-jacket-media {
+  width: var(--song-jacket-default-size);
+  height: var(--song-jacket-default-size);
+  border-radius: 10px;
+  border: 2px solid #94a3b8;
+  background: #eef2f7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.song-jacket-media.is-3d-frame {
+  border: 2px solid #94a3b8;
+  background: #eef2f7;
+  position: relative;
+}
+
+.song-jacket-media.is-3d-frame::after {
+  content: '3D';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  height: 12px;
+  padding: 0 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  background: linear-gradient(90deg, #ef4444, #f97316);
+  color: #ffffff;
+  font-size: 0.52rem;
+  font-weight: 800;
+  line-height: 12px;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.song-jacket-media.is-3d-frame .song-jacket-img,
+.song-jacket-media.is-3d-frame .song-duo-song-jacket-img {
+  border-radius: inherit;
+}
+
+.song-jacket-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.song-jacket-fallback {
+  display: none;
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.song-jacket-media.is-failed .song-jacket-fallback {
+  display: inline-block;
+}
+
+.song-list-wrap.is-h-scroll .song-table th:nth-child(2) {
+  left: 0;
+  z-index: 4;
+  box-shadow: 2px 0 0 #e5e7eb;
+}
+
+.song-list-wrap.is-h-scroll .song-table td:nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fff;
+  box-shadow: 2px 0 0 #e5e7eb;
 }
 
 .song-title-text {
@@ -2828,10 +4406,12 @@ watch(totalSongPages, (nextTotal) => {
 
 .song-diff-cell {
   min-width: 0;
+  width: 1%;
+  white-space: nowrap;
 }
 
 .song-diff-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   flex-wrap: nowrap;
@@ -2957,6 +4537,16 @@ watch(totalSongPages, (nextTotal) => {
   white-space: nowrap;
 }
 
+.song-mv-chip.song-event-mv-chip {
+  font-size: var(--song-event-mv-chip-font-size);
+  min-height: var(--song-event-mv-chip-height);
+  height: var(--song-event-mv-chip-height);
+  min-width: var(--song-event-mv-chip-width);
+  width: var(--song-event-mv-chip-width);
+  padding: 0 var(--song-event-mv-chip-pad-x);
+  line-height: 1;
+}
+
 .song-mv-chip.is-3d {
   border-color: #f91674;
   background: rgba(254, 170, 197, 0.5);
@@ -2997,7 +4587,7 @@ watch(totalSongPages, (nextTotal) => {
     --stats-nav-width: 196px;
     --stats-nav-left: 34px;
     --stats-nav-top: 78px;
-    padding: 14px;
+    padding: 2px;
     --song-stat-min-card-width: 220px;
   }
 
@@ -3018,10 +4608,17 @@ watch(totalSongPages, (nextTotal) => {
 @media (max-width: 900px) {
   .pjsk-song-stats {
     padding: 8px;
-    --song-btn-height: 22px;
     --song-btn-pad-x: 6px;
     --song-mini-toggle-size: 20px;
     --song-stat-min-card-width: 210px;
+    --song-event-mv-col-width: 28px;
+    --song-event-mv-chip-width: 22px;
+    --song-event-mv-chip-height: 11px;
+    --song-event-mv-chip-font-size: 0.5rem;
+    --song-event-mv-chip-pad-x: 3px;
+    --song-jacket-default-size: 56px;
+    --song-jacket-track-size: 52px;
+    --song-oc-vs-col-width: 14px;
   }
 
   .stats-layout,
@@ -3111,6 +4708,13 @@ watch(totalSongPages, (nextTotal) => {
 
   .card-export-btn {
     font-size: 0.64rem;
+    padding: 3px 6px;
+  }
+
+  .song-mini-png-btn {
+    font-size: 0.58rem;
+    padding: 3px 5px;
+    white-space: nowrap;
   }
 
   .song-insight-table th,
@@ -3128,17 +4732,53 @@ watch(totalSongPages, (nextTotal) => {
     max-width: 110px;
   }
 
+  .song-vs-event-unit-counts {
+    gap: 4px;
+  }
+
+  .song-vs-event-unit-chip {
+    font-size: 0.64rem;
+    gap: 4px;
+    padding: 1px 4px 1px 3px;
+  }
+
+  .song-vs-event-unit-logo {
+    width: 14px;
+    height: 14px;
+  }
+
   .anvo-mode-switch {
     gap: 4px;
   }
 
   .anvo-mode-btn {
-    padding: 0 8px;
-    font-size: 0.68rem;
+    font-size: 0.64rem;
+    padding: 3px 6px;
+    line-height: 1;
   }
 
   .song-toolbar {
     gap: 8px;
+  }
+
+  .song-duo-image-toggle {
+    font-size: 0.7rem;
+  }
+
+  .song-duo-image-toggle > span {
+    font-size: 0;
+    line-height: 1;
+  }
+
+  .song-duo-image-toggle > span::after {
+    content: '曲绘';
+    font-size: 0.7rem;
+  }
+
+  .song-disclaimer {
+    font-size: 0.7rem;
+    line-height: 1.45;
+    padding: 8px;
   }
 
   .song-filter-field {
@@ -3177,6 +4817,10 @@ watch(totalSongPages, (nextTotal) => {
     width: 46px;
   }
 
+  .song-col-jacket {
+    width: 72px;
+  }
+
   .song-col-song {
     width: 12%;
   }
@@ -3189,26 +4833,102 @@ watch(totalSongPages, (nextTotal) => {
     width: 9%;
   }
 
-  .song-col-diff {
-    width: 224px;
-  }
-
   .song-col-credit {
     width: 12%;
   }
 
-  .song-table th:nth-child(2) {
-    left: 0;
-    z-index: 4;
-    box-shadow: 2px 0 0 #e5e7eb;
+  .song-jacket-media {
+    border-radius: 8px;
   }
 
-  .song-table td:nth-child(2) {
-    position: sticky;
-    left: 0;
-    z-index: 2;
-    background: #fff;
-    box-shadow: 2px 0 0 #e5e7eb;
+  .song-vs-event-image-head,
+  .song-anvo-image-head {
+    gap: 5px;
+  }
+
+  .song-vs-event-image-groups {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .song-vs-event-image-group {
+    padding: 5px;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-chip {
+    font-size: 0.58rem;
+    gap: 3px;
+    padding: 1px 4px 1px 3px;
+    width: 56px;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-stack {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip {
+    min-width: 48px;
+  }
+
+  .song-oc-event-vs-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .song-image-identity {
+    min-width: 56px;
+    gap: 3px;
+  }
+
+  .song-image-main-avatar {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    flex-basis: 24px;
+  }
+
+  .song-image-name {
+    font-size: 0.66rem;
+  }
+
+  .song-image-count {
+    font-size: 0.64rem;
+  }
+
+  .song-duo-image-avatar {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    flex-basis: 24px;
+  }
+
+  .song-duo-jacket-grid {
+    gap: 5px;
+  }
+
+  .song-duo-song-jacket-item {
+    border-radius: 7px;
+  }
+
+  .song-duo-song-jacket-img {
+    border-radius: 7px;
+  }
+
+  .song-image-jacket-caption {
+    font-size: 0.58rem;
   }
 
   .song-title-text {
@@ -3220,7 +4940,7 @@ watch(totalSongPages, (nextTotal) => {
   }
 
   .song-table {
-    min-width: 960px;
+    min-width: 1020px;
   }
 
   .song-diff-badge {
@@ -3236,16 +4956,198 @@ watch(totalSongPages, (nextTotal) => {
 
 }
 
+@media (min-width: 901px) and (max-width: 1366px) and (orientation: landscape) {
+  .pjsk-song-stats {
+    --song-jacket-default-size: 60px;
+    --song-jacket-track-size: 60px;
+  }
+
+  .song-image-main-avatar {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    flex-basis: 28px;
+  }
+
+  .song-duo-image-avatar {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    flex-basis: 28px;
+  }
+
+  .song-vs-event-image-groups {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-chip {
+    width: 50px;
+  }
+}
+
+@media (min-width: 641px) {
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head {
+    position: relative;
+    padding-right: 92px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head .song-role-card-tools {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin-left: 0;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    z-index: 1;
+  }
+}
+
 @media (max-width: 640px) {
   .pjsk-song-stats {
-    --song-btn-height: 20px;
     --song-btn-pad-x: 5px;
     --song-mini-toggle-size: 18px;
     --song-stat-min-card-width: 100%;
+    --song-event-mv-col-width: 28px;
+    --song-event-mv-chip-width: 21px;
+    --song-event-mv-chip-height: 11px;
+    --song-event-mv-chip-font-size: 0.5rem;
+    --song-event-mv-chip-pad-x: 3px;
+    --song-jacket-default-size: 68px;
+    --song-jacket-track-size: 68px;
   }
 
-  .song-col-diff {
-    width: 212px;
+  .song-col-jacket {
+    width: 68px;
+  }
+
+  .song-vs-event-image-layout,
+  .song-anvo-image-layout {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .song-vs-event-image-head,
+  .song-anvo-image-head {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-width: 0;
+    padding-top: 0;
+    gap: 6px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head-main {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: 6px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head .song-role-card-tools {
+    margin-left: auto;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    justify-content: stretch;
+    align-items: start;
+    gap: 4px;
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+
+  .song-vs-event-image-total {
+    min-width: auto;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-stack {
+    width: auto;
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-chip {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .song-vs-event-card.is-image-mode .song-image-main-avatar {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    flex-basis: 30px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-total.song-image-count {
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #6b7280;
+    min-width: auto;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .song-oc-event-vs-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .song-duo-image-avatars {
+    min-width: 54px;
+    gap: 4px;
+  }
+
+  .song-duo-image-identity {
+    min-width: 62px;
   }
 
   .song-col-credit {

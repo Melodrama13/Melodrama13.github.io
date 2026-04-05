@@ -28,3 +28,10 @@ dist-ssr
 
 # Local private data source (do not commit)
 other_source/
+
+# Generated song cover metadata
+public/songs/manifest.json
+public/cards/manifest.json
+
+# Local sync scripts (not for frontend runtime)
+scripts/*.mjs
