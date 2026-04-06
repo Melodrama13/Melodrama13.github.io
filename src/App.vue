@@ -264,6 +264,41 @@
       />
     </div>
 
+    <div v-if="showAppUpdateBanner" class="app-update-banner" role="status" aria-live="polite">
+      <span class="app-update-text">检测到新版本已发布，刷新后可获取最新内容。</span>
+      <button class="app-update-btn app-update-btn-muted" @click="openAppUpdatePromptModal">更新说明</button>
+      <button class="app-update-btn" @click="reloadForAppUpdate">立即更新</button>
+      <button class="app-update-btn app-update-btn-muted" @click="dismissAppUpdateBanner">稍后</button>
+    </div>
+
+    <div v-if="showAppUpdatePromptDialog" class="app-update-modal-mask" @click.self="dismissAppUpdateBanner">
+      <div class="app-update-modal" role="dialog" aria-modal="true" aria-label="版本更新日志">
+        <div class="app-update-modal-title">新版本已发布</div>
+        <div class="app-update-modal-subtitle">构建号：{{ remoteAppBuildId || '未知' }}</div>
+        <ul class="app-update-log-list">
+          <li v-for="(item, idx) in appUpdateReleaseNotes" :key="`update-log-${idx}`">{{ item }}</li>
+        </ul>
+        <div class="app-update-modal-actions">
+          <button class="app-update-btn" @click="reloadForAppUpdate">立即更新</button>
+          <button class="app-update-btn app-update-btn-muted" @click="dismissAppUpdateBanner">稍后</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showAppReleaseLogModal" class="app-update-modal-mask" @click.self="closeAppReleaseLogModal">
+      <div class="app-update-modal" role="dialog" aria-modal="true" aria-label="新版日志">
+        <div class="app-update-modal-title">新版内容</div>
+        <div class="app-update-modal-subtitle">当前版本：{{ currentAppBuildId || '未知' }}</div>
+        <ul class="app-update-log-list">
+          <li v-for="(item, idx) in currentBuildReleaseNotes" :key="`release-log-${idx}`">{{ item }}</li>
+        </ul>
+        <img src="/hello.jpg" class="app-release-log-image" alt="更新内容配图" loading="eager" fetchpriority="high" decoding="async" />
+        <div class="app-update-modal-actions">
+          <button class="app-update-btn app-update-btn-muted" @click="closeAppReleaseLogModal">我知道了</button>
+        </div>
+      </div>
+    </div>
+
     <div
       ref="contentAreaRef"
       class="content-area"
@@ -355,11 +390,116 @@ const isEditingStatsTopDisplayEventId = ref(false);
 const statsTopNavCollapsed = ref(true);
 const statsTopNavAvailable = ref(false);
 const statsTopAutoCurrentId = ref('');
+const currentAppBuildId = String(__APP_BUILD_ID__ || '').trim();
+const currentAppReleaseNotes = Array.isArray(__APP_RELEASE_NOTES__) ? __APP_RELEASE_NOTES__ : [];
+const remoteAppBuildId = ref('');
+const remoteAppReleaseNotes = ref([]);
+const hasAppUpdate = ref(false);
+const appUpdateDismissed = ref(false);
+const showAppUpdatePromptModal = ref(false);
+const showAppReleaseLogModal = ref(false);
+const releaseLogSeenBuildId = ref('');
 let cleanupNoticeTimer = null;
 let tabReflowObserver = null;
 let tabReflowRaf = 0;
+let appVersionCheckTimer = null;
 
-const TAB_REFLOW_TRACK_KEYS = new Set(['stats', 'songs']);
+const TAB_REFLOW_TRACK_KEYS = new Set(['stats']);
+const APP_VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+const APP_RELEASE_LOG_SEEN_KEY = 'pjsk_seen_release_log_build_id_v1';
+const APP_RELEASE_LOG_PENDING_KEY = 'pjsk_pending_release_log_build_id_v1';
+
+const appUpdateReleaseNotes = computed(() => {
+  const list = Array.isArray(remoteAppReleaseNotes.value)
+    ? remoteAppReleaseNotes.value.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  if (list.length > 0) return list;
+  return ['修复若干已知问题并优化交互体验。'];
+});
+
+const currentBuildReleaseNotes = computed(() => {
+  const list = Array.isArray(currentAppReleaseNotes)
+    ? currentAppReleaseNotes.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  if (list.length > 0) return list;
+  return ['修复若干已知问题并优化交互体验。'];
+});
+
+const showAppUpdateBanner = computed(() => {
+  return hasAppUpdate.value && !appUpdateDismissed.value;
+});
+
+const showAppUpdatePromptDialog = computed(() => {
+  return showAppUpdateBanner.value && showAppUpdatePromptModal.value;
+});
+
+const dismissAppUpdateBanner = () => {
+  appUpdateDismissed.value = true;
+  showAppUpdatePromptModal.value = false;
+};
+
+const openAppUpdatePromptModal = () => {
+  if (!showAppUpdateBanner.value) return;
+  showAppUpdatePromptModal.value = true;
+};
+
+const closeAppReleaseLogModal = () => {
+  showAppReleaseLogModal.value = false;
+  if (!currentAppBuildId) return;
+  releaseLogSeenBuildId.value = currentAppBuildId;
+  localStorage.setItem(APP_RELEASE_LOG_SEEN_KEY, currentAppBuildId);
+};
+
+const openCurrentReleaseLogModal = () => {
+  showAppReleaseLogModal.value = true;
+};
+
+const reloadForAppUpdate = () => {
+  if (typeof window !== 'undefined') {
+    const pendingBuildId = String(remoteAppBuildId.value || '').trim();
+    if (pendingBuildId) {
+      localStorage.setItem(APP_RELEASE_LOG_PENDING_KEY, pendingBuildId);
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set('_update', String(Date.now()));
+    window.location.replace(url.toString());
+  }
+};
+
+const fetchRemoteVersionMeta = async () => {
+  try {
+    const response = await fetch(`/version.json?ts=${Date.now()}`, {
+      cache: 'no-store'
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return {
+      buildId: String(data?.buildId || '').trim(),
+      releaseNotes: Array.isArray(data?.releaseNotes) ? data.releaseNotes : []
+    };
+  } catch {
+    return null;
+  }
+};
+
+const checkForAppUpdate = async () => {
+  if (!currentAppBuildId) return;
+  const remoteMeta = await fetchRemoteVersionMeta();
+  const remoteBuildId = String(remoteMeta?.buildId || '').trim();
+  if (!remoteBuildId) return;
+
+  remoteAppBuildId.value = remoteBuildId;
+  remoteAppReleaseNotes.value = Array.isArray(remoteMeta?.releaseNotes) ? remoteMeta.releaseNotes : [];
+
+  if (remoteBuildId !== currentAppBuildId) {
+    hasAppUpdate.value = true;
+    appUpdateDismissed.value = false;
+    showAppUpdatePromptModal.value = true;
+    return;
+  }
+  hasAppUpdate.value = false;
+  showAppUpdatePromptModal.value = false;
+};
 
 const screenshotConfirmRangeText = computed(() => {
   const firstId = String(screenshotRangeStartId.value || screenshotConfirmRange.value.firstId || '').trim();
@@ -1871,6 +2011,25 @@ const handleGlobalPointerDown = (event) => {
 
 onMounted(() => {
   updateCompactTopNav();
+  releaseLogSeenBuildId.value = String(localStorage.getItem(APP_RELEASE_LOG_SEEN_KEY) || '').trim();
+  const pendingReleaseLogBuildId = String(localStorage.getItem(APP_RELEASE_LOG_PENDING_KEY) || '').trim();
+  if (currentAppBuildId) {
+    if (pendingReleaseLogBuildId && pendingReleaseLogBuildId === currentAppBuildId) {
+      showAppReleaseLogModal.value = true;
+      localStorage.removeItem(APP_RELEASE_LOG_PENDING_KEY);
+    } else if (!releaseLogSeenBuildId.value) {
+      releaseLogSeenBuildId.value = currentAppBuildId;
+      localStorage.setItem(APP_RELEASE_LOG_SEEN_KEY, currentAppBuildId);
+    } else if (releaseLogSeenBuildId.value !== currentAppBuildId) {
+      showAppReleaseLogModal.value = true;
+    }
+  }
+  void checkForAppUpdate();
+  if (typeof window !== 'undefined') {
+    appVersionCheckTimer = window.setInterval(() => {
+      void checkForAppUpdate();
+    }, APP_VERSION_CHECK_INTERVAL_MS);
+  }
   document.addEventListener('pointerdown', handleGlobalPointerDown);
   window.addEventListener('resize', updateCompactTopNav);
   window.addEventListener('resize', updateSourceMenuPosition);
@@ -1899,6 +2058,10 @@ onBeforeUnmount(() => {
   if (cleanupNoticeTimer) {
     clearTimeout(cleanupNoticeTimer);
     cleanupNoticeTimer = null;
+  }
+  if (appVersionCheckTimer) {
+    clearInterval(appVersionCheckTimer);
+    appVersionCheckTimer = null;
   }
 });
 
@@ -1965,6 +2128,104 @@ watch(isHistoryPredictEditorOpen, (open) => {
   border-bottom: 1px solid #e2e8f0;
   z-index: 2000;
   /* 移除 sticky，因为外层已经是 flex 布局，它自然就在最顶部 */
+}
+
+.app-update-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 14px;
+  background: #ecfeff;
+  border-bottom: 1px solid #99f6e4;
+}
+
+.app-update-text {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.app-update-btn {
+  border: 1px solid #0f766e;
+  background: #14b8a6;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.app-update-btn.app-update-btn-muted {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.app-update-modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 5200;
+  background: rgba(15, 23, 42, 0.38);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.app-update-modal {
+  width: min(520px, calc(100vw - 20px));
+  max-height: min(78vh, 640px);
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.32);
+  padding: 14px;
+}
+
+.app-update-modal-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.app-update-modal-subtitle {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.app-update-log-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: #1e293b;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.app-update-modal-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-release-log-image {
+  margin-top: 10px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: min(100%, 460px);
+  max-height: min(48vh, 280px);
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  object-fit: contain;
+  background: rgba(248, 250, 252, 0.8);
 }
 
 .nav-tabs > button,

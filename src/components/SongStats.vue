@@ -1,5 +1,5 @@
 <template>
-  <div class="pjsk-song-stats" :class="{ 'is-exporting': isExportingPng }">
+  <div ref="songStatsRootRef" class="pjsk-song-stats" :class="{ 'is-exporting': isExportingPng }">
     <div class="stats-layout" :class="{ 'nav-collapsed': navCollapsed, 'mobile-nav-overlay': isNavTopLayout, 'mobile-nav-open': !navCollapsed }">
       <button
         v-if="navCollapsed"
@@ -31,7 +31,7 @@
                   v-for="item in group.children"
                   :key="item.id"
                   class="nav-link nav-link-sub"
-                  :class="{ active: activeNavId === item.id, 'is-duo-subanchor': item.anchorKind === 'duo-unit' }"
+                  :class="{ active: activeNavId === item.id, 'is-duo-subanchor': isNestedNavChild(item) }"
                   v-show="shouldShowNavChild(item)"
                   :title="item.title"
                   @click="scrollToSection(item.id)"
@@ -51,7 +51,7 @@
 
         <section class="song-disclaimer" aria-label="素材声明">
           <p>
-            本页面为非官方、非商业的个人研究与交流项目，不拥有所展示素材的版权。
+            本网站为非官方、非商业的个人研究与交流项目，不拥有所展示素材的版权。
             相关版权归其合法权利人所有，包括但不限于 Sega、Colorful Palette、Crypton 等。
           </p>
           <p>
@@ -67,7 +67,7 @@
           </p>
         </section>
 
-        <section id="panel-song-stats" class="stats-section card-panel section-main">
+        <section id="panel-song-stats" class="stats-section card-panel section-main" data-scroll-anchor="panel-song-stats">
           <div class="section-head">
             <div class="section-head-left">
               <h2>{{ getSongSectionTitle('panel-song-stats') }}</h2>
@@ -75,7 +75,7 @@
           </div>
 
           <div class="stats-grid">
-            <article id="panel-oc-stats" class="stats-section card-panel">
+            <article id="panel-oc-stats" class="stats-section card-panel" data-scroll-anchor="panel-oc-stats">
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-oc-stats') }}</h2>
@@ -91,10 +91,10 @@
                   <thead>
                     <tr>
                       <th>团体</th>
-                      <th>总歌曲</th>
-                      <th>独占曲</th>
-                      <th>独占2D</th>
-                      <th>独占3D</th>
+                      <th>歌曲</th>
+                      <th>2D</th>
+                      <th>3D</th>
+                      <th>APD</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -109,17 +109,17 @@
                           />
                         </div>
                       </td>
-                      <td>{{ item.totalCount }}</td>
                       <td>{{ item.uniqueCount }}</td>
                       <td>{{ item.with2dCount }}</td>
                       <td>{{ item.with3dCount }}</td>
+                      <td>{{ item.withApdCount }}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </article>
 
-            <article id="panel-vs-song-stats" class="stats-section card-panel">
+            <article id="panel-vs-song-stats" class="stats-section card-panel" data-scroll-anchor="panel-vs-song-stats">
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-vs-song-stats') }}</h2>
@@ -142,6 +142,8 @@
                 <article
                   v-for="row in virtualSingerSongStats"
                   :key="`song-vs-${row.name}`"
+                  :id="getVsSingerNavAnchorId(row.name) || undefined"
+                  :data-scroll-anchor="`vs-card-${row.name}`"
                   :ref="(el) => setVsSongCardRef(row.name, el)"
                   :class="['song-role-card', 'song-stat-card', 'song-vs-event-card', { 'is-image-mode': vsSongImageMode }]"
                   :style="{ backgroundColor: row.tint }"
@@ -156,9 +158,13 @@
                           class="song-role-avatar song-image-main-avatar"
                         />
                         <div class="song-vs-event-image-head-stats">
-                          <div class="song-vs-event-image-name">{{ row.name }}</div>
-                          <div class="song-image-count song-vs-event-image-total">{{ row.count }} 首</div>
+                          <div class="song-image-count song-image-count-circle">{{ row.count }}</div>
                         </div>
+                        <span class="song-vs-pill song-vs-total-mv-chip song-vs-total-mv-chip-head">
+                          <span>2D {{ row.total2d }}</span>
+                          <span class="song-vs-total-mv-sep">|</span>
+                          <span class="song-vs-total-mv-3d">3D {{ row.total3d }}</span>
+                        </span>
                       </div>
                       <div class="song-role-card-tools">
                         <button class="song-mini-icon-btn" @click="toggleVsSongCardExpandCollapse(row.name)">
@@ -171,20 +177,27 @@
                         <button class="card-export-btn song-export-btn song-mini-png-btn" :disabled="isExportingPng" @click="exportVirtualSingerCardPng(row)">PNG</button>
                       </div>
                       <div class="song-vs-event-unit-counts song-vs-event-unit-counts-image">
+                        <div class="song-vs-event-unit-stack song-vs-event-unit-stack-total">
+                          <span class="song-vs-pill song-vs-total-mv-chip song-vs-total-mv-chip-stat">
+                            <span>2D {{ row.total2d }}</span>
+                            <span class="song-vs-total-mv-sep">|</span>
+                            <span class="song-vs-total-mv-3d">3D {{ row.total3d }}</span>
+                          </span>
+                        </div>
                         <div
                           v-for="unitKey in VS_UNIT_ORDER"
                           :key="`${row.name}-image-${unitKey}`"
                           class="song-vs-event-unit-stack"
                         >
                           <span
-                            class="song-vs-event-unit-chip"
+                            class="song-vs-pill song-vs-event-unit-chip"
                             :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.2) }"
                           >
                             <img :src="UNIT_TAG_ICON_MAP[unitKey]" class="song-vs-event-unit-logo" :alt="unitKey" />
                             <span class="song-vs-event-unit-count">{{ row.unitCounts[unitKey] }}</span>
                           </span>
                           <div class="song-vs-event-unit-mv-chips">
-                            <span class="song-vs-event-unit-mv-chip is-compact" :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.22) }">
+                            <span class="song-vs-pill song-vs-event-unit-mv-chip is-compact" :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.22) }">
                               <span class="song-vs-event-unit-mv-num">{{ row.unit2dCounts[unitKey] }}</span>
                               <span class="song-vs-event-unit-mv-sep">|</span>
                               <span class="song-vs-event-unit-mv-num song-vs-event-unit-mv-num-3d">{{ row.unit3dCounts[unitKey] }}</span>
@@ -207,6 +220,7 @@
                             :key="`vs-song-jacket-${row.name}-${song.songId}-${song.eventId}`"
                             class="song-image-jacket-tile song-vs-event-image-jacket-tile"
                             :title="song.songName || '-'"
+                            @click="showSongImageTitle($event, song.songName || '-')"
                           >
                             <div :class="['song-jacket-media', 'song-duo-song-jacket-item', { 'is-3d-frame': song.has3d }]">
                               <img
@@ -235,10 +249,12 @@
                           :alt="row.name"
                           class="song-role-avatar song-vs-event-avatar"
                         />
-                        <div class="song-role-text">
-                          <div class="song-role-name">{{ row.name }}</div>
-                          <div class="song-role-count">{{ row.count }} 首</div>
-                        </div>
+                        <div class="song-image-count song-image-count-circle">{{ row.count }}</div>
+                        <span class="song-vs-pill song-vs-total-mv-chip song-vs-total-mv-chip-head">
+                          <span>2D {{ row.total2d }}</span>
+                          <span class="song-vs-total-mv-sep">|</span>
+                          <span class="song-vs-total-mv-3d">3D {{ row.total3d }}</span>
+                        </span>
                       </div>
                       <div class="song-role-card-tools">
                         <button class="song-mini-icon-btn" @click="toggleVsSongCardExpandCollapse(row.name)">
@@ -259,14 +275,14 @@
                         class="song-vs-event-unit-stack"
                       >
                         <span
-                          class="song-vs-event-unit-chip"
+                          class="song-vs-pill song-vs-event-unit-chip"
                           :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.2) }"
                         >
                           <img :src="UNIT_TAG_ICON_MAP[unitKey]" class="song-vs-event-unit-logo" :alt="unitKey" />
                           <span class="song-vs-event-unit-count">{{ row.unitCounts[unitKey] }}</span>
                         </span>
                         <div class="song-vs-event-unit-mv-chips">
-                          <span class="song-vs-event-unit-mv-chip is-compact" :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.22) }">
+                          <span class="song-vs-pill song-vs-event-unit-mv-chip is-compact" :style="{ backgroundColor: hexToRgba(unitColorMap[unitKey] || '#94a3b8', 0.22) }">
                             <span class="song-vs-event-unit-mv-num">{{ row.unit2dCounts[unitKey] }}</span>
                             <span class="song-vs-event-unit-mv-sep">|</span>
                             <span class="song-vs-event-unit-mv-num song-vs-event-unit-mv-num-3d">{{ row.unit3dCounts[unitKey] }}</span>
@@ -279,8 +295,19 @@
                       v-if="getVsSongCardMode(row.name) !== 'collapsed'"
                       :class="['song-role-list', 'song-stat-list', 'song-stat-list-vs-event', `is-${getVsSongCardMode(row.name)}`]"
                     >
-                      <li v-for="song in row.songs" :key="`${row.name}-${song.tag}-${song.eventId}-${song.songId}`" class="song-vs-event-text-row">
-                        <span class="song-vs-event-tag" :style="{ color: song.color }">{{ song.textTag }}</span>
+                      <li v-for="song in row.songs" :key="`${row.name}-${song.tag}-${song.eventId}-${song.songId}`" :data-scroll-anchor="`vs-song-${row.name}-${song.eventId}-${song.songId}`" class="song-vs-event-text-row">
+                        <div class="song-vs-event-tag-vs-col">
+                          <div class="song-oc-event-vs-icons is-text-col is-vs-tag-col">
+                            <img
+                              v-if="song.tagIcon"
+                              :src="song.tagIcon"
+                              :alt="song.tagNumber"
+                              class="song-oc-event-vs-icon"
+                            />
+                            <span v-else class="song-oc-event-vs-icon is-empty-slot" aria-hidden="true"></span>
+                          </div>
+                          <span class="song-vs-event-tag" :style="{ color: song.color }">{{ song.tagNumber }}</span>
+                        </div>
                         <span class="song-vs-event-title" :class="{ 'is-no-2dmv': song.no2dMv }">{{ song.songName }}</span>
                         <div class="song-event-mv-col song-vs-event-mv-col">
                           <span v-if="song.has3d" class="song-mv-chip is-3d song-event-mv-chip">3D</span>
@@ -294,7 +321,7 @@
               </div>
             </article>
 
-            <article id="panel-oc-book-stats" class="stats-section card-panel">
+            <article id="panel-oc-book-stats" class="stats-section card-panel" data-scroll-anchor="panel-oc-book-stats">
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-oc-book-stats') }}</h2>
@@ -317,6 +344,8 @@
                 <article
                   v-for="unitGroup in ocBookStatsByUnit"
                   :key="`oc-book-${unitGroup.unit}`"
+                  :id="getOcBookUnitNavAnchorId(unitGroup.unit)"
+                  :data-scroll-anchor="`oc-unit-${unitGroup.unit}`"
                   :ref="(el) => setOcBookUnitCardRef(unitGroup.unit, el)"
                   :class="['song-oc-event-unit-card', { 'is-collapsed': !isOcBookUnitExpanded(unitGroup.unit) }]"
                   :style="{ backgroundColor: unitGroup.tint }"
@@ -328,10 +357,10 @@
                       :alt="unitGroup.label"
                       class="song-oc-unit-logo"
                     />
-                    <span class="song-oc-event-unit-count">{{ unitGroup.totalSongs }} 首</span>
+                    <span class="song-image-count song-image-count-circle">{{ unitGroup.totalSongs }}</span>
                     <div class="song-oc-event-unit-mv-chips">
-                      <span class="song-oc-event-mv-stat-chip is-2d" :style="{ backgroundColor: hexToRgba(unitColorMap[unitGroup.unit] || '#94a3b8', 0.22) }">2D | {{ unitGroup.total2d }}</span>
-                      <span class="song-oc-event-mv-stat-chip is-3d" :style="{ backgroundColor: hexToRgba(unitColorMap[unitGroup.unit] || '#94a3b8', 0.22) }">3D | {{ unitGroup.total3d }}</span>
+                      <span class="song-vs-pill song-oc-event-mv-stat-chip is-2d" :style="{ backgroundColor: hexToRgba(unitColorMap[unitGroup.unit] || '#94a3b8', 0.22) }">2D | {{ unitGroup.total2d }}</span>
+                      <span class="song-vs-pill song-oc-event-mv-stat-chip is-3d" :style="{ backgroundColor: hexToRgba(unitColorMap[unitGroup.unit] || '#94a3b8', 0.22) }">3D | {{ unitGroup.total3d }}</span>
                     </div>
                     <div class="song-oc-event-unit-tools">
                       <button class="song-mini-icon-btn" @click="toggleOcBookUnitExpandCollapse(unitGroup.unit)">
@@ -349,6 +378,7 @@
                     <article
                       v-for="member in unitGroup.members"
                       :key="`oc-book-${unitGroup.unit}-${member.name}`"
+                      :data-scroll-anchor="`oc-member-${unitGroup.unit}-${member.name}`"
                       class="song-role-card song-stat-card song-oc-event-member-card"
                       :style="{ backgroundColor: member.tint }"
                     >
@@ -360,14 +390,11 @@
                             :alt="member.name"
                             class="song-role-avatar"
                           />
-                          <div class="song-role-text">
-                            <div class="song-role-name">{{ member.name }}</div>
-                            <div class="song-role-count">{{ member.count }} 首</div>
-                          </div>
+                          <div class="song-image-count song-image-count-circle">{{ member.count }}</div>
                         </div>
                         <div class="song-oc-event-member-mv-chips">
-                          <span class="song-oc-event-mv-stat-chip is-2d" :style="{ backgroundColor: hexToRgba(unitColorMap[member.unit] || '#94a3b8', 0.22) }">2D | {{ member.count2d }}</span>
-                          <span class="song-oc-event-mv-stat-chip is-3d" :style="{ backgroundColor: hexToRgba(unitColorMap[member.unit] || '#94a3b8', 0.22) }">3D | {{ member.count3d }}</span>
+                          <span class="song-vs-pill song-oc-event-mv-stat-chip is-2d" :style="{ backgroundColor: hexToRgba(unitColorMap[member.unit] || '#94a3b8', 0.22) }">2D | {{ member.count2d }}</span>
+                          <span class="song-vs-pill song-oc-event-mv-stat-chip is-3d" :style="{ backgroundColor: hexToRgba(unitColorMap[member.unit] || '#94a3b8', 0.22) }">3D | {{ member.count3d }}</span>
                         </div>
                       </div>
 
@@ -377,6 +404,7 @@
                           :key="`oc-book-image-${member.name}-${song.songId}-${song.eventId}`"
                           class="song-oc-event-image-item"
                           :title="song.songName || '-'"
+                          @click="showSongImageTitle($event, song.songName || '-')"
                         >
                           <div :class="['song-jacket-media', 'song-duo-song-jacket-item', 'song-oc-event-jacket', { 'is-3d-frame': song.has3d }]">
                             <img
@@ -407,6 +435,7 @@
                         <li
                           v-for="song in member.songs"
                           :key="`oc-book-text-${member.name}-${song.songId}-${song.eventId}`"
+                          :data-scroll-anchor="`oc-song-${member.unit}-${member.name}-${song.eventId}-${song.songId}`"
                           class="song-oc-event-text-row"
                         >
                           <div class="song-oc-event-tag-vs-col">
@@ -436,7 +465,7 @@
               </div>
             </article>
 
-            <article id="panel-another-vocal" class="stats-section card-panel">
+            <article id="panel-another-vocal" class="stats-section card-panel" data-scroll-anchor="panel-another-vocal">
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-another-vocal') }}</h2>
@@ -462,6 +491,8 @@
                 <article
                   v-for="row in anotherVocalCards"
                   :key="`another-card-${row.name}`"
+                  :id="getAnvoNavAnchorId(row.name) || undefined"
+                  :data-scroll-anchor="`anvo-card-${row.name}`"
                   :ref="(el) => setAnvoCardRef(row.name, el)"
                   :class="['song-role-card', 'song-stat-card', 'song-anvo-card', { 'is-image-mode': anotherImageMode }]"
                   :style="getAnotherCardStyle(row)"
@@ -482,6 +513,7 @@
                         :key="`anvo-song-jacket-${row.name}-${song.id}-${song.vocalId}`"
                         class="song-jacket-media song-duo-song-jacket-item"
                         :title="song.title || '-'"
+                        @click="showSongImageTitle($event, song.title || '-')"
                       >
                         <img
                           v-if="song.jacketUrl"
@@ -537,7 +569,7 @@
               </div>
             </article>
 
-            <article id="panel-duo-stats" class="stats-section card-panel">
+            <article id="panel-duo-stats" class="stats-section card-panel" data-scroll-anchor="panel-duo-stats">
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-duo-stats') }}</h2>
@@ -561,6 +593,7 @@
                   v-for="unitCard in sameUnitPairUnitCards"
                   :key="`duo-unit-${unitCard.unit}`"
                   :id="unitCard.anchorId"
+                  :data-scroll-anchor="`duo-unit-${unitCard.unit}`"
                   :class="['song-duo-unit-card', { 'is-ws-split': unitCard.isWsSplit && !duoImageMode }]"
                   :style="{ backgroundColor: unitCard.tint }"
                 >
@@ -571,6 +604,7 @@
                     <article
                       v-for="card in unitCard.pairs"
                       :key="card.key"
+                      :data-scroll-anchor="`duo-card-${card.key}`"
                       :class="['song-role-card', 'song-duo-card', 'song-stat-card', { 'is-image-mode': duoImageMode }]"
                       :style="duoImageMode
                         ? { backgroundImage: card.gradientBg, borderColor: unitColorMap[unitCard.unit] || '#334155' }
@@ -588,8 +622,9 @@
                           <div
                             v-for="song in card.songs"
                             :key="`duo-song-jacket-${card.key}-${song.id}`"
-                            class="song-jacket-media song-duo-song-jacket-item"
+                            class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket"
                             :title="song.title || '-'"
+                            @click="showSongImageTitle($event, song.title || '-')"
                           >
                             <img
                               v-if="song.jacketUrl"
@@ -601,6 +636,16 @@
                               @error="onSongJacketError"
                             />
                             <span class="song-jacket-fallback">-</span>
+                            <div class="song-oc-event-vs-icons is-mini is-overlay">
+                              <img
+                                v-for="vs in song.vsIcons"
+                                :key="`duo-image-vs-${card.key}-${song.id}-${vs.name}`"
+                                :src="vs.icon"
+                                :alt="vs.name"
+                                :title="vs.name"
+                                class="song-oc-event-vs-icon"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -628,8 +673,30 @@
                         </div>
                         <ul v-if="isDuoCardExpanded(card.key)" class="song-role-list song-stat-list song-stat-list-duo">
                           <li v-for="song in card.songs" :key="`duo-song-${card.key}-${song.id}`">
-                            <span class="song-role-song-id">#{{ song.id }}</span>
+                            <div class="song-oc-event-vs-icons is-duo-inline">
+                              <span
+                                v-if="(song.vsIcons?.length || 0) === 0"
+                                class="song-oc-event-vs-icon is-placeholder-slot"
+                                aria-hidden="true"
+                              ></span>
+                              <img
+                                v-for="vs in song.vsIcons"
+                                :key="`duo-text-vs-${card.key}-${song.id}-${vs.name}`"
+                                :src="vs.icon"
+                                :alt="vs.name"
+                                :title="vs.name"
+                                class="song-oc-event-vs-icon"
+                              />
+                            </div>
                             <span class="song-role-song-title">{{ song.title || '-' }}</span>
+                            <div class="song-event-mv-col song-duo-event-mv-col">
+                              <span v-if="song.has2d" class="song-mv-chip is-2d song-event-mv-chip">2D</span>
+                              <span v-else class="song-event-mv-empty song-duo-event-mv-empty"></span>
+                            </div>
+                            <div class="song-event-mv-col song-duo-event-mv-col">
+                              <span v-if="song.has3d" class="song-mv-chip is-3d song-event-mv-chip">3D</span>
+                              <span v-else class="song-event-mv-empty song-duo-event-mv-empty"></span>
+                            </div>
                           </li>
                         </ul>
                       </template>
@@ -654,7 +721,7 @@
               v-model.trim="keyword"
               class="song-search"
               type="text"
-              placeholder="按歌曲名 / 词曲作者搜索（ID 用 #，如 #241）"
+              placeholder="按 ID（请加前缀#，如 #241）/ 歌曲名（支持假名与罗马音）/ 词曲作者搜索"
             />
           </section>
 
@@ -677,10 +744,9 @@
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>封面</th>
-                  <th>歌曲</th>
+                  <th>曲绘</th>
+                  <th>曲名</th>
                   <th class="song-th-filter">
-                    <div class="song-th-title">团体</div>
                     <select v-model="groupFilter" class="song-filter-select song-th-select">
                       <option
                         v-for="option in GROUP_FILTER_OPTIONS"
@@ -692,19 +758,18 @@
                     </select>
                   </th>
                   <th class="song-th-filter">
-                    <div class="song-th-title">MV</div>
                     <select v-model="mvFilter" class="song-filter-select song-th-select">
-                      <option value="all">全部</option>
+                      <option value="all">MV</option>
                       <option value="3d">3DMV</option>
                       <option value="2d">2DMV</option>
-                      <option value="vs2d">2DMV(VS)</option>
+                      <option value="vs2d">VS2D</option>
                       <option value="original">原画MV</option>
                     </select>
                   </th>
                   <th class="song-th-filter">
-                    <div class="song-th-title">难度排序</div>
                     <div class="song-th-filter-stack">
                       <select v-model="difficultySortKey" class="song-filter-select song-th-select">
+                        <option value="">难度</option>
                         <option
                           v-for="option in DIFFICULTY_SORT_OPTIONS"
                           :key="`difficulty-sort-head-${option.value}`"
@@ -713,14 +778,14 @@
                           {{ option.label }}
                         </option>
                       </select>
-                      <select
-                        v-model="difficultySortOrder"
-                        class="song-filter-select song-th-select"
-                        :disabled="difficultySortKey === 'none'"
+                      <button
+                        class="song-diff-order-btn"
+                        :class="[`is-${difficultySortMode}`]"
+                        :title="difficultySortModeTitle"
+                        @click="cycleDifficultySortMode($event)"
                       >
-                        <option value="desc">高到低</option>
-                        <option value="asc">低到高</option>
-                      </select>
+                        <img :src="difficultySortModeIconSrc" class="song-diff-order-icon" alt="排序模式" />
+                      </button>
                     </div>
                   </th>
                   <th>作曲</th>
@@ -732,7 +797,7 @@
                 <tr v-for="song in pagedSongs" :key="`song-${song.id}-${song.title}`">
                   <td>{{ song.id }}</td>
                   <td class="song-jacket-cell">
-                    <div class="song-jacket-media">
+                    <div class="song-jacket-media" @click="showSongImageTitle($event, song.title || '-')">
                       <img
                         v-if="song.jacketUrl"
                         :src="song.jacketUrl"
@@ -807,10 +872,10 @@
           </section>
 
           <section class="song-pagination" v-if="filteredSongs.length > 0">
-            <button class="song-page-btn" :disabled="currentSongPage <= 1" @click="changeSongPage(-1)">-</button>
+            <button class="song-page-btn" :disabled="currentSongPage <= 1" @click="changeSongPage(-1, $event)">-</button>
             <span class="song-page-text">第 {{ currentSongPage }} / {{ totalSongPages }} 页</span>
-            <button class="song-page-btn" :disabled="currentSongPage >= totalSongPages" @click="changeSongPage(1)">+</button>
-            <button class="song-home-btn" title="回到第一页" @click="backToSongHome">
+            <button class="song-page-btn" :disabled="currentSongPage >= totalSongPages" @click="changeSongPage(1, $event)">+</button>
+            <button class="song-home-btn" title="回到第一页" @click="backToSongHome($event)">
               <img src="/data/icon/reset.png" class="song-home-btn-icon" alt="回到第一页" />
             </button>
             <label class="song-page-size-field">
@@ -822,6 +887,14 @@
             <span class="song-page-count">共 {{ filteredSongs.length }} 首</span>
           </section>
         </section>
+
+        <div
+          v-if="songImageTitleToast"
+          class="song-image-title-toast"
+          :style="{ left: `${songImageTitleToast.left}px`, top: `${songImageTitleToast.top}px` }"
+        >
+          {{ songImageTitleToast.text }}
+        </div>
       </div>
     </div>
   </div>
@@ -830,6 +903,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import html2canvas from 'html2canvas';
+import { toHiragana, toRomaji } from 'wanakana';
 
 const props = defineProps({
   allEvents: { type: Array, default: () => [] },
@@ -840,8 +914,8 @@ const props = defineProps({
 const keyword = ref('');
 const mvFilter = ref('all');
 const groupFilter = ref('all');
-const difficultySortKey = ref('none');
-const difficultySortOrder = ref('desc');
+const difficultySortKey = ref('');
+const difficultySortMode = ref('none');
 const includeDeletedSongsInStats = ref(true);
 const isExportingPng = ref(false);
 const currentSongPage = ref(1);
@@ -854,8 +928,10 @@ const duoImageMode = ref(false);
 const duoNameRefMap = new Map();
 const duoPairGridRefMap = new Map();
 const duoPairGridColumnMap = ref({});
+const songStatsRootRef = ref(null);
 const songListWrapRef = ref(null);
 const isSongTableOverflowing = ref(false);
+const songImageTitleToast = ref(null);
 const anvoCardRefMap = new Map();
 const vsSongCardModeMap = ref({});
 const vsSongImageMode = ref(false);
@@ -870,6 +946,11 @@ let songTableResizeObserver = null;
 let resizeViewportRaf = 0;
 let viewportScrollHost = null;
 let lastViewportAnchorSnapshot = null;
+let songImageTitleToastTimer = 0;
+let navSyncRaf = 0;
+let statsMainInteractionHost = null;
+let lastInteractiveAnchorEl = null;
+let lastInteractiveAt = 0;
 
 const DELETED_SONG_ID_SET = new Set([241, 290]);
 
@@ -881,24 +962,55 @@ const navTopLayoutPrev = ref(null);
 let sectionObserver = null;
 
 const SONG_DIFFICULTY_ORDER = Object.freeze([
-  { key: 'easy', label: 'E' },
-  { key: 'normal', label: 'N' },
-  { key: 'hard', label: 'H' },
-  { key: 'expert', label: 'EX' },
-  { key: 'master', label: 'M' },
-  { key: 'append', label: 'AP' }
+  { key: 'easy', label: 'EASY' },
+  { key: 'normal', label: 'NORMAL' },
+  { key: 'hard', label: 'HARD' },
+  { key: 'expert', label: 'EXPERT' },
+  { key: 'master', label: 'MASTER' },
+  { key: 'append', label: 'APPEND' }
 ]);
 const SONG_STAT_CARD_TINT_ALPHA = 0.2;
 
 const DIFFICULTY_SORT_OPTIONS = Object.freeze([
-  { value: 'none', label: '默认顺序(ID)' },
-  { value: 'easy', label: '按 EASY 难度' },
-  { value: 'normal', label: '按 NORMAL 难度' },
-  { value: 'hard', label: '按 HARD 难度' },
-  { value: 'expert', label: '按 EXPERT 难度' },
-  { value: 'master', label: '按 MASTER 难度' },
-  { value: 'append', label: '按 APPEND 难度' }
+  { value: 'easy', label: 'EASY' },
+  { value: 'normal', label: 'NORMAL' },
+  { value: 'hard', label: 'HARD' },
+  { value: 'expert', label: 'EXPERT' },
+  { value: 'master', label: 'MASTER' },
+  { value: 'append', label: 'APPEND' }
 ]);
+
+const difficultySortModeIconSrc = computed(() => {
+  if (difficultySortMode.value === 'desc') return '/data/icon/circle_arrow_down.png';
+  if (difficultySortMode.value === 'asc') return '/data/icon/circle_arrow_up.png';
+  return '/data/icon/circle_arrow_up_down.png';
+});
+
+const difficultySortModeTitle = computed(() => {
+  if (!difficultySortKey.value) {
+    if (difficultySortMode.value === 'desc') return '当前：ID高到低（点击切到ID低到高）';
+    if (difficultySortMode.value === 'asc') return '当前：ID低到高（点击切到默认）';
+    return '当前：ID排序（点击切到ID高到低）';
+  }
+  if (difficultySortMode.value === 'desc') return '当前：高到低（点击切到低到高）';
+  if (difficultySortMode.value === 'asc') return '当前：低到高（点击切到ID排序）';
+  return '当前：ID排序（点击切到高到低）';
+});
+
+const cycleDifficultySortMode = (event) => {
+  const anchorEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  void withInteractionPinnedPosition(() => {
+    if (difficultySortMode.value === 'none') {
+      difficultySortMode.value = 'desc';
+      return;
+    }
+    if (difficultySortMode.value === 'desc') {
+      difficultySortMode.value = 'asc';
+      return;
+    }
+    difficultySortMode.value = 'none';
+  }, anchorEl);
+};
 
 const SONG_PAGE_SIZE_OPTIONS = Object.freeze([10, 20, 30, 50, 100]);
 
@@ -940,13 +1052,13 @@ const BASE_UNIT_COLOR_MAP = Object.freeze({
 });
 
 const GROUP_FILTER_OPTIONS = Object.freeze([
-  { value: 'all', label: '全部团体' },
-  { value: 'vocaloid', label: 'Vocaloid' },
-  { value: 'ln', label: 'Leo/need' },
-  { value: 'mmj', label: 'MORE MORE JUMP!' },
-  { value: 'vbs', label: 'Vivid BAD SQUAD' },
-  { value: 'ws', label: 'ワンダーランズ×ショウタイム' },
-  { value: 'nc', label: '25時、ナイトコードで。' },
+  { value: 'all', label: '团体' },
+  { value: 'vs', label: 'VS' },
+  { value: 'ln', label: 'LN' },
+  { value: 'mmj', label: 'MMJ' },
+  { value: 'vbs', label: 'VBS' },
+  { value: 'ws', label: 'WS' },
+  { value: 'nc', label: 'NC' },
   { value: 'other', label: '其他' }
 ]);
 
@@ -976,6 +1088,7 @@ const OC_UNIT_OPTIONS = Object.freeze([
 ]);
 
 const OC_UNIT_KEYS = Object.freeze(OC_UNIT_OPTIONS.map((item) => item.key));
+const CORE_UNIT_KEYS = Object.freeze(['vs', ...OC_UNIT_KEYS]);
 const VS_UNIT_ORDER = Object.freeze(['ln', 'mmj', 'vbs', 'ws', 'nc']);
 const VS_UNIT_ORDER_MAP = Object.freeze({ ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5 });
 
@@ -991,6 +1104,121 @@ const SONG_SECTION_TITLE_MAP = Object.freeze({
 
 const getSongSectionTitle = (id) => SONG_SECTION_TITLE_MAP[id] || String(id || '');
 
+const VS_NAV_ABBR_WHITELIST = Object.freeze(['miku', 'rin', 'len', 'luka', 'meiko', 'kaito']);
+const ANVO_UNIT_FIRST_MEMBER_ANCHORS = Object.freeze([
+  { unit: 'ln', abbr: 'ick', title: 'LN Anvo' },
+  { unit: 'mmj', abbr: 'mnr', title: 'MMJ Anvo' },
+  { unit: 'vbs', abbr: 'khn', title: 'VBS Anvo' },
+  { unit: 'ws', abbr: 'tks', title: 'WS Anvo' },
+  { unit: 'nc', abbr: 'knd', title: 'NC Anvo' },
+  { unit: 'vs', abbr: 'miku', title: 'VS Anvo' }
+]);
+
+const getNavAbbrFromName = (name) => {
+  return String(getCharacterAbbr(name) || '')
+    .trim()
+    .replace(/[^a-zA-Z]/g, '')
+    .toLowerCase();
+};
+
+const getVsSingerBookSubtitle = (name) => {
+  const abbr = getNavAbbrFromName(name);
+  if (!abbr) return `${String(name || '').trim()} 书下`;
+  return `${abbr.toUpperCase()} 书下`;
+};
+
+const makeVsSingerNavAnchorId = (name) => {
+  const abbr = getNavAbbrFromName(name);
+  if (!abbr || !VS_NAV_ABBR_WHITELIST.includes(abbr)) return '';
+  return `panel-vs-singer-${abbr}`;
+};
+
+const makeOcBookUnitNavAnchorId = (unitKey) => {
+  const key = String(unitKey || '').trim().toLowerCase();
+  if (!key) return '';
+  return `panel-oc-unit-${key}`;
+};
+
+const makeAnvoUnitNavAnchorId = (unitKey) => {
+  const key = String(unitKey || '').trim().toLowerCase();
+  if (!key) return '';
+  return `panel-anvo-unit-${key}`;
+};
+
+const vsSingerNavChildren = computed(() => {
+  return virtualSingerSongStats.value
+    .map((row) => {
+      const id = makeVsSingerNavAnchorId(row.name);
+      if (!id) return null;
+      return {
+        id,
+        title: getVsSingerBookSubtitle(row.name),
+        anchorKind: 'vs-singer'
+      };
+    })
+    .filter(Boolean);
+});
+
+const vsSingerAnchorIdByName = computed(() => {
+  const map = new Map();
+  virtualSingerSongStats.value.forEach((row) => {
+    const id = makeVsSingerNavAnchorId(row.name);
+    if (!id) return;
+    map.set(String(row.name || ''), id);
+  });
+  return map;
+});
+
+const getVsSingerNavAnchorId = (name) => {
+  return vsSingerAnchorIdByName.value.get(String(name || '')) || '';
+};
+
+const ocBookUnitNavChildren = computed(() => {
+  return ocBookStatsByUnit.value
+    .map((group) => {
+      const id = makeOcBookUnitNavAnchorId(group.unit);
+      if (!id) return null;
+      return {
+        id,
+        title: `${UNIT_NAV_LABEL_MAP[group.unit] || String(group.unit || '').toUpperCase()} 书下`,
+        anchorKind: 'oc-unit'
+      };
+    })
+    .filter(Boolean);
+});
+
+const getOcBookUnitNavAnchorId = (unit) => makeOcBookUnitNavAnchorId(unit);
+
+const anvoUnitAnchorIdByName = computed(() => {
+  const map = new Map();
+  ANVO_UNIT_FIRST_MEMBER_ANCHORS.forEach((config) => {
+    const matched = anotherVocalCards.value.find((row) => getNavAbbrFromName(row.name) === config.abbr);
+    if (!matched) return;
+    const id = makeAnvoUnitNavAnchorId(config.unit);
+    if (!id) return;
+    map.set(String(matched.name || ''), id);
+  });
+  return map;
+});
+
+const anvoUnitNavChildren = computed(() => {
+  return ANVO_UNIT_FIRST_MEMBER_ANCHORS
+    .map((config) => {
+      const matched = anotherVocalCards.value.find((row) => getNavAbbrFromName(row.name) === config.abbr);
+      if (!matched) return null;
+      return {
+        id: makeAnvoUnitNavAnchorId(config.unit),
+        title: config.title,
+        anchorKind: 'anvo-unit'
+      };
+    })
+    .filter(Boolean);
+});
+
+const getAnvoNavAnchorId = (name) => {
+  return anvoUnitAnchorIdByName.value.get(String(name || '')) || '';
+};
+
 const navGroups = computed(() => {
   const duoUnitChildren = sameUnitPairUnitCards.value.map((unitCard) => ({
     id: unitCard.anchorId,
@@ -1005,8 +1233,11 @@ const navGroups = computed(() => {
       children: [
         { id: 'panel-oc-stats', title: getSongSectionTitle('panel-oc-stats') },
         { id: 'panel-vs-song-stats', title: getSongSectionTitle('panel-vs-song-stats') },
+        ...vsSingerNavChildren.value,
         { id: 'panel-oc-book-stats', title: getSongSectionTitle('panel-oc-book-stats') },
+        ...ocBookUnitNavChildren.value,
         { id: 'panel-another-vocal', title: getSongSectionTitle('panel-another-vocal') },
+        ...anvoUnitNavChildren.value,
         { id: 'panel-duo-stats', title: getSongSectionTitle('panel-duo-stats') },
         ...duoUnitChildren
       ]
@@ -1038,9 +1269,54 @@ const duoUnitNavIds = computed(() => {
   return new Set(ids);
 });
 
+const vsSingerNavIds = computed(() => {
+  const ids = [];
+  navGroups.value.forEach((group) => {
+    (group.children || []).forEach((item) => {
+      if (item.anchorKind === 'vs-singer') ids.push(item.id);
+    });
+  });
+  return new Set(ids);
+});
+
+const ocUnitNavIds = computed(() => {
+  const ids = [];
+  navGroups.value.forEach((group) => {
+    (group.children || []).forEach((item) => {
+      if (item.anchorKind === 'oc-unit') ids.push(item.id);
+    });
+  });
+  return new Set(ids);
+});
+
+const anvoUnitNavIds = computed(() => {
+  const ids = [];
+  navGroups.value.forEach((group) => {
+    (group.children || []).forEach((item) => {
+      if (item.anchorKind === 'anvo-unit') ids.push(item.id);
+    });
+  });
+  return new Set(ids);
+});
+
 const isDuoNavScopeActive = computed(() => {
   if (activeNavId.value === 'panel-duo-stats') return true;
   return duoUnitNavIds.value.has(activeNavId.value);
+});
+
+const isVsNavScopeActive = computed(() => {
+  if (activeNavId.value === 'panel-vs-song-stats') return true;
+  return vsSingerNavIds.value.has(activeNavId.value);
+});
+
+const isOcBookNavScopeActive = computed(() => {
+  if (activeNavId.value === 'panel-oc-book-stats') return true;
+  return ocUnitNavIds.value.has(activeNavId.value);
+});
+
+const isAnvoNavScopeActive = computed(() => {
+  if (activeNavId.value === 'panel-another-vocal') return true;
+  return anvoUnitNavIds.value.has(activeNavId.value);
 });
 
 const isGroupActive = (group) => {
@@ -1050,9 +1326,19 @@ const isGroupActive = (group) => {
 
 const isGroupExpanded = (group) => isMobileNav.value || isGroupActive(group);
 
+const isNestedNavChild = (item) => {
+  const kind = String(item?.anchorKind || '').trim();
+  return ['duo-unit', 'vs-singer', 'oc-unit', 'anvo-unit'].includes(kind);
+};
+
 const shouldShowNavChild = (item) => {
-  if (item?.anchorKind !== 'duo-unit') return true;
-  return isMobileNav.value || isDuoNavScopeActive.value;
+  const kind = String(item?.anchorKind || '').trim();
+  if (!kind) return true;
+  if (kind === 'duo-unit') return isMobileNav.value || isDuoNavScopeActive.value;
+  if (kind === 'vs-singer') return isMobileNav.value || isVsNavScopeActive.value;
+  if (kind === 'oc-unit') return isMobileNav.value || isOcBookNavScopeActive.value;
+  if (kind === 'anvo-unit') return isMobileNav.value || isAnvoNavScopeActive.value;
+  return true;
 };
 
 const getScrollContainer = () => {
@@ -1062,18 +1348,110 @@ const getScrollContainer = () => {
   return document.documentElement;
 };
 
+const pickActiveNavTargetIdByViewport = () => {
+  const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const anchorY = hostRect.top + Math.min(140, Math.max(72, hostRect.height * 0.2));
+  const ids = navTargetIds.value;
+
+  const containing = [];
+  const upcoming = [];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!(el instanceof HTMLElement)) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 1 || rect.height <= 1) return;
+    if (rect.top <= anchorY && rect.bottom > anchorY) {
+      containing.push({ id, top: rect.top, height: rect.height });
+      return;
+    }
+    if (rect.top > anchorY) {
+      upcoming.push({ id, top: rect.top });
+    }
+  });
+
+  if (containing.length > 0) {
+    containing.sort((a, b) => {
+      if (b.top !== a.top) return b.top - a.top;
+      return a.height - b.height;
+    });
+    return containing[0].id;
+  }
+
+  if (upcoming.length > 0) {
+    upcoming.sort((a, b) => a.top - b.top);
+    return upcoming[0].id;
+  }
+
+  return ids[ids.length - 1] || '';
+};
+
+const syncActiveNavByViewport = () => {
+  try {
+    const nextId = pickActiveNavTargetIdByViewport();
+    if (nextId && activeNavId.value !== nextId) {
+      activeNavId.value = nextId;
+    }
+  } catch (_) {
+    // Guard against observer/DOM race to avoid crashing the whole page.
+  }
+};
+
+const scheduleNavSync = () => {
+  if (navSyncRaf) return;
+  navSyncRaf = requestAnimationFrame(() => {
+    navSyncRaf = 0;
+    syncActiveNavByViewport();
+  });
+};
+
+const SCROLL_SNAPSHOT_ANCHOR_SELECTOR = '[data-scroll-anchor]';
+
+const getAnchorNodesInStatsMain = () => {
+  const statsMain = document.querySelector('.stats-main');
+  if (!(statsMain instanceof HTMLElement)) return [];
+  return Array.from(statsMain.querySelectorAll(SCROLL_SNAPSHOT_ANCHOR_SELECTOR)).filter((el) => el instanceof HTMLElement);
+};
+
+const findAnchorElementByKey = (key) => {
+  const wanted = String(key || '');
+  if (!wanted) return null;
+  const nodes = getAnchorNodesInStatsMain();
+  for (const el of nodes) {
+    if (el instanceof HTMLElement && el.dataset.scrollAnchor === wanted) return el;
+  }
+  return null;
+};
+
+const getViewportCenterAnchorElement = (host) => {
+  if (!(host instanceof HTMLElement)) return null;
+  const hostRect = host.getBoundingClientRect();
+  if (hostRect.width <= 2 || hostRect.height <= 2) return null;
+
+  const nodes = getAnchorNodesInStatsMain();
+  const topEdge = hostRect.top + 24;
+  for (const node of nodes) {
+    const rect = node.getBoundingClientRect();
+    if (rect.width <= 1 || rect.height <= 1) continue;
+    if (rect.bottom <= topEdge || rect.top >= hostRect.bottom) continue;
+    return node;
+  }
+  return null;
+};
+
 const snapshotViewportAnchor = () => {
   const host = getScrollContainer();
   const hostRect = host.getBoundingClientRect();
-  const anchorId = activeNavId.value;
-  const anchorEl = anchorId ? document.getElementById(anchorId) : null;
-  const ratio = (host.scrollTop + host.clientHeight / 2) / Math.max(1, host.scrollHeight);
+  const centerAnchorEl = getViewportCenterAnchorElement(host);
+  const anchorEl = centerAnchorEl;
+  const anchorRect = anchorEl ? anchorEl.getBoundingClientRect() : null;
+  const anchorTop = anchorRect ? (anchorRect.top - hostRect.top) : 0;
   return {
-    anchorId,
+    anchorEl,
+    anchorKey: anchorEl?.dataset?.scrollAnchor || '',
     hasAnchor: !!anchorEl,
-    anchorTop: anchorEl ? (anchorEl.getBoundingClientRect().top - hostRect.top) : 0,
-    scrollTop: host.scrollTop,
-    ratio
+    anchorTop,
+    scrollTop: host.scrollTop
   };
 };
 
@@ -1081,34 +1459,45 @@ const restoreViewportAnchor = (snapshot) => {
   if (!snapshot) return;
   const host = getScrollContainer();
   const hostRect = host.getBoundingClientRect();
-  const anchorEl = snapshot.anchorId ? document.getElementById(snapshot.anchorId) : null;
-  if (snapshot.hasAnchor && anchorEl) {
-    const afterTop = anchorEl.getBoundingClientRect().top - hostRect.top;
-    const nextTop = snapshot.scrollTop + (afterTop - snapshot.anchorTop);
+  const clampTop = (top) => {
     const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
-    host.scrollTop = Math.max(0, Math.min(maxTop, nextTop));
+    return Math.max(0, Math.min(maxTop, top));
+  };
+  const connectedSnapshotAnchor = snapshot.anchorEl instanceof HTMLElement && snapshot.anchorEl.isConnected
+    ? snapshot.anchorEl
+    : null;
+  const anchorEl = connectedSnapshotAnchor || findAnchorElementByKey(snapshot.anchorKey);
+  if (snapshot.hasAnchor && anchorEl) {
+    const afterRect = anchorEl.getBoundingClientRect();
+    const afterTop = afterRect.top - hostRect.top;
+    const nextTop = snapshot.scrollTop + (afterTop - snapshot.anchorTop);
+    host.scrollTop = clampTop(nextTop);
     return;
   }
-  const targetTop = snapshot.ratio * host.scrollHeight - host.clientHeight / 2;
-  const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
-  host.scrollTop = Math.max(0, Math.min(maxTop, targetTop));
+  // Keep absolute top when no anchor is available to avoid height-ratio jumps.
+  host.scrollTop = clampTop(snapshot.scrollTop);
 };
 
 const rememberViewportAnchor = () => {
   lastViewportAnchorSnapshot = snapshotViewportAnchor();
 };
 
+const handleViewportScroll = () => {
+  rememberViewportAnchor();
+  scheduleNavSync();
+};
+
 const bindViewportScrollTracking = () => {
   const host = getScrollContainer();
   if (viewportScrollHost && viewportScrollHost !== host) {
-    viewportScrollHost.removeEventListener('scroll', rememberViewportAnchor);
+    viewportScrollHost.removeEventListener('scroll', handleViewportScroll);
   }
   viewportScrollHost = host;
-  viewportScrollHost.addEventListener('scroll', rememberViewportAnchor, { passive: true });
+  viewportScrollHost.addEventListener('scroll', handleViewportScroll, { passive: true });
 };
 
 const handleWindowResize = () => {
-  const snapshot = lastViewportAnchorSnapshot || snapshotViewportAnchor();
+  const snapshot = snapshotViewportAnchor();
   if (resizeViewportRaf) cancelAnimationFrame(resizeViewportRaf);
   resizeViewportRaf = requestAnimationFrame(() => {
     resizeViewportRaf = 0;
@@ -1118,6 +1507,7 @@ const handleWindowResize = () => {
       await waitNextPaint();
       restoreViewportAnchor(snapshot);
       rememberViewportAnchor();
+      scheduleNavSync();
     })();
   });
 };
@@ -1126,37 +1516,188 @@ const withPreservedScrollCenter = async (applyChange) => {
   const snapshot = snapshotViewportAnchor();
   applyChange();
   await nextTick();
-  await waitNextPaint();
   restoreViewportAnchor(snapshot);
   rememberViewportAnchor();
+  scheduleNavSync();
+};
+
+const withLockedViewportAnchor = async (applyChange) => {
+  const snapshot = snapshotViewportAnchor();
+  applyChange();
+  await nextTick();
+  restoreViewportAnchor(snapshot);
+  rememberViewportAnchor();
+  scheduleNavSync();
+};
+
+const clampHostScrollTop = (host, top) => {
+  if (!(host instanceof HTMLElement)) return 0;
+  const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
+  return Math.max(0, Math.min(maxTop, top));
+};
+
+const withPinnedElementPosition = async (targetEl, applyChange) => {
+  const snapshot = snapshotViewportAnchor();
+  const pinnedEl = targetEl instanceof HTMLElement ? targetEl : null;
+  const beforeHost = getScrollContainer();
+  const beforeHostRect = beforeHost.getBoundingClientRect();
+  const pinnedTop = pinnedEl
+    ? (pinnedEl.getBoundingClientRect().top - beforeHostRect.top)
+    : null;
+
+  const restoreByPinnedElement = () => {
+    if (!(pinnedEl instanceof HTMLElement) || !pinnedEl.isConnected || !Number.isFinite(pinnedTop)) {
+      return false;
+    }
+    const host = getScrollContainer();
+    const hostRect = host.getBoundingClientRect();
+    const afterTop = pinnedEl.getBoundingClientRect().top - hostRect.top;
+    const nextTop = host.scrollTop + (afterTop - pinnedTop);
+    host.scrollTop = clampHostScrollTop(host, nextTop);
+    return true;
+  };
+
+  applyChange();
+  await nextTick();
+  const restored = restoreByPinnedElement();
+  if (!restored) {
+    restoreViewportAnchor(snapshot);
+  }
+
+  rememberViewportAnchor();
+  scheduleNavSync();
+};
+
+const withPreservedScrollTop = async (applyChange) => {
+  const host = getScrollContainer();
+  const beforeTop = host.scrollTop;
+  applyChange();
+  await nextTick();
+  const nextHost = getScrollContainer();
+  nextHost.scrollTop = clampHostScrollTop(nextHost, beforeTop);
+  rememberViewportAnchor();
+  scheduleNavSync();
+};
+
+const getLayoutAnchorForNavToggle = () => {
+  const activeId = String(activeNavId.value || '').trim();
+  if (activeId) {
+    const activeEl = document.getElementById(activeId);
+    if (activeEl instanceof HTMLElement) {
+      return { anchorId: activeId, anchorEl: activeEl };
+    }
+  }
+
+  const fallbackAnchor = getViewportCenterAnchorElement(getScrollContainer());
+  if (fallbackAnchor instanceof HTMLElement) {
+    return {
+      anchorId: String(fallbackAnchor.id || '').trim(),
+      anchorEl: fallbackAnchor
+    };
+  }
+
+  return { anchorId: '', anchorEl: null };
+};
+
+const withNavAnchorPinnedPosition = async (applyChange) => {
+  const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const { anchorId, anchorEl } = getLayoutAnchorForNavToggle();
+  const beforeAnchor = anchorEl instanceof HTMLElement ? anchorEl : null;
+
+  if (!(beforeAnchor instanceof HTMLElement)) {
+    await withPreservedScrollTop(applyChange);
+    return;
+  }
+
+  const beforeTop = beforeAnchor.getBoundingClientRect().top - hostRect.top;
+  applyChange();
+  await nextTick();
+
+  const nextHost = getScrollContainer();
+  const nextHostRect = nextHost.getBoundingClientRect();
+  const afterAnchor = anchorId
+    ? document.getElementById(anchorId)
+    : (beforeAnchor.isConnected ? beforeAnchor : null);
+
+  if (afterAnchor instanceof HTMLElement) {
+    const afterTop = afterAnchor.getBoundingClientRect().top - nextHostRect.top;
+    const nextTop = nextHost.scrollTop + (afterTop - beforeTop);
+    nextHost.scrollTop = clampHostScrollTop(nextHost, nextTop);
+  }
+
+  rememberViewportAnchor();
+  scheduleNavSync();
+};
+
+const rememberInteractiveAnchorFromEvent = (event) => {
+  const target = event?.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (target.closest('.stats-nav')) return;
+
+  const interactive = target.closest('button, input[type="checkbox"], input[type="radio"], select');
+  if (!(interactive instanceof HTMLElement)) return;
+
+  lastInteractiveAnchorEl = interactive;
+  lastInteractiveAt = Date.now();
+};
+
+const consumeRecentInteractiveAnchor = (maxAgeMs = 1200) => {
+  if (!(lastInteractiveAnchorEl instanceof HTMLElement)) return null;
+  if (!lastInteractiveAnchorEl.isConnected) {
+    lastInteractiveAnchorEl = null;
+    return null;
+  }
+  if (Date.now() - lastInteractiveAt > maxAgeMs) {
+    lastInteractiveAnchorEl = null;
+    return null;
+  }
+  return lastInteractiveAnchorEl;
+};
+
+const withInteractionPinnedPosition = async (applyChange, explicitTarget = null) => {
+  const target = explicitTarget instanceof HTMLElement ? explicitTarget : consumeRecentInteractiveAnchor();
+  if (target instanceof HTMLElement) {
+    await withPinnedElementPosition(target, applyChange);
+    return;
+  }
+  await withInfoAreaTopLeftPinned(applyChange);
+};
+
+const withInfoAreaTopLeftPinned = async (applyChange) => {
+  await withNavAnchorPinnedPosition(applyChange);
 };
 
 const onVsSongImageModeChange = (event) => {
   const checked = !!event?.target?.checked;
-  void withPreservedScrollCenter(() => {
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
     vsSongImageMode.value = checked;
-  });
+  }, anchorEl);
 };
 
 const onOcBookImageModeChange = (event) => {
   const checked = !!event?.target?.checked;
-  void withPreservedScrollCenter(() => {
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
     ocBookImageMode.value = checked;
-  });
+  }, anchorEl);
 };
 
 const onAnotherImageModeChange = (event) => {
   const checked = !!event?.target?.checked;
-  void withPreservedScrollCenter(() => {
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
     anotherImageMode.value = checked;
-  });
+  }, anchorEl);
 };
 
 const onDuoImageModeChange = (event) => {
   const checked = !!event?.target?.checked;
-  void withPreservedScrollCenter(() => {
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
     duoImageMode.value = checked;
-  });
+  }, anchorEl);
 };
 
 const setNavCollapsed = (nextCollapsed, preserveCenter = true) => {
@@ -1166,7 +1707,7 @@ const setNavCollapsed = (nextCollapsed, preserveCenter = true) => {
     navCollapsed.value = next;
     return;
   }
-  void withPreservedScrollCenter(() => {
+  void withInfoAreaTopLeftPinned(() => {
     navCollapsed.value = next;
   });
 };
@@ -1189,7 +1730,7 @@ const updateMobileNavState = () => {
   };
 
   if (needPreserve) {
-    void withPreservedScrollCenter(applyState);
+    void withInfoAreaTopLeftPinned(applyState);
     recalcSongTableOverflow();
     return;
   }
@@ -1221,11 +1762,15 @@ const scrollToSection = async (id) => {
   }
 
   scrollSectionIntoHost(id, 'smooth');
+  scheduleNavSync();
 };
 
-const backToSongHome = () => {
+const backToSongHome = (event = null) => {
   if (currentSongPage.value <= 1) return;
-  currentSongPage.value = 1;
+  const anchorEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  void withInteractionPinnedPosition(() => {
+    currentSongPage.value = 1;
+  }, anchorEl);
 };
 
 const recalcSongTableOverflow = () => {
@@ -1245,42 +1790,66 @@ const bindSectionObserver = async () => {
 
   await nextTick();
   const ids = navTargetIds.value;
+  const host = getScrollContainer();
+  const observerRoot = host instanceof HTMLElement && host !== document.documentElement ? host : null;
 
-  sectionObserver = new IntersectionObserver((entries) => {
-    const visible = entries
-      .filter((e) => e.isIntersecting)
-      .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
-    if (visible.length > 0) {
-      activeNavId.value = visible[0].target.id;
-    }
-  }, {
-    root: null,
-    rootMargin: '-25% 0px -60% 0px',
-    threshold: [0.05, 0.2, 0.4]
-  });
+  if (typeof IntersectionObserver === 'undefined') {
+    scheduleNavSync();
+    return;
+  }
+
+  try {
+    sectionObserver = new IntersectionObserver(() => {
+      scheduleNavSync();
+    }, {
+      root: observerRoot,
+      rootMargin: '-10% 0px -75% 0px',
+      threshold: [0, 0.01, 0.1]
+    });
+  } catch (_) {
+    sectionObserver = new IntersectionObserver(() => {
+      scheduleNavSync();
+    }, {
+      root: null,
+      rootMargin: '-10% 0px -75% 0px',
+      threshold: [0, 0.01, 0.1]
+    });
+  }
 
   ids.forEach((id) => {
     const el = document.getElementById(id);
-    if (el) sectionObserver.observe(el);
+    if (!(el instanceof HTMLElement)) return;
+    if (observerRoot instanceof HTMLElement && !observerRoot.contains(el)) return;
+    sectionObserver.observe(el);
   });
+
+  scheduleNavSync();
 };
 
 onMounted(() => {
   updateMobileNavState();
   window.addEventListener('resize', handleWindowResize);
   bindViewportScrollTracking();
+  const localRoot = songStatsRootRef.value;
+  const statsMain = localRoot instanceof HTMLElement ? localRoot.querySelector('.stats-main') : null;
+  if (statsMain instanceof HTMLElement) {
+    statsMainInteractionHost = statsMain;
+    statsMainInteractionHost.addEventListener('pointerdown', rememberInteractiveAnchorFromEvent, true);
+    statsMainInteractionHost.addEventListener('keydown', rememberInteractiveAnchorFromEvent, true);
+  }
   rememberViewportAnchor();
+  scheduleNavSync();
   if (typeof ResizeObserver !== 'undefined') {
     duoPairGridResizeObserver = new ResizeObserver(() => {
       scheduleRecalcDuoPairGridColumns();
     });
     duoPairGridRefMap.forEach((el) => {
-      duoPairGridResizeObserver.observe(el);
+      if (el instanceof HTMLElement) duoPairGridResizeObserver.observe(el);
     });
     songTableResizeObserver = new ResizeObserver(() => {
       recalcSongTableOverflow();
     });
-    if (songListWrapRef.value) {
+    if (songListWrapRef.value instanceof HTMLElement) {
       songTableResizeObserver.observe(songListWrapRef.value);
     }
   }
@@ -1293,9 +1862,24 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleWindowResize);
+  if (statsMainInteractionHost instanceof HTMLElement) {
+    statsMainInteractionHost.removeEventListener('pointerdown', rememberInteractiveAnchorFromEvent, true);
+    statsMainInteractionHost.removeEventListener('keydown', rememberInteractiveAnchorFromEvent, true);
+    statsMainInteractionHost = null;
+  }
+  lastInteractiveAnchorEl = null;
+  lastInteractiveAt = 0;
   if (viewportScrollHost) {
-    viewportScrollHost.removeEventListener('scroll', rememberViewportAnchor);
+    viewportScrollHost.removeEventListener('scroll', handleViewportScroll);
     viewportScrollHost = null;
+  }
+  if (songImageTitleToastTimer) {
+    clearTimeout(songImageTitleToastTimer);
+    songImageTitleToastTimer = 0;
+  }
+  if (navSyncRaf) {
+    cancelAnimationFrame(navSyncRaf);
+    navSyncRaf = 0;
   }
   if (resizeViewportRaf) cancelAnimationFrame(resizeViewportRaf);
   if (duoPairGridResizeObserver) {
@@ -1350,10 +1934,14 @@ const mixHexWithWhite = (hex, strength = 0.2) => {
 };
 
 const normalizeCategoryKey = (value) => String(value || '').trim().toLowerCase();
+const normalizeSearchText = (value) => String(value || '').trim().toLowerCase();
+const normalizeSearchHiragana = (value) => toHiragana(String(value || '').trim()).toLowerCase();
+const normalizeSearchRomaji = (value) => toRomaji(toHiragana(String(value || '').trim()))
+  .toLowerCase()
+  .replace(/[^a-z0-9]/g, '');
 
 const normalizeGroupKey = (value) => {
   const key = normalizeCategoryKey(value);
-  if (key === 'vs') return 'vocaloid';
   return key;
 };
 
@@ -1372,21 +1960,27 @@ const buildOrderedGroupKeys = (keysRaw) => {
 };
 
 const buildGroupTags = (groupKeysRaw) => {
-  return buildOrderedGroupKeys(groupKeysRaw).map((key) => {
-    if (key === 'vocaloid') {
-      return { key, kind: 'logo', label: 'VS', icon: UNIT_TAG_ICON_MAP.vs };
-    }
+  return buildOrderedGroupKeys(groupKeysRaw)
+    .map((key) => {
+      if (key === 'vs') {
+        return { key, kind: 'logo', label: 'VS', icon: UNIT_TAG_ICON_MAP.vs };
+      }
 
-    if (Object.prototype.hasOwnProperty.call(UNIT_TAG_ICON_MAP, key)) {
-      return { key, kind: 'logo', label: key.toUpperCase(), icon: UNIT_TAG_ICON_MAP[key] };
-    }
+      if (key === 'vocaloid') {
+        return null;
+      }
 
-    if (key === 'other') {
-      return { key, kind: 'other', label: '其他' };
-    }
+      if (Object.prototype.hasOwnProperty.call(UNIT_TAG_ICON_MAP, key)) {
+        return { key, kind: 'logo', label: key.toUpperCase(), icon: UNIT_TAG_ICON_MAP[key] };
+      }
 
-    return { key, kind: 'text', label: key.toUpperCase() };
-  });
+      if (key === 'other') {
+        return { key, kind: 'other', label: '其他' };
+      }
+
+      return { key, kind: 'text', label: key.toUpperCase() };
+    })
+    .filter(Boolean);
 };
 
 const buildMvTags = (categories) => {
@@ -1426,25 +2020,36 @@ const buildLocalSongJacketUrl = (songIdRaw) => {
 
 const normalizeSongRow = (row) => {
   const idNum = Number(row?.id);
+  const title = String(row?.title || '').trim();
+  const composer = String(row?.composer || '').trim();
+  const lyricist = String(row?.lyricist || '').trim();
+  const arranger = String(row?.arranger || '').trim();
+  const pronunciation = String(row?.pronunciation || '').trim();
   const categories = Array.isArray(row?.categories)
     ? row.categories.map((c) => String(c || '').trim()).filter(Boolean)
     : [];
-  const tagKeys = Array.isArray(row?.tags)
-    ? row.tags.map((tag) => normalizeCategoryKey(tag)).filter(Boolean)
-    : [];
-  const groupKeys = buildOrderedGroupKeys(Array.isArray(row?.tags) ? row.tags : []);
+  const unitsRaw = Array.isArray(row?.units) ? row.units : [];
+  const unitKeys = unitsRaw.map((tag) => normalizeCategoryKey(tag)).filter(Boolean);
+  const groupKeys = buildOrderedGroupKeys(unitsRaw);
   const localJacketUrl = buildLocalSongJacketUrl(row?.id);
 
   return {
     id: row?.id ?? '-',
     songIdNum: Number.isFinite(idNum) ? idNum : null,
     isDeletedSong: Number.isFinite(idNum) && DELETED_SONG_ID_SET.has(idNum),
-    title: String(row?.title || '').trim(),
-    composer: String(row?.composer || '').trim(),
-    lyricist: String(row?.lyricist || '').trim(),
-    arranger: String(row?.arranger || '').trim(),
+    title,
+    pronunciation,
+    pronunciationHiragana: normalizeSearchHiragana(pronunciation),
+    pronunciationRomaji: normalizeSearchRomaji(pronunciation),
+    composer,
+    lyricist,
+    arranger,
+    searchTitle: normalizeSearchText(title),
+    searchComposer: normalizeSearchText(composer),
+    searchLyricist: normalizeSearchText(lyricist),
+    searchArranger: normalizeSearchText(arranger),
     difficulties: row?.difficulties && typeof row.difficulties === 'object' ? row.difficulties : {},
-    tagKeys,
+    unitKeys,
     categoryKeys: categories.map((c) => normalizeCategoryKey(c)).filter(Boolean),
     groupKeys,
     vocals: Array.isArray(row?.vocals) ? row.vocals : [],
@@ -1631,6 +2236,8 @@ const hasSong3DMVCategory = (song) => {
   if (!Array.isArray(song?.categoryKeys)) return false;
   return song.categoryKeys.includes('3dmv');
 };
+
+const hasSongAppendDifficulty = (song) => !isSongDifficultyMissing(song, 'append');
 
 const normalizeAsciiAbbr = (raw) => String(raw || '').trim().replace(/[^a-zA-Z]/g, '').toLowerCase();
 
@@ -1839,6 +2446,8 @@ const virtualSingerSongStats = computed(() => {
     const songItem = {
       tag: makeSongTagSingle(ev),
       textTag: makeSongTagAbbr(ev),
+      tagNumber: makeSongTagNumber(ev),
+      tagIcon: getCharacterAvatarSrc(bannerName),
       songId,
       songName: songTitle,
       jacketUrl: String(song?.jacketUrl || '').trim(),
@@ -1882,6 +2491,8 @@ const virtualSingerSongStats = computed(() => {
       ws: unitCounts.ws - unit3dCounts.ws,
       nc: unitCounts.nc - unit3dCounts.nc
     };
+    const total3d = unit3dCounts.ln + unit3dCounts.mmj + unit3dCounts.vbs + unit3dCounts.ws + unit3dCounts.nc;
+    const total2d = songsList.length - total3d;
 
     return {
       name,
@@ -1891,7 +2502,9 @@ const virtualSingerSongStats = computed(() => {
       songs: songsList,
       unitCounts,
       unit3dCounts,
-      unit2dCounts
+      unit2dCounts,
+      total2d,
+      total3d
     };
   });
 });
@@ -1919,44 +2532,52 @@ const ocBookGlobalToggleLabel = computed(() => {
 const toggleAllVsSongExpandCollapse = () => {
   const cards = virtualSingerSongStats.value;
   if (!cards.length) return;
-  const shouldExpandAll = cards.every((card) => getVsSongCardMode(card.name) === 'collapsed');
-  const nextMode = shouldExpandAll ? 'expanded' : 'collapsed';
-  const next = {};
-  cards.forEach((card) => {
-    next[card.name] = nextMode;
+  void withInteractionPinnedPosition(() => {
+    const shouldExpandAll = cards.every((card) => getVsSongCardMode(card.name) === 'collapsed');
+    const nextMode = shouldExpandAll ? 'expanded' : 'collapsed';
+    const next = {};
+    cards.forEach((card) => {
+      next[card.name] = nextMode;
+    });
+    vsSongCardModeMap.value = next;
   });
-  vsSongCardModeMap.value = next;
 };
 
 const toggleAllOcBookExpandCollapse = () => {
   const groups = ocBookStatsByUnit.value;
   if (!groups.length) return;
-  const shouldExpandAll = groups.every((group) => !isOcBookUnitExpanded(group.unit));
-  const next = {};
-  groups.forEach((group) => {
-    next[group.unit] = shouldExpandAll;
+  void withInteractionPinnedPosition(() => {
+    const shouldExpandAll = groups.every((group) => !isOcBookUnitExpanded(group.unit));
+    const next = {};
+    groups.forEach((group) => {
+      next[group.unit] = shouldExpandAll;
+    });
+    ocBookUnitExpandedMap.value = next;
   });
-  ocBookUnitExpandedMap.value = next;
 };
 
 const toggleOcBookUnitExpandCollapse = (unit) => {
   const key = String(unit || '');
   if (!key) return;
-  ocBookUnitExpandedMap.value = {
-    ...ocBookUnitExpandedMap.value,
-    [key]: !isOcBookUnitExpanded(key)
-  };
+  void withInteractionPinnedPosition(() => {
+    ocBookUnitExpandedMap.value = {
+      ...ocBookUnitExpandedMap.value,
+      [key]: !isOcBookUnitExpanded(key)
+    };
+  });
 };
 
 const toggleVsSongCardExpandCollapse = (name) => {
   const key = String(name || '');
   if (!key) return;
-  const current = getVsSongCardMode(key);
-  const nextMode = current === 'collapsed' ? 'expanded' : 'collapsed';
-  vsSongCardModeMap.value = {
-    ...vsSongCardModeMap.value,
-    [key]: nextMode
-  };
+  void withInteractionPinnedPosition(() => {
+    const current = getVsSongCardMode(key);
+    const nextMode = current === 'collapsed' ? 'expanded' : 'collapsed';
+    vsSongCardModeMap.value = {
+      ...vsSongCardModeMap.value,
+      [key]: nextMode
+    };
+  });
 };
 
 const setVsSongCardRef = (name, el) => {
@@ -2094,24 +2715,37 @@ const getKnownCharacters = (rawList) => {
   return Array.from(uniq.values());
 };
 
-const isOcUniqueSongForUnit = (song, unitKey) => {
-  if (!song.tagKeys.includes(unitKey)) return false;
-  return !OC_UNIT_OPTIONS.some((item) => item.key !== unitKey && song.tagKeys.includes(item.key));
+const isCoreUniqueSongForUnit = (song, unitKey) => {
+  if (!song.unitKeys.includes(unitKey)) return false;
+  return !CORE_UNIT_KEYS.some((coreKey) => coreKey !== unitKey && song.unitKeys.includes(coreKey));
 };
 
 const ocUniqueStats = computed(() => {
-  return OC_UNIT_OPTIONS.map((item) => {
-    const totalSongs = songsForStats.value.filter((song) => song.tagKeys.includes(item.key));
-    const uniqueSongs = songsForStats.value.filter((song) => isOcUniqueSongForUnit(song, item.key));
-    const with2dCount = uniqueSongs.filter((song) => song.categoryKeys.includes('2dmv')).length;
+  const rows = [
+    {
+      unit: 'vs',
+      isUniqueSong: (song) => isCoreUniqueSongForUnit(song, 'vs'),
+      has2d: (song) => song.categoryKeys.includes('2dmv') || song.categoryKeys.includes('vs_2dmv')
+    },
+    ...OC_UNIT_OPTIONS.map((item) => ({
+      unit: item.key,
+      isUniqueSong: (song) => isCoreUniqueSongForUnit(song, item.key),
+      has2d: (song) => song.categoryKeys.includes('2dmv')
+    }))
+  ];
+
+  return rows.map((row) => {
+    const uniqueSongs = songsForStats.value.filter((song) => row.isUniqueSong(song));
+    const with2dCount = uniqueSongs.filter((song) => row.has2d(song)).length;
     const with3dCount = uniqueSongs.filter((song) => song.categoryKeys.includes('3dmv')).length;
+    const withApdCount = uniqueSongs.filter((song) => hasSongAppendDifficulty(song)).length;
 
     return {
-      unit: item.key,
-      totalCount: totalSongs.length,
+      unit: row.unit,
       uniqueCount: uniqueSongs.length,
       with2dCount,
-      with3dCount
+      with3dCount,
+      withApdCount
     };
   });
 });
@@ -2192,35 +2826,41 @@ const anotherAllFixed = computed(() => {
 const toggleAllAnotherExpandCollapse = () => {
   const cards = anotherVocalCards.value;
   if (cards.length === 0) return;
-  const shouldExpandAll = cards.every((card) => {
-    const mode = getAnotherCardMode(card.name);
-    return mode === 'collapsed' || mode === 'fixed';
+  void withInteractionPinnedPosition(() => {
+    const shouldExpandAll = cards.every((card) => {
+      const mode = getAnotherCardMode(card.name);
+      return mode === 'collapsed' || mode === 'fixed';
+    });
+    const nextMode = shouldExpandAll ? 'expanded' : 'collapsed';
+    const next = {};
+    cards.forEach((card) => {
+      next[card.name] = nextMode;
+    });
+    anotherCardModeMap.value = next;
   });
-  const nextMode = shouldExpandAll ? 'expanded' : 'collapsed';
-  const next = {};
-  cards.forEach((card) => {
-    next[card.name] = nextMode;
-  });
-  anotherCardModeMap.value = next;
 };
 
 const setAllAnotherFixedMode = () => {
   const cards = anotherVocalCards.value;
   if (cards.length === 0) return;
-  const next = {};
-  cards.forEach((card) => {
-    next[card.name] = 'fixed';
+  void withInteractionPinnedPosition(() => {
+    const next = {};
+    cards.forEach((card) => {
+      next[card.name] = 'fixed';
+    });
+    anotherCardModeMap.value = next;
   });
-  anotherCardModeMap.value = next;
 };
 
 const toggleAnotherCardExpandCollapse = (name) => {
-  const current = getAnotherCardMode(name);
-  const nextMode = current === 'collapsed' ? 'expanded' : (current === 'fixed' ? 'expanded' : 'collapsed');
-  anotherCardModeMap.value = {
-    ...anotherCardModeMap.value,
-    [name]: nextMode
-  };
+  void withInteractionPinnedPosition(() => {
+    const current = getAnotherCardMode(name);
+    const nextMode = current === 'collapsed' ? 'expanded' : (current === 'fixed' ? 'expanded' : 'collapsed');
+    anotherCardModeMap.value = {
+      ...anotherCardModeMap.value,
+      [name]: nextMode
+    };
+  });
 };
 
 const getAnotherCardStyle = (row) => {
@@ -2243,23 +2883,44 @@ const sameUnitPairUnitCardsRaw = computed(() => {
         const songMap = new Map();
 
         songsForStats.value.forEach((song) => {
-          const hasPair = song.vocals.some((vocal) => {
-            if (normalizeCategoryKey(vocal?.type) !== 'sekai') return false;
+          let matchedPairVocal = null;
+
+          song.vocals.forEach((vocal) => {
+            if (normalizeCategoryKey(vocal?.type) !== 'sekai') return;
 
             const ocChars = getKnownCharacters(vocal?.characters).filter((char) => OC_UNIT_KEYS.includes(char.unit));
             const uniqOcChars = Array.from(new Map(ocChars.map((char) => [char.name, char])).values());
-            if (uniqOcChars.length !== 2) return false;
-            if (!uniqOcChars.every((char) => char.unit === unitKey)) return false;
+            if (uniqOcChars.length !== 2) return;
+            if (!uniqOcChars.every((char) => char.unit === unitKey)) return;
 
             const names = uniqOcChars.map((char) => char.name).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
-            return names[0] === pairNames[0] && names[1] === pairNames[1];
+            if (names[0] !== pairNames[0] || names[1] !== pairNames[1]) return;
+
+            const vsNames = getKnownCharacters(vocal?.characters)
+              .filter((char) => char.unit === 'vs')
+              .sort((a, b) => a.order - b.order)
+              .map((char) => char.name)
+              .slice(0, 2);
+
+            const vocalSortId = normalizeSongId(vocal?.vocal_id);
+            if (!matchedPairVocal || vocalSortId < matchedPairVocal.vocalSortId) {
+              matchedPairVocal = { vocalSortId, vsNames };
+              return;
+            }
+
+            if (vocalSortId === matchedPairVocal.vocalSortId && vsNames.length > matchedPairVocal.vsNames.length) {
+              matchedPairVocal = { vocalSortId, vsNames };
+            }
           });
 
-          if (!hasPair) return;
+          if (!matchedPairVocal) return;
           songMap.set(`${song.id}-${song.title}`, {
             id: song.id,
             title: song.title || '-',
-            jacketUrl: song.jacketUrl || ''
+            jacketUrl: song.jacketUrl || '',
+            vsIcons: buildVsIconsFromNames(matchedPairVocal.vsNames),
+            has2d: hasSong2DMVCategory(song),
+            has3d: hasSong3DMVCategory(song)
           });
         });
 
@@ -2320,29 +2981,36 @@ const duoGlobalToggleLabel = computed(() => {
 const toggleAllDuoExpandCollapse = () => {
   const keys = sameUnitPairUnitCards.value.flatMap((unitCard) => unitCard.pairs.map((pair) => pair.key));
   if (keys.length === 0) return;
-  const shouldExpandAll = keys.every((key) => !isDuoCardExpanded(key));
-  const next = {};
-  keys.forEach((key) => {
-    next[key] = shouldExpandAll;
+  void withInteractionPinnedPosition(() => {
+    const shouldExpandAll = keys.every((key) => !isDuoCardExpanded(key));
+    const next = {};
+    keys.forEach((key) => {
+      next[key] = shouldExpandAll;
+    });
+    duoCardExpandedMap.value = next;
   });
-  duoCardExpandedMap.value = next;
 };
 
 const toggleDuoCardExpandCollapse = (key) => {
-  duoCardExpandedMap.value = {
-    ...duoCardExpandedMap.value,
-    [key]: !isDuoCardExpanded(key)
-  };
+  void withInteractionPinnedPosition(() => {
+    duoCardExpandedMap.value = {
+      ...duoCardExpandedMap.value,
+      [key]: !isDuoCardExpanded(key)
+    };
+  });
 };
 
 const filteredSongs = computed(() => {
-  const key = keyword.value.toLowerCase().trim();
+  const rawKeyword = String(keyword.value || '').trim();
+  const key = normalizeSearchText(rawKeyword);
+  const keyHiragana = normalizeSearchHiragana(rawKeyword);
+  const keyRomaji = normalizeSearchRomaji(rawKeyword);
   const isIdSearch = key.startsWith('#');
   const idQuery = isIdSearch ? key.slice(1).trim() : '';
   const mv = mvFilter.value;
   const group = groupFilter.value;
   const sortKey = difficultySortKey.value;
-  const sortOrder = difficultySortOrder.value === 'asc' ? 'asc' : 'desc';
+  const sortMode = difficultySortMode.value;
 
   const filtered = songs.value.filter((song) => {
     let textHit = false;
@@ -2351,10 +3019,12 @@ const filteredSongs = computed(() => {
     } else if (isIdSearch) {
       textHit = idQuery ? String(song.id).toLowerCase().includes(idQuery) : true;
     } else {
-      textHit = song.title.toLowerCase().includes(key)
-        || song.composer.toLowerCase().includes(key)
-        || song.lyricist.toLowerCase().includes(key)
-        || song.arranger.toLowerCase().includes(key);
+      textHit = song.searchTitle.includes(key)
+        || song.searchComposer.includes(key)
+        || song.searchLyricist.includes(key)
+        || song.searchArranger.includes(key)
+        || (keyHiragana && song.pronunciationHiragana.includes(keyHiragana))
+        || (keyRomaji && song.pronunciationRomaji.includes(keyRomaji));
     }
     if (!textHit) return false;
 
@@ -2363,11 +3033,22 @@ const filteredSongs = computed(() => {
     if (mv === 'vs2d' && !song.categoryKeys.includes('vs_2dmv')) return false;
     if (mv === 'original' && !song.categoryKeys.includes('original')) return false;
 
+    if (sortKey === 'append' && isSongDifficultyMissing(song, 'append')) return false;
+
     if (group !== 'all' && !song.groupKeys.includes(group)) return false;
     return true;
   });
 
-  if (sortKey === 'none') return filtered;
+  if (!sortKey) {
+    if (sortMode === 'desc') {
+      return [...filtered].sort((a, b) => normalizeSongId(b.id) - normalizeSongId(a.id));
+    }
+    return [...filtered].sort((a, b) => normalizeSongId(a.id) - normalizeSongId(b.id));
+  }
+
+  if (sortMode === 'none') {
+    return [...filtered].sort((a, b) => normalizeSongId(a.id) - normalizeSongId(b.id));
+  }
 
   return [...filtered].sort((a, b) => {
     const rawA = a?.difficulties?.[sortKey];
@@ -2384,7 +3065,7 @@ const filteredSongs = computed(() => {
     if (!hasB) return -1;
 
     if (diffA !== diffB) {
-      return sortOrder === 'asc' ? diffA - diffB : diffB - diffA;
+      return sortMode === 'asc' ? diffA - diffB : diffB - diffA;
     }
 
     return normalizeSongId(a.id) - normalizeSongId(b.id);
@@ -2418,10 +3099,13 @@ const emptyPagedRowCount = computed(() => {
   return Math.max(0, songPageSize.value - pagedSongs.value.length);
 });
 
-const changeSongPage = (delta) => {
+const changeSongPage = (delta, event = null) => {
   const next = currentSongPage.value + delta;
   if (next < 1 || next > totalSongPages.value) return;
-  currentSongPage.value = next;
+  const anchorEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  void withInteractionPinnedPosition(() => {
+    currentSongPage.value = next;
+  }, anchorEl);
 };
 
 const onSongJacketError = (event) => {
@@ -2434,6 +3118,44 @@ const onSongJacketError = (event) => {
   if (holder instanceof HTMLElement) {
     holder.classList.add('is-failed');
   }
+};
+
+const showSongImageTitle = (event, rawTitle) => {
+  const nextTitle = String(rawTitle || '').trim() || '-';
+  const targetEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 720;
+  const estimatedWidth = Math.min(320, Math.max(140, Math.ceil(nextTitle.length * 14)));
+  const estimatedHeight = 34;
+
+  let left = Math.max(8, Math.floor((viewportWidth - estimatedWidth) / 2));
+  let top = Math.max(8, viewportHeight - estimatedHeight - 20);
+
+  if (targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    const preferRightLeft = rect.right + 10;
+    const preferLeftLeft = rect.left - estimatedWidth - 10;
+    left = preferRightLeft + estimatedWidth <= viewportWidth - 8
+      ? preferRightLeft
+      : Math.max(8, preferLeftLeft);
+    top = rect.top + rect.height / 2 - estimatedHeight / 2;
+  }
+
+  left = Math.max(8, Math.min(viewportWidth - estimatedWidth - 8, left));
+  top = Math.max(8, Math.min(viewportHeight - estimatedHeight - 8, top));
+
+  songImageTitleToast.value = {
+    text: nextTitle,
+    left: Math.round(left),
+    top: Math.round(top)
+  };
+  if (songImageTitleToastTimer) {
+    clearTimeout(songImageTitleToastTimer);
+  }
+  songImageTitleToastTimer = setTimeout(() => {
+    songImageTitleToast.value = null;
+    songImageTitleToastTimer = 0;
+  }, 1600);
 };
 
 const waitNextPaint = () => new Promise((resolve) => {
@@ -2681,8 +3403,18 @@ watch(sameUnitPairUnitCards, (unitCards) => {
   });
 }, { immediate: true });
 
-watch([keyword, mvFilter, groupFilter, difficultySortKey, difficultySortOrder], () => {
+watch(() => navTargetIds.value.join('|'), () => {
+  void bindSectionObserver();
+});
+
+watch([keyword, mvFilter, groupFilter, difficultySortKey, difficultySortMode], () => {
   currentSongPage.value = 1;
+});
+
+watch(difficultySortKey, (nextKey) => {
+  if (!nextKey) {
+    difficultySortMode.value = 'none';
+  }
 });
 
 watch(songPageSize, () => {
@@ -2748,6 +3480,12 @@ watch(totalSongPages, (nextTotal) => {
   --song-jacket-track-size: 68px;
   --song-oc-tag-vs-gap: 4px;
   --song-oc-vs-col-width: 14px;
+  --song-vs-pill-height: 20px;
+  --song-vs-pill-gap: 2px;
+  --song-vs-pill-font-size: 0.74rem;
+  --song-vs-pill-pad-x: 4px;
+  --song-duo-vs-icon-size: 18px;
+  --song-duo-vs-icon-gap: 2px;
 }
 
 .pjsk-song-stats button:not(:disabled) {
@@ -3096,7 +3834,7 @@ watch(totalSongPages, (nextTotal) => {
 }
 
 .song-oc-unit-logo {
-  height: 24px;
+  height: 28px;
   width: auto;
   max-width: 150px;
   object-fit: contain;
@@ -3152,30 +3890,20 @@ watch(totalSongPages, (nextTotal) => {
 .song-vs-event-unit-counts {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 7px;
 }
 
 .song-vs-event-unit-stack {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--song-vs-pill-gap);
   min-width: 0;
 }
 
 .song-vs-event-unit-chip {
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: 1px solid #e5e7eb;
-  border-radius: 999px;
-  padding: 2px 6px 2px 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
   width: 100%;
   min-width: 0;
-  white-space: nowrap;
 }
 
 .song-vs-event-unit-logo {
@@ -3191,20 +3919,11 @@ watch(totalSongPages, (nextTotal) => {
 .song-vs-event-unit-mv-chips {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--song-vs-pill-gap);
 }
 
 .song-vs-event-unit-mv-chip {
-  min-height: 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(51, 65, 85, 0.24);
-  padding: 0 6px;
-  color: #0f172a;
-  font-size: 0.58rem;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
-  white-space: nowrap;
+  width: 100%;
 }
 
 .song-vs-event-unit-mv-chip.is-compact {
@@ -3227,6 +3946,55 @@ watch(totalSongPages, (nextTotal) => {
   color: #475569;
 }
 
+.song-vs-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--song-vs-pill-gap);
+  box-sizing: border-box;
+  min-height: var(--song-vs-pill-height);
+  height: var(--song-vs-pill-height);
+  border-radius: 999px;
+  border: 1px solid rgba(51, 65, 85, 0.32);
+  color: #0f172a;
+  font-size: var(--song-vs-pill-font-size);
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 var(--song-vs-pill-pad-x);
+  white-space: nowrap;
+}
+
+.song-vs-total-mv-chip {
+  background: transparent;
+}
+
+.song-vs-total-mv-sep {
+  color: #475569;
+}
+
+.song-vs-total-mv-3d {
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.song-vs-total-mv-chip-head {
+  margin-left: 4px;
+}
+
+.song-vs-event-card.is-image-mode .song-vs-total-mv-chip-head {
+  display: none;
+}
+
+.song-vs-event-unit-stack-total {
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.song-vs-total-mv-chip-stat {
+  width: auto;
+  min-width: fit-content;
+}
+
 .song-vs-event-image-name {
   color: #111827;
   font-size: 0.82rem;
@@ -3243,6 +4011,13 @@ watch(totalSongPages, (nextTotal) => {
   grid-template-columns: auto minmax(0, 1fr) var(--song-event-mv-col-width);
   align-items: center;
   gap: 4px;
+}
+
+.song-vs-event-tag-vs-col {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
 }
 
 .song-event-mv-col {
@@ -3272,9 +4047,6 @@ watch(totalSongPages, (nextTotal) => {
 
 .song-vs-event-unit-counts:not(.song-vs-event-unit-counts-image) .song-vs-event-unit-mv-chip {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 16px;
   box-sizing: border-box;
 }
 
@@ -3288,8 +4060,8 @@ watch(totalSongPages, (nextTotal) => {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  width: var(--song-vs-text-tag-width);
-  min-width: var(--song-vs-text-tag-width);
+  width: auto;
+  min-width: 0.8em;
   text-align: left;
   font-variant-numeric: tabular-nums;
 }
@@ -3589,17 +4361,11 @@ watch(totalSongPages, (nextTotal) => {
   min-width: 0;
 }
 
-.song-vs-event-image-total {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 48px;
-}
 
 .song-vs-event-unit-counts-image {
   margin-left: 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   justify-content: stretch;
   align-items: center;
   gap: 4px;
@@ -3614,7 +4380,7 @@ watch(totalSongPages, (nextTotal) => {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: var(--song-vs-pill-gap);
 }
 
 .song-vs-event-unit-counts-image .song-vs-event-unit-chip {
@@ -3630,7 +4396,7 @@ watch(totalSongPages, (nextTotal) => {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: var(--song-vs-pill-gap);
   flex: 0 0 auto;
 }
 
@@ -3639,20 +4405,13 @@ watch(totalSongPages, (nextTotal) => {
   width: auto;
 }
 
-.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-chip {
-  font-size: 0.8rem;
-  min-height: 24px;
+.song-vs-event-unit-counts-image .song-vs-event-unit-stack-total .song-vs-total-mv-chip {
+  min-width: fit-content;
 }
 
 .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-logo {
   width: 18px;
   height: 18px;
-}
-
-.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip {
-  min-height: 20px;
-  font-size: 0.72rem;
-  line-height: 20px;
 }
 
 .song-vs-event-image-groups {
@@ -3701,6 +4460,24 @@ watch(totalSongPages, (nextTotal) => {
   line-height: 1.1;
   text-align: center;
   white-space: nowrap;
+}
+
+.song-image-count-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(51, 65, 85, 0.34);
+  border-radius: 999px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.78), 0 2px 6px rgba(15, 23, 42, 0.16);
 }
 
 .song-duo-image-identity {
@@ -3803,14 +4580,14 @@ watch(totalSongPages, (nextTotal) => {
   flex: 0 0 auto;
 }
 
-.song-duo-song-jacket-img {
-  border-radius: 8px;
-}
-
 .song-image-jacket-tile {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
+}
+
+.song-vs-event-image-jacket-tile {
+  align-items: center;
 }
 
 .song-image-jacket-caption {
@@ -3831,10 +4608,13 @@ watch(totalSongPages, (nextTotal) => {
   align-items: center;
   justify-content: center;
   text-align: center;
+  border: 1px solid #c6c7ca;
   border-radius: 999px;
   color: #111827;
   font-size: 0.7rem;
   font-weight: 600;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .song-oc-event-unit-count {
@@ -3848,24 +4628,12 @@ watch(totalSongPages, (nextTotal) => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-left: 6px;
+  margin-left: 4px;
   flex-wrap: wrap;
 }
 
 .song-oc-event-mv-stat-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  min-height: 16px;
-  height: 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(51, 65, 85, 0.24);
-  padding: 0 6px;
-  color: #0f172a;
-  font-size: 0.66rem;
-  font-weight: 700;
-  line-height: 16px;
+  min-width: fit-content;
   white-space: nowrap;
 }
 
@@ -3938,6 +4706,13 @@ watch(totalSongPages, (nextTotal) => {
   gap: 1px;
 }
 
+.song-vs-event-tag-vs-col .song-oc-event-vs-icons.is-text-col.is-vs-tag-col {
+  width: var(--song-oc-vs-col-width);
+  min-width: var(--song-oc-vs-col-width);
+  grid-auto-rows: var(--song-oc-vs-col-width);
+  justify-items: end;
+}
+
 .song-oc-event-vs-icon {
   width: 18px;
   height: 18px;
@@ -3946,6 +4721,34 @@ watch(totalSongPages, (nextTotal) => {
   object-fit: cover;
   border: 1px solid #ffffff;
   box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.18);
+}
+
+.song-oc-event-vs-icon.is-empty-slot {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.song-oc-event-vs-icon.is-placeholder-slot {
+  background: transparent;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.song-oc-event-vs-icons.is-duo-inline {
+  width: calc(var(--song-duo-vs-icon-size) * 2 + var(--song-duo-vs-icon-gap));
+  min-width: calc(var(--song-duo-vs-icon-size) * 2 + var(--song-duo-vs-icon-gap));
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--song-duo-vs-icon-gap);
+}
+
+.song-oc-event-vs-icons.is-duo-inline .song-oc-event-vs-icon {
+  width: var(--song-duo-vs-icon-size);
+  height: var(--song-duo-vs-icon-size);
 }
 
 .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon {
@@ -4035,7 +4838,7 @@ watch(totalSongPages, (nextTotal) => {
 .song-oc-event-unit-head {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr) auto;
-  align-items: start;
+  align-items: center;
   column-gap: 8px;
   row-gap: 4px;
   margin-bottom: 8px;
@@ -4049,9 +4852,20 @@ watch(totalSongPages, (nextTotal) => {
   white-space: nowrap;
 }
 
+.song-oc-event-unit-count-circle {
+  margin-left: 0;
+  flex: 0 0 auto;
+}
+
+.song-oc-event-unit-head .song-oc-event-unit-count-circle {
+  justify-self: start;
+  align-self: center;
+}
+
 .song-oc-event-unit-head .song-oc-event-unit-mv-chips {
   margin-left: 0;
   min-width: 0;
+  align-self: center;
 }
 
 .song-oc-event-unit-head .song-oc-event-unit-tools {
@@ -4093,6 +4907,17 @@ watch(totalSongPages, (nextTotal) => {
 .song-duo-card .song-role-list {
   max-height: none;
   overflow: visible;
+}
+
+.song-stat-list-duo li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) var(--song-event-mv-col-width) var(--song-event-mv-col-width);
+  align-items: center;
+  gap: 6px;
+}
+
+.song-duo-event-mv-col {
+  justify-content: flex-end;
 }
 
 .song-toolbar {
@@ -4238,18 +5063,11 @@ watch(totalSongPages, (nextTotal) => {
   min-width: 0;
 }
 
-.song-th-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #475569;
-  line-height: 1.1;
-  margin-bottom: 4px;
-}
-
 .song-th-filter-stack {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px;
+  align-items: center;
 }
 
 .song-th-select {
@@ -4263,6 +5081,36 @@ watch(totalSongPages, (nextTotal) => {
 .song-th-select:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.song-diff-order-btn {
+  width: 27px;
+  height: 27px;
+  min-width: 27px;
+  min-height: 27px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  cursor: pointer;
+  padding: 0;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.song-diff-order-btn:active {
+  filter: brightness(0.88);
+  transform: scale(0.96);
+}
+
+.song-diff-order-icon {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+  display: block;
 }
 
 .song-title-cell {
@@ -4283,6 +5131,13 @@ watch(totalSongPages, (nextTotal) => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.song-jacket-media:active {
+  filter: brightness(0.88);
+  transform: scale(0.98);
 }
 
 .song-jacket-media.is-3d-frame {
@@ -4312,7 +5167,7 @@ watch(totalSongPages, (nextTotal) => {
 
 .song-jacket-media.is-3d-frame .song-jacket-img,
 .song-jacket-media.is-3d-frame .song-duo-song-jacket-img {
-  border-radius: inherit;
+  border-radius: 0;
 }
 
 .song-jacket-img {
@@ -4320,6 +5175,7 @@ watch(totalSongPages, (nextTotal) => {
   height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: 0;
 }
 
 .song-jacket-fallback {
@@ -4500,6 +5356,26 @@ watch(totalSongPages, (nextTotal) => {
   font-weight: 700;
 }
 
+.song-image-title-toast {
+  position: fixed;
+  max-width: min(82vw, 320px);
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(51, 65, 85, 0.3);
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.18);
+  z-index: 1200;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .song-page-size-field {
   display: inline-flex;
   align-items: center;
@@ -4619,6 +5495,8 @@ watch(totalSongPages, (nextTotal) => {
     --song-jacket-default-size: 56px;
     --song-jacket-track-size: 52px;
     --song-oc-vs-col-width: 14px;
+    --song-duo-vs-icon-size: 14px;
+    --song-duo-vs-icon-gap: 1px;
   }
 
   .stats-layout,
@@ -4728,7 +5606,7 @@ watch(totalSongPages, (nextTotal) => {
   }
 
   .song-oc-unit-logo {
-    height: 20px;
+    height: 28px;
     max-width: 110px;
   }
 
@@ -4736,15 +5614,13 @@ watch(totalSongPages, (nextTotal) => {
     gap: 4px;
   }
 
-  .song-vs-event-unit-chip {
-    font-size: 0.64rem;
-    gap: 4px;
-    padding: 1px 4px 1px 3px;
+  .song-vs-pill {
+    font-size: 0.76rem;
   }
 
   .song-vs-event-unit-logo {
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
   }
 
   .anvo-mode-switch {
@@ -4791,12 +5667,8 @@ watch(totalSongPages, (nextTotal) => {
     min-height: 29px;
   }
 
-  .song-th-title {
-    font-size: 0.66rem;
-    margin-bottom: 3px;
-  }
-
   .song-th-filter-stack {
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 3px;
   }
 
@@ -4804,6 +5676,18 @@ watch(totalSongPages, (nextTotal) => {
     min-height: 24px;
     padding: 2px 6px;
     font-size: 0.66rem;
+  }
+
+  .song-diff-order-btn {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  .song-diff-order-icon {
+    width: 18px;
+    height: 18px;
   }
 
   .song-home-btn {
@@ -4856,10 +5740,11 @@ watch(totalSongPages, (nextTotal) => {
   }
 
   .song-vs-event-unit-counts-image .song-vs-event-unit-chip {
-    font-size: 0.58rem;
-    gap: 3px;
-    padding: 1px 4px 1px 3px;
     width: 56px;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-stack-total .song-vs-total-mv-chip {
+    min-width: fit-content;
   }
 
   .song-vs-event-unit-counts-image .song-vs-event-unit-stack {
@@ -4920,10 +5805,6 @@ watch(totalSongPages, (nextTotal) => {
   }
 
   .song-duo-song-jacket-item {
-    border-radius: 7px;
-  }
-
-  .song-duo-song-jacket-img {
     border-radius: 7px;
   }
 
@@ -5018,6 +5899,8 @@ watch(totalSongPages, (nextTotal) => {
     --song-event-mv-chip-pad-x: 3px;
     --song-jacket-default-size: 68px;
     --song-jacket-track-size: 68px;
+    --song-duo-vs-icon-size: 20px;
+    --song-duo-vs-icon-gap: 1px;
   }
 
   .song-col-jacket {
@@ -5077,11 +5960,14 @@ watch(totalSongPages, (nextTotal) => {
     grid-column: 1 / -1;
   }
 
-  .song-vs-event-image-total {
-    min-width: auto;
-    justify-content: flex-start;
-    text-align: left;
+  .song-vs-event-card.is-image-mode .song-vs-total-mv-chip-head {
+    display: inline-flex;
   }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-stack-total {
+    display: none;
+  }
+
 
   .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-stack {
     width: auto;
@@ -5115,20 +6001,14 @@ watch(totalSongPages, (nextTotal) => {
     flex-basis: 30px;
   }
 
-  .song-vs-event-card.is-image-mode .song-vs-event-image-name {
-    font-size: 0.82rem;
-    font-weight: 700;
-    line-height: 1.2;
-  }
-
-  .song-vs-event-card.is-image-mode .song-vs-event-image-total.song-image-count {
-    font-size: 0.74rem;
-    font-weight: 700;
-    line-height: 1.2;
-    color: #6b7280;
-    min-width: auto;
-    justify-content: flex-start;
-    text-align: left;
+  .song-image-count-circle {
+    font-size: 0.92rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #0f172a;
+    min-width: 30px;
+    justify-content: center;
+    text-align: center;
   }
 
   .song-oc-event-vs-icon {

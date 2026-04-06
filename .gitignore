@@ -35,3 +35,4 @@ public/cards/manifest.json
 
 # Local sync scripts (not for frontend runtime)
 scripts/*.mjs
+scripts/README.md

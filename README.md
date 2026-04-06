@@ -1,132 +1,104 @@
-# Vue 3 + Vite
+# pjsk-planner 用户手册
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+本项目是面向《世界计划》的非官方数据浏览与预测辅助站点，提供活动、卡片、乐曲三大页面，并带有本地预测数据源管理。
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## 页面总览
 
-## Local other_source sync
+顶部导航共有 3 个页面：
 
-This project supports a local-only songs sync pipeline from `other_source/`.
+- 统计面板：角色卡片统计、节日人选、相关记录。
+- 历史活动一览：活动时间轴、筛选、预测编辑与悬浮统计。
+- 乐曲统计：多维乐曲统计与乐曲检索。
 
-- The `other_source/` folder is gitignored and will not be committed.
-- Put the following six files in `other_source/` root:
-	- `musics.json`
-	- `musicDifficulties.json`
-	- `musicTags.json`
-	- `musicVocals.json`
-	- `gameCharacters.json`
-	- `outsideCharacters.json`
-- The sync script stitches them into `public/data/pjsk_songs.json`.
-- You can auto-fetch these six files from `sekai-master-db-diff`:
+## 顶栏公共功能
 
-```bash
-npm run fetch:other-source
-```
+无论在哪个页面，右上角都可使用数据源菜单：
 
-- Preview fetch changes without writing files:
+- 导入：导入 JSON，作为新的预测数据源。
+- 导出：导出当前数据源。
+- 预测截图：导出预测区间 PNG，可选择是否包含生日行。
+- 新建：新建空白数据源，或复制当前数据源。
+- 删除：删除当前数据源（至少保留一个数据源）。
+- 重命名与排序：支持重命名、上下移动和拖拽排序。
 
-```bash
-npm run fetch:other-source:dry
-```
+用户名会用于导出命名和本地数据源命名。
 
-- Run sync:
+## 历史活动一览
 
-```bash
-npm run sync:other
-```
+历史活动页用于查看活动列表、编辑预测以及快速观察统计结果。
 
-- Preview changes without writing files:
+核心能力：
 
-```bash
-npm run sync:other:dry
-```
+- 活动导航：可快速跳到当前活动。
+- 筛选面板：支持活动筛选与卡片筛选两种模式。
+- 常用筛选条件：活动类型、卡池类型、活动节日、活动属性、活动团体等。
+- 联动卡池显示切换：可隐藏或显示联动卡池。
+- 预测状态标记：区分待预测与已预测。
 
-### Diff behavior
+预测编辑：
 
-- The script compares newly stitched songs with the existing `public/data/pjsk_songs.json` by song `id`.
-- It reports `added`, `removed`, and `updated` song IDs.
-- On normal run, changes are fully synced to `public/data/pjsk_songs.json`.
-- On dry-run, changes are only reported.
+- 打开某活动后可进入预测编辑器。
+- 可配置活动类型、卡池性质、活动属性、Ban 主。
+- 可编辑阵容中的角色、稀有度、属性、技能。
+- 支持 World Link 特殊规则（人选锁定、仅调整属性等）。
 
-## Song jacket sync (incremental)
+悬浮统计：
 
-This project can sync song jackets from sekai.best into local static assets under `public/songs/`.
+- 预测编辑打开时，可启用悬浮统计面板。
+- 可选择最多 6 个统计面板显示。
+- 支持拖动、收起、重置布局。
+- 可配置属性统计人选、日挑配队人选、节日单选等。
 
-- Source songs list: `public/data/pjsk_songs.json`
-- Target directory: `public/songs`
-- Manifest file: `public/songs/manifest.json`
-- Local file naming: `song_<id>.webp` (for example `song_001.webp`)
+## 统计面板
 
-Run sync:
+统计面板页用于角色卡片维度的集中统计与记录查询。
 
-```bash
-npm run sync:song-covers
-```
+主要区块：
 
-Dry-run (comparison only, no file write):
+- 阶梯分布：按不同统计维度查看角色分布。
+- 节日人选：按节日查看角色分层，支持高星合并低星等选项。
+- 相关记录：查看 Ban 间隔、Banner 相关等记录。
 
-```bash
-npm run sync:song-covers:dry
-```
+常见控制：
 
-Optional flags:
+- 统计截止活动 ID：可手动输入或使用加减按钮微调。
+- 筛选开关：如只看箱活、只看混活、统计联动、统计团分、统计 FES。
+- 导出 PNG：各大区块均支持单独截图导出。
+- 名称格式：支持缩写/单字显示。
 
-- `--force`: redownload all jackets.
-- `--prune`: remove stale local jacket files that are not in songs data.
-- `--concurrency <n>`: set concurrent requests (default 8, max 16).
-- `--timeout <ms>`: set per-request timeout in milliseconds (default 20000).
+## 乐曲统计
 
-## Cards sync (incremental by default)
+乐曲页包含统计区和检索区两部分。
 
-Cards can be synced from `other_source/cards.json` into `public/data/pjsk_cards.json` by `CardID`.
+统计区：
 
-- Fields synced by rule: `Name`, `CardName`, `Rarity`, `Attribute`, `Skill`, `Bundle`.
-- Default behavior is non-destructive incremental:
-	- fill missing fields (including missing `Bundle` on old cards),
-	- append new cards,
-	- report conflicts without overwriting existing values.
-- To force overwrite conflicting fields, pass `--overwrite-existing`.
+- 各团歌曲统计：查看各团歌曲、2D、3D、APD 维度统计。
+- VS 书下统计：支持图文模式切换、全局展开收起、分团体计数、2D/3D 计数。
+- OC 书下统计：按团体和成员查看收录情况。
+- Anvo 统计：支持展开收起与显示模式切换。
+- 双人歌曲统计：按团体和角色组合查看双人曲。
 
-Run sync:
+检索区：
 
-```bash
-npm run sync:cards-other
-```
+- 关键词搜索：支持曲名、作词、作曲、编曲。
+- ID 搜索：使用 # 前缀（示例：#241）。
+- 假名/罗马音搜索：支持按发音检索。
+- 条件筛选：团体筛选、MV 类型筛选。
+- 难度排序：支持难度字段选择与升降序/默认模式切换。
 
-Dry-run with conflict report:
+## 移动端与交互说明
 
-```bash
-npm run sync:cards-other:dry
-```
+- 三个页面均适配移动端布局。
+- 页面内统计菜单支持收起与展开。
+- 大多数统计卡片支持一键展开/收起与导出。
 
-## Card thumbnail sync (card ID naming)
+## 数据与说明
 
-Card thumbnails are synced from sekai.best into `public/cards/` from local `public/data/pjsk_cards.json` (`Bundle` field), using card-id file names:
+- 本站部分内容包含本地预测数据，预测结果仅供参考。
+- 数据源切换不会自动覆盖其他数据源内容，请注意当前激活源。
 
-- normal: `card<id>.webp` (example: `card251.webp`)
-- after training: `card<id>_t.webp` (example: `card4_t.webp`)
+## 素材与版权说明
 
-Files are stored in character subfolders:
+本项目为非官方、非商业的个人学习与交流用途。站内展示素材版权归原权利人所有，包括但不限于 Sega、Colorful Palette、Crypton 等。
 
-- `public/cards/<char-folder>/card<id>.webp`
-- `public/cards/<char-folder>/card<id>_t.webp`
-
-where `<char-folder>` follows `001ick` style.
-
-Rules:
-
-- 1★ / 2★ / birthday cards: sync normal only (`_normal` remote suffix).
-- 3★ / 4★ cards: sync normal + after training.
-- special case `CardID=1167`: only sync `_t` image.
-
-Run sync:
-
-```bash
-npm run sync:card-thumbnails
-```
-
-Dry-run:
-
-```bash
-npm run sync:card-thumbnails:dry
-```
+如有版权或使用问题，请在仓库 Issues 反馈。

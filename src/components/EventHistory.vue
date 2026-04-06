@@ -689,14 +689,17 @@
 
           <div class="event-members">
             <div class="member-row">
-              <div v-for="card in getNormalCards(row.event.memberCards)" :key="card.CardID" class="member-card-box">
+              <div v-for="(card, normalIndex) in getNormalCards(row.event.memberCards)" :key="`${card.CardID}-${normalIndex}`" class="member-card-box">
                 <div
                   class="avatar-container"
+                  :class="{ 'is-open': isCardTooltipOpen(row.key, card, `n-${normalIndex}`) }"
                   :style="{ borderColor: getUnitColor(card.Affiliation) }"
-                  @mouseenter="setTooltipRaisedEvent(row.key)"
+                  @mouseenter="handleCardTooltipEnter(row.key, card, `n-${normalIndex}`, $event)"
                   @mouseleave="clearTooltipRaisedEvent(row.key)"
-                  @focusin="setTooltipRaisedEvent(row.key)"
+                  @focusin="handleCardTooltipEnter(row.key, card, `n-${normalIndex}`, $event)"
                   @focusout="clearTooltipRaisedEvent(row.key)"
+                  @click.stop="toggleCardTooltip(row.key, card, `n-${normalIndex}`, $event)"
+                  tabindex="0"
                 >
                   <img :src="`/chars/${getCharAbbr(card.Name)}.png`" class="member-avatar" />
                   <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/${card.Attribute.toLowerCase()}.png`" class="card-attr-icon" />
@@ -705,11 +708,32 @@
                   <div class="stars-overlay">
                     <img v-for="n in parseInt(card.Rarity)" :key="n" :src="card.Rarity == 4 ? '/elements/rstar.png' : '/elements/ystar.png'" class="star-icon" />
                   </div>
-                  <div class="card-detail-tooltip">
-                    <p><strong>ID：</strong>{{ card.CardID }}</p>
-                    <p><strong>类型：</strong>{{ translateType(card.Type) }}</p>
-                    <p><strong>技能：</strong>{{ translateSkill(card.Skill) }}</p>
-                    <p><strong>属性：</strong>{{ translateAttr(card.Attribute) }}</p>
+                  <div class="card-detail-tooltip" :style="getCardTooltipStyle(row.key, card, `n-${normalIndex}`)">
+                    <div class="card-tooltip-hero" :class="{ 'is-text-only': getVisibleCardTooltipImageList(card).length === 0 }">
+                      <div v-if="getVisibleCardTooltipImageList(card).length > 0" class="card-tooltip-media" :class="{ 'is-dual': getVisibleCardTooltipImageList(card).length > 1 }">
+                        <div
+                          v-for="src in getVisibleCardTooltipImageList(card)"
+                          :key="`card-tip-${row.key}-${card.CardID}-${normalIndex}-${src}`"
+                          class="card-tooltip-jacket-item"
+                          :class="{ 'is-failed': isCardTooltipImageFailed(card, src) }"
+                        >
+                          <img
+                            :src="src"
+                            class="card-tooltip-jacket"
+                            :alt="`${card.Name || '角色'} 卡面`"
+                            loading="lazy"
+                            decoding="async"
+                            @error="onCardTooltipImageError($event, card, src)"
+                          />
+                        </div>
+                      </div>
+                      <div class="card-tooltip-grid">
+                        <p class="card-tooltip-row"><strong class="card-tooltip-label">ID</strong><span class="card-tooltip-value">{{ card.CardID }}</span></p>
+                        <p class="card-tooltip-row"><strong class="card-tooltip-label">类型</strong><span class="card-tooltip-value">{{ translateType(card.Type) }}</span></p>
+                        <p class="card-tooltip-row"><strong class="card-tooltip-label">技能</strong><span class="card-tooltip-value">{{ translateSkill(card.Skill) }}</span></p>
+                        <p class="card-tooltip-row"><strong class="card-tooltip-label">属性</strong><span class="card-tooltip-value">{{ translateAttr(card.Attribute) }}</span></p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -717,14 +741,17 @@
 
             <div v-if="getFesCards(row.event.memberCards).length > 0" class="member-row fes-row">
               <img :src="`/elements/${getFesType(row.event.memberCards)}.webp`" class="fes-type-icon" />
-              <div v-for="card in getFesCards(row.event.memberCards)" :key="card.CardID" class="member-card-box">
+              <div v-for="(card, fesIndex) in getFesCards(row.event.memberCards)" :key="`${card.CardID}-${fesIndex}`" class="member-card-box">
                 <div
                   class="avatar-container"
+                  :class="{ 'is-open': isCardTooltipOpen(row.key, card, `f-${fesIndex}`) }"
                   :style="{ borderColor: getUnitColor(card.Affiliation) }"
-                  @mouseenter="setTooltipRaisedEvent(row.key)"
+                  @mouseenter="handleCardTooltipEnter(row.key, card, `f-${fesIndex}`, $event)"
                   @mouseleave="clearTooltipRaisedEvent(row.key)"
-                  @focusin="setTooltipRaisedEvent(row.key)"
+                  @focusin="handleCardTooltipEnter(row.key, card, `f-${fesIndex}`, $event)"
                   @focusout="clearTooltipRaisedEvent(row.key)"
+                  @click.stop="toggleCardTooltip(row.key, card, `f-${fesIndex}`, $event)"
+                  tabindex="0"
                 >
                   <img :src="`/chars/${getCharAbbr(card.Name)}.png`" class="member-avatar" />
                   <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/${card.Attribute.toLowerCase()}.png`" class="card-attr-icon" />
@@ -732,11 +759,33 @@
                   <div class="stars-overlay">
                     <img v-for="n in parseInt(card.Rarity)" :key="n" :src="'/elements/rstar.png'" class="star-icon" />
                   </div>
-                  <div class="card-detail-tooltip">
-                    <p><strong>ID：</strong>{{ card.CardID }}</p>
-                    <p><strong>类型：</strong>{{ translateType(card.Type) }}</p>
-                    <p><strong>技能：</strong>{{ translateSkill(card.Skill) }}</p>
-                    <p><strong>属性：</strong>{{ translateAttr(card.Attribute) }}</p>                </div>
+                  <div class="card-detail-tooltip" :style="getCardTooltipStyle(row.key, card, `f-${fesIndex}`)">
+                    <div class="card-tooltip-hero" :class="{ 'is-text-only': getVisibleCardTooltipImageList(card).length === 0 }">
+                      <div v-if="getVisibleCardTooltipImageList(card).length > 0" class="card-tooltip-media" :class="{ 'is-dual': getVisibleCardTooltipImageList(card).length > 1 }">
+                        <div
+                          v-for="src in getVisibleCardTooltipImageList(card)"
+                          :key="`card-tip-${row.key}-${card.CardID}-${fesIndex}-${src}`"
+                          class="card-tooltip-jacket-item"
+                          :class="{ 'is-failed': isCardTooltipImageFailed(card, src) }"
+                        >
+                          <img
+                            :src="src"
+                            class="card-tooltip-jacket"
+                            :alt="`${card.Name || '角色'} 卡面`"
+                            loading="lazy"
+                            decoding="async"
+                            @error="onCardTooltipImageError($event, card, src)"
+                          />
+                        </div>
+                      </div>
+                      <div class="card-tooltip-grid">
+                        <p class="card-tooltip-row"><strong class="card-tooltip-label">ID</strong><span class="card-tooltip-value">{{ card.CardID }}</span></p>
+                        <p class="card-tooltip-row"><strong class="card-tooltip-label">类型</strong><span class="card-tooltip-value">{{ translateType(card.Type) }}</span></p>
+                        <p class="card-tooltip-row"><strong class="card-tooltip-label">技能</strong><span class="card-tooltip-value">{{ translateSkill(card.Skill) }}</span></p>
+                        <p class="card-tooltip-row"><strong class="card-tooltip-label">属性</strong><span class="card-tooltip-value">{{ translateAttr(card.Attribute) }}</span></p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -749,20 +798,37 @@
               </div>
               <div
                 class="song-tooltip"
+                :class="{ 'is-open': isSongTooltipOpen(row.key) }"
                 v-if="hasSongTooltip(row.event)"
                 @mouseenter="setTooltipRaisedEvent(row.key)"
                 @mouseleave="clearTooltipRaisedEvent(row.key)"
                 @focusin="setTooltipRaisedEvent(row.key)"
                 @focusout="clearTooltipRaisedEvent(row.key)"
+                @click.stop="toggleSongTooltip(row.key)"
               >
-                <span class="info-icon">🎵</span>
+                <span class="info-icon" aria-hidden="true">🎵</span>
                 <div class="tooltip-content">
-                  <p v-if="getSongIdText(row.event)"><strong>歌曲ID：</strong>{{ getSongIdText(row.event) }}</p>
-                  <p><strong>书下曲：</strong>{{ getSongTitleText(row.event) }}</p>
-                  <p v-if="row.event.song_alias"><strong>别名：</strong>{{ row.event.song_alias }}</p>
-                  <p><strong>作曲：</strong>{{ getSongComposerText(row.event) }}</p>
-                  <p><strong>作词：</strong>{{ getSongLyricistText(row.event) }}</p>
-                  <p><strong>编曲：</strong>{{ getSongArrangerText(row.event) }}</p>
+                  <div class="song-tooltip-hero">
+                    <div class="song-tooltip-jacket-wrap" :class="{ 'is-failed': !getSongTooltipImageSrc(row.event) }">
+                      <img
+                        :src="getSongTooltipImageSrc(row.event)"
+                        class="song-tooltip-jacket"
+                        :alt="`${getSongTitleText(row.event) || '歌曲'} 曲绘`"
+                        loading="lazy"
+                        decoding="async"
+                        @error="onSongTooltipImageError"
+                      />
+                      <span class="song-tooltip-jacket-fallback">曲绘加载失败</span>
+                    </div>
+                    <div class="song-tooltip-grid">
+                      <p v-if="getSongIdText(row.event)" class="song-tooltip-row"><strong class="song-tooltip-label">歌曲ID</strong><span class="song-tooltip-value">{{ getSongIdText(row.event) }}</span></p>
+                      <p class="song-tooltip-row"><strong class="song-tooltip-label">书下曲</strong><span class="song-tooltip-value">{{ getSongTitleText(row.event) }}</span></p>
+                      <p v-if="row.event.song_alias" class="song-tooltip-row"><strong class="song-tooltip-label">别名</strong><span class="song-tooltip-value">{{ row.event.song_alias }}</span></p>
+                      <p class="song-tooltip-row"><strong class="song-tooltip-label">作曲</strong><span class="song-tooltip-value">{{ getSongComposerText(row.event) }}</span></p>
+                      <p class="song-tooltip-row"><strong class="song-tooltip-label">作词</strong><span class="song-tooltip-value">{{ getSongLyricistText(row.event) }}</span></p>
+                      <p class="song-tooltip-row"><strong class="song-tooltip-label">编曲</strong><span class="song-tooltip-value">{{ getSongArrangerText(row.event) }}</span></p>
+                    </div>
+                  </div>
                 </div>
               </div>
               <img
@@ -799,7 +865,9 @@
           v-else
           :id="row.id"
           class="birthday-row"
+          :class="{ 'is-open': isBirthdayInfoOpen(row) }"
           :style="{ backgroundColor: getBirthdayRowTint(row.name) }"
+          @click.stop="toggleBirthdayInfo(row)"
         >
           <div class="birthday-date">{{ row.date }}</div>
           <div class="birthday-name">{{ row.name }}</div>
@@ -813,6 +881,22 @@
               class="birthday-row-icon"
               :title="translateAttr(row.attribute)"
             />
+          </div>
+          <div v-if="isBirthdayInfoOpen(row)" class="birthday-info-popover">
+            <img
+              v-if="getBirthdayCardImageSrc(row) && !isBirthdayCardImageFailed(row)"
+              :src="getBirthdayCardImageSrc(row)"
+              class="birthday-info-card"
+              :alt="`${row.name} 生日卡面`"
+              loading="lazy"
+              decoding="async"
+              @error="onBirthdayCardImageError($event, row)"
+            />
+            <div class="birthday-info-content">
+              <div class="birthday-info-title">{{ row.name }}</div>
+              <div class="birthday-info-meta">卡面ID：{{ row.cardId || '-' }}</div>
+              <div class="birthday-info-meta">属性：{{ translateAttr(row.attribute) }}</div>
+            </div>
           </div>
         </div>
         </template>
@@ -859,16 +943,175 @@ const hideBirthdayRows = ref(false);
 const hidePreviewRows = ref(false);
 const previewDataRows = ref([]);
 const tooltipRaisedEventKey = ref(null);
+const openedCardTooltipKey = ref('');
+const openedSongTooltipEventKey = ref('');
+const openedBirthdayInfoKey = ref('');
+const cardTooltipOffsetMap = ref({});
+
+const makeCardTooltipKey = (eventKey, card, slotKey = '') => {
+  const eventPart = String(eventKey || '').trim();
+  const cardIdPart = String(card?.CardID || '').trim();
+  const namePart = String(card?.Name || '').trim();
+  const slotPart = String(slotKey || '').trim();
+  return `${eventPart}::${slotPart}::${cardIdPart || namePart}`;
+};
+
+const hasOpenTooltipForEventKey = (eventKey) => {
+  const key = String(eventKey || '').trim();
+  if (!key) return false;
+  if (openedSongTooltipEventKey.value === key) return true;
+  return openedCardTooltipKey.value.startsWith(`${key}::`);
+};
+
+const closeInlineTooltips = () => {
+  openedCardTooltipKey.value = '';
+  openedSongTooltipEventKey.value = '';
+  tooltipRaisedEventKey.value = null;
+  cardTooltipOffsetMap.value = {};
+};
+
+const setCardTooltipOffset = (tooltipKey, offsetX = 0, offsetY = 0) => {
+  if (!tooltipKey) return;
+  cardTooltipOffsetMap.value = {
+    ...cardTooltipOffsetMap.value,
+    [tooltipKey]: {
+      '--card-tooltip-shift-x': `${Math.round(offsetX)}px`,
+      '--card-tooltip-shift-y': `${Math.round(offsetY)}px`
+    }
+  };
+};
+
+const clearCardTooltipOffset = (tooltipKey) => {
+  if (!tooltipKey || !cardTooltipOffsetMap.value[tooltipKey]) return;
+  const next = { ...cardTooltipOffsetMap.value };
+  delete next[tooltipKey];
+  cardTooltipOffsetMap.value = next;
+};
+
+const getCardTooltipStyle = (eventKey, card, slotKey = '') => {
+  const key = makeCardTooltipKey(eventKey, card, slotKey);
+  return cardTooltipOffsetMap.value[key] || null;
+};
+
+const adjustCardTooltipViewport = (eventKey, card, slotKey = '', hostEl = null) => {
+  const tooltipKey = makeCardTooltipKey(eventKey, card, slotKey);
+  const host = hostEl instanceof HTMLElement ? hostEl : null;
+  if (!tooltipKey || !host) return;
+
+  const tooltipEl = host.querySelector('.card-detail-tooltip');
+  if (!(tooltipEl instanceof HTMLElement)) return;
+
+  clearCardTooltipOffset(tooltipKey);
+  const rect = tooltipEl.getBoundingClientRect();
+  const edge = 8;
+  let shiftX = 0;
+  let shiftY = 0;
+
+  if (rect.left < edge) {
+    shiftX += edge - rect.left;
+  }
+  if (rect.right > window.innerWidth - edge) {
+    shiftX -= rect.right - (window.innerWidth - edge);
+  }
+  if (rect.top < edge) {
+    shiftY += edge - rect.top;
+  }
+  if (rect.bottom > window.innerHeight - edge) {
+    shiftY -= rect.bottom - (window.innerHeight - edge);
+  }
+
+  setCardTooltipOffset(tooltipKey, shiftX, shiftY);
+};
+
+const handleCardTooltipEnter = (eventKey, card, slotKey = '', event) => {
+  setTooltipRaisedEvent(eventKey);
+  const host = event?.currentTarget;
+  if (!(host instanceof HTMLElement)) return;
+  adjustCardTooltipViewport(eventKey, card, slotKey, host);
+};
+
+const makeBirthdayInfoKey = (row) => String(row?.key || row?.id || '').trim();
+
+const closeBirthdayInfo = () => {
+  openedBirthdayInfoKey.value = '';
+};
+
+const toggleBirthdayInfo = (row) => {
+  const key = makeBirthdayInfoKey(row);
+  if (!key) return;
+  openedBirthdayInfoKey.value = openedBirthdayInfoKey.value === key ? '' : key;
+};
+
+const isBirthdayInfoOpen = (row) => openedBirthdayInfoKey.value === makeBirthdayInfoKey(row);
+
+const handleTooltipGlobalPointerDown = (event) => {
+  const target = event?.target;
+  if (!(target instanceof HTMLElement)) {
+    closeInlineTooltips();
+    closeBirthdayInfo();
+    return;
+  }
+  if (target.closest('.birthday-row')) {
+    closeInlineTooltips();
+    return;
+  }
+  closeBirthdayInfo();
+  if (target.closest('.avatar-container, .song-tooltip')) return;
+  closeInlineTooltips();
+};
 
 const setTooltipRaisedEvent = (eventKey) => {
   tooltipRaisedEventKey.value = eventKey;
 };
 
 const clearTooltipRaisedEvent = (eventKey) => {
-  if (tooltipRaisedEventKey.value === eventKey) {
+  if (tooltipRaisedEventKey.value === eventKey && !hasOpenTooltipForEventKey(eventKey)) {
     tooltipRaisedEventKey.value = null;
   }
 };
+
+const toggleCardTooltip = (eventKey, card, slotKey = '', event = null) => {
+  const key = makeCardTooltipKey(eventKey, card, slotKey);
+  const host = event?.currentTarget;
+
+  if (openedCardTooltipKey.value === key) {
+    openedCardTooltipKey.value = '';
+    clearCardTooltipOffset(key);
+    if (openedSongTooltipEventKey.value !== String(eventKey || '').trim()) {
+      clearTooltipRaisedEvent(eventKey);
+    }
+    return;
+  }
+
+  if (openedCardTooltipKey.value && openedCardTooltipKey.value !== key) {
+    cardTooltipOffsetMap.value = {};
+  }
+
+  if (host instanceof HTMLElement) {
+    adjustCardTooltipViewport(eventKey, card, slotKey, host);
+  }
+
+  openedCardTooltipKey.value = key;
+  openedSongTooltipEventKey.value = '';
+  setTooltipRaisedEvent(eventKey);
+};
+
+const isCardTooltipOpen = (eventKey, card, slotKey = '') => openedCardTooltipKey.value === makeCardTooltipKey(eventKey, card, slotKey);
+
+const toggleSongTooltip = (eventKey) => {
+  const key = String(eventKey || '').trim();
+  if (!key) return;
+  if (openedSongTooltipEventKey.value === key) {
+    openedSongTooltipEventKey.value = '';
+    clearTooltipRaisedEvent(key);
+    return;
+  }
+  openedSongTooltipEventKey.value = key;
+  openedCardTooltipKey.value = '';
+  setTooltipRaisedEvent(key);
+};
+
+const isSongTooltipOpen = (eventKey) => openedSongTooltipEventKey.value === String(eventKey || '').trim();
 
 const normalizeAttr = (attr) => {
   const map = {
@@ -939,6 +1182,21 @@ const hasSong2DMV = (event) => {
 const getSongIdText = (event) => {
   const id = toFiniteSongId(event?.song_id);
   return id === null ? '' : String(id);
+};
+
+const getSongTooltipImageSrc = (event) => {
+  const id = toFiniteSongId(event?.song_id);
+  if (id === null) return '';
+  return `/songs/song_${String(id).padStart(3, '0')}.webp`;
+};
+
+const onSongTooltipImageError = (event) => {
+  const img = event?.target;
+  if (!(img instanceof HTMLImageElement)) return;
+  const holder = img.closest('.song-tooltip-jacket-wrap');
+  if (holder instanceof HTMLElement) {
+    holder.classList.add('is-failed');
+  }
 };
 
 const getSongTitleText = (event) => {
@@ -3234,6 +3492,7 @@ const birthdayRows = computed(() => {
       id: `birthday-${key}`,
       name,
       date,
+      cardId: normalizeCardIdText(card?.CardID),
       attribute: normalizeAttr(card?.Attribute)
     });
   });
@@ -3279,14 +3538,16 @@ const previewRowsWithAnchor = computed(() => {
 });
 
 const filteredBirthdayRows = computed(() => {
-  if (filterMode.value === 'event') return [];
   if (hideBirthdayRows.value) return [];
+
+  if (filterMode.value === 'event') {
+    if (hasEventFilters.value) return [];
+    return birthdayRows.value;
+  }
 
   const selected = filterCriteria.value.selectedChars || [];
   return birthdayRows.value.filter((row) => {
     if (selected.length > 0 && !selected.includes(row.name)) return false;
-
-    if (filterCriteria.value.rarities.length > 0 && !filterCriteria.value.rarities.includes('birthday')) return false;
 
     if (filterCriteria.value.attributes.length > 0 && !filterCriteria.value.attributes.includes(normalizeAttr(row.attribute))) return false;
 
@@ -4205,6 +4466,7 @@ onMounted(() => {
   window.addEventListener('touchend', stopResizePreview);
   window.addEventListener('touchcancel', stopDragPreview);
   window.addEventListener('touchcancel', stopResizePreview);
+  document.addEventListener('pointerdown', handleTooltipGlobalPointerDown, true);
   updateCompactFilterState();
   updatePreviewConfigOffset();
   if (isReloadNavigation()) {
@@ -4230,6 +4492,7 @@ onMounted(() => {
 });
 
 onDeactivated(() => {
+  closeInlineTooltips();
   stopDragPreviewConfig();
   emit('sync-preview-event-id', null);
   stopDragPreview();
@@ -4260,9 +4523,11 @@ onDeactivated(() => {
   window.removeEventListener('touchcancel', stopDragPreview);
   window.removeEventListener('touchcancel', stopResizePreview);
   window.removeEventListener('resize', handleWindowResize);
+  document.removeEventListener('pointerdown', handleTooltipGlobalPointerDown, true);
 });
 
 onActivated(() => {
+  closeInlineTooltips();
   nextTick(() => {
     queueJumpFromProps();
     if (pendingJumpEventId.value) {
@@ -4289,9 +4554,11 @@ onActivated(() => {
   window.addEventListener('touchcancel', stopDragPreview);
   window.addEventListener('touchcancel', stopResizePreview);
   window.addEventListener('resize', handleWindowResize);
+  document.addEventListener('pointerdown', handleTooltipGlobalPointerDown, true);
 });
 
 onBeforeUnmount(() => {
+  closeInlineTooltips();
   stopDragPreviewConfig();
   emit('sync-preview-event-id', null);
   stopDragPreview();
@@ -4320,6 +4587,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('touchcancel', stopDragPreview);
   window.removeEventListener('touchcancel', stopResizePreview);
   window.removeEventListener('resize', handleWindowResize);
+  document.removeEventListener('pointerdown', handleTooltipGlobalPointerDown, true);
 });
 
 // 滚动逻辑优化
@@ -4389,6 +4657,128 @@ const CHAR_MAP = computed(() => {
   });
   return map;
 });
+
+const birthdayCardImageErrorMap = ref({});
+
+const getBirthdayCardImageSrc = (row) => {
+  const cardId = parseCardIdNumber(row?.cardId);
+  if (cardId === null) return '';
+  const folder = CHAR_CARD_FOLDER_MAP.value[String(row?.name || '').trim()];
+  if (!folder) return '';
+  return `/cards/${folder}/card${cardId}.webp`;
+};
+
+const isBirthdayCardImageFailed = (row) => {
+  const key = makeBirthdayInfoKey(row);
+  return !!birthdayCardImageErrorMap.value[key];
+};
+
+const onBirthdayCardImageError = (_event, row) => {
+  const key = makeBirthdayInfoKey(row);
+  if (!key) return;
+  birthdayCardImageErrorMap.value = {
+    ...birthdayCardImageErrorMap.value,
+    [key]: true
+  };
+};
+
+const CHAR_CARD_FOLDER_MAP = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const name = String(char?.zh_name || '').trim();
+    const idRaw = Number(char?.id);
+    const abbr = String(char?.en_abbr || '').trim().toLowerCase();
+    if (!name || !Number.isFinite(idRaw) || idRaw <= 0 || !abbr) return;
+    map[name] = `${String(Math.trunc(idRaw)).padStart(3, '0')}${abbr}`;
+  });
+  return map;
+});
+
+const getCardTooltipBaseName = (nameRaw) => String(nameRaw || '').trim().split(/\s+/)[0] || '';
+
+const CARD_TOOLTIP_RESERVED_TYPE_RE = /(pred|reserve|placeholder)/i;
+const cardTooltipImageErrorMap = ref({});
+
+const normalizeCardIdText = (value) => String(value || '').trim();
+
+const parseCardIdNumber = (value) => {
+  const text = normalizeCardIdText(value);
+  if (!/^\d+$/.test(text)) return null;
+  const n = Number.parseInt(text, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
+const isCardTooltipImageEligible = (card) => {
+  const cardIdRaw = normalizeCardIdText(card?.CardID);
+  if (!cardIdRaw || cardIdRaw === '-' || /^pred-/i.test(cardIdRaw)) return false;
+  if (!/^\d+$/.test(cardIdRaw)) return false;
+
+  const baseName = getCardTooltipBaseName(card?.Name);
+  if (!baseName || baseName === '-' || /^pred-/i.test(baseName)) return false;
+
+  const typeRaw = String(card?.Type || '').trim();
+  if (CARD_TOOLTIP_RESERVED_TYPE_RE.test(typeRaw)) return false;
+
+  return true;
+};
+
+const shouldIncludeCardNormalImage = (cardId) => {
+  return Number(cardId) !== 1167;
+};
+
+const shouldIncludeCardTrainingImage = (card, cardId) => {
+  const typeRaw = String(card?.Type || '').trim().toLowerCase();
+  if (typeRaw === 'birthday') return false;
+  const rarity = Number(card?.Rarity);
+  if (Number.isFinite(rarity) && rarity <= 2) return false;
+  if (Number(cardId) === 1167) return true;
+  return true;
+};
+
+const getCardTooltipImageList = (card) => {
+  if (!isCardTooltipImageEligible(card)) return [];
+
+  const cardId = parseCardIdNumber(card?.CardID);
+  if (cardId === null) return [];
+
+  const baseName = getCardTooltipBaseName(card?.Name);
+  const folder = CHAR_CARD_FOLDER_MAP.value[baseName];
+  if (!folder) return [];
+
+  const base = `/cards/${folder}/card${Math.trunc(cardId)}`;
+  const list = [];
+  if (shouldIncludeCardNormalImage(cardId)) {
+    list.push(`${base}.webp`);
+  }
+  if (shouldIncludeCardTrainingImage(card, cardId)) {
+    list.push(`${base}_t.webp`);
+  }
+  return list;
+};
+
+const getVisibleCardTooltipImageList = (card) => {
+  return getCardTooltipImageList(card).filter((src) => !isCardTooltipImageFailed(card, src));
+};
+
+const makeCardTooltipImageErrorKey = (card, src) => `${normalizeCardIdText(card?.CardID)}::${String(src || '').trim()}`;
+
+const isCardTooltipImageFailed = (card, src) => {
+  const key = makeCardTooltipImageErrorKey(card, src);
+  return !!cardTooltipImageErrorMap.value[key];
+};
+
+const onCardTooltipImageError = (event, card, src) => {
+  const img = event?.target;
+  if (!(img instanceof HTMLImageElement)) return;
+
+  const key = makeCardTooltipImageErrorKey(card, src || img.getAttribute('src') || '');
+  if (!key.endsWith('::')) {
+    cardTooltipImageErrorMap.value = {
+      ...cardTooltipImageErrorMap.value,
+      [key]: true
+    };
+  }
+};
 
 const CHAR_SINGLE_MAP = computed(() => {
   const map = {};
@@ -5501,7 +5891,20 @@ button:not(:disabled):active {
   border-radius: var(--eh-radius-panel);
   padding: 6px 14px;
   border: 1px solid rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  position: relative;
+  transition: filter 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
   box-sizing: border-box;
+}
+
+.birthday-row:active {
+  filter: brightness(0.92);
+  transform: translateY(1px);
+}
+
+.birthday-row.is-open {
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  border-color: rgba(14, 116, 144, 0.38);
 }
 
 .birthday-date {
@@ -5531,6 +5934,54 @@ button:not(:disabled):active {
   width: 22px;
   height: 22px;
   object-fit: contain;
+}
+
+.birthday-info-popover {
+  position: absolute;
+  left: 10px;
+  top: calc(100% + 8px);
+  z-index: 1400;
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 30px));
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.95));
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.birthday-info-card {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(241, 245, 249, 0.9);
+  object-fit: contain;
+  object-position: center;
+  flex: 0 0 auto;
+}
+
+.birthday-info-content {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.birthday-info-title {
+  font-size: 0.84rem;
+  color: #0f172a;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.birthday-info-meta {
+  font-size: 0.72rem;
+  color: #475569;
+  line-height: 1.2;
+  word-break: break-word;
 }
 
 .preview-row {
@@ -5658,8 +6109,10 @@ button:not(:disabled):active {
 /* 仅在角色详情悬浮框触发时抬高该活动卡，使 tooltip 可压过筛选栏。 */
 .event-item:has(.avatar-container:hover),
 .event-item:has(.avatar-container:focus-within),
+.event-item:has(.avatar-container.is-open),
 .event-item:has(.song-tooltip:hover),
-.event-item:has(.song-tooltip:focus-within) {
+.event-item:has(.song-tooltip:focus-within),
+.event-item:has(.song-tooltip.is-open) {
   z-index: 1700;
 }
 
@@ -6021,6 +6474,13 @@ button:not(:disabled):active {
 .avatar-container { 
   position: relative; width: 80px; height: 80px; 
   border-radius: 50%; border: 3px solid #eee; padding: 1px;
+  cursor: pointer;
+  transition: filter 0.18s ease, transform 0.18s ease;
+}
+
+.avatar-container:active {
+  filter: brightness(0.9);
+  transform: scale(0.97);
 }
 .member-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .sub-unit-logo {
@@ -6059,12 +6519,134 @@ button:not(:disabled):active {
 
 /* 角色卡片详情悬浮 */
 .card-detail-tooltip {
-  visibility: hidden; position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.85); color: white; padding: 8px; border-radius: 6px; 
-  font-size: 0.7rem; min-width: 100px; z-index: 20000; pointer-events: none; opacity: 0; transition: 0.2s;
-  text-align: left; /* 修改点：文本居左 */
+  --card-tooltip-thumb-size: 64px;
+  --card-tooltip-thumb-gap: 2px;
+  visibility: hidden;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  width: fit-content;
+  max-width: min(92vw, 360px);
+  transform: translate(calc(-50% + var(--card-tooltip-shift-x, 0px)), calc(8px + var(--card-tooltip-shift-y, 0px)));
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.95));
+  color: #0f172a;
+  padding: 6px 10px;
+  z-index: 20000;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+  text-align: left;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.28);
 }
-.avatar-container:hover .card-detail-tooltip { visibility: visible; opacity: 1; }
+
+.avatar-container.is-open .card-detail-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(calc(-50% + var(--card-tooltip-shift-x, 0px)), var(--card-tooltip-shift-y, 0px));
+}
+
+.card-tooltip-hero {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.card-tooltip-hero.is-text-only {
+  display: block;
+}
+
+.card-tooltip-media {
+  width: var(--card-tooltip-thumb-size);
+  display: grid;
+  grid-template-columns: var(--card-tooltip-thumb-size);
+  justify-content: center;
+  gap: var(--card-tooltip-thumb-gap);
+  flex: 0 0 auto;
+}
+
+.card-tooltip-media.is-dual {
+  width: calc(var(--card-tooltip-thumb-size) * 2 + var(--card-tooltip-thumb-gap));
+  grid-template-columns: repeat(2, var(--card-tooltip-thumb-size));
+}
+
+.card-tooltip-jacket-item {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.18);
+  position: relative;
+}
+
+.card-tooltip-jacket {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  background: transparent;
+  display: block;
+}
+
+.card-tooltip-jacket-fallback {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.62rem;
+  color: #334155;
+  padding: 6px;
+}
+
+.card-tooltip-jacket-item.is-failed .card-tooltip-jacket {
+  display: none;
+}
+
+.card-tooltip-jacket-item.is-failed .card-tooltip-jacket-fallback {
+  display: flex;
+}
+
+.card-tooltip-grid {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  flex: 0 0 auto;
+  width: fit-content;
+  align-self: center;
+}
+
+.card-tooltip-row {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 36px max-content;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-tooltip-label {
+  color: #64748b;
+  font-size: 0.64rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.card-tooltip-value {
+  color: #0f172a;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.15;
+  min-width: max-content;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
 
 .stars-overlay {
   position: absolute; bottom: -1px; left: -2px; display: flex; gap: 0px;
@@ -6089,12 +6671,22 @@ button:not(:disabled):active {
 .vs-list { display: flex; gap: 2px; justify-content: flex-end; }
 .vs-avatar { width: 45px; height: 45px; border-radius: 50%; border: 1px solid #ddd; }
 .song-tooltip {
-  cursor: help;
+  cursor: pointer;
   position: relative;
   display: flex;
   align-items: center;
 }
 .song-tooltip .info-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(226, 232, 240, 0.9));
+  padding: 0;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 14px;
   line-height: 1;
 }
@@ -6132,13 +6724,120 @@ button:not(:disabled):active {
   visibility: hidden;
 }
 .tooltip-content {
-  visibility: hidden; position: absolute; bottom: 125%; right: 0;
-  background: #333; color: white; padding: 10px; border-radius: 10px; width: fit-content;
-  z-index: 100; font-size: 0.8rem; opacity: 0; transition: opacity 0.3s;
-  pointer-events: none; /* 加上这个可以防止鼠标意外触发弹窗自身的位移 */
-  white-space: nowrap;  /* 防止文字换行导致高度计算错误 */
+  visibility: hidden;
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: min(320px, 78vw);
+  max-width: 320px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.95));
+  color: #0f172a;
+  padding: 8px;
+  z-index: 20000;
+  font-size: 0.8rem;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  pointer-events: auto;
+  white-space: normal;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.26);
 }
-.song-tooltip:hover .tooltip-content { visibility: visible; opacity: 1; }
+
+.song-tooltip.is-open .tooltip-content {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .avatar-container:hover .card-detail-tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: translate(calc(-50% + var(--card-tooltip-shift-x, 0px)), var(--card-tooltip-shift-y, 0px));
+  }
+
+  .song-tooltip:hover .tooltip-content {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.song-tooltip-hero {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.song-tooltip-jacket-wrap {
+  width: 116px;
+  height: 116px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.18);
+  position: relative;
+}
+
+.song-tooltip-jacket {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.song-tooltip-jacket-fallback {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.62rem;
+  color: #334155;
+  padding: 6px;
+}
+
+.song-tooltip-jacket-wrap.is-failed .song-tooltip-jacket {
+  display: none;
+}
+
+.song-tooltip-jacket-wrap.is-failed .song-tooltip-jacket-fallback {
+  display: flex;
+}
+
+.song-tooltip-grid {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.song-tooltip-row {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+
+.song-tooltip-label {
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.song-tooltip-value {
+  color: #0f172a;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.2;
+  min-width: 0;
+  word-break: break-word;
+}
 
 .attr-icon-inline {
   width: 32px;
@@ -6764,7 +7463,15 @@ button:not(:disabled):active {
   }
 
   .song-tooltip .info-icon {
-    font-size: 11px;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+  }
+
+  .birthday-info-popover {
+    left: 0;
+    right: 0;
+    max-width: 100%;
   }
 
   .song-mv-pill {
