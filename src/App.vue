@@ -293,6 +293,10 @@
           <li v-for="(item, idx) in currentBuildReleaseNotes" :key="`release-log-${idx}`">{{ item }}</li>
         </ul>
         <img src="/hello.jpg" class="app-release-log-image" alt="更新内容配图" loading="eager" fetchpriority="high" decoding="async" />
+        <label class="app-release-log-skip-option">
+          <input v-model="releaseLogSkipChecked" class="app-release-log-skip-checkbox" type="checkbox" />
+          <span>此版本不再提示</span>
+        </label>
         <div class="app-update-modal-actions">
           <button class="app-update-btn app-update-btn-muted" @click="closeAppReleaseLogModal">我知道了</button>
         </div>
@@ -398,7 +402,9 @@ const hasAppUpdate = ref(false);
 const appUpdateDismissed = ref(false);
 const showAppUpdatePromptModal = ref(false);
 const showAppReleaseLogModal = ref(false);
-const releaseLogSeenBuildId = ref('');
+const releaseLogSkipBuildId = ref('');
+const releaseLogSkipChecked = ref(false);
+const hasAutoShownReleaseLogThisVisit = ref(false);
 let cleanupNoticeTimer = null;
 let tabReflowObserver = null;
 let tabReflowRaf = 0;
@@ -406,8 +412,8 @@ let appVersionCheckTimer = null;
 
 const TAB_REFLOW_TRACK_KEYS = new Set(['stats']);
 const APP_VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
-const APP_RELEASE_LOG_SEEN_KEY = 'pjsk_seen_release_log_build_id_v1';
-const APP_RELEASE_LOG_PENDING_KEY = 'pjsk_pending_release_log_build_id_v1';
+const APP_RELEASE_LOG_SKIP_KEY = 'pjsk_skip_release_log_build_id_v1';
+const APP_UPDATE_DEBUG_REMOTE_KEY = 'pjsk_debug_remote_build_id_v1';
 
 const appUpdateReleaseNotes = computed(() => {
   const list = Array.isArray(remoteAppReleaseNotes.value)
@@ -433,6 +439,32 @@ const showAppUpdatePromptDialog = computed(() => {
   return showAppUpdateBanner.value && showAppUpdatePromptModal.value;
 });
 
+const isCurrentReleaseLogSkipped = computed(() => {
+  const current = String(currentAppBuildId || '').trim();
+  const skipped = String(releaseLogSkipBuildId.value || '').trim();
+  return !!current && !!skipped && current === skipped;
+});
+
+const syncReleaseLogSkipChecked = () => {
+  releaseLogSkipChecked.value = isCurrentReleaseLogSkipped.value;
+};
+
+const persistReleaseLogSkipChoice = () => {
+  const current = String(currentAppBuildId || '').trim();
+  if (!current) return;
+
+  if (releaseLogSkipChecked.value) {
+    releaseLogSkipBuildId.value = current;
+    localStorage.setItem(APP_RELEASE_LOG_SKIP_KEY, current);
+    return;
+  }
+
+  if (String(releaseLogSkipBuildId.value || '').trim() === current) {
+    releaseLogSkipBuildId.value = '';
+    localStorage.removeItem(APP_RELEASE_LOG_SKIP_KEY);
+  }
+};
+
 const dismissAppUpdateBanner = () => {
   appUpdateDismissed.value = true;
   showAppUpdatePromptModal.value = false;
@@ -444,26 +476,29 @@ const openAppUpdatePromptModal = () => {
 };
 
 const closeAppReleaseLogModal = () => {
+  persistReleaseLogSkipChoice();
   showAppReleaseLogModal.value = false;
-  if (!currentAppBuildId) return;
-  releaseLogSeenBuildId.value = currentAppBuildId;
-  localStorage.setItem(APP_RELEASE_LOG_SEEN_KEY, currentAppBuildId);
 };
 
 const openCurrentReleaseLogModal = () => {
+  syncReleaseLogSkipChecked();
   showAppReleaseLogModal.value = true;
 };
 
 const reloadForAppUpdate = () => {
   if (typeof window !== 'undefined') {
-    const pendingBuildId = String(remoteAppBuildId.value || '').trim();
-    if (pendingBuildId) {
-      localStorage.setItem(APP_RELEASE_LOG_PENDING_KEY, pendingBuildId);
-    }
     const url = new URL(window.location.href);
     url.searchParams.set('_update', String(Date.now()));
     window.location.replace(url.toString());
   }
+};
+
+const getDebugRemoteBuildId = () => {
+  if (typeof window === 'undefined') return '';
+  const host = String(window.location.hostname || '').trim().toLowerCase();
+  const canDebug = host === 'localhost' || host === '127.0.0.1';
+  if (!canDebug) return '';
+  return String(localStorage.getItem(APP_UPDATE_DEBUG_REMOTE_KEY) || '').trim();
 };
 
 const fetchRemoteVersionMeta = async () => {
@@ -485,7 +520,8 @@ const fetchRemoteVersionMeta = async () => {
 const checkForAppUpdate = async () => {
   if (!currentAppBuildId) return;
   const remoteMeta = await fetchRemoteVersionMeta();
-  const remoteBuildId = String(remoteMeta?.buildId || '').trim();
+  const debugRemoteBuildId = getDebugRemoteBuildId();
+  const remoteBuildId = String(debugRemoteBuildId || remoteMeta?.buildId || '').trim();
   if (!remoteBuildId) return;
 
   remoteAppBuildId.value = remoteBuildId;
@@ -497,8 +533,14 @@ const checkForAppUpdate = async () => {
     showAppUpdatePromptModal.value = true;
     return;
   }
+
   hasAppUpdate.value = false;
   showAppUpdatePromptModal.value = false;
+
+  if (!hasAutoShownReleaseLogThisVisit.value && !isCurrentReleaseLogSkipped.value) {
+    hasAutoShownReleaseLogThisVisit.value = true;
+    openCurrentReleaseLogModal();
+  }
 };
 
 const screenshotConfirmRangeText = computed(() => {
@@ -2011,19 +2053,8 @@ const handleGlobalPointerDown = (event) => {
 
 onMounted(() => {
   updateCompactTopNav();
-  releaseLogSeenBuildId.value = String(localStorage.getItem(APP_RELEASE_LOG_SEEN_KEY) || '').trim();
-  const pendingReleaseLogBuildId = String(localStorage.getItem(APP_RELEASE_LOG_PENDING_KEY) || '').trim();
-  if (currentAppBuildId) {
-    if (pendingReleaseLogBuildId && pendingReleaseLogBuildId === currentAppBuildId) {
-      showAppReleaseLogModal.value = true;
-      localStorage.removeItem(APP_RELEASE_LOG_PENDING_KEY);
-    } else if (!releaseLogSeenBuildId.value) {
-      releaseLogSeenBuildId.value = currentAppBuildId;
-      localStorage.setItem(APP_RELEASE_LOG_SEEN_KEY, currentAppBuildId);
-    } else if (releaseLogSeenBuildId.value !== currentAppBuildId) {
-      showAppReleaseLogModal.value = true;
-    }
-  }
+  releaseLogSkipBuildId.value = String(localStorage.getItem(APP_RELEASE_LOG_SKIP_KEY) || '').trim();
+  syncReleaseLogSkipChecked();
   void checkForAppUpdate();
   if (typeof window !== 'undefined') {
     appVersionCheckTimer = window.setInterval(() => {
@@ -2220,12 +2251,27 @@ watch(isHistoryPredictEditorOpen, (open) => {
   display: block;
   margin-left: auto;
   margin-right: auto;
-  width: min(100%, 460px);
+  width: min(100%, 240px);
   max-height: min(48vh, 280px);
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.45);
   object-fit: contain;
   background: rgba(248, 250, 252, 0.8);
+}
+
+.app-release-log-skip-option {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.app-release-log-skip-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #0f766e;
 }
 
 .nav-tabs > button,
