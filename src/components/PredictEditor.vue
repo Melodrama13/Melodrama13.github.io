@@ -99,7 +99,7 @@
                 </select>
                 <select v-else v-model="char.skillType" class="mini-select skill-sel" :disabled="isSkillLocked(char)">
                   <option value="-">待定</option>
-                  <option value="score_up">分卡</option>
+                  <option value="score_up">普分</option>
                   <option v-if="isPScoreAvailable(char)" value="p_score">P分</option>
                   <option value="recovery">奶卡</option>
                   <option value="accuracy">判卡</option>

@@ -52,18 +52,6 @@
           <img src="/data/icon/reset.png" class="stats-top-reset-icon" alt="复位" />
         </button>
       </div>
-      <div v-else class="username-wrap" title="导出文件命名与本地数据源命名使用该用户名">
-        <span class="username-label">用户名</span>
-        <input
-          v-model="predictUserName"
-          class="username-input"
-          type="text"
-          maxlength="24"
-          placeholder="user"
-          @focus="onPredictUserFocus"
-          @blur="onPredictUserBlur"
-        />
-      </div>
       <div class="nav-tabs-spacer"></div>
       <div class="predict-info" v-if="showPredictInfoInNav">
         {{ `${predictiveEvents.length}条预测` }}
@@ -92,6 +80,18 @@
           :style="sourceMenuStyle"
           @pointerdown.stop
         >
+          <div class="source-menu-username-wrap" title="导出文件命名与本地数据源命名使用该用户名">
+            <span class="source-menu-username-label">用户名</span>
+            <input
+              v-model="predictUserName"
+              class="source-menu-username-input"
+              type="text"
+              maxlength="24"
+              placeholder="user"
+              @focus="onPredictUserFocus"
+              @blur="onPredictUserBlur"
+            />
+          </div>
           <div class="source-menu-title">切换数据源</div>
           <div class="source-list">
             <div
@@ -2638,6 +2638,43 @@ button.active {
   margin: 2px 0 6px;
 }
 
+.source-menu-username-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 8px;
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+}
+
+.source-menu-username-label {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.source-menu-username-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 0.76rem;
+  color: #0f172a;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.source-menu-username-input:focus {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.15);
+}
+
 .source-list {
   display: flex;
   flex-direction: column;
@@ -3214,6 +3251,22 @@ button.active {
     padding: 5px 7px;
   }
 
+  .source-menu-username-wrap {
+    margin-bottom: 7px;
+    padding: 5px 7px;
+    gap: 6px;
+  }
+
+  .source-menu-username-label {
+    font-size: 0.66rem;
+  }
+
+  .source-menu-username-input {
+    height: 24px;
+    font-size: 0.66rem;
+    padding: 0 8px;
+  }
+
   .source-item-count {
     font-size: 0.66rem;
   }
@@ -3342,6 +3395,22 @@ button.active {
   .source-export-option {
     font-size: 0.68rem;
     gap: 4px;
+  }
+
+  .source-menu-username-wrap {
+    margin-bottom: 6px;
+    padding: 4px 6px;
+    gap: 5px;
+  }
+
+  .source-menu-username-label {
+    font-size: 0.64rem;
+  }
+
+  .source-menu-username-input {
+    height: 22px;
+    font-size: 0.62rem;
+    padding: 0 7px;
   }
 
   .source-export-status {

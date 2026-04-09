@@ -307,7 +307,7 @@
   },
   {
     "id": 17,
-    "date": "2021/3/20",
+    "date": "2021/3/22",
     "event_title": "届け！HOPEFUL STAGE♪",
     "gacha_title": "ここから羽ばたく天使",
     "festival": "",
@@ -325,8 +325,8 @@
   },
   {
     "id": 18,
-    "date": "2021/3/30",
-    "event_title": "君と歌う、桜舞う世界で♪",
+    "date": "2021/4/1",
+    "event_title": "君と歌う、桜舞う世界で",
     "gacha_title": "君と出会う桜の道",
     "festival": "半周年",
     "event_type": "混活",
@@ -649,7 +649,7 @@
   },
   {
     "id": 36,
-    "date": "2021/9/30",
+    "date": "2021/10/1",
     "event_title": "スクランブル・ファンフェスタ！",
     "gacha_title": "スクランブル・フラワー",
     "festival": "周年",
@@ -1819,7 +1819,7 @@
   },
   {
     "id": 100,
-    "date": "2023/7/10",
+    "date": "2023/7/11",
     "event_title": "仮面の私にさよならを",
     "gacha_title": "Where is ♡？",
     "festival": "",
@@ -3242,7 +3242,7 @@
   {
     "id": 175,
     "date": "2025/7/31",
-    "event_title": "Competitive fire",
+    "event_title": "Competitive fire！",
     "gacha_title": "Those who dare",
     "festival": "八月",
     "event_type": "箱活",

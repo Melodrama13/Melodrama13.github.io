@@ -8616,7 +8616,7 @@ td.record-char {
   --rel-interval-card-frame-size: 70px;
   --rel-card-image-scale: 0.9;
   --rel-card-logo-scale: 0.24;
-  --rel-jump-chip-min: 64px;
+  --rel-jump-chip-min: 60px;
 
   /* 列宽最小值 */
   --rel-min-char-col: 40px;

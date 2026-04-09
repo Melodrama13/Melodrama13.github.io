@@ -578,7 +578,7 @@
             <div class="filter-row">
               <span class="row-label">技能</span>
               <div class="btn-group-sm">
-                <button v-for="(label, key) in { score_up:'分卡', accuracy:'判卡', recovery:'奶卡', p_score:'P分', unit_score: '团分', cfes_l: 'CFES血分', cfes_j: 'CFES判分', bfes_up: 'BFES' }" 
+                <button v-for="(label, key) in { score_up:'普分', accuracy:'判卡', recovery:'奶卡', p_score:'P分', unit_score: '团分', cfes_l: 'CFES血分', cfes_j: 'CFES判分', bfes_up: 'BFES' }" 
                         :key="key" :class="{ active: filterCriteria.skills.includes(key) }"
                         @click="toggleDetailFilterArray('skills', key)">
                   {{ label }}
@@ -719,10 +719,11 @@
                         >
                           <img
                             :src="src"
-                            class="card-tooltip-jacket"
+                            class="card-tooltip-jacket media-load-shimmer"
                             :alt="`${card.Name || '角色'} 卡面`"
                             loading="lazy"
                             decoding="async"
+                            @load="onCardTooltipImageLoad"
                             @error="onCardTooltipImageError($event, card, src)"
                           />
                         </div>
@@ -770,10 +771,11 @@
                         >
                           <img
                             :src="src"
-                            class="card-tooltip-jacket"
+                            class="card-tooltip-jacket media-load-shimmer"
                             :alt="`${card.Name || '角色'} 卡面`"
                             loading="lazy"
                             decoding="async"
+                            @load="onCardTooltipImageLoad"
                             @error="onCardTooltipImageError($event, card, src)"
                           />
                         </div>
@@ -812,10 +814,11 @@
                     <div class="song-tooltip-jacket-wrap" :class="{ 'is-failed': !getSongTooltipImageSrc(row.event) }">
                       <img
                         :src="getSongTooltipImageSrc(row.event)"
-                        class="song-tooltip-jacket"
+                        class="song-tooltip-jacket media-load-shimmer"
                         :alt="`${getSongTitleText(row.event) || '歌曲'} 曲绘`"
                         loading="lazy"
                         decoding="async"
+                        @load="onSongTooltipImageLoad"
                         @error="onSongTooltipImageError"
                       />
                       <span class="song-tooltip-jacket-fallback">曲绘加载失败</span>
@@ -886,10 +889,11 @@
             <img
               v-if="getBirthdayCardImageSrc(row) && !isBirthdayCardImageFailed(row)"
               :src="getBirthdayCardImageSrc(row)"
-              class="birthday-info-card"
+              class="birthday-info-card media-load-shimmer"
               :alt="`${row.name} 生日卡面`"
               loading="lazy"
               decoding="async"
+              @load="onBirthdayCardImageLoad($event, row)"
               @error="onBirthdayCardImageError($event, row)"
             />
             <div class="birthday-info-content">
@@ -1190,12 +1194,37 @@ const getSongTooltipImageSrc = (event) => {
   return `/songs/song_${String(id).padStart(3, '0')}.webp`;
 };
 
-const onSongTooltipImageError = (event) => {
+const markMediaImageSettled = (event) => {
   const img = event?.target;
-  if (!(img instanceof HTMLImageElement)) return;
+  if (!(img instanceof HTMLImageElement)) return null;
+  img.dataset.loaded = '1';
+  return img;
+};
+
+const onCardTooltipImageLoad = (event) => {
+  const img = markMediaImageSettled(event);
+  if (!img) return;
+  const holder = img.closest('.card-tooltip-jacket-item');
+  if (holder instanceof HTMLElement) {
+    holder.classList.remove('is-failed');
+  }
+};
+
+const onSongTooltipImageError = (event) => {
+  const img = markMediaImageSettled(event);
+  if (!img) return;
   const holder = img.closest('.song-tooltip-jacket-wrap');
   if (holder instanceof HTMLElement) {
     holder.classList.add('is-failed');
+  }
+};
+
+const onSongTooltipImageLoad = (event) => {
+  const img = markMediaImageSettled(event);
+  if (!img) return;
+  const holder = img.closest('.song-tooltip-jacket-wrap');
+  if (holder instanceof HTMLElement) {
+    holder.classList.remove('is-failed');
   }
 };
 
@@ -3479,8 +3508,21 @@ const birthdayRows = computed(() => {
   sourceCards.forEach((card) => {
     if (String(card?.Type || '').toLowerCase() !== 'birthday') return;
     const name = String(card?.Name || '').trim().split(' ')[0];
-    const date = String(card?.Date || '').trim();
-    if (!name || !date) return;
+    const cardDate = String(card?.Date || '').trim();
+    if (!name || !cardDate) return;
+
+    const matched = cardDate.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+    if (!matched) return;
+
+    const year = Number(matched[1]);
+    const fallbackMonth = Number(matched[2]);
+    const fallbackDay = Number(matched[3]);
+    if (!Number.isFinite(year) || !Number.isFinite(fallbackMonth) || !Number.isFinite(fallbackDay)) return;
+
+    const md = CHARACTER_BIRTHDAY_MD_MAP.value[name] || null;
+    const month = md?.month || Math.trunc(fallbackMonth);
+    const day = md?.day || Math.trunc(fallbackDay);
+    const date = `${Math.trunc(year)}/${month}/${day}`;
 
     const key = `${name}|${date}`;
     if (seen.has(key)) return;
@@ -4658,6 +4700,20 @@ const CHAR_MAP = computed(() => {
   return map;
 });
 
+const CHARACTER_BIRTHDAY_MD_MAP = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const name = String(char?.zh_name || '').trim();
+    const month = Number(char?.birthday_month);
+    const day = Number(char?.birthday_day);
+    if (!name) return;
+    if (!Number.isFinite(month) || !Number.isFinite(day)) return;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return;
+    map[name] = { month: Math.trunc(month), day: Math.trunc(day) };
+  });
+  return map;
+});
+
 const birthdayCardImageErrorMap = ref({});
 
 const getBirthdayCardImageSrc = (row) => {
@@ -4673,13 +4729,23 @@ const isBirthdayCardImageFailed = (row) => {
   return !!birthdayCardImageErrorMap.value[key];
 };
 
-const onBirthdayCardImageError = (_event, row) => {
+const onBirthdayCardImageError = (event, row) => {
+  markMediaImageSettled(event);
   const key = makeBirthdayInfoKey(row);
   if (!key) return;
   birthdayCardImageErrorMap.value = {
     ...birthdayCardImageErrorMap.value,
     [key]: true
   };
+};
+
+const onBirthdayCardImageLoad = (event, row) => {
+  markMediaImageSettled(event);
+  const key = makeBirthdayInfoKey(row);
+  if (!key || !birthdayCardImageErrorMap.value[key]) return;
+  const next = { ...birthdayCardImageErrorMap.value };
+  delete next[key];
+  birthdayCardImageErrorMap.value = next;
 };
 
 const CHAR_CARD_FOLDER_MAP = computed(() => {
@@ -4768,8 +4834,8 @@ const isCardTooltipImageFailed = (card, src) => {
 };
 
 const onCardTooltipImageError = (event, card, src) => {
-  const img = event?.target;
-  if (!(img instanceof HTMLImageElement)) return;
+  const img = markMediaImageSettled(event);
+  if (!img) return;
 
   const key = makeCardTooltipImageErrorKey(card, src || img.getAttribute('src') || '');
   if (!key.endsWith('::')) {
@@ -4826,7 +4892,7 @@ const translateType = (t) => {
   return map[t?.toLowerCase()] || t;
 };
 const translateSkill = (s) => {
-  const map = { score_up: '分卡', accuracy: '判卡', recovery: '奶卡', p_score: 'P分', unit_score: '团分', cfes_l: 'CFES血分', cfes_j: 'CFES判分', bfes_up: 'BFES' };
+  const map = { score_up: '普分', accuracy: '判卡', recovery: '奶卡', p_score: 'P分', unit_score: '团分', cfes_l: 'CFES血分', cfes_j: 'CFES判分', bfes_up: 'BFES' };
   return map[s?.toLowerCase()] || s;
 };
 const translateAttr = (a) => {
@@ -5962,6 +6028,29 @@ button:not(:disabled):active {
   object-fit: contain;
   object-position: center;
   flex: 0 0 auto;
+}
+
+.media-load-shimmer:not([data-loaded='1']) {
+  background-image: linear-gradient(110deg, #d1d5db 8%, #f3f4f6 18%, #d1d5db 33%);
+  background-size: 220% 100%;
+  animation: media-shimmer 1.05s linear infinite;
+}
+
+@keyframes media-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -40% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-load-shimmer:not([data-loaded='1']) {
+    animation: none;
+    background-image: none;
+    background-color: #d1d5db;
+  }
 }
 
 .birthday-info-content {

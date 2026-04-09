@@ -22,7 +22,7 @@
                 class="nav-link nav-link-main"
                 :class="{ active: isGroupActive(group) }"
                 :title="group.title"
-                @click="scrollToSection(group.id)"
+                @click="handleParentNavClick(group)"
               >
                 {{ group.title }}
               </button>
@@ -34,7 +34,7 @@
                   :class="{ active: activeNavId === item.id, 'is-duo-subanchor': isNestedNavChild(item) }"
                   v-show="shouldShowNavChild(item)"
                   :title="item.title"
-                  @click="scrollToSection(item.id)"
+                  @click="handleChildNavClick(group, item)"
                 >
                   {{ item.title }}
                 </button>
@@ -227,9 +227,10 @@
                                 v-if="song.jacketUrl"
                                 :src="song.jacketUrl"
                                 :alt="`${song.songName || '歌曲'} 封面`"
-                                class="song-jacket-img song-duo-song-jacket-img"
+                                class="song-jacket-img song-duo-song-jacket-img media-load-shimmer"
                                 loading="lazy"
                                 decoding="async"
+                                @load="onSongJacketLoad"
                                 @error="onSongJacketError"
                               />
                               <span class="song-jacket-fallback">-</span>
@@ -411,9 +412,10 @@
                               v-if="song.jacketUrl"
                               :src="song.jacketUrl"
                               :alt="`${song.songName || '歌曲'} 封面`"
-                              class="song-jacket-img song-duo-song-jacket-img"
+                              class="song-jacket-img song-duo-song-jacket-img media-load-shimmer"
                               loading="lazy"
                               decoding="async"
+                              @load="onSongJacketLoad"
                               @error="onSongJacketError"
                             />
                             <span class="song-jacket-fallback">-</span>
@@ -519,9 +521,10 @@
                           v-if="song.jacketUrl"
                           :src="song.jacketUrl"
                           :alt="`${song.title || '歌曲'} 封面`"
-                          class="song-jacket-img song-duo-song-jacket-img"
+                          class="song-jacket-img song-duo-song-jacket-img media-load-shimmer"
                           loading="lazy"
                           decoding="async"
+                          @load="onSongJacketLoad"
                           @error="onSongJacketError"
                         />
                         <span class="song-jacket-fallback">-</span>
@@ -630,9 +633,10 @@
                               v-if="song.jacketUrl"
                               :src="song.jacketUrl"
                               :alt="`${song.title || '歌曲'} 封面`"
-                              class="song-jacket-img song-duo-song-jacket-img"
+                              class="song-jacket-img song-duo-song-jacket-img media-load-shimmer"
                               loading="lazy"
                               decoding="async"
+                              @load="onSongJacketLoad"
                               @error="onSongJacketError"
                             />
                             <span class="song-jacket-fallback">-</span>
@@ -802,9 +806,10 @@
                         v-if="song.jacketUrl"
                         :src="song.jacketUrl"
                         :alt="`${song.title || '歌曲'} 封面`"
-                        class="song-jacket-img"
+                        class="song-jacket-img media-load-shimmer"
                         loading="lazy"
                         decoding="async"
+                        @load="onSongJacketLoad"
                         @error="onSongJacketError"
                       />
                       <span class="song-jacket-fallback">-</span>
@@ -955,10 +960,11 @@ let lastInteractiveAt = 0;
 const DELETED_SONG_ID_SET = new Set([241, 290]);
 
 const navCollapsed = ref(false);
-const activeNavId = ref('panel-song-stats');
+const activeNavId = ref('panel-oc-stats');
 const isMobileNav = ref(false);
 const isNavTopLayout = ref(false);
 const navTopLayoutPrev = ref(null);
+const mobileNavExpandedGroups = ref({});
 let sectionObserver = null;
 
 const SONG_DIFFICULTY_ORDER = Object.freeze([
@@ -1228,19 +1234,29 @@ const navGroups = computed(() => {
 
   return [
     {
-      id: 'panel-song-stats',
-      title: getSongSectionTitle('panel-song-stats'),
-      children: [
-        { id: 'panel-oc-stats', title: getSongSectionTitle('panel-oc-stats') },
-        { id: 'panel-vs-song-stats', title: getSongSectionTitle('panel-vs-song-stats') },
-        ...vsSingerNavChildren.value,
-        { id: 'panel-oc-book-stats', title: getSongSectionTitle('panel-oc-book-stats') },
-        ...ocBookUnitNavChildren.value,
-        { id: 'panel-another-vocal', title: getSongSectionTitle('panel-another-vocal') },
-        ...anvoUnitNavChildren.value,
-        { id: 'panel-duo-stats', title: getSongSectionTitle('panel-duo-stats') },
-        ...duoUnitChildren
-      ]
+      id: 'panel-oc-stats',
+      title: getSongSectionTitle('panel-oc-stats'),
+      children: []
+    },
+    {
+      id: 'panel-vs-song-stats',
+      title: getSongSectionTitle('panel-vs-song-stats'),
+      children: [...vsSingerNavChildren.value]
+    },
+    {
+      id: 'panel-oc-book-stats',
+      title: getSongSectionTitle('panel-oc-book-stats'),
+      children: [...ocBookUnitNavChildren.value]
+    },
+    {
+      id: 'panel-another-vocal',
+      title: getSongSectionTitle('panel-another-vocal'),
+      children: [...anvoUnitNavChildren.value]
+    },
+    {
+      id: 'panel-duo-stats',
+      title: getSongSectionTitle('panel-duo-stats'),
+      children: [...duoUnitChildren]
     },
     {
       id: 'panel-song-search',
@@ -1324,7 +1340,14 @@ const isGroupActive = (group) => {
   return (group.children || []).some((c) => c.id === activeNavId.value);
 };
 
-const isGroupExpanded = (group) => isMobileNav.value || isGroupActive(group);
+const isGroupExpanded = (group) => {
+  if (!isMobileNav.value) return isGroupActive(group);
+  return !!mobileNavExpandedGroups.value[String(group?.id || '')];
+};
+
+const resetMobileNavGroupExpansion = () => {
+  mobileNavExpandedGroups.value = {};
+};
 
 const isNestedNavChild = (item) => {
   const kind = String(item?.anchorKind || '').trim();
@@ -1360,7 +1383,7 @@ const pickActiveNavTargetIdByViewport = () => {
     const el = document.getElementById(id);
     if (!(el instanceof HTMLElement)) return;
     const rect = el.getBoundingClientRect();
-    if (rect.width <= 1 || rect.height <= 1) return;
+    if (rect.width < 1 || rect.height < 1) return;
     if (rect.top <= anchorY && rect.bottom > anchorY) {
       containing.push({ id, top: rect.top, height: rect.height });
       return;
@@ -1703,6 +1726,9 @@ const onDuoImageModeChange = (event) => {
 const setNavCollapsed = (nextCollapsed, preserveCenter = true) => {
   const next = !!nextCollapsed;
   if (navCollapsed.value === next) return;
+  if (!next) {
+    resetMobileNavGroupExpansion();
+  }
   if (!preserveCenter) {
     navCollapsed.value = next;
     return;
@@ -1727,6 +1753,9 @@ const updateMobileNavState = () => {
     isMobileNav.value = isTopLayout;
     navCollapsed.value = nextCollapsed;
     navTopLayoutPrev.value = isTopLayout;
+    if (isTopLayout) {
+      resetMobileNavGroupExpansion();
+    }
   };
 
   if (needPreserve) {
@@ -1749,20 +1778,51 @@ const scrollSectionIntoHost = (id, behavior = 'smooth') => {
   return true;
 };
 
-const scrollToSection = async (id) => {
+const scrollToSection = (id, options = {}) => {
+  const collapseOnMobile = options?.collapseOnMobile !== false;
+  const el = document.getElementById(id);
+  if (!el) return;
   activeNavId.value = id;
+  const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const targetRect = el.getBoundingClientRect();
+  const nextTop = host.scrollTop + (targetRect.top - hostRect.top) - 8;
+  host.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+  scheduleNavSync();
+  if (isNavTopLayout.value && collapseOnMobile) {
+    setNavCollapsed(true, false);
+  }
+};
+
+const handleParentNavClick = (group) => {
+  const groupId = String(group?.id || '').trim();
+  if (!groupId) return;
+  const hasChildren = Array.isArray(group?.children) && group.children.length > 0;
 
   if (isNavTopLayout.value) {
-    if (!scrollSectionIntoHost(id, 'auto')) return;
-    setNavCollapsed(true, false);
-    await nextTick();
-    await waitNextPaint();
-    scrollSectionIntoHost(id, 'auto');
+    if (hasChildren) {
+      mobileNavExpandedGroups.value = {
+        [groupId]: true
+      };
+      scrollToSection(groupId, { collapseOnMobile: false });
+      return;
+    }
+
+    resetMobileNavGroupExpansion();
+    scrollToSection(groupId, { collapseOnMobile: true });
     return;
   }
 
-  scrollSectionIntoHost(id, 'smooth');
-  scheduleNavSync();
+  scrollToSection(groupId);
+};
+
+const handleChildNavClick = (_group, item) => {
+  const itemId = String(item?.id || '').trim();
+  if (!itemId) return;
+  scrollToSection(itemId, { collapseOnMobile: true });
+  if (isNavTopLayout.value) {
+    resetMobileNavGroupExpansion();
+  }
 };
 
 const backToSongHome = (event = null) => {
@@ -1897,6 +1957,18 @@ onBeforeUnmount(() => {
 const normalizeSongId = (idRaw) => {
   const n = Number(idRaw);
   return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER;
+};
+
+const parseSlashDateOrder = (raw) => {
+  const text = String(raw || '').trim();
+  const match = text.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (!match) return Number.MAX_SAFE_INTEGER;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return Number.MAX_SAFE_INTEGER;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return Number.MAX_SAFE_INTEGER;
+  return year * 10000 + month * 100 + day;
 };
 
 const normalizeHexColor = (raw) => {
@@ -2757,6 +2829,8 @@ const anotherVocalCards = computed(() => {
     song.vocals.forEach((vocal) => {
       if (normalizeCategoryKey(vocal?.type) !== 'another_vocal') return;
       const vocalId = normalizeSongId(vocal?.vocal_id);
+      const releasedAt = String(vocal?.released_at || '').trim();
+      const releasedAtOrder = parseSlashDateOrder(releasedAt);
 
       getKnownCharacters(vocal?.characters).forEach((charMeta) => {
         if (!rowMap.has(charMeta.name)) {
@@ -2766,12 +2840,14 @@ const anotherVocalCards = computed(() => {
         const row = rowMap.get(charMeta.name);
         const songKey = `${song.id}-${song.title}`;
         const prev = row.songs.get(songKey);
-        if (!prev || vocalId < prev.vocalId) {
+        if (!prev || releasedAtOrder < prev.releasedAtOrder || (releasedAtOrder === prev.releasedAtOrder && vocalId < prev.vocalId)) {
           row.songs.set(songKey, {
             id: song.id,
             title: song.title || '-',
             jacketUrl: String(song.jacketUrl || '').trim(),
             vocalId,
+            releasedAt,
+            releasedAtOrder,
             isDeletedSong: song.isDeletedSong
           });
         }
@@ -2782,6 +2858,7 @@ const anotherVocalCards = computed(() => {
   return Array.from(rowMap.values())
     .map((row) => {
       const songsList = Array.from(row.songs.values()).sort((a, b) => {
+        if (a.releasedAtOrder !== b.releasedAtOrder) return a.releasedAtOrder - b.releasedAtOrder;
         if (a.vocalId !== b.vocalId) return a.vocalId - b.vocalId;
         return normalizeSongId(a.id) - normalizeSongId(b.id);
       });
@@ -3112,11 +3189,23 @@ const onSongJacketError = (event) => {
   const img = event?.target;
   if (!(img instanceof HTMLImageElement)) return;
   if (img.dataset.failed === '1') return;
+  img.dataset.loaded = '1';
   img.dataset.failed = '1';
   img.style.display = 'none';
   const holder = img.closest('.song-jacket-media');
   if (holder instanceof HTMLElement) {
     holder.classList.add('is-failed');
+  }
+};
+
+const onSongJacketLoad = (event) => {
+  const img = event?.target;
+  if (!(img instanceof HTMLImageElement)) return;
+  img.dataset.loaded = '1';
+  img.style.display = '';
+  const holder = img.closest('.song-jacket-media');
+  if (holder instanceof HTMLElement) {
+    holder.classList.remove('is-failed');
   }
 };
 
@@ -3587,18 +3676,36 @@ watch(totalSongPages, (nextTotal) => {
 }
 
 .nav-sub-list {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-left: 6px;
+  padding-left: 10px;
+}
+
+.nav-sub-list::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  background: #cbd5e1;
 }
 
 .nav-link-sub {
-  padding: 5px 12px 5px 24px;
+  align-self: stretch;
+  margin-left: 8px;
+  width: calc(100% - 8px);
+  padding: 5px 10px;
+  text-indent: 0;
   font-size: 0.78rem;
 }
 
 .nav-link-sub.is-duo-subanchor {
-  padding-left: 34px;
+  margin-left: 14px;
+  width: calc(100% - 14px);
   font-size: 0.74rem;
   color: #64748b;
 }
@@ -5178,6 +5285,29 @@ watch(totalSongPages, (nextTotal) => {
   border-radius: 0;
 }
 
+.media-load-shimmer:not([data-loaded='1']) {
+  background-image: linear-gradient(110deg, #d1d5db 8%, #f3f4f6 18%, #d1d5db 33%);
+  background-size: 220% 100%;
+  animation: media-shimmer 1.05s linear infinite;
+}
+
+@keyframes media-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -40% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-load-shimmer:not([data-loaded='1']) {
+    animation: none;
+    background-image: none;
+    background-color: #d1d5db;
+  }
+}
+
 .song-jacket-fallback {
   display: none;
   color: #94a3b8;
@@ -5561,12 +5691,16 @@ watch(totalSongPages, (nextTotal) => {
   }
 
   .nav-link-sub {
-    padding: 3px 8px 3px 22px;
+    margin-left: 6px;
+    width: calc(100% - 6px);
+    padding: 3px 8px;
+    text-indent: 0;
     font-size: 0.68rem;
   }
 
   .nav-link-sub.is-duo-subanchor {
-    padding-left: 30px;
+    margin-left: 10px;
+    width: calc(100% - 10px);
     font-size: 0.66rem;
   }
 
@@ -5835,6 +5969,24 @@ watch(totalSongPages, (nextTotal) => {
     font-size: 0.78rem;
   }
 
+}
+
+@media (max-width: 520px) {
+  .pjsk-song-stats {
+    padding: 6px;
+  }
+
+  .floating-menu-btn {
+    top: calc(env(safe-area-inset-top, 0px) + 48px);
+    width: 34px;
+    height: 34px;
+  }
+
+  .nav-collapse-fab {
+    width: 30px;
+    min-height: 30px;
+    height: 30px;
+  }
 }
 
 @media (min-width: 901px) and (max-width: 1366px) and (orientation: landscape) {

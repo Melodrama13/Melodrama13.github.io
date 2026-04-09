@@ -2656,7 +2656,7 @@
     "Skill": "score_up",
     "EventID": "17",
     "GachaID": "17",
-    "Date": "2021/3/20",
+    "Date": "2021/3/22",
     "Bundle": "res005_no007"
   },
   {
@@ -2670,7 +2670,7 @@
     "Skill": "accuracy",
     "EventID": "17",
     "GachaID": "17",
-    "Date": "2021/3/20",
+    "Date": "2021/3/22",
     "Bundle": "res006_no008"
   },
   {
@@ -2684,7 +2684,7 @@
     "Skill": "p_score",
     "EventID": "17",
     "GachaID": "17",
-    "Date": "2021/3/20",
+    "Date": "2021/3/22",
     "Bundle": "res008_no007"
   },
   {
@@ -2698,7 +2698,7 @@
     "Skill": "score_up",
     "EventID": "17",
     "GachaID": "17",
-    "Date": "2021/3/20",
+    "Date": "2021/3/22",
     "Bundle": "res024_no009"
   },
   {
@@ -2712,7 +2712,7 @@
     "Skill": "recovery",
     "EventID": "17",
     "GachaID": "17",
-    "Date": "2021/3/20",
+    "Date": "2021/3/22",
     "Bundle": "res007_no007"
   },
   {
@@ -2754,7 +2754,7 @@
     "Skill": "score_up",
     "EventID": "18",
     "GachaID": "18",
-    "Date": "2021/3/30",
+    "Date": "2021/4/1",
     "Bundle": "res001_no007"
   },
   {
@@ -2768,7 +2768,7 @@
     "Skill": "recovery",
     "EventID": "18",
     "GachaID": "18",
-    "Date": "2021/3/30",
+    "Date": "2021/4/1",
     "Bundle": "res021_no013"
   },
   {
@@ -2782,7 +2782,7 @@
     "Skill": "p_score",
     "EventID": "18",
     "GachaID": "18",
-    "Date": "2021/3/30",
+    "Date": "2021/4/1",
     "Bundle": "res009_no007"
   },
   {
@@ -2796,7 +2796,7 @@
     "Skill": "accuracy",
     "EventID": "18",
     "GachaID": "18",
-    "Date": "2021/3/30",
+    "Date": "2021/4/1",
     "Bundle": "res005_no008"
   },
   {
@@ -2810,7 +2810,7 @@
     "Skill": "recovery",
     "EventID": "18",
     "GachaID": "18",
-    "Date": "2021/3/30",
+    "Date": "2021/4/1",
     "Bundle": "res017_no008"
   },
   {
@@ -4042,7 +4042,7 @@
     "Skill": "cfes_l",
     "EventID": "36",
     "GachaID": "36",
-    "Date": "2021/9/30",
+    "Date": "2021/10/1",
     "Bundle": "res021_no016"
   },
   {
@@ -4056,7 +4056,7 @@
     "Skill": "cfes_j",
     "EventID": "36",
     "GachaID": "36",
-    "Date": "2021/9/30",
+    "Date": "2021/10/1",
     "Bundle": "res001_no011"
   },
   {
@@ -4070,7 +4070,7 @@
     "Skill": "recovery",
     "EventID": "36",
     "GachaID": "36",
-    "Date": "2021/9/30",
+    "Date": "2021/10/1",
     "Bundle": "res005_no011"
   },
   {
@@ -4084,7 +4084,7 @@
     "Skill": "score_up",
     "EventID": "36",
     "GachaID": "36",
-    "Date": "2021/9/30",
+    "Date": "2021/10/1",
     "Bundle": "res009_no011"
   },
   {
@@ -4098,7 +4098,7 @@
     "Skill": "accuracy",
     "EventID": "36",
     "GachaID": "36",
-    "Date": "2021/9/30",
+    "Date": "2021/10/1",
     "Bundle": "res013_no012"
   },
   {
@@ -4112,7 +4112,7 @@
     "Skill": "score_up",
     "EventID": "36",
     "GachaID": "36",
-    "Date": "2021/9/30",
+    "Date": "2021/10/1",
     "Bundle": "res017_no012"
   },
   {
@@ -9474,7 +9474,7 @@
     "Skill": "score_up",
     "EventID": "100",
     "GachaID": "100",
-    "Date": "2023/7/10",
+    "Date": "2023/7/11",
     "Bundle": "res018_no027"
   },
   {
@@ -9488,7 +9488,7 @@
     "Skill": "recovery",
     "EventID": "100",
     "GachaID": "100",
-    "Date": "2023/7/10",
+    "Date": "2023/7/11",
     "Bundle": "res017_no027"
   },
   {
@@ -9502,7 +9502,7 @@
     "Skill": "accuracy",
     "EventID": "100",
     "GachaID": "100",
-    "Date": "2023/7/10",
+    "Date": "2023/7/11",
     "Bundle": "res019_no028"
   },
   {
@@ -9516,7 +9516,7 @@
     "Skill": "score_up",
     "EventID": "100",
     "GachaID": "100",
-    "Date": "2023/7/10",
+    "Date": "2023/7/11",
     "Bundle": "res020_no026"
   },
   {
@@ -9530,7 +9530,7 @@
     "Skill": "accuracy",
     "EventID": "100",
     "GachaID": "100",
-    "Date": "2023/7/10",
+    "Date": "2023/7/11",
     "Bundle": "res024_no027"
   },
   {
@@ -17636,7 +17636,7 @@
     "Skill": "birthday",
     "EventID": "birth_hrk5",
     "GachaID": "birth_hrk5",
-    "Date": "2025/10/5",
+    "Date": "2025/10/1",
     "Bundle": "res006_no049"
   },
   {
@@ -17790,7 +17790,7 @@
     "Skill": "birthday",
     "EventID": "birth_hnm5",
     "GachaID": "birth_hnm5",
-    "Date": "2025/10/27",
+    "Date": "2025/10/23",
     "Bundle": "res003_no049"
   },
   {
@@ -17874,7 +17874,7 @@
     "Skill": "birthday",
     "EventID": "birth_meiko5",
     "GachaID": "birth_meiko5",
-    "Date": "2025/11/5",
+    "Date": "2025/11/1",
     "Bundle": "res025_no052"
   },
   {
@@ -17888,7 +17888,7 @@
     "Skill": "birthday",
     "EventID": "birth_akt5",
     "GachaID": "birth_akt5",
-    "Date": "2025/11/12",
+    "Date": "2025/11/8",
     "Bundle": "res011_no050"
   },
   {
@@ -18112,7 +18112,7 @@
     "Skill": "birthday",
     "EventID": "birth_szk5",
     "GachaID": "birth_szk5",
-    "Date": "2025/12/6",
+    "Date": "2025/12/2",
     "Bundle": "res008_no049"
   },
   {
@@ -18266,7 +18266,7 @@
     "Skill": "birthday",
     "EventID": "birth_rin5",
     "GachaID": "birth_rin5",
-    "Date": "2025/12/27",
+    "Date": "2025/12/23",
     "Bundle": "res022_no050"
   },
   {
@@ -18280,7 +18280,7 @@
     "Skill": "birthday",
     "EventID": "birth_len5",
     "GachaID": "birth_len5",
-    "Date": "2025/12/27",
+    "Date": "2025/12/23",
     "Bundle": "res023_no052"
   },
   {
@@ -18392,7 +18392,7 @@
     "Skill": "birthday",
     "EventID": "birth_shiho5",
     "GachaID": "birth_shiho5",
-    "Date": "2026/1/8",
+    "Date": "2026/1/4",
     "Bundle": "res004_no053"
   },
   {
@@ -18546,7 +18546,7 @@
     "Skill": "birthday",
     "EventID": "birth_mfy5",
     "GachaID": "birth_mfy5",
-    "Date": "2026/1/27",
+    "Date": "2026/1/23",
     "Bundle": "res018_no051"
   },
   {
@@ -18560,7 +18560,7 @@
     "Skill": "birthday",
     "EventID": "birth_luka5",
     "GachaID": "birth_luka5",
-    "Date": "2026/1/30",
+    "Date": "2026/1/26",
     "Bundle": "res024_no052"
   },
   {
@@ -18644,7 +18644,7 @@
     "Skill": "birthday",
     "EventID": "birth_knd5",
     "GachaID": "birth_knd5",
-    "Date": "2026/2/10",
+    "Date": "2026/2/6",
     "Bundle": "res017_no050"
   },
   {
@@ -18728,7 +18728,7 @@
     "Skill": "birthday",
     "EventID": "birth_kaito5",
     "GachaID": "birth_kaito5",
-    "Date": "2026/2/17",
+    "Date": "2026/2/13",
     "Bundle": "res026_no054"
   },
   {
@@ -18812,7 +18812,7 @@
     "Skill": "birthday",
     "EventID": "birth_khn5",
     "GachaID": "birth_khn5",
-    "Date": "2026/3/2",
+    "Date": "2026/2/26",
     "Bundle": "res009_no052"
   },
   {
@@ -18966,7 +18966,7 @@
     "Skill": "birthday",
     "EventID": "birth_airi5",
     "GachaID": "birth_airi5",
-    "Date": "2026/3/19",
+    "Date": "2026/3/15",
     "Bundle": "res007_no051"
   },
   {
@@ -19141,7 +19141,7 @@
     "CardID": "1368",
     "Name": "白石杏",
     "Affiliation": "vbs",
-    "CardName": "",
+    "CardName": "垣間見えた牙",
     "Rarity": "4",
     "Type": "perm",
     "Attribute": "Mysterious",
@@ -19149,13 +19149,13 @@
     "EventID": "201",
     "GachaID": "201",
     "Date": "2026/4/9",
-    "Bundle": ""
+    "Bundle": "res010_no051"
   },
   {
     "CardID": "1369",
     "Name": "东云彰人",
     "Affiliation": "vbs",
-    "CardName": "",
+    "CardName": "この壁を越えるために",
     "Rarity": "4",
     "Type": "perm",
     "Attribute": "Mysterious",
@@ -19163,13 +19163,13 @@
     "EventID": "201",
     "GachaID": "201",
     "Date": "2026/4/9",
-    "Bundle": ""
+    "Bundle": "res011_no054"
   },
   {
     "CardID": "1370",
     "Name": "巡音流歌",
     "Affiliation": "vbs",
-    "CardName": "",
+    "CardName": "応援の気持ちもめちゃ盛りで！",
     "Rarity": "4",
     "Type": "perm",
     "Attribute": "Mysterious",
@@ -19177,13 +19177,13 @@
     "EventID": "201",
     "GachaID": "201",
     "Date": "2026/4/9",
-    "Bundle": ""
+    "Bundle": "res024_no054"
   },
   {
     "CardID": "1371",
     "Name": "小豆泽心羽",
     "Affiliation": "vbs",
-    "CardName": "",
+    "CardName": "歌詞に磨きをかけて",
     "Rarity": "3",
     "Type": "perm",
     "Attribute": "Mysterious",
@@ -19191,13 +19191,13 @@
     "EventID": "201",
     "GachaID": "201",
     "Date": "2026/4/9",
-    "Bundle": ""
+    "Bundle": "res009_no054"
   },
   {
     "CardID": "1372",
     "Name": "青柳冬弥",
     "Affiliation": "vbs",
-    "CardName": "",
+    "CardName": "やりとげる意志",
     "Rarity": "2",
     "Type": "perm",
     "Attribute": "Cool",
@@ -19205,21 +19205,21 @@
     "EventID": "201",
     "GachaID": "201",
     "Date": "2026/4/9",
-    "Bundle": ""
+    "Bundle": "res012_no052"
   },
   {
     "CardID": "1373",
     "Name": "花里实乃里",
     "Affiliation": "mmj",
-    "CardName": "-",
+    "CardName": "Happy Birthday！！2026",
     "Rarity": "birthday",
     "Type": "birthday",
     "Attribute": "Happy",
     "Skill": "birthday",
     "EventID": "birth_mnr5",
     "GachaID": "birth_mnr5",
-    "Date": "2026/4/14",
-    "Bundle": ""
+    "Date": "2026/4/10",
+    "Bundle": "res005_no052"
   },
   {
     "CardID": "-",
@@ -19302,7 +19302,7 @@
     "Skill": "birthday",
     "EventID": "birth_ena1",
     "GachaID": "birth_ena1",
-    "Date": "2026/4/30",
+    "Date": "2026/4/26",
     "Bundle": ""
   },
   {
@@ -19316,7 +19316,7 @@
     "Skill": "birthday",
     "EventID": "birth_saki5",
     "GachaID": "birth_saki5",
-    "Date": "2026/5/9",
+    "Date": "2026/5/5",
     "Bundle": ""
   },
   {
@@ -19330,7 +19330,7 @@
     "Skill": "birthday",
     "EventID": "birth_tks5",
     "GachaID": "birth_tks5",
-    "Date": "2026/5/17",
+    "Date": "2026/5/13",
     "Bundle": ""
   },
   {
@@ -19428,7 +19428,7 @@
     "Skill": "birthday",
     "EventID": "birth_toya5",
     "GachaID": "birth_toya5",
-    "Date": "2026/5/25",
+    "Date": "2026/5/21",
     "Bundle": ""
   },
   {
@@ -19512,7 +19512,7 @@
     "Skill": "birthday",
     "EventID": "birth_rui5",
     "GachaID": "birth_rui5",
-    "Date": "2026/6/24",
+    "Date": "2026/6/20",
     "Bundle": ""
   },
   {
@@ -19596,7 +19596,7 @@
     "Skill": "birthday",
     "EventID": "birth_nene5",
     "GachaID": "birth_nene5",
-    "Date": "2026/7/20",
+    "Date": "2026/7/16",
     "Bundle": ""
   },
   {
@@ -19610,7 +19610,7 @@
     "Skill": "birthday",
     "EventID": "birth_an5",
     "GachaID": "birth_an5",
-    "Date": "2026/7/26",
+    "Date": "2026/7/22",
     "Bundle": ""
   },
   {
@@ -19624,7 +19624,7 @@
     "Skill": "birthday",
     "EventID": "birth_ick5",
     "GachaID": "birth_ick5",
-    "Date": "2026/8/11",
+    "Date": "2026/8/7",
     "Bundle": ""
   },
   {
@@ -19708,7 +19708,7 @@
     "Skill": "birthday",
     "EventID": "birth_mzk5",
     "GachaID": "birth_mzk5",
-    "Date": "2026/8/27",
+    "Date": "2026/8/23",
     "Bundle": ""
   },
   {
@@ -19722,7 +19722,7 @@
     "Skill": "birthday",
     "EventID": "birth_miku5",
     "GachaID": "birth_miku5",
-    "Date": "2026/8/31",
+    "Date": "2026/8/27",
     "Bundle": ""
   },
   {
@@ -19736,7 +19736,7 @@
     "Skill": "birthday",
     "EventID": "birth_emu5",
     "GachaID": "birth_emu5",
-    "Date": "2026/9/9",
+    "Date": "2026/9/5",
     "Bundle": ""
   }
 ]

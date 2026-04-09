@@ -14,7 +14,9 @@
     "gender": "female",
     "color": "#33AAEE",
     "unit": "ln",
-    "unit_color": "#4455DD"
+    "unit_color": "#4455DD",
+    "birthday_month": 8,
+    "birthday_day": 11
   },
   {
     "id": 2,
@@ -31,7 +33,9 @@
     "gender": "female",
     "color": "#FFDD44",
     "unit": "ln",
-    "unit_color": "#4455DD"
+    "unit_color": "#4455DD",
+    "birthday_month": 5,
+    "birthday_day": 9
   },
   {
     "id": 3,
@@ -48,7 +52,9 @@
     "gender": "female",
     "color": "#EE6666",
     "unit": "ln",
-    "unit_color": "#4455DD"
+    "unit_color": "#4455DD",
+    "birthday_month": 10,
+    "birthday_day": 27
   },
   {
     "id": 4,
@@ -65,7 +71,9 @@
     "gender": "female",
     "color": "#BBDD22",
     "unit": "ln",
-    "unit_color": "#4455DD"
+    "unit_color": "#4455DD",
+    "birthday_month": 1,
+    "birthday_day": 8
   },
   {
     "id": 5,
@@ -82,7 +90,9 @@
     "gender": "female",
     "color": "#FFCCAA",
     "unit": "mmj",
-    "unit_color": "#88DD44"
+    "unit_color": "#88DD44",
+    "birthday_month": 4,
+    "birthday_day": 14
   },
   {
     "id": 6,
@@ -99,7 +109,9 @@
     "gender": "female",
     "color": "#99CCFF",
     "unit": "mmj",
-    "unit_color": "#88DD44"
+    "unit_color": "#88DD44",
+    "birthday_month": 10,
+    "birthday_day": 5
   },
   {
     "id": 7,
@@ -116,7 +128,9 @@
     "gender": "female",
     "color": "#FFAACC",
     "unit": "mmj",
-    "unit_color": "#88DD44"
+    "unit_color": "#88DD44",
+    "birthday_month": 3,
+    "birthday_day": 19
   },
   {
     "id": 8,
@@ -133,7 +147,9 @@
     "gender": "female",
     "color": "#99EEDD",
     "unit": "mmj",
-    "unit_color": "#88DD44"
+    "unit_color": "#88DD44",
+    "birthday_month": 12,
+    "birthday_day": 6
   },
   {
     "id": 9,
@@ -150,7 +166,9 @@
     "gender": "female",
     "color": "#FF6699",
     "unit": "vbs",
-    "unit_color": "#EE1166"
+    "unit_color": "#EE1166",
+    "birthday_month": 3,
+    "birthday_day": 2
   },
   {
     "id": 10,
@@ -167,7 +185,9 @@
     "gender": "female",
     "color": "#00BBDD",
     "unit": "vbs",
-    "unit_color": "#EE1166"
+    "unit_color": "#EE1166",
+    "birthday_month": 7,
+    "birthday_day": 26
   },
   {
     "id": 11,
@@ -184,7 +204,9 @@
     "gender": "male",
     "color": "#FF7722",
     "unit": "vbs",
-    "unit_color": "#EE1166"
+    "unit_color": "#EE1166",
+    "birthday_month": 11,
+    "birthday_day": 12
   },
   {
     "id": 12,
@@ -201,7 +223,9 @@
     "gender": "male",
     "color": "#0077DD",
     "unit": "vbs",
-    "unit_color": "#EE1166"
+    "unit_color": "#EE1166",
+    "birthday_month": 5,
+    "birthday_day": 25
   },
   {
     "id": 13,
@@ -218,7 +242,9 @@
     "gender": "male",
     "color": "#FFBB00",
     "unit": "ws",
-    "unit_color": "#FF9900"
+    "unit_color": "#FF9900",
+    "birthday_month": 5,
+    "birthday_day": 17
   },
   {
     "id": 14,
@@ -235,7 +261,9 @@
     "gender": "female",
     "color": "#FF66BB",
     "unit": "ws",
-    "unit_color": "#FF9900"
+    "unit_color": "#FF9900",
+    "birthday_month": 9,
+    "birthday_day": 9
   },
   {
     "id": 15,
@@ -252,7 +280,9 @@
     "gender": "female",
     "color": "#33DD99",
     "unit": "ws",
-    "unit_color": "#FF9900"
+    "unit_color": "#FF9900",
+    "birthday_month": 7,
+    "birthday_day": 20
   },
   {
     "id": 16,
@@ -269,7 +299,9 @@
     "gender": "male",
     "color": "#BB88EE",
     "unit": "ws",
-    "unit_color": "#FF9900"
+    "unit_color": "#FF9900",
+    "birthday_month": 6,
+    "birthday_day": 24
   },
   {
     "id": 17,
@@ -286,7 +318,9 @@
     "gender": "female",
     "color": "#BB6688",
     "unit": "nc",
-    "unit_color": "#884499"
+    "unit_color": "#884499",
+    "birthday_month": 2,
+    "birthday_day": 10
   },
   {
     "id": 18,
@@ -303,7 +337,9 @@
     "gender": "female",
     "color": "#8888CC",
     "unit": "nc",
-    "unit_color": "#884499"
+    "unit_color": "#884499",
+    "birthday_month": 1,
+    "birthday_day": 27
   },
   {
     "id": 19,
@@ -320,7 +356,9 @@
     "gender": "female",
     "color": "#CCAA88",
     "unit": "nc",
-    "unit_color": "#884499"
+    "unit_color": "#884499",
+    "birthday_month": 4,
+    "birthday_day": 30
   },
   {
     "id": 20,
@@ -337,7 +375,9 @@
     "gender": "secret",
     "color": "#DDAACC",
     "unit": "nc",
-    "unit_color": "#884499"
+    "unit_color": "#884499",
+    "birthday_month": 8,
+    "birthday_day": 27
   },
   {
     "id": 21,
@@ -354,7 +394,9 @@
     "gender": "female",
     "color": "#33CCBB",
     "unit": "vs",
-    "unit_color": "#111827"
+    "unit_color": "#111827",
+    "birthday_month": 8,
+    "birthday_day": 31
   },
   {
     "id": 22,
@@ -371,7 +413,9 @@
     "gender": "female",
     "color": "#FFCC11",
     "unit": "vs",
-    "unit_color": "#111827"
+    "unit_color": "#111827",
+    "birthday_month": 12,
+    "birthday_day": 27
   },
   {
     "id": 23,
@@ -388,7 +432,9 @@
     "gender": "male",
     "color": "#FFEE11",
     "unit": "vs",
-    "unit_color": "#111827"
+    "unit_color": "#111827",
+    "birthday_month": 12,
+    "birthday_day": 27
   },
   {
     "id": 24,
@@ -405,7 +451,9 @@
     "gender": "female",
     "color": "#FFBBCC",
     "unit": "vs",
-    "unit_color": "#111827"
+    "unit_color": "#111827",
+    "birthday_month": 1,
+    "birthday_day": 30
   },
   {
     "id": 25,
@@ -422,7 +470,9 @@
     "gender": "female",
     "color": "#DD4444",
     "unit": "vs",
-    "unit_color": "#111827"
+    "unit_color": "#111827",
+    "birthday_month": 11,
+    "birthday_day": 5
   },
   {
     "id": 26,
@@ -439,6 +489,8 @@
     "gender": "male",
     "color": "#3366CC",
     "unit": "vs",
-    "unit_color": "#111827"
+    "unit_color": "#111827",
+    "birthday_month": 2,
+    "birthday_day": 17
   }
 ]
