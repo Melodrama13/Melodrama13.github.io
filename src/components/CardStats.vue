@@ -1,5 +1,5 @@
 <template>
-  <div class="pjsk-stats" :class="{ 'matrix-sort-anchor-suppressed': suppressMatrixViewportAnchor }">
+  <div ref="cardStatsRootRef" class="pjsk-stats" :class="{ 'matrix-sort-anchor-suppressed': suppressMatrixViewportAnchor }">
     <div class="stats-layout" :class="{ 'nav-collapsed': navCollapsed, 'mobile-nav-overlay': isNavTopLayout, 'mobile-nav-open': !navCollapsed }">
       <button
         v-if="navCollapsed"
@@ -39,7 +39,7 @@
         </div>
 
         <template v-if="!navCollapsed">
-          <div v-if="showDesktopNameControls" class="nav-name-format export-hide">
+          <div v-if="!isMobileNav" class="nav-name-format export-hide">
             <span class="nav-name-format-title">名称格式</span>
             <div class="nav-name-format-options">
               <label class="nav-name-format-option">
@@ -52,6 +52,19 @@
               </label>
             </div>
           </div>
+          <div class="nav-name-format export-hide">
+            <span class="nav-name-format-title">卡面展示</span>
+            <div class="nav-name-format-options">
+              <label class="nav-name-format-option">
+                <input v-model="navCardImageMode" type="radio" value="before" />
+                花前
+              </label>
+              <label class="nav-name-format-option">
+                <input v-model="navCardImageMode" type="radio" value="after" />
+                花后
+              </label>
+            </div>
+          </div>
           <div class="nav-quick-wrap">
             <div class="nav-scroll">
               <div v-for="group in navGroups" :key="group.id" class="nav-group">
@@ -59,7 +72,7 @@
                   class="nav-link nav-link-main"
                   :class="{ active: isGroupActive(group) }"
                   :title="group.title"
-                  @click="scrollToSection(group.id)"
+                  @click="handleParentNavClick(group)"
                 >
                   {{ group.title }}
                 </button>
@@ -70,7 +83,7 @@
                     class="nav-link nav-link-sub"
                     :class="{ active: activeNavId === item.id }"
                     :title="item.title"
-                    @click="scrollToSection(item.id)"
+                    @click="handleChildNavClick(group, item)"
                   >
                     {{ item.title }}
                   </button>
@@ -86,11 +99,11 @@
           <h1>角色卡片统计</h1>
         </div>
 
-        <div id="panel-dist" class="stats-section card-panel section-main">
+        <div id="panel-dist" data-scroll-anchor="panel-dist" class="stats-section card-panel section-main">
           <div class="section-head">
             <div class="section-head-left">
               <h2>阶梯分布</h2>
-              <label v-if="showDesktopNameControls" class="dist-hide-name-toggle export-hide" title="勾选后不显示角色头像下方名称。">
+              <label v-if="showDesktopNameControls" class="dist-hide-name-toggle stats-checkbox export-hide" title="勾选后不显示角色头像下方名称。">
                 <input v-model="hideDistCharNames" type="checkbox" />
                 隐藏角色名
               </label>
@@ -103,13 +116,14 @@
               :key="panel.id"
               class="stats-section card-panel"
               :id="`panel-${panel.id}`"
+              :data-scroll-anchor="`panel-${panel.id}`"
             >
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ panel.title }}</h2>
                   <label
                     v-if="panel.id === 'reward'"
-                    class="reward-collab-toggle"
+                    class="reward-collab-toggle stats-checkbox"
                     title="勾选后，报酬统计会额外计入联动的二/三星卡。"
                   >
                     <input v-model="includeCollabRewardCards" type="checkbox" />
@@ -117,72 +131,72 @@
                   </label>
                   <label
                     v-if="panel.id === 'pure-score'"
-                    class="reward-collab-toggle"
+                    class="reward-collab-toggle stats-checkbox"
                     title="勾选后，4星分卡会计入团分卡。"
                   >
-                    <input v-model="includeUnitScoreInPureScore" type="checkbox" />
+                    <input :checked="includeUnitScoreInPureScore" type="checkbox" @change="onIncludeUnitScoreInPureScoreChange" />
                     统计团分
                   </label>
                   <label
                     v-if="panel.id === 'fes-limited'"
-                    class="reward-collab-toggle"
+                    class="reward-collab-toggle stats-checkbox"
                     title="勾选后，百六限定次数会额外计入当期FES卡。"
                   >
                     <input v-model="fesLimitedIncludeFes" type="checkbox" />
                     统计FES
                   </label>
                   <div v-if="panel.id === 'limited-ban'" class="head-inline-filters">
-                    <label class="head-filter-toggle" title="只统计箱限Ban个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="只统计箱限Ban个数。">
                       <input
                         type="checkbox"
                         :checked="limitedBanEventTypeFilter === '箱活'"
                         @change="setLimitedBanEventTypeFilter('箱活', $event.target.checked)"
                       />
-                      只看箱活
+                      仅箱
                     </label>
-                    <label class="head-filter-toggle" title="只统计混限Ban个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="只统计混限Ban个数。">
                       <input
                         type="checkbox"
                         :checked="limitedBanEventTypeFilter === '混活'"
                         @change="setLimitedBanEventTypeFilter('混活', $event.target.checked)"
                       />
-                      只看混活
+                      仅混
                     </label>
                   </div>
                   <div v-if="panel.id === 'banner'" class="head-inline-filters">
-                    <label class="head-filter-toggle" title="只统计箱活Banner个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="只统计箱活Banner个数。">
                       <input
                         type="checkbox"
                         :checked="bannerEventTypeFilter === '箱活'"
                         @change="setBannerEventTypeFilter('箱活', $event.target.checked)"
                       />
-                      只看箱活
+                      仅箱
                     </label>
-                    <label class="head-filter-toggle" title="只统计混活Banner个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="只统计混活Banner个数。">
                       <input
                         type="checkbox"
                         :checked="bannerEventTypeFilter === '混活'"
                         @change="setBannerEventTypeFilter('混活', $event.target.checked)"
                       />
-                      只看混活
+                      仅混
                     </label>
                   </div>
                   <div v-if="panel.id === 'fes-limited-ban'" class="head-inline-filters">
-                    <label class="head-filter-toggle" title="只统计百六箱限Ban个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="只统计百六箱限Ban个数。">
                       <input
                         type="checkbox"
                         :checked="fesLimitedBanEventTypeFilter === '箱活'"
                         @change="setFesLimitedBanEventTypeFilter('箱活', $event.target.checked)"
                       />
-                      只看箱活
+                      仅箱
                     </label>
-                    <label class="head-filter-toggle" title="只统计百六混限Ban个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="只统计百六混限Ban个数。">
                       <input
                         type="checkbox"
                         :checked="fesLimitedBanEventTypeFilter === '混活'"
                         @change="setFesLimitedBanEventTypeFilter('混活', $event.target.checked)"
                       />
-                      只看混活
+                      仅混
                     </label>
                   </div>
                 </div>
@@ -214,15 +228,15 @@
           </div>
         </div>
 
-        <div id="panel-festival" class="stats-section card-panel festival-panel">
+        <div id="panel-festival" data-scroll-anchor="panel-festival" class="stats-section card-panel festival-panel">
           <div class="section-head">
             <div class="section-head-left">
               <h2>节日人选</h2>
-              <label v-if="showDesktopNameControls" class="festival-hide-name-toggle export-hide" title="勾选后不显示角色头像下方名称。">
+              <label v-if="showDesktopNameControls" class="festival-hide-name-toggle stats-checkbox export-hide" title="勾选后不显示角色头像下方名称。">
                 <input v-model="hideFestivalCharNames" type="checkbox" />
                 隐藏角色名
               </label>
-              <label class="festival-merge-toggle" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
+              <label class="festival-merge-toggle stats-checkbox" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
                 <input v-model="festivalMergeHigherRanks" type="checkbox" />
                 高星合并低星
               </label>
@@ -234,16 +248,17 @@
               v-for="fest in festivalCharStats"
               :key="fest.festival"
               :id="fest.anchorId"
+              :data-scroll-anchor="fest.anchorId"
               class="festival-card card-panel"
             >
               <div class="festival-card-head">
                 <div class="festival-head-left">
                   <h3>{{ fest.festival }}</h3>
-                  <label class="festival-merge-toggle festival-card-merge-toggle" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
+                  <label class="festival-merge-toggle stats-checkbox festival-card-merge-toggle" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
                     <input v-model="festivalMergeToggles[fest.festival]" type="checkbox" />
                     高星合并低星
                   </label>
-                  <label v-if="canToggleFestivalFes(fest.festival)" class="festival-fes-toggle">
+                  <label v-if="canToggleFestivalFes(fest.festival)" class="festival-fes-toggle stats-checkbox">
                     <input v-model="festivalFesToggles[fest.festival]" type="checkbox" />
                     统计FES
                   </label>
@@ -298,32 +313,66 @@
           </div>
         </div>
 
-        <div id="panel-related" class="stats-section card-panel related-panel">
+        <div id="panel-related" data-scroll-anchor="panel-related" class="stats-section card-panel related-panel">
           <div class="section-head">
             <h2>相关记录</h2>
             <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-related', '相关记录')">PNG</button>
           </div>
 
           <div class="record-grid">
-            <div id="rel-last-four" class="record-block">
+            <div id="rel-last-four" data-scroll-anchor="rel-last-four" class="record-block">
               <div class="block-head">
-                <h3>{{ getRelatedRecordTitle('rel-last-four') }}</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-last-four') }}</h3>
+                  <label class="fes-card-mode-toggle stats-checkbox">
+                    <input :checked="relatedLastRecordShowCardImages" type="checkbox" @change="onRelatedLastRecordShowCardImagesChange" />
+                    显示卡面
+                  </label>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-four', '相关记录_上一次四星')">PNG</button>
               </div>
-              <table class="record-table">
+              <table :class="['record-table', 'related-table', 'related-table-last', { 'last-record-table-card-mode': relatedLastRecordShowCardImages }]">
                 <thead>
                   <tr>
                     <th>角色</th>
+                    <th v-if="relatedLastRecordShowCardImages">卡面</th>
                     <th>活动</th>
                     <th>日期</th>
                     <th>距今</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in lastFourStarRecords" :key="`last-four-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                  <tr v-for="row in lastFourStarDisplayRecords" :key="`last-four-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
                     <td class="record-char">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
-                      <span>{{ row.name }}</span>
+                      <img
+                        :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                        class="record-avatar"
+                        :class="{ 'related-last-avatar-large': relatedLastRecordShowCardImages }"
+                        :style="{ borderColor: getCharColor(row.name) }"
+                      />
+                      <span v-if="!relatedLastRecordShowCardImages">{{ row.name }}</span>
+                    </td>
+                    <td v-if="relatedLastRecordShowCardImages" class="related-last-card-cell">
+                      <div v-if="row.cardImageSrc" class="lineup-slot-card related-last-card-thumb">
+                        <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                        <img
+                          :src="row.cardImageSrc"
+                          :alt="`${row.name} 卡面`"
+                          class="lineup-slot-card-img media-load-shimmer"
+                          loading="lazy"
+                          decoding="async"
+                          @load="onMediaImageLoad"
+                          @error="onMediaImageError"
+                        />
+                        <img
+                          v-if="ATTRS.includes(row.cardAttr)"
+                          :src="`/elements/${String(row.cardAttr).toLowerCase()}.png`"
+                          :alt="ATTR_LABELS[row.cardAttr]"
+                          :title="ATTR_LABELS[row.cardAttr]"
+                          class="related-last-card-attr"
+                        />
+                      </div>
+                      <span v-else class="score-empty">-</span>
                     </td>
                     <td>
                       <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
@@ -335,25 +384,59 @@
               </table>
             </div>
 
-            <div id="rel-last-limited" class="record-block">
+            <div id="rel-last-limited" data-scroll-anchor="rel-last-limited" class="record-block">
               <div class="block-head">
-                <h3>{{ getRelatedRecordTitle('rel-last-limited') }}</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-last-limited') }}</h3>
+                  <label class="fes-card-mode-toggle stats-checkbox">
+                    <input :checked="relatedLastRecordShowCardImages" type="checkbox" @change="onRelatedLastRecordShowCardImagesChange" />
+                    显示卡面
+                  </label>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-limited', '相关记录_上一次限定')">PNG</button>
               </div>
-              <table class="record-table">
+              <table :class="['record-table', 'related-table', 'related-table-last', { 'last-record-table-card-mode': relatedLastRecordShowCardImages }]">
                 <thead>
                   <tr>
                     <th>角色</th>
+                    <th v-if="relatedLastRecordShowCardImages">卡面</th>
                     <th>活动</th>
                     <th>日期</th>
                     <th>距今</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in lastLimitedRecords" :key="`last-limited-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                  <tr v-for="row in lastLimitedDisplayRecords" :key="`last-limited-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
                     <td class="record-char">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
-                      <span>{{ row.name }}</span>
+                      <img
+                        :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                        class="record-avatar"
+                        :class="{ 'related-last-avatar-large': relatedLastRecordShowCardImages }"
+                        :style="{ borderColor: getCharColor(row.name) }"
+                      />
+                      <span v-if="!relatedLastRecordShowCardImages">{{ row.name }}</span>
+                    </td>
+                    <td v-if="relatedLastRecordShowCardImages" class="related-last-card-cell">
+                      <div v-if="row.cardImageSrc" class="lineup-slot-card related-last-card-thumb">
+                        <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                        <img
+                          :src="row.cardImageSrc"
+                          :alt="`${row.name} 卡面`"
+                          class="lineup-slot-card-img media-load-shimmer"
+                          loading="lazy"
+                          decoding="async"
+                          @load="onMediaImageLoad"
+                          @error="onMediaImageError"
+                        />
+                        <img
+                          v-if="ATTRS.includes(row.cardAttr)"
+                          :src="`/elements/${String(row.cardAttr).toLowerCase()}.png`"
+                          :alt="ATTR_LABELS[row.cardAttr]"
+                          :title="ATTR_LABELS[row.cardAttr]"
+                          class="related-last-card-attr"
+                        />
+                      </div>
+                      <span v-else class="score-empty">-</span>
                     </td>
                     <td>
                       <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
@@ -365,29 +448,101 @@
               </table>
             </div>
 
-            <div id="rel-four-long" class="record-block">
+            <div id="rel-four-long" data-scroll-anchor="rel-four-long" class="record-block">
               <div class="block-head">
-                <h3>{{ getRelatedRecordTitle('rel-four-long') }}</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-four-long') }}</h3>
+                  <label class="fes-card-mode-toggle stats-checkbox">
+                    <input :checked="intervalFourShowCardImages" type="checkbox" @change="onIntervalFourShowCardImagesChange" />
+                    显示卡面
+                  </label>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-long', '相关记录_四星最长间隔')">PNG</button>
               </div>
-              <table class="record-table">
+              <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalFourShowCardImages }]">
                 <thead>
                   <tr>
                     <th>角色</th>
+                    <th v-if="intervalFourShowCardImages">卡面</th>
                     <th>活动始末</th>
                     <th>最长</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in fourStarLongestIntervals" :key="`four-long-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                  <tr v-for="row in fourStarLongestDisplayRecords" :key="`four-long-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
                     <td class="record-char">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
-                      <span>{{ row.name }}</span>
+                      <img
+                        :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                        class="record-avatar"
+                        :class="{ 'interval-avatar-large': intervalFourShowCardImages }"
+                        :style="{ borderColor: getCharColor(row.name) }"
+                      />
+                      <span v-if="!intervalFourShowCardImages">{{ row.name }}</span>
                     </td>
-                    <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
-                      <span>→</span>
-                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                    <td v-if="intervalFourShowCardImages" class="range-card-cell">
+                      <template v-if="intervalFourShowCardImages">
+                        <div class="interval-card-column">
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.longestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.longestStartCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.longestStartCardAttr)"
+                                :src="`/elements/${String(row.longestStartCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.longestStartCardAttr]"
+                                :title="ATTR_LABELS[row.longestStartCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                          <span class="interval-stack-arrow">↓</span>
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.longestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.longestEndCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.longestEndCardAttr)"
+                                :src="`/elements/${String(row.longestEndCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.longestEndCardAttr]"
+                                :title="ATTR_LABELS[row.longestEndCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                        </div>
+                      </template>
+                    </td>
+                    <td class="range-cell" :class="{ 'is-card-mode': intervalFourShowCardImages }">
+                      <template v-if="intervalFourShowCardImages">
+                        <div class="interval-jump-column">
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                          <span class="interval-stack-arrow">↓</span>
+                          <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                        <span>→</span>
+                        <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                      </template>
                     </td>
                     <td>{{ formatGapValue(row.longest) }}</td>
                   </tr>
@@ -395,29 +550,101 @@
               </table>
             </div>
 
-            <div id="rel-four-short" class="record-block">
+            <div id="rel-four-short" data-scroll-anchor="rel-four-short" class="record-block">
               <div class="block-head">
-                <h3>{{ getRelatedRecordTitle('rel-four-short') }}</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-four-short') }}</h3>
+                  <label class="fes-card-mode-toggle stats-checkbox">
+                    <input :checked="intervalFourShowCardImages" type="checkbox" @change="onIntervalFourShowCardImagesChange" />
+                    显示卡面
+                  </label>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-short', '相关记录_四星最短间隔')">PNG</button>
               </div>
-              <table class="record-table">
+              <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalFourShowCardImages }]">
                 <thead>
                   <tr>
                     <th>角色</th>
+                    <th v-if="intervalFourShowCardImages">卡面</th>
                     <th>活动始末</th>
                     <th>最短</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in fourStarShortestIntervals" :key="`four-short-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                  <tr v-for="row in fourStarShortestDisplayRecords" :key="`four-short-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
                     <td class="record-char">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
-                      <span>{{ row.name }}</span>
+                      <img
+                        :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                        class="record-avatar"
+                        :class="{ 'interval-avatar-large': intervalFourShowCardImages }"
+                        :style="{ borderColor: getCharColor(row.name) }"
+                      />
+                      <span v-if="!intervalFourShowCardImages">{{ row.name }}</span>
                     </td>
-                    <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
-                      <span>→</span>
-                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                    <td v-if="intervalFourShowCardImages" class="range-card-cell">
+                      <template v-if="intervalFourShowCardImages">
+                        <div class="interval-card-column">
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.shortestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.shortestStartCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.shortestStartCardAttr)"
+                                :src="`/elements/${String(row.shortestStartCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.shortestStartCardAttr]"
+                                :title="ATTR_LABELS[row.shortestStartCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                          <span class="interval-stack-arrow">↓</span>
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.shortestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.shortestEndCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.shortestEndCardAttr)"
+                                :src="`/elements/${String(row.shortestEndCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.shortestEndCardAttr]"
+                                :title="ATTR_LABELS[row.shortestEndCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                        </div>
+                      </template>
+                    </td>
+                    <td class="range-cell" :class="{ 'is-card-mode': intervalFourShowCardImages }">
+                      <template v-if="intervalFourShowCardImages">
+                        <div class="interval-jump-column">
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                          <span class="interval-stack-arrow">↓</span>
+                          <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                        <span>→</span>
+                        <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                      </template>
                     </td>
                     <td>{{ formatGapValue(row.shortest) }}</td>
                   </tr>
@@ -425,29 +652,101 @@
               </table>
             </div>
 
-            <div id="rel-limited-long" class="record-block">
+            <div id="rel-limited-long" data-scroll-anchor="rel-limited-long" class="record-block">
               <div class="block-head">
-                <h3>{{ getRelatedRecordTitle('rel-limited-long') }}</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-limited-long') }}</h3>
+                  <label class="fes-card-mode-toggle stats-checkbox">
+                    <input :checked="intervalLimitedShowCardImages" type="checkbox" @change="onIntervalLimitedShowCardImagesChange" />
+                    显示卡面
+                  </label>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-long', '相关记录_限定最长间隔')">PNG</button>
               </div>
-              <table class="record-table">
+              <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalLimitedShowCardImages }]">
                 <thead>
                   <tr>
                     <th>角色</th>
+                    <th v-if="intervalLimitedShowCardImages">卡面</th>
                     <th>活动始末</th>
                     <th>最长</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in limitedLongestIntervals" :key="`lim-long-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                  <tr v-for="row in limitedLongestDisplayRecords" :key="`lim-long-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
                     <td class="record-char">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
-                      <span>{{ row.name }}</span>
+                      <img
+                        :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                        class="record-avatar"
+                        :class="{ 'interval-avatar-large': intervalLimitedShowCardImages }"
+                        :style="{ borderColor: getCharColor(row.name) }"
+                      />
+                      <span v-if="!intervalLimitedShowCardImages">{{ row.name }}</span>
                     </td>
-                    <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
-                      <span>→</span>
-                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                    <td v-if="intervalLimitedShowCardImages" class="range-card-cell">
+                      <template v-if="intervalLimitedShowCardImages">
+                        <div class="interval-card-column">
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.longestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.longestStartCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.longestStartCardAttr)"
+                                :src="`/elements/${String(row.longestStartCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.longestStartCardAttr]"
+                                :title="ATTR_LABELS[row.longestStartCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                          <span class="interval-stack-arrow">↓</span>
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.longestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.longestEndCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.longestEndCardAttr)"
+                                :src="`/elements/${String(row.longestEndCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.longestEndCardAttr]"
+                                :title="ATTR_LABELS[row.longestEndCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                        </div>
+                      </template>
+                    </td>
+                    <td class="range-cell" :class="{ 'is-card-mode': intervalLimitedShowCardImages }">
+                      <template v-if="intervalLimitedShowCardImages">
+                        <div class="interval-jump-column">
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                          <span class="interval-stack-arrow">↓</span>
+                          <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                        <span>→</span>
+                        <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                      </template>
                     </td>
                     <td>{{ formatGapValue(row.longest) }}</td>
                   </tr>
@@ -455,29 +754,101 @@
               </table>
             </div>
 
-            <div id="rel-limited-short" class="record-block">
+            <div id="rel-limited-short" data-scroll-anchor="rel-limited-short" class="record-block">
               <div class="block-head">
-                <h3>{{ getRelatedRecordTitle('rel-limited-short') }}</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-limited-short') }}</h3>
+                  <label class="fes-card-mode-toggle stats-checkbox">
+                    <input :checked="intervalLimitedShowCardImages" type="checkbox" @change="onIntervalLimitedShowCardImagesChange" />
+                    显示卡面
+                  </label>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-short', '相关记录_限定最短间隔')">PNG</button>
               </div>
-              <table class="record-table">
+              <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalLimitedShowCardImages }]">
                 <thead>
                   <tr>
                     <th>角色</th>
+                    <th v-if="intervalLimitedShowCardImages">卡面</th>
                     <th>活动始末</th>
                     <th>最短</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in limitedShortestIntervals" :key="`lim-short-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                  <tr v-for="row in limitedShortestDisplayRecords" :key="`lim-short-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
                     <td class="record-char">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
-                      <span>{{ row.name }}</span>
+                      <img
+                        :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                        class="record-avatar"
+                        :class="{ 'interval-avatar-large': intervalLimitedShowCardImages }"
+                        :style="{ borderColor: getCharColor(row.name) }"
+                      />
+                      <span v-if="!intervalLimitedShowCardImages">{{ row.name }}</span>
                     </td>
-                    <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
-                      <span>→</span>
-                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                    <td v-if="intervalLimitedShowCardImages" class="range-card-cell">
+                      <template v-if="intervalLimitedShowCardImages">
+                        <div class="interval-card-column">
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.shortestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.shortestStartCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.shortestStartCardAttr)"
+                                :src="`/elements/${String(row.shortestStartCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.shortestStartCardAttr]"
+                                :title="ATTR_LABELS[row.shortestStartCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                          <span class="interval-stack-arrow">↓</span>
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.shortestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.shortestEndCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.shortestEndCardAttr)"
+                                :src="`/elements/${String(row.shortestEndCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.shortestEndCardAttr]"
+                                :title="ATTR_LABELS[row.shortestEndCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                        </div>
+                      </template>
+                    </td>
+                    <td class="range-cell" :class="{ 'is-card-mode': intervalLimitedShowCardImages }">
+                      <template v-if="intervalLimitedShowCardImages">
+                        <div class="interval-jump-column">
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                          <span class="interval-stack-arrow">↓</span>
+                          <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                        <span>→</span>
+                        <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                      </template>
                     </td>
                     <td>{{ formatGapValue(row.shortest) }}</td>
                   </tr>
@@ -485,49 +856,119 @@
               </table>
             </div>
 
-            <div id="rel-ban-long" class="record-block">
+            <div id="rel-ban-long" data-scroll-anchor="rel-ban-long" class="record-block">
               <div class="block-head">
                 <div class="block-head-left">
                   <h3>{{ getRelatedRecordTitle('rel-ban-long') }}</h3>
+                  <label class="fes-card-mode-toggle stats-checkbox">
+                    <input :checked="intervalBanShowCardImages" type="checkbox" @change="onIntervalBanShowCardImagesChange" />
+                    显示卡面
+                  </label>
                   <div class="head-inline-filters">
-                    <label class="head-filter-toggle" title="只统计箱活的Ban间隔。">
+                    <label class="head-filter-toggle stats-checkbox" title="只统计箱活的Ban间隔。">
                       <input
                         type="checkbox"
                         :checked="banEventTypeFilter === '箱活'"
                         @change="setBanEventTypeFilter('箱活', $event.target.checked)"
                       />
-                      只看箱活
+                      仅箱
                     </label>
-                    <label class="head-filter-toggle" title="只统计混活的Ban间隔。">
+                    <label class="head-filter-toggle stats-checkbox" title="只统计混活的Ban间隔。">
                       <input
                         type="checkbox"
                         :checked="banEventTypeFilter === '混活'"
                         @change="setBanEventTypeFilter('混活', $event.target.checked)"
                       />
-                      只看混活
+                      仅混
                     </label>
                   </div>
                 </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-ban-long', '相关记录_Ban最长间隔')">PNG</button>
               </div>
-              <table class="record-table">
+              <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalBanShowCardImages }]">
                 <thead>
                   <tr>
                     <th>角色</th>
+                    <th v-if="intervalBanShowCardImages">卡面</th>
                     <th>活动始末</th>
                     <th>最长 Ban</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in banLongestIntervals" :key="`ban-long-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                  <tr v-for="row in banLongestDisplayRecords" :key="`ban-long-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
                     <td class="record-char">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
-                      <span>{{ row.name }}</span>
+                      <img
+                        :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                        class="record-avatar"
+                        :class="{ 'interval-avatar-large': intervalBanShowCardImages }"
+                        :style="{ borderColor: getCharColor(row.name) }"
+                      />
+                      <span v-if="!intervalBanShowCardImages">{{ row.name }}</span>
                     </td>
-                    <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
-                      <span>→</span>
-                      <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                    <td v-if="intervalBanShowCardImages" class="range-card-cell">
+                      <template v-if="intervalBanShowCardImages">
+                        <div class="interval-card-column">
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.longestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.longestStartCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.longestStartCardAttr)"
+                                :src="`/elements/${String(row.longestStartCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.longestStartCardAttr]"
+                                :title="ATTR_LABELS[row.longestStartCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                          <span class="interval-stack-arrow">↓</span>
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.longestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.longestEndCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.longestEndCardAttr)"
+                                :src="`/elements/${String(row.longestEndCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.longestEndCardAttr]"
+                                :title="ATTR_LABELS[row.longestEndCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                        </div>
+                      </template>
+                    </td>
+                    <td class="range-cell" :class="{ 'is-card-mode': intervalBanShowCardImages }">
+                      <template v-if="intervalBanShowCardImages">
+                        <div class="interval-jump-column">
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                          <span class="interval-stack-arrow">↓</span>
+                          <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                        <span>→</span>
+                        <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                      </template>
                     </td>
                     <td>{{ formatGapValue(row.longest) }}</td>
                   </tr>
@@ -535,49 +976,119 @@
               </table>
             </div>
 
-            <div id="rel-ban-short" class="record-block">
+            <div id="rel-ban-short" data-scroll-anchor="rel-ban-short" class="record-block">
               <div class="block-head">
                 <div class="block-head-left">
                   <h3>{{ getRelatedRecordTitle('rel-ban-short') }}</h3>
+                  <label class="fes-card-mode-toggle stats-checkbox">
+                    <input :checked="intervalBanShowCardImages" type="checkbox" @change="onIntervalBanShowCardImagesChange" />
+                    显示卡面
+                  </label>
                   <div class="head-inline-filters">
-                    <label class="head-filter-toggle" title="只统计箱活的Ban间隔。">
+                    <label class="head-filter-toggle stats-checkbox" title="只统计箱活的Ban间隔。">
                       <input
                         type="checkbox"
                         :checked="banEventTypeFilter === '箱活'"
                         @change="setBanEventTypeFilter('箱活', $event.target.checked)"
                       />
-                      只看箱活
+                      仅箱
                     </label>
-                    <label class="head-filter-toggle" title="只统计混活的Ban间隔。">
+                    <label class="head-filter-toggle stats-checkbox" title="只统计混活的Ban间隔。">
                       <input
                         type="checkbox"
                         :checked="banEventTypeFilter === '混活'"
                         @change="setBanEventTypeFilter('混活', $event.target.checked)"
                       />
-                      只看混活
+                      仅混
                     </label>
                   </div>
                 </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-ban-short', '相关记录_Ban最短间隔')">PNG</button>
               </div>
-              <table class="record-table">
+              <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalBanShowCardImages }]">
                 <thead>
                   <tr>
                     <th>角色</th>
+                    <th v-if="intervalBanShowCardImages">卡面</th>
                     <th>活动始末</th>
                     <th>最短 Ban</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in banShortestIntervals" :key="`ban-short-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                  <tr v-for="row in banShortestDisplayRecords" :key="`ban-short-${row.name}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
                     <td class="record-char">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
-                      <span>{{ row.name }}</span>
+                      <img
+                        :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                        class="record-avatar"
+                        :class="{ 'interval-avatar-large': intervalBanShowCardImages }"
+                        :style="{ borderColor: getCharColor(row.name) }"
+                      />
+                      <span v-if="!intervalBanShowCardImages">{{ row.name }}</span>
                     </td>
-                    <td class="range-cell">
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
-                      <span>→</span>
-                      <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                    <td v-if="intervalBanShowCardImages" class="range-card-cell">
+                      <template v-if="intervalBanShowCardImages">
+                        <div class="interval-card-column">
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.shortestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.shortestStartCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.shortestStartCardAttr)"
+                                :src="`/elements/${String(row.shortestStartCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.shortestStartCardAttr]"
+                                :title="ATTR_LABELS[row.shortestStartCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                          <span class="interval-stack-arrow">↓</span>
+                          <div class="interval-card-item is-stack-item">
+                            <div v-if="row.shortestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                :src="row.shortestEndCardImageSrc"
+                                :alt="`${row.name} 卡面`"
+                                class="lineup-slot-card-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <img
+                                v-if="ATTRS.includes(row.shortestEndCardAttr)"
+                                :src="`/elements/${String(row.shortestEndCardAttr).toLowerCase()}.png`"
+                                :alt="ATTR_LABELS[row.shortestEndCardAttr]"
+                                :title="ATTR_LABELS[row.shortestEndCardAttr]"
+                                class="related-last-card-attr"
+                              />
+                            </div>
+                            <span v-else class="score-empty">-</span>
+                          </div>
+                        </div>
+                      </template>
+                    </td>
+                    <td class="range-cell" :class="{ 'is-card-mode': intervalBanShowCardImages }">
+                      <template v-if="intervalBanShowCardImages">
+                        <div class="interval-jump-column">
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                          <span class="interval-stack-arrow">↓</span>
+                          <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                        <span>→</span>
+                        <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                      </template>
                     </td>
                     <td>{{ formatGapValue(row.shortest) }}</td>
                   </tr>
@@ -585,20 +1096,24 @@
               </table>
             </div>
 
-            <div id="rel-vs-unit-last-four" class="record-block">
+            <div id="rel-vs-unit-last-four" data-scroll-anchor="rel-vs-unit-last-four" class="record-block">
               <div class="record-head-row">
                 <div class="record-head-left">
                   <h3>{{ getRelatedRecordTitle('rel-vs-unit-last-four') }}</h3>
                   <div class="record-head-controls">
-                    <label class="record-compact-toggle">
-                      <input v-model="vsUnitLastFourCompact" type="checkbox" />
+                    <label class="record-compact-toggle stats-checkbox">
+                      <input :checked="vsUnitLastFourCompact" type="checkbox" @change="onVsUnitLastFourCompactChange" />
                       简略版本
+                    </label>
+                    <label v-if="!vsUnitLastFourCompact" class="fes-card-mode-toggle stats-checkbox">
+                      <input :checked="vsUnitLastFourShowCardImages" type="checkbox" @change="onVsUnitLastFourShowCardImagesChange" />
+                      显示卡面
                     </label>
                     <button
                       v-if="!vsUnitLastFourCompact"
                       class="record-sort-btn"
                       :class="{ active: vsUnitLastFourSort !== 'char' }"
-                      @click="toggleVsUnitLastFourSort"
+                      @click="onToggleVsUnitLastFourSort"
                     >
                       {{ vsUnitLastFourSortLabel }}
                     </button>
@@ -607,21 +1122,53 @@
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-last-four', '相关记录_各团虚拟歌手上次四星')">PNG</button>
               </div>
 
-              <table v-if="!vsUnitLastFourCompact" class="record-table">
+              <table v-if="!vsUnitLastFourCompact" :class="['record-table', 'related-table', 'related-table-vs-last', { 'vs-last-four-card-mode': vsUnitLastFourShowCardImages }]">
                 <thead>
                   <tr>
                     <th>角色</th>
+                    <th v-if="vsUnitLastFourShowCardImages">卡面</th>
                     <th>活动</th>
                     <th>日期</th>
                     <th>距今</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in vsUnitLastFourRecordsSorted" :key="`vs-unit-last-four-${row.key}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                  <tr v-for="row in vsUnitLastFourDisplayRecords" :key="`vs-unit-last-four-${row.key}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
                     <td class="record-char">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
-                      <img v-if="getVsUnitLogoByKey(row.key)" :src="getVsUnitLogoByKey(row.key)" class="record-unit-avatar" />
-                      <span>{{ row.label }}</span>
+                      <span class="record-avatar-stack">
+                        <img
+                          :src="`/chibi_s/${getCharAbbr(row.name)}.webp`"
+                          class="record-avatar"
+                          :class="{ 'vs-last-four-avatar-large': vsUnitLastFourShowCardImages }"
+                          :style="{ borderColor: getCharColor(row.name) }"
+                        />
+                        <span v-if="getVsUnitLogoByKey(row.key)" class="record-avatar-corner-badge" :class="{ 'is-large': vsUnitLastFourShowCardImages }">
+                          <img :src="getVsUnitLogoByKey(row.key)" class="record-avatar-corner-logo" :alt="row.label" />
+                        </span>
+                      </span>
+                      <span v-if="!vsUnitLastFourShowCardImages">{{ row.label }}</span>
+                    </td>
+                    <td v-if="vsUnitLastFourShowCardImages" class="related-last-card-cell">
+                      <div v-if="row.cardImageSrc" class="lineup-slot-card related-last-card-thumb">
+                        <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                        <img
+                          :src="row.cardImageSrc"
+                          :alt="`${row.label} 卡面`"
+                          class="lineup-slot-card-img media-load-shimmer"
+                          loading="lazy"
+                          decoding="async"
+                          @load="onMediaImageLoad"
+                          @error="onMediaImageError"
+                        />
+                        <img
+                          v-if="ATTRS.includes(row.cardAttr)"
+                          :src="`/elements/${String(row.cardAttr).toLowerCase()}.png`"
+                          :alt="ATTR_LABELS[row.cardAttr]"
+                          :title="ATTR_LABELS[row.cardAttr]"
+                          class="related-last-card-attr"
+                        />
+                      </div>
+                      <span v-else class="score-empty">-</span>
                     </td>
                     <td>
                       <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
@@ -652,7 +1199,7 @@
               </table>
             </div>
 
-            <div id="rel-vs-unit-score" class="record-block">
+            <div id="rel-vs-unit-score" data-scroll-anchor="rel-vs-unit-score" class="record-block">
               <div class="block-head">
                 <h3>{{ getRelatedRecordTitle('rel-vs-unit-score') }}</h3>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-score', '相关记录_团分统计')">PNG</button>
@@ -688,18 +1235,25 @@
               </table>
             </div>
 
-            <div id="rel-cfes-stat" class="record-block fes-record-block">
+            <div id="rel-cfes-stat" data-scroll-anchor="rel-cfes-stat" class="record-block fes-record-block">
               <div class="block-head">
-                <h3>{{ getRelatedRecordTitle('rel-cfes-stat') }}</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-cfes-stat') }}</h3>
+                  <label class="support-wl-toggle fes-card-mode-toggle stats-checkbox export-hide">
+                    <input :checked="fesRecordShowCardImages" type="checkbox" @change="onFesRecordShowCardImagesChange" />
+                    <span>显示卡面</span>
+                  </label>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-cfes-stat', '相关记录_CFES统计')">PNG</button>
               </div>
-              <table class="record-table fes-record-table">
+              <table class="record-table fes-record-table" :class="{ 'is-card-mode': fesRecordShowCardImages }">
                 <thead>
                   <tr>
                     <th class="fes-row-head" aria-label="团体"></th>
-                    <th v-for="attr in ATTRS" :key="`cfes-head-${attr}`" :style="getFesMatrixAttrHeadStyle(attr)">
+                    <th v-if="!fesRecordShowCardImages" v-for="attr in ATTRS" :key="`cfes-head-${attr}`" :style="getFesMatrixAttrHeadStyle(attr)">
                       <img :src="`/elements/${String(attr).toLowerCase()}.png`" class="fes-attr-icon" :alt="ATTR_LABELS[attr]" :title="ATTR_LABELS[attr]" />
                     </th>
+                    <th v-else class="fes-cards-head">卡面</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -708,6 +1262,7 @@
                       <img :src="unitLogoMap[unit]" class="mini-unit-logo" :alt="unit" :title="unit.toUpperCase()" />
                     </td>
                     <td
+                      v-if="!fesRecordShowCardImages"
                       v-for="attr in ATTRS"
                       :key="`cfes-cell-${unit}-${attr}`"
                       :style="getFesMatrixCellStyle(unit, attr)"
@@ -725,29 +1280,76 @@
                       </div>
                       <span v-else class="score-empty">-</span>
                     </td>
+                    <td v-else class="fes-card-strip-cell" :style="getFesMatrixUnitStripCellStyle(unit)">
+                      <div class="fes-card-strip">
+                        <div
+                          v-for="(card, cardIdx) in cfesRecordMatrix.cardsByUnit[unit]"
+                          :key="`cfes-card-${unit}-${card.cardId || 'na'}-${card.name}-${cardIdx}`"
+                          class="fes-card-thumb"
+                          :title="`${card.name} #${card.cardId || '-'}`"
+                        >
+                          <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                          <img
+                            v-if="card.imageSrc"
+                            :src="card.imageSrc"
+                            :alt="`${card.name} 卡面`"
+                            class="fes-card-thumb-img media-load-shimmer"
+                            loading="lazy"
+                            decoding="async"
+                            @load="onMediaImageLoad"
+                            @error="onMediaImageError"
+                          />
+                          <img
+                            v-if="ATTRS.includes(card.attr)"
+                            :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                            class="fes-card-thumb-attr"
+                            :alt="ATTR_LABELS[card.attr]"
+                            :title="ATTR_LABELS[card.attr]"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                        <span v-if="!cfesRecordMatrix.cardsByUnit[unit]?.length" class="score-empty">-</span>
+                      </div>
+                    </td>
                   </tr>
                   <tr class="fes-total-row">
                     <td class="fes-total-head">总计</td>
-                    <td v-for="attr in ATTRS" :key="`cfes-total-${attr}`" class="fes-total-num" :style="getFesMatrixTotalCellStyle(attr)">
+                    <td v-if="!fesRecordShowCardImages" v-for="attr in ATTRS" :key="`cfes-total-${attr}`" class="fes-total-num" :style="getFesMatrixTotalCellStyle(attr)">
                       {{ cfesRecordMatrix.totals[attr] }}
+                    </td>
+                    <td v-else class="fes-total-attr-wrap-cell">
+                      <div class="fes-total-attr-wrap">
+                        <span v-for="attr in ATTRS" :key="`cfes-total-card-${attr}`" class="fes-total-attr-item" :style="getFesMatrixTotalChipStyle(attr)">
+                          <img :src="`/elements/${String(attr).toLowerCase()}.png`" class="fes-total-attr-icon" :alt="ATTR_LABELS[attr]" :title="ATTR_LABELS[attr]" />
+                          <span class="fes-total-attr-num">{{ cfesRecordMatrix.totals[attr] }}</span>
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <div id="rel-bfes-stat" class="record-block fes-record-block">
+            <div id="rel-bfes-stat" data-scroll-anchor="rel-bfes-stat" class="record-block fes-record-block">
               <div class="block-head">
-                <h3>{{ getRelatedRecordTitle('rel-bfes-stat') }}</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-bfes-stat') }}</h3>
+                  <label class="support-wl-toggle fes-card-mode-toggle stats-checkbox export-hide">
+                    <input :checked="fesRecordShowCardImages" type="checkbox" @change="onFesRecordShowCardImagesChange" />
+                    <span>显示卡面</span>
+                  </label>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-bfes-stat', '相关记录_BFES统计')">PNG</button>
               </div>
-              <table class="record-table fes-record-table">
+              <table class="record-table fes-record-table" :class="{ 'is-card-mode': fesRecordShowCardImages }">
                 <thead>
                   <tr>
                     <th class="fes-row-head" aria-label="团体"></th>
-                    <th v-for="attr in ATTRS" :key="`bfes-head-${attr}`" :style="getFesMatrixAttrHeadStyle(attr)">
+                    <th v-if="!fesRecordShowCardImages" v-for="attr in ATTRS" :key="`bfes-head-${attr}`" :style="getFesMatrixAttrHeadStyle(attr)">
                       <img :src="`/elements/${String(attr).toLowerCase()}.png`" class="fes-attr-icon" :alt="ATTR_LABELS[attr]" :title="ATTR_LABELS[attr]" />
                     </th>
+                    <th v-else class="fes-cards-head">卡面</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -756,6 +1358,7 @@
                       <img :src="unitLogoMap[unit]" class="mini-unit-logo" :alt="unit" :title="unit.toUpperCase()" />
                     </td>
                     <td
+                      v-if="!fesRecordShowCardImages"
                       v-for="attr in ATTRS"
                       :key="`bfes-cell-${unit}-${attr}`"
                       :style="getFesMatrixCellStyle(unit, attr)"
@@ -773,11 +1376,51 @@
                       </div>
                       <span v-else class="score-empty">-</span>
                     </td>
+                    <td v-else class="fes-card-strip-cell" :style="getFesMatrixUnitStripCellStyle(unit)">
+                      <div class="fes-card-strip">
+                        <div
+                          v-for="(card, cardIdx) in bfesRecordMatrix.cardsByUnit[unit]"
+                          :key="`bfes-card-${unit}-${card.cardId || 'na'}-${card.name}-${cardIdx}`"
+                          class="fes-card-thumb"
+                          :title="`${card.name} #${card.cardId || '-'}`"
+                        >
+                          <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                          <img
+                            v-if="card.imageSrc"
+                            :src="card.imageSrc"
+                            :alt="`${card.name} 卡面`"
+                            class="fes-card-thumb-img media-load-shimmer"
+                            loading="lazy"
+                            decoding="async"
+                            @load="onMediaImageLoad"
+                            @error="onMediaImageError"
+                          />
+                          <img
+                            v-if="ATTRS.includes(card.attr)"
+                            :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                            class="fes-card-thumb-attr"
+                            :alt="ATTR_LABELS[card.attr]"
+                            :title="ATTR_LABELS[card.attr]"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                        <span v-if="!bfesRecordMatrix.cardsByUnit[unit]?.length" class="score-empty">-</span>
+                      </div>
+                    </td>
                   </tr>
                   <tr class="fes-total-row">
                     <td class="fes-total-head">总计</td>
-                    <td v-for="attr in ATTRS" :key="`bfes-total-${attr}`" class="fes-total-num" :style="getFesMatrixTotalCellStyle(attr)">
+                    <td v-if="!fesRecordShowCardImages" v-for="attr in ATTRS" :key="`bfes-total-${attr}`" class="fes-total-num" :style="getFesMatrixTotalCellStyle(attr)">
                       {{ bfesRecordMatrix.totals[attr] }}
+                    </td>
+                    <td v-else class="fes-total-attr-wrap-cell">
+                      <div class="fes-total-attr-wrap">
+                        <span v-for="attr in ATTRS" :key="`bfes-total-card-${attr}`" class="fes-total-attr-item" :style="getFesMatrixTotalChipStyle(attr)">
+                          <img :src="`/elements/${String(attr).toLowerCase()}.png`" class="fes-total-attr-icon" :alt="ATTR_LABELS[attr]" :title="ATTR_LABELS[attr]" />
+                          <span class="fes-total-attr-num">{{ bfesRecordMatrix.totals[attr] }}</span>
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -786,13 +1429,17 @@
           </div>
         </div>
 
-        <div id="panel-lineup" class="stats-section card-panel lineup-panel">
+        <div id="panel-lineup" data-scroll-anchor="panel-lineup" class="stats-section card-panel lineup-panel">
           <div class="section-head">
             <div class="section-head-left">
               <h2>日挑配队</h2>
+              <label class="support-wl-toggle fes-card-mode-toggle stats-checkbox export-hide">
+                <input :checked="lineupShowCardImages" type="checkbox" @change="onLineupShowCardImagesChange" />
+                <span>显示卡面</span>
+              </label>
             </div>
             <div class="lineup-section-actions">
-              <button class="lineup-toggle-btn lineup-toggle-btn-global" @click="toggleLineupExpandedAll">{{ getLineupGlobalToggleLabel() }}</button>
+              <button class="lineup-toggle-btn lineup-toggle-btn-global" @click="toggleLineupExpandedAll($event)">{{ getLineupGlobalToggleLabel() }}</button>
               <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-lineup', '日挑配队')">PNG</button>
             </div>
           </div>
@@ -802,6 +1449,7 @@
               v-for="row in characterLineupRows"
               :key="`lineup-${row.name}`"
               :id="getLineupCardId(row.name)"
+              :data-scroll-anchor="getLineupCardId(row.name)"
               class="lineup-card"
               :style="{ '--lineup-accent': getCharColor(row.name), backgroundColor: getRecordTint(row.name, 0.2) }"
             >
@@ -817,7 +1465,7 @@
                   <button
                     v-if="row.otherPlans.length"
                     class="lineup-toggle-btn"
-                    @click="toggleLineupExpanded(row.name)"
+                    @click="toggleLineupExpanded(row.name, $event)"
                   >
                     {{ getLineupToggleLabel(row.name, row.otherPlans.length) }}
                   </button>
@@ -837,12 +1485,30 @@
                   v-for="(slot, idx) in row.bestPlan.memberSlots"
                   :key="`main-${row.name}-${row.bestPlan.attr}-${idx}`"
                   class="lineup-member-cell"
-                  :class="{ 'is-empty': !slot, 'is-cfes': slot?.fesKind === 'cfes', 'is-bfes': slot?.fesKind === 'bfes' }"
+                  :class="{ 'is-empty': !slot, 'is-cfes': slot?.fesKind === 'cfes', 'is-bfes': slot?.fesKind === 'bfes', 'is-card-mode': lineupShowCardImages && !!slot }"
                   :style="getLineupMemberCellStyle(slot, row.bestPlan.attr)"
                 >
                   <template v-if="slot">
-                    <div class="lineup-member-score">{{ slot.score }}</div>
-                    <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                    <template v-if="lineupShowCardImages">
+                      <div class="lineup-slot-card">
+                        <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                        <img
+                          v-if="getLineupSlotCardImageSrc(slot)"
+                          :src="getLineupSlotCardImageSrc(slot)"
+                          :alt="`${slot.name} 卡面`"
+                          class="lineup-slot-card-img media-load-shimmer"
+                          loading="lazy"
+                          decoding="async"
+                          @load="onMediaImageLoad"
+                          @error="onMediaImageError"
+                        />
+                      </div>
+                      <div class="lineup-member-score">{{ slot.score }}</div>
+                    </template>
+                    <template v-else>
+                      <div class="lineup-member-score">{{ slot.score }}</div>
+                      <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                    </template>
                   </template>
                   <span v-else class="lineup-empty">-</span>
                 </div>
@@ -863,12 +1529,30 @@
                     v-for="(slot, idx) in plan.memberSlots"
                     :key="`slot-${row.name}-${plan.attr}-${idx}`"
                     class="lineup-member-cell"
-                    :class="{ 'is-empty': !slot, 'is-cfes': slot?.fesKind === 'cfes', 'is-bfes': slot?.fesKind === 'bfes' }"
+                    :class="{ 'is-empty': !slot, 'is-cfes': slot?.fesKind === 'cfes', 'is-bfes': slot?.fesKind === 'bfes', 'is-card-mode': lineupShowCardImages && !!slot }"
                     :style="getLineupMemberCellStyle(slot, plan.attr)"
                   >
                     <template v-if="slot">
-                      <div class="lineup-member-score">{{ slot.score }}</div>
-                      <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                      <template v-if="lineupShowCardImages">
+                        <div class="lineup-slot-card">
+                          <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                          <img
+                            v-if="getLineupSlotCardImageSrc(slot)"
+                            :src="getLineupSlotCardImageSrc(slot)"
+                            :alt="`${slot.name} 卡面`"
+                            class="lineup-slot-card-img media-load-shimmer"
+                            loading="lazy"
+                            decoding="async"
+                            @load="onMediaImageLoad"
+                            @error="onMediaImageError"
+                          />
+                        </div>
+                        <div class="lineup-member-score">{{ slot.score }}</div>
+                      </template>
+                      <template v-else>
+                        <div class="lineup-member-score">{{ slot.score }}</div>
+                        <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                      </template>
                     </template>
                     <span v-else class="lineup-empty">-</span>
                   </div>
@@ -879,12 +1563,16 @@
           </div>
         </div>
 
-        <div id="panel-support" class="stats-section card-panel support-panel">
+        <div id="panel-support" data-scroll-anchor="panel-support" class="stats-section card-panel support-panel">
           <div class="section-head">
             <div class="section-head-left">
               <h2>支援配队</h2>
-              <label class="support-wl-toggle export-hide" title="勾选后才计算并显示 WL 配队（更耗时）。">
-                <input v-model="supportEnableWlLineup" type="checkbox" />
+              <label class="support-wl-toggle fes-card-mode-toggle stats-checkbox export-hide">
+                <input :checked="supportShowCardImages" type="checkbox" @change="onSupportShowCardImagesChange" />
+                <span>显示卡面</span>
+              </label>
+              <label class="support-wl-toggle stats-checkbox export-hide" title="勾选后才计算并显示 WL 配队（更耗时）。">
+                <input :checked="supportEnableWlLineup" type="checkbox" @change="onSupportEnableWlLineupChange" />
                 <span>WL配队</span>
               </label>
             </div>
@@ -896,14 +1584,15 @@
               v-for="unitRow in supportLineupRows"
               :key="`support-${unitRow.unit}`"
               :id="getSupportCardId(unitRow.unit)"
+              :data-scroll-anchor="getSupportCardId(unitRow.unit)"
               class="support-card"
               :style="{ backgroundColor: hexToRgba(UNIT_COLORS[unitRow.unit] || '#64748b', 0.12) }"
             >
               <div class="support-head">
                 <img :src="supportUnitTitleLogoMap[unitRow.unit] || unitLogoMap[unitRow.unit]" class="support-unit-title-logo" :title="unitRow.unit.toUpperCase()" />
                 <div class="support-head-actions">
-                  <label v-if="unitRow.unit === 'vs'" class="support-vs-toggle export-hide">
-                    <input v-model="supportUseOriginalVsTeam" type="checkbox" />
+                  <label v-if="unitRow.unit === 'vs'" class="support-vs-toggle stats-checkbox export-hide">
+                    <input :checked="supportUseOriginalVsTeam" type="checkbox" @change="onSupportUseOriginalVsTeamChange" />
                     <span>原v队</span>
                   </label>
                   <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(getSupportCardId(unitRow.unit), `支援配队_${unitRow.unit.toUpperCase()}`)">PNG</button>
@@ -924,20 +1613,47 @@
                   v-for="(slot, idx) in plan.memberSlots"
                   :key="`support-slot-${unitRow.unit}-${plan.attr}-${idx}`"
                   class="lineup-member-cell"
-                  :class="{ 'is-empty': !slot, 'support-member-cell': !!slot, 'is-cfes': slot?.fesKind === 'cfes', 'is-bfes': slot?.fesKind === 'bfes' }"
+                  :class="{ 'is-empty': !slot, 'support-member-cell': !!slot, 'is-cfes': slot?.fesKind === 'cfes', 'is-bfes': slot?.fesKind === 'bfes', 'is-card-mode': supportShowCardImages && !!slot }"
                   :style="getLineupMemberCellStyle(slot, plan.attr)"
                 >
                   <template v-if="slot">
-                    <img :src="`/chibi_s/${getSupportMemberIconKey(slot)}.webp`" class="support-member-avatar" :title="slot.name" :alt="slot.name" />
-                    <img
-                      v-if="plan.attr === SUPPORT_WL_ATTR && isSupportAttrIcon(slot.attr)"
-                      :src="`/elements/${String(slot.attr).toLowerCase()}.png`"
-                      class="support-member-attr-icon"
-                      :title="ATTR_LABELS[slot.attr]"
-                      :alt="ATTR_LABELS[slot.attr]"
-                    />
-                    <div class="lineup-member-score">{{ slot.score }}</div>
-                    <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                    <template v-if="supportShowCardImages">
+                      <div class="lineup-slot-card">
+                        <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                        <img
+                          v-if="getLineupSlotCardImageSrc(slot)"
+                          :src="getLineupSlotCardImageSrc(slot)"
+                          :alt="`${slot.name} 卡面`"
+                          class="lineup-slot-card-img media-load-shimmer"
+                          loading="lazy"
+                          decoding="async"
+                          @load="onMediaImageLoad"
+                          @error="onMediaImageError"
+                        />
+                        <img
+                          v-if="plan.attr === SUPPORT_WL_ATTR && isSupportAttrIcon(slot.attr)"
+                          :src="`/elements/${String(slot.attr).toLowerCase()}.png`"
+                          class="fes-card-thumb-attr"
+                          :alt="ATTR_LABELS[slot.attr]"
+                          :title="ATTR_LABELS[slot.attr]"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <div class="lineup-member-score">{{ slot.score }}</div>
+                    </template>
+                    <template v-else>
+                      <img :src="`/chibi_s/${getSupportMemberIconKey(slot)}.webp`" class="support-member-avatar" :title="slot.name" :alt="slot.name" />
+                      <img
+                        v-if="plan.attr === SUPPORT_WL_ATTR && isSupportAttrIcon(slot.attr)"
+                        :src="`/elements/${String(slot.attr).toLowerCase()}.png`"
+                        class="support-member-attr-icon"
+                        :title="ATTR_LABELS[slot.attr]"
+                        :alt="ATTR_LABELS[slot.attr]"
+                      />
+                      <div class="lineup-member-score">{{ slot.score }}</div>
+                      <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                    </template>
                   </template>
                   <span v-else class="lineup-empty">-</span>
                 </div>
@@ -947,12 +1663,12 @@
           </div>
         </div>
         
-        <div id="panel-matrix" class="stats-section card-panel matrix-panel">
+        <div id="panel-matrix" data-scroll-anchor="panel-matrix" class="stats-section card-panel matrix-panel">
           <div class="section-head">
             <div class="section-head-left">
               <h2>角色矩阵</h2>
-              <label class="matrix-pure-toggle" title="勾选后，分卡统计会计入团分卡。">
-                <input v-model="includeUnitScoreInPureScore" type="checkbox" />
+              <label class="matrix-pure-toggle stats-checkbox" title="勾选后，分卡统计会计入团分卡。">
+                <input :checked="includeUnitScoreInPureScore" type="checkbox" @change="onIncludeUnitScoreInPureScoreChange" />
                 分卡统计团分
               </label>
             </div>
@@ -1054,7 +1770,7 @@
           </div>
         </div>
 
-        <div id="panel-vs-matrix" class="stats-section card-panel matrix-panel">
+        <div id="panel-vs-matrix" data-scroll-anchor="panel-vs-matrix" class="stats-section card-panel matrix-panel">
           <div class="section-head">
             <h2>虚拟歌手矩阵</h2>
             <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-vs-matrix', '虚拟歌手矩阵')">PNG</button>
@@ -1201,10 +1917,12 @@ const matrixSortOrder = ref('');
 const suppressMatrixViewportAnchor = ref(false);
 const vsUnitLastFourSort = ref('char');
 const vsUnitLastFourCompact = ref(true);
+const vsUnitLastFourShowCardImages = ref(false);
 const includeCollabRewardCards = ref(false);
 const hideDistCharNames = ref(true);
 const hideFestivalCharNames = ref(true);
 const navNameFormat = ref('single');
+const navCardImageMode = ref('after');
 const banEventTypeFilter = ref('all');
 const bannerEventTypeFilter = ref('all');
 const limitedBanEventTypeFilter = ref('all');
@@ -1233,13 +1951,31 @@ const isNavTopLayout = ref(false);
 const navTopLayoutPrev = ref(null);
 const supportUseOriginalVsTeam = ref(true);
 const supportEnableWlLineup = ref(false);
+const lineupShowCardImages = ref(false);
+const supportShowCardImages = ref(false);
+const relatedLastRecordShowCardImages = ref(false);
+const fesRecordShowCardImages = ref(false);
+const intervalFourShowCardImages = ref(false);
+const intervalLimitedShowCardImages = ref(false);
+const intervalBanShowCardImages = ref(false);
 const festivalFesToggles = reactive({
   半周年: false,
   周年: false
 });
+const cardStatsRootRef = ref(null);
 let sectionObserver = null;
 const isExportingPng = ref(false);
 let matrixSortAnchorTimer = 0;
+let navSyncRaf = 0;
+let viewportScrollHost = null;
+let viewportPreserveLock = 0;
+let statsMainInteractionHost = null;
+let lastInteractiveAnchorEl = null;
+let lastInteractiveAt = 0;
+let relatedJumpChipSyncRaf = 0;
+let relatedJumpResizeObserver = null;
+let relatedJumpMutationObserver = null;
+const mobileNavExpandedGroups = ref({});
 
 //const getCharAbbr = (name) => CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
 const getCharAbbr = (name) => {
@@ -1470,6 +2206,8 @@ const FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
 const VS_UNIT_SORT_ORDER = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 const RELATED_FES_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'];
 const SUPPORT_UNITS = ['vs', 'ln', 'mmj', 'vbs', 'ws', 'nc'];
+const LINEUP_NAV_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'];
+const SUPPORT_NAV_UNITS = ['vs', 'ln', 'mmj', 'vbs', 'ws', 'nc'];
 const supportUnitTitleLogoMap = Object.freeze({
   ln: '/elements/Leo_need.png',
   mmj: '/elements/MORE_MORE_JUMP!.png',
@@ -1477,6 +2215,29 @@ const supportUnitTitleLogoMap = Object.freeze({
   ws: '/elements/ワンダーランズ×ショウタイム.png',
   nc: '/elements/25時、ナイトコードで.png',
   vs: '/elements/virtual_singer.png'
+});
+
+const CHAR_CARD_FOLDER_MAP = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const idNum = Number(String(char?.id ?? '').trim());
+    const abbr = String(char?.en_abbr || '').trim().toLowerCase();
+    if (!Number.isFinite(idNum) || idNum <= 0 || !abbr) return;
+
+    const folder = `${String(idNum).padStart(3, '0')}${abbr}`;
+    const keys = [
+      char?.zh_name,
+      char?.ja_name,
+      `${String(char?.first_name || '').trim()}${String(char?.given_name || '').trim()}`
+    ];
+
+    keys.forEach((key) => {
+      const normalized = String(key || '').trim();
+      if (!normalized) return;
+      map[normalized] = folder;
+    });
+  });
+  return map;
 });
 
 const isVirtualSinger = (name) => VS_NAMES.includes(name);
@@ -1631,22 +2392,24 @@ const disableMatrixViewportAnchorTemporarily = () => {
 };
 
 const toggleMatrixSort = (key) => {
-  disableMatrixViewportAnchorTemporarily();
-  if (matrixSortKey.value !== key) {
-    matrixSortKey.value = key;
+  void withInteractionPinnedPosition(() => {
+    disableMatrixViewportAnchorTemporarily();
+    if (matrixSortKey.value !== key) {
+      matrixSortKey.value = key;
+      matrixSortOrder.value = 'desc';
+      return;
+    }
+    if (matrixSortOrder.value === 'desc') {
+      matrixSortOrder.value = 'asc';
+      return;
+    }
+    if (matrixSortOrder.value === 'asc') {
+      matrixSortKey.value = '';
+      matrixSortOrder.value = '';
+      return;
+    }
     matrixSortOrder.value = 'desc';
-    return;
-  }
-  if (matrixSortOrder.value === 'desc') {
-    matrixSortOrder.value = 'asc';
-    return;
-  }
-  if (matrixSortOrder.value === 'asc') {
-    matrixSortKey.value = '';
-    matrixSortOrder.value = '';
-    return;
-  }
-  matrixSortOrder.value = 'desc';
+  });
 };
 
 const getMatrixSortIndicator = (key) => {
@@ -1695,6 +2458,21 @@ const toggleVsUnitLastFourSort = () => {
     return;
   }
   vsUnitLastFourSort.value = 'char';
+};
+
+const onToggleVsUnitLastFourSort = (event) => {
+  const anchorEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  void withInteractionPinnedPosition(() => {
+    toggleVsUnitLastFourSort();
+  }, anchorEl);
+};
+
+const onVsUnitLastFourCompactChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    vsUnitLastFourCompact.value = checked;
+  }, anchorEl);
 };
 
 const vsUnitLastFourSortLabel = computed(() => {
@@ -1877,6 +2655,43 @@ const RELATED_RECORD_TITLE_MAP = Object.fromEntries(
 );
 
 const getRelatedRecordTitle = (id) => RELATED_RECORD_TITLE_MAP[id] || id;
+const getUnitNavTitle = (unit) => String(unit || '').toUpperCase();
+
+const lineupUnitFirstNameMap = computed(() => {
+  const firstByUnit = {};
+  characterLineupRows.value.forEach((row) => {
+    const name = String(row?.name || '').trim();
+    if (!name) return;
+    const unit = getUnitByChar(name);
+    if (!LINEUP_NAV_UNITS.includes(unit)) return;
+    if (!firstByUnit[unit]) firstByUnit[unit] = name;
+  });
+  return firstByUnit;
+});
+
+const lineupUnitNavChildren = computed(() => {
+  return LINEUP_NAV_UNITS
+    .filter((unit) => !!lineupUnitFirstNameMap.value[unit])
+    .map((unit) => ({
+      id: getLineupCardId(lineupUnitFirstNameMap.value[unit]),
+      title: getUnitNavTitle(unit)
+    }));
+});
+
+const supportUnitNavChildren = computed(() => {
+  const supportUnitSet = new Set(
+    supportLineupRows.value
+      .map((row) => String(row?.unit || '').toLowerCase())
+      .filter((unit) => SUPPORT_NAV_UNITS.includes(unit))
+  );
+
+  return SUPPORT_NAV_UNITS
+    .filter((unit) => supportUnitSet.has(unit))
+    .map((unit) => ({
+      id: getSupportCardId(unit),
+      title: getUnitNavTitle(unit)
+    }));
+});
 
 const navGroups = computed(() => {
   const distChildren = groupPanels.value.map((p) => ({
@@ -1906,12 +2721,12 @@ const navGroups = computed(() => {
     {
       id: 'panel-lineup',
       title: '日挑配队',
-      children: []
+      children: lineupUnitNavChildren.value
     },
     {
       id: 'panel-support',
       title: '支援配队',
-      children: []
+      children: supportUnitNavChildren.value
     },
     {
       id: 'panel-matrix',
@@ -1940,7 +2755,14 @@ const isGroupActive = (group) => {
   return (group.children || []).some((c) => c.id === activeNavId.value);
 };
 
-const isGroupExpanded = (group) => isMobileNav.value || isGroupActive(group);
+const isGroupExpanded = (group) => {
+  if (!isMobileNav.value) return isGroupActive(group);
+  return !!mobileNavExpandedGroups.value[String(group?.id || '')];
+};
+
+const resetMobileNavGroupExpansion = () => {
+  mobileNavExpandedGroups.value = {};
+};
 
 const getScrollContainer = () => {
   const content = document.querySelector('.content-area');
@@ -1949,25 +2771,387 @@ const getScrollContainer = () => {
   return document.documentElement;
 };
 
-const withPreservedScrollCenter = async (applyChange) => {
+const pickActiveNavTargetIdByViewport = () => {
   const host = getScrollContainer();
-  const ratio = (host.scrollTop + host.clientHeight / 2) / Math.max(1, host.scrollHeight);
+  const hostRect = host.getBoundingClientRect();
+  const anchorY = hostRect.top + Math.min(140, Math.max(72, hostRect.height * 0.2));
+  const ids = navTargetIds.value;
+  const topLevelGroupIds = new Set(navGroups.value.map((group) => String(group?.id || '').trim()));
+  const isChildNavId = (id) => !topLevelGroupIds.has(String(id || '').trim());
+
+  const containing = [];
+  const passed = [];
+  const upcoming = [];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!(el instanceof HTMLElement)) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    if (rect.top <= anchorY && rect.bottom > anchorY) {
+      containing.push({ id, top: rect.top, height: rect.height });
+      return;
+    }
+    if (rect.top <= anchorY) {
+      passed.push({ id, top: rect.top });
+      return;
+    }
+    if (rect.top > anchorY) {
+      upcoming.push({ id, top: rect.top });
+    }
+  });
+
+  if (containing.length > 0) {
+    const containingChildren = containing.filter((item) => isChildNavId(item.id));
+    if (containingChildren.length > 0) {
+      containingChildren.sort((a, b) => {
+        if (b.top !== a.top) return b.top - a.top;
+        return a.height - b.height;
+      });
+      return containingChildren[0].id;
+    }
+
+    containing.sort((a, b) => {
+      if (b.top !== a.top) return b.top - a.top;
+      return a.height - b.height;
+    });
+    return containing[0].id;
+  }
+
+  if (passed.length > 0) {
+    passed.sort((a, b) => b.top - a.top);
+    return passed[0].id;
+  }
+
+  if (upcoming.length > 0) {
+    upcoming.sort((a, b) => a.top - b.top);
+    return upcoming[0].id;
+  }
+
+  return ids[ids.length - 1] || ids[0] || '';
+};
+
+const syncActiveNavByViewport = () => {
+  if (viewportPreserveLock > 0) return;
+  try {
+    const nextId = pickActiveNavTargetIdByViewport();
+    if (nextId && activeNavId.value !== nextId) {
+      activeNavId.value = nextId;
+    }
+  } catch (_) {
+    // Guard against DOM timing races.
+  }
+};
+
+const scheduleNavSync = () => {
+  if (navSyncRaf) return;
+  navSyncRaf = requestAnimationFrame(() => {
+    navSyncRaf = 0;
+    syncActiveNavByViewport();
+  });
+};
+
+const SCROLL_SNAPSHOT_ANCHOR_SELECTOR = '.stats-main [data-scroll-anchor]';
+
+const getAnchorNodesInStatsMain = () => {
+  const statsMain = document.querySelector('.stats-main');
+  if (!(statsMain instanceof HTMLElement)) return [];
+  return Array.from(statsMain.querySelectorAll(SCROLL_SNAPSHOT_ANCHOR_SELECTOR))
+    .filter((el) => el instanceof HTMLElement && String(el.id || '').trim());
+};
+
+const findAnchorElementByKey = (key) => {
+  const wanted = String(key || '').trim();
+  if (!wanted) return null;
+  const statsMain = document.querySelector('.stats-main');
+  if (!(statsMain instanceof HTMLElement)) return null;
+  const escaped = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+    ? CSS.escape(wanted)
+    : wanted.replace(/"/g, '\\"');
+  const el = statsMain.querySelector(`[data-scroll-anchor="${escaped}"]`);
+  if (!(el instanceof HTMLElement)) return null;
+  return el;
+};
+
+const getViewportCenterAnchorElement = (host) => {
+  if (!(host instanceof HTMLElement)) return null;
+  const hostRect = host.getBoundingClientRect();
+  if (hostRect.width <= 2 || hostRect.height <= 2) return null;
+
+  const nodes = getAnchorNodesInStatsMain();
+  const centerY = hostRect.top + (hostRect.height * 0.35);
+  let bestNode = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const node of nodes) {
+    const rect = node.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) continue;
+    const visibleTop = Math.max(rect.top, hostRect.top);
+    const visibleBottom = Math.min(rect.bottom, hostRect.bottom);
+    if ((visibleBottom - visibleTop) < 8) continue;
+    const mid = (visibleTop + visibleBottom) * 0.5;
+    const distance = Math.abs(mid - centerY);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestNode = node;
+    }
+  }
+  return bestNode;
+};
+
+const getActiveNavAnchorElement = () => {
+  const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const isVisibleInViewport = (el) => {
+    if (!(el instanceof HTMLElement)) return false;
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return false;
+    const visibleTop = Math.max(rect.top, hostRect.top);
+    const visibleBottom = Math.min(rect.bottom, hostRect.bottom);
+    return (visibleBottom - visibleTop) >= 10;
+  };
+
+  const activeId = String(activeNavId.value || '').trim();
+  if (activeId) {
+    const exact = findAnchorElementByKey(activeId);
+    if (isVisibleInViewport(exact)) return exact;
+  }
+
+  const byViewportId = pickActiveNavTargetIdByViewport();
+  if (byViewportId) {
+    const byViewport = findAnchorElementByKey(byViewportId);
+    if (isVisibleInViewport(byViewport)) return byViewport;
+  }
+
+  return null;
+};
+
+const snapshotViewportAnchor = (options = {}) => {
+  const preferActiveNav = options?.preferActiveNav === true;
+  const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const activeAnchor = getActiveNavAnchorElement();
+  const viewportAnchor = getViewportCenterAnchorElement(host);
+  const anchorEl = preferActiveNav
+    ? (activeAnchor || viewportAnchor)
+    : (viewportAnchor || activeAnchor);
+  const anchorRect = anchorEl ? anchorEl.getBoundingClientRect() : null;
+  const anchorTop = anchorRect ? (anchorRect.top - hostRect.top) : 0;
+  return {
+    anchorEl,
+    anchorId: String(anchorEl?.id || '').trim(),
+    hasAnchor: !!anchorEl,
+    anchorTop,
+    scrollTop: host.scrollTop
+  };
+};
+
+const restoreViewportAnchor = (snapshot) => {
+  if (!snapshot) return;
+  const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const clampTop = (top) => {
+    const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
+    return Math.max(0, Math.min(maxTop, top));
+  };
+
+  const connectedAnchor = snapshot.anchorEl instanceof HTMLElement && snapshot.anchorEl.isConnected
+    ? snapshot.anchorEl
+    : null;
+  const anchorEl = connectedAnchor || findAnchorElementByKey(snapshot.anchorId);
+
+  if (snapshot.hasAnchor && anchorEl instanceof HTMLElement) {
+    const afterRect = anchorEl.getBoundingClientRect();
+    const afterTop = afterRect.top - hostRect.top;
+    const nextTop = snapshot.scrollTop + (afterTop - snapshot.anchorTop);
+    host.scrollTop = clampTop(nextTop);
+    return;
+  }
+
+  host.scrollTop = clampTop(snapshot.scrollTop);
+};
+
+const withPreservedScrollCenter = async (applyChange, options = {}) => {
+  const snapshot = snapshotViewportAnchor(options);
+  viewportPreserveLock += 1;
+  try {
+    applyChange();
+    await nextTick();
+    restoreViewportAnchor(snapshot);
+  } finally {
+    viewportPreserveLock = Math.max(0, viewportPreserveLock - 1);
+    scheduleNavSync();
+  }
+};
+
+const clampHostScrollTop = (host, top) => {
+  if (!(host instanceof HTMLElement)) return 0;
+  const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
+  return Math.max(0, Math.min(maxTop, top));
+};
+
+const withPreservedScrollTop = async (applyChange) => {
+  const host = getScrollContainer();
+  const beforeTop = host.scrollTop;
   applyChange();
   await nextTick();
-  await waitNextPaint();
-  const targetTop = ratio * host.scrollHeight - host.clientHeight / 2;
-  const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
-  host.scrollTop = Math.max(0, Math.min(maxTop, targetTop));
+  const nextHost = getScrollContainer();
+  nextHost.scrollTop = clampHostScrollTop(nextHost, beforeTop);
+  scheduleNavSync();
+};
+
+const getLayoutAnchorForNavToggle = () => {
+  const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const isVisibleInViewport = (el) => {
+    if (!(el instanceof HTMLElement)) return false;
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return false;
+    const visibleTop = Math.max(rect.top, hostRect.top);
+    const visibleBottom = Math.min(rect.bottom, hostRect.bottom);
+    return (visibleBottom - visibleTop) >= 10;
+  };
+
+  const activeId = String(activeNavId.value || '').trim();
+  if (activeId) {
+    const activeEl = findAnchorElementByKey(activeId);
+    if (isVisibleInViewport(activeEl)) {
+      return { anchorId: activeId, anchorEl: activeEl };
+    }
+  }
+
+  const fallbackAnchor = getViewportCenterAnchorElement(getScrollContainer());
+  if (fallbackAnchor instanceof HTMLElement) {
+    return {
+      anchorId: String(fallbackAnchor?.dataset?.scrollAnchor || fallbackAnchor.id || '').trim(),
+      anchorEl: fallbackAnchor
+    };
+  }
+
+  return { anchorId: '', anchorEl: null };
+};
+
+const withNavAnchorPinnedPosition = async (applyChange) => {
+  const host = getScrollContainer();
+  const hostRect = host.getBoundingClientRect();
+  const { anchorId, anchorEl } = getLayoutAnchorForNavToggle();
+  const beforeAnchor = anchorEl instanceof HTMLElement ? anchorEl : null;
+
+  if (!(beforeAnchor instanceof HTMLElement)) {
+    await withPreservedScrollTop(applyChange);
+    return;
+  }
+
+  const beforeTop = beforeAnchor.getBoundingClientRect().top - hostRect.top;
+  applyChange();
+  await nextTick();
+
+  const nextHost = getScrollContainer();
+  const nextHostRect = nextHost.getBoundingClientRect();
+  const afterAnchor = anchorId
+    ? (findAnchorElementByKey(anchorId) || document.getElementById(anchorId))
+    : (beforeAnchor.isConnected ? beforeAnchor : null);
+
+  if (afterAnchor instanceof HTMLElement) {
+    const afterTop = afterAnchor.getBoundingClientRect().top - nextHostRect.top;
+    const nextTop = nextHost.scrollTop + (afterTop - beforeTop);
+    nextHost.scrollTop = clampHostScrollTop(nextHost, nextTop);
+  }
+
+  scheduleNavSync();
+};
+
+const rememberInteractiveAnchorFromEvent = (event) => {
+  const target = event?.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (target.closest('.stats-nav')) return;
+
+  const interactive = target.closest('button, input[type="checkbox"], input[type="radio"], select');
+  if (!(interactive instanceof HTMLElement)) return;
+
+  lastInteractiveAnchorEl = interactive;
+  lastInteractiveAt = Date.now();
+};
+
+const consumeRecentInteractiveAnchor = (maxAgeMs = 1200) => {
+  if (!(lastInteractiveAnchorEl instanceof HTMLElement)) return null;
+  if (!lastInteractiveAnchorEl.isConnected) {
+    lastInteractiveAnchorEl = null;
+    return null;
+  }
+  if (Date.now() - lastInteractiveAt > maxAgeMs) {
+    lastInteractiveAnchorEl = null;
+    return null;
+  }
+  return lastInteractiveAnchorEl;
+};
+
+const withPinnedElementPosition = async (targetEl, applyChange) => {
+  const snapshot = snapshotViewportAnchor({ preferActiveNav: false });
+  const pinnedEl = targetEl instanceof HTMLElement ? targetEl : null;
+  const beforeHost = getScrollContainer();
+  const beforeHostRect = beforeHost.getBoundingClientRect();
+  const pinnedTop = pinnedEl
+    ? (pinnedEl.getBoundingClientRect().top - beforeHostRect.top)
+    : null;
+
+  const restoreByPinnedElement = () => {
+    if (!(pinnedEl instanceof HTMLElement) || !pinnedEl.isConnected || !Number.isFinite(pinnedTop)) {
+      return false;
+    }
+    const host = getScrollContainer();
+    const hostRect = host.getBoundingClientRect();
+    const afterTop = pinnedEl.getBoundingClientRect().top - hostRect.top;
+    const nextTop = host.scrollTop + (afterTop - pinnedTop);
+    host.scrollTop = clampHostScrollTop(host, nextTop);
+    return true;
+  };
+
+  applyChange();
+  await nextTick();
+  const restored = restoreByPinnedElement();
+  if (!restored) {
+    restoreViewportAnchor(snapshot);
+  }
+
+  scheduleNavSync();
+};
+
+const withInteractionPinnedPosition = async (applyChange, explicitTarget = null) => {
+  const target = explicitTarget instanceof HTMLElement ? explicitTarget : consumeRecentInteractiveAnchor();
+  if (target instanceof HTMLElement) {
+    await withPinnedElementPosition(target, applyChange);
+    return;
+  }
+  await withNavAnchorPinnedPosition(applyChange);
+};
+
+const withInfoAreaTopLeftPinned = async (applyChange) => {
+  await withNavAnchorPinnedPosition(applyChange);
+};
+
+const handleViewportScroll = () => {
+  scheduleNavSync();
+};
+
+const bindViewportScrollTracking = () => {
+  const host = getScrollContainer();
+  if (viewportScrollHost && viewportScrollHost !== host) {
+    viewportScrollHost.removeEventListener('scroll', handleViewportScroll);
+  }
+  viewportScrollHost = host;
+  viewportScrollHost.addEventListener('scroll', handleViewportScroll, { passive: true });
 };
 
 const setNavCollapsed = (nextCollapsed, preserveCenter = true) => {
   const next = !!nextCollapsed;
   if (navCollapsed.value === next) return;
+  if (!next) {
+    resetMobileNavGroupExpansion();
+  }
   if (!preserveCenter) {
     navCollapsed.value = next;
     return;
   }
-  void withPreservedScrollCenter(() => {
+  void withInfoAreaTopLeftPinned(() => {
     navCollapsed.value = next;
   });
 };
@@ -1987,16 +3171,24 @@ const updateMobileNavState = () => {
     isMobileNav.value = isTopLayout;
     navCollapsed.value = nextCollapsed;
     navTopLayoutPrev.value = isTopLayout;
+    if (isTopLayout) {
+      resetMobileNavGroupExpansion();
+    }
   };
 
   if (needPreserve) {
-    void withPreservedScrollCenter(applyState);
+    void withInfoAreaTopLeftPinned(() => {
+      applyState();
+      bindViewportScrollTracking();
+    });
     return;
   }
   applyState();
+  bindViewportScrollTracking();
 };
 
-const scrollToSection = (id) => {
+const scrollToSection = (id, options = {}) => {
+  const collapseOnMobile = options?.collapseOnMobile !== false;
   const el = document.getElementById(id);
   if (!el) return;
   activeNavId.value = id;
@@ -2005,8 +3197,40 @@ const scrollToSection = (id) => {
   const targetRect = el.getBoundingClientRect();
   const nextTop = host.scrollTop + (targetRect.top - hostRect.top) - 8;
   host.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
-  if (isNavTopLayout.value) {
+  scheduleNavSync();
+  if (isNavTopLayout.value && collapseOnMobile) {
     setNavCollapsed(true, false);
+  }
+};
+
+const handleParentNavClick = (group) => {
+  const groupId = String(group?.id || '').trim();
+  if (!groupId) return;
+  const hasChildren = Array.isArray(group?.children) && group.children.length > 0;
+
+  if (isNavTopLayout.value) {
+    if (hasChildren) {
+      mobileNavExpandedGroups.value = {
+        [groupId]: true
+      };
+      scrollToSection(groupId, { collapseOnMobile: false });
+      return;
+    }
+
+    resetMobileNavGroupExpansion();
+    scrollToSection(groupId, { collapseOnMobile: true });
+    return;
+  }
+
+  scrollToSection(groupId);
+};
+
+const handleChildNavClick = (_group, item) => {
+  const itemId = String(item?.id || '').trim();
+  if (!itemId) return;
+  scrollToSection(itemId, { collapseOnMobile: true });
+  if (isNavTopLayout.value) {
+    resetMobileNavGroupExpansion();
   }
 };
 
@@ -2057,6 +3281,7 @@ const prepareExportClone = async (targetEl) => {
 
   const rect = targetEl.getBoundingClientRect();
   const sourceStyle = window.getComputedStyle(targetEl);
+  const sourceRadiusVar = String(sourceStyle.getPropertyValue('--stats-radius-btn') || '').trim();
   const sourceBgColor = String(sourceStyle.backgroundColor || '').trim();
   const hasVisibleBg = sourceBgColor && sourceBgColor !== 'transparent' && sourceBgColor !== 'rgba(0, 0, 0, 0)';
   const clone = targetEl.cloneNode(true);
@@ -2071,6 +3296,9 @@ const prepareExportClone = async (targetEl) => {
   clone.style.width = `${Math.max(1, Math.ceil(rect.width))}px`;
   clone.style.maxHeight = 'none';
   clone.style.overflow = 'visible';
+  if (sourceRadiusVar) {
+    clone.style.setProperty('--stats-radius-btn', sourceRadiusVar);
+  }
 
   clone.querySelectorAll('.card-export-btn').forEach((btn) => {
     btn.style.display = 'none';
@@ -2199,34 +3427,169 @@ const bindSectionObserver = async () => {
 
   await nextTick();
   const ids = navTargetIds.value;
+  const host = getScrollContainer();
+  const observerRoot = host instanceof HTMLElement && host !== document.documentElement ? host : null;
 
-  sectionObserver = new IntersectionObserver((entries) => {
-    const visible = entries
-      .filter((e) => e.isIntersecting)
-      .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
-    if (visible.length > 0) {
-      activeNavId.value = visible[0].target.id;
-    }
-  }, {
-    root: null,
-    rootMargin: '-25% 0px -60% 0px',
-    threshold: [0.05, 0.2, 0.4]
-  });
+  if (typeof IntersectionObserver === 'undefined') {
+    scheduleNavSync();
+    return;
+  }
+
+  try {
+    sectionObserver = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        scheduleNavSync();
+      }
+    }, {
+      root: observerRoot,
+      rootMargin: '-10% 0px -75% 0px',
+      threshold: [0, 0.01, 0.1]
+    });
+  } catch (_) {
+    sectionObserver = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        scheduleNavSync();
+      }
+    }, {
+      root: null,
+      rootMargin: '-10% 0px -75% 0px',
+      threshold: [0, 0.01, 0.1]
+    });
+  }
 
   ids.forEach((id) => {
     const el = document.getElementById(id);
-    if (el) sectionObserver.observe(el);
+    if (!(el instanceof HTMLElement)) return;
+    if (observerRoot instanceof HTMLElement && !observerRoot.contains(el)) return;
+    sectionObserver.observe(el);
   });
+
+  scheduleNavSync();
+};
+
+const syncRelatedJumpChipWidths = () => {
+  const panel = document.getElementById('panel-related');
+  if (!(panel instanceof HTMLElement)) return;
+  const blocks = panel.querySelectorAll('.record-block');
+  blocks.forEach((blockEl) => {
+    if (!(blockEl instanceof HTMLElement)) return;
+    const buttons = blockEl.querySelectorAll('.jump-link');
+    if (!buttons.length) {
+      blockEl.style.removeProperty('--record-jump-chip-width');
+      return;
+    }
+
+    let maxWidth = 0;
+    buttons.forEach((btnEl) => {
+      if (!(btnEl instanceof HTMLButtonElement)) return;
+      const prevWidth = btnEl.style.width;
+      const prevMinWidth = btnEl.style.minWidth;
+      const prevMaxWidth = btnEl.style.maxWidth;
+      btnEl.style.width = 'auto';
+      btnEl.style.minWidth = '0';
+      btnEl.style.maxWidth = 'none';
+      const measured = Math.ceil(btnEl.getBoundingClientRect().width);
+      if (measured > maxWidth) maxWidth = measured;
+      btnEl.style.width = prevWidth;
+      btnEl.style.minWidth = prevMinWidth;
+      btnEl.style.maxWidth = prevMaxWidth;
+    });
+
+    if (maxWidth > 0) {
+      blockEl.style.setProperty('--record-jump-chip-width', `${maxWidth}px`);
+    }
+  });
+};
+
+const scheduleRelatedJumpChipWidthSync = () => {
+  if (relatedJumpChipSyncRaf) return;
+  relatedJumpChipSyncRaf = requestAnimationFrame(() => {
+    relatedJumpChipSyncRaf = 0;
+    syncRelatedJumpChipWidths();
+  });
+};
+
+const bindRelatedJumpChipObservers = () => {
+  if (relatedJumpResizeObserver) {
+    relatedJumpResizeObserver.disconnect();
+    relatedJumpResizeObserver = null;
+  }
+  if (relatedJumpMutationObserver) {
+    relatedJumpMutationObserver.disconnect();
+    relatedJumpMutationObserver = null;
+  }
+
+  const panel = document.getElementById('panel-related');
+  if (!(panel instanceof HTMLElement)) return;
+
+  if (typeof ResizeObserver !== 'undefined') {
+    relatedJumpResizeObserver = new ResizeObserver(() => {
+      scheduleRelatedJumpChipWidthSync();
+    });
+    relatedJumpResizeObserver.observe(panel);
+  }
+
+  if (typeof MutationObserver !== 'undefined') {
+    relatedJumpMutationObserver = new MutationObserver(() => {
+      scheduleRelatedJumpChipWidthSync();
+    });
+    relatedJumpMutationObserver.observe(panel, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  }
+
+  scheduleRelatedJumpChipWidthSync();
 };
 
 onMounted(() => {
   updateMobileNavState();
   window.addEventListener('resize', updateMobileNavState);
+  bindViewportScrollTracking();
+  const localRoot = cardStatsRootRef.value;
+  const statsMain = localRoot instanceof HTMLElement ? localRoot.querySelector('.stats-main') : null;
+  if (statsMain instanceof HTMLElement) {
+    statsMainInteractionHost = statsMain;
+    statsMainInteractionHost.addEventListener('pointerdown', rememberInteractiveAnchorFromEvent, true);
+    statsMainInteractionHost.addEventListener('keydown', rememberInteractiveAnchorFromEvent, true);
+  }
+  scheduleNavSync();
   bindSectionObserver();
+  nextTick(() => {
+    bindRelatedJumpChipObservers();
+  });
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateMobileNavState);
+  if (statsMainInteractionHost instanceof HTMLElement) {
+    statsMainInteractionHost.removeEventListener('pointerdown', rememberInteractiveAnchorFromEvent, true);
+    statsMainInteractionHost.removeEventListener('keydown', rememberInteractiveAnchorFromEvent, true);
+    statsMainInteractionHost = null;
+  }
+  lastInteractiveAnchorEl = null;
+  lastInteractiveAt = 0;
+  if (viewportScrollHost) {
+    viewportScrollHost.removeEventListener('scroll', handleViewportScroll);
+    viewportScrollHost = null;
+  }
+  if (navSyncRaf) {
+    cancelAnimationFrame(navSyncRaf);
+    navSyncRaf = 0;
+  }
+  if (relatedJumpChipSyncRaf) {
+    cancelAnimationFrame(relatedJumpChipSyncRaf);
+    relatedJumpChipSyncRaf = 0;
+  }
+  if (relatedJumpResizeObserver) {
+    relatedJumpResizeObserver.disconnect();
+    relatedJumpResizeObserver = null;
+  }
+  if (relatedJumpMutationObserver) {
+    relatedJumpMutationObserver.disconnect();
+    relatedJumpMutationObserver = null;
+  }
   if (sectionObserver) sectionObserver.disconnect();
   if (matrixSortAnchorTimer) {
     clearTimeout(matrixSortAnchorTimer);
@@ -2868,8 +4231,16 @@ const getLineupEventMark = (eventRef, useSingleMark = false) => {
   return eventRef.isFesCard ? `${base}(fes)` : base;
 };
 
+const getFesJumpLabel = (eventRef) => {
+  const fesType = String(eventRef?.fesType || '').trim().toLowerCase();
+  if (fesType === 'cfes') return 'CFES';
+  if (fesType === 'bfes') return 'BFES';
+  return 'FES';
+};
+
 const getJumpLinkLabel = (eventRef, fallback = '-') => {
   if (!eventRef) return fallback || '-';
+  if (eventRef?.isFesCard) return getFesJumpLabel(eventRef);
   const mark = getLineupEventMark(eventRef, useSingleNameMark.value);
   return mark || fallback || '-';
 };
@@ -3446,22 +4817,116 @@ const getLineupGlobalToggleLabel = () => {
   return isLineupAllExpanded.value ? '收起全部其余属性' : '展开全部其余属性';
 };
 
-const toggleLineupExpanded = (name) => {
-  const key = String(name || '');
-  if (!key) return;
-  lineupExpandedMap.value = {
-    ...lineupExpandedMap.value,
-    [key]: !lineupExpandedMap.value[key]
-  };
+const onFesRecordShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    fesRecordShowCardImages.value = checked;
+  }, anchorEl);
 };
 
-const toggleLineupExpandedAll = () => {
+const onLineupShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    lineupShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const onSupportShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    supportShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const onSupportEnableWlLineupChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    supportEnableWlLineup.value = checked;
+  }, anchorEl);
+};
+
+const onSupportUseOriginalVsTeamChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    supportUseOriginalVsTeam.value = checked;
+  }, anchorEl);
+};
+
+const onRelatedLastRecordShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    relatedLastRecordShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const onIncludeUnitScoreInPureScoreChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    includeUnitScoreInPureScore.value = checked;
+  }, anchorEl);
+};
+
+const onVsUnitLastFourShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    vsUnitLastFourShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const onIntervalFourShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    intervalFourShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const onIntervalLimitedShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    intervalLimitedShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const onIntervalBanShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    intervalBanShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const toggleLineupExpanded = (name, event = null) => {
+  const key = String(name || '');
+  if (!key) return;
+  const anchorEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  void withInteractionPinnedPosition(() => {
+    lineupExpandedMap.value = {
+      ...lineupExpandedMap.value,
+      [key]: !lineupExpandedMap.value[key]
+    };
+  }, anchorEl);
+};
+
+const toggleLineupExpandedAll = (event = null) => {
   const target = !isLineupAllExpanded.value;
-  const next = { ...lineupExpandedMap.value };
-  lineupRowsWithOthers.value.forEach((row) => {
-    next[row.name] = target;
-  });
-  lineupExpandedMap.value = next;
+  const anchorEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  void withInteractionPinnedPosition(() => {
+    const next = { ...lineupExpandedMap.value };
+    lineupRowsWithOthers.value.forEach((row) => {
+      next[row.name] = target;
+    });
+    lineupExpandedMap.value = next;
+  }, anchorEl);
 };
 
 const getCardProgressOrderId = (card) => {
@@ -4197,12 +5662,20 @@ const charEventBuckets = computed(() => {
         banner: String(ev?.banner || '').trim(),
         unit: String(ev?.unit || '').trim() || String(card?.Affiliation || '').trim(),
         sourceKey,
-        isFesCard: false
+        isFesCard: false,
+        fesType: ''
       };
     }
 
     if (isFesCardType(card?.Type)) {
       buckets[name].eventMeta[sourceKey].isFesCard = true;
+      const fesType = String(card?.Type || '').trim().toLowerCase();
+      if (fesType === 'bfes' || fesType === 'cfes') {
+        const prev = String(buckets[name].eventMeta[sourceKey].fesType || '').trim().toLowerCase();
+        if (!prev || (prev === 'cfes' && fesType === 'bfes')) {
+          buckets[name].eventMeta[sourceKey].fesType = fesType;
+        }
+      }
     }
 
     if (String(card?.Rarity || '').trim() === '4') {
@@ -4504,7 +5977,15 @@ const getFesMatrixCellStyle = (unit, attr) => ({
   backgroundColor: '#f8fafc'
 });
 
+const getFesMatrixUnitStripCellStyle = (unit) => ({
+  backgroundColor: hexToRgba(UNIT_COLORS[unit] || '#94a3b8', 0.14)
+});
+
 const getFesMatrixTotalCellStyle = (attr) => ({
+  fontWeight: 800
+});
+
+const getFesMatrixTotalChipStyle = (attr) => ({
   backgroundColor: hexToRgba(ATTR_COLORS[attr] || '#94a3b8', 0.2),
   fontWeight: 800
 });
@@ -4523,11 +6004,94 @@ const createFesIconSeenSeed = () => Object.fromEntries(
   ])
 );
 
+const createFesCardsSeed = () => Object.fromEntries(
+  RELATED_FES_UNITS.map((unit) => [unit, []])
+);
+
+const getCardFolderByName = (name) => {
+  const key = String(name || '').trim();
+  if (!key) return '';
+  return CHAR_CARD_FOLDER_MAP.value[key] || '';
+};
+
+const cardRarityByIdMap = computed(() => {
+  const result = {};
+  (props.allCards || []).forEach((card) => {
+    const cardId = Number(card?.CardID);
+    if (!Number.isFinite(cardId) || cardId <= 0) return;
+    const rarity = String(card?.Rarity || '').trim();
+    if (!rarity) return;
+    result[cardId] = rarity;
+  });
+  return result;
+});
+
+const getCardRarityTier = (rarityValue) => {
+  const rarityNum = Number(String(rarityValue || '').trim());
+  if (!Number.isFinite(rarityNum)) return 0;
+  return rarityNum;
+};
+
+const shouldUseAfterCardImage = (cardId, rarityHint = '') => {
+  if (navCardImageMode.value !== 'after') return false;
+  const idNum = Number(cardId);
+  const rarityRaw = String(rarityHint || cardRarityByIdMap.value[idNum] || '').trim();
+  const rarityTier = getCardRarityTier(rarityRaw);
+  // 1/2星卡没有花后图，即使选择花后模式也回退花前。
+  if (rarityTier > 0 && rarityTier <= 2) return false;
+  return true;
+};
+
+const buildCardImageSrc = (cardId, baseName, options = {}) => {
+  const idNum = Number(cardId);
+  if (!Number.isFinite(idNum) || idNum <= 0) return '';
+
+  const folder = getCardFolderByName(baseName);
+  if (!folder) return '';
+
+  const suffix = shouldUseAfterCardImage(idNum, options?.rarity) ? '_t' : '';
+  return `/cards/${folder}/card${idNum}${suffix}.webp`;
+};
+
+const buildFesCardImageSrc = (cardId, baseName, fesType) => {
+  void fesType;
+  return buildCardImageSrc(cardId, baseName, { rarity: '4' });
+};
+
+const getLineupSlotCardImageSrc = (slot) => {
+  const baseName = getCardBaseName(slot?.name);
+  if (!baseName) return '';
+  const idNum = Number(slot?.cardId);
+  if (!Number.isFinite(idNum) || idNum <= 0) return '';
+  return buildCardImageSrc(idNum, baseName, { rarity: '4' });
+};
+
+const markMediaImageSettled = (event) => {
+  const target = event?.target;
+  if (!(target instanceof HTMLImageElement)) return;
+  target.dataset.loaded = '1';
+};
+
+const onMediaImageLoad = (event) => {
+  markMediaImageSettled(event);
+  const target = event?.target;
+  if (!(target instanceof HTMLImageElement)) return;
+  target.style.visibility = '';
+};
+
+const onMediaImageError = (event) => {
+  markMediaImageSettled(event);
+  const target = event?.target;
+  if (!(target instanceof HTMLImageElement)) return;
+  target.style.visibility = 'hidden';
+};
+
 const buildFesRecordMatrix = (fesType) => {
   const maxEid = safeMaxEventId.value;
   const targetType = String(fesType || '').trim().toLowerCase();
   const iconRows = createFesIconRowsSeed();
   const seenRows = createFesIconSeenSeed();
+  const cardsByUnit = createFesCardsSeed();
   const totals = Object.fromEntries(ATTRS.map((attr) => [attr, 0]));
 
   (props.allCards || []).forEach((card) => {
@@ -4544,6 +6108,13 @@ const buildFesRecordMatrix = (fesType) => {
     const unit = getLineupCardUnit(card, baseName);
     if (!RELATED_FES_UNITS.includes(unit)) return;
 
+    cardsByUnit[unit].push({
+      cardId: getCardProgressOrderId(card),
+      attr,
+      name: baseName,
+      imageSrc: buildFesCardImageSrc(card?.CardID, baseName, targetType)
+    });
+
     totals[attr] += 1;
 
     const iconKey = getSupportMemberIconKey({ name: baseName, unit });
@@ -4559,6 +6130,15 @@ const buildFesRecordMatrix = (fesType) => {
   });
 
   RELATED_FES_UNITS.forEach((unit) => {
+    cardsByUnit[unit].sort((a, b) => {
+      const aid = Number(a?.cardId || 0);
+      const bid = Number(b?.cardId || 0);
+      if (aid !== bid) return aid - bid;
+      const byName = compareCharOrder(a?.name, b?.name);
+      if (byName !== 0) return byName;
+      return String(a?.attr || '').localeCompare(String(b?.attr || ''));
+    });
+
     ATTRS.forEach((attr) => {
       iconRows[unit][attr].sort((a, b) => compareCharOrder(a.name, b.name));
     });
@@ -4566,6 +6146,7 @@ const buildFesRecordMatrix = (fesType) => {
 
   return {
     iconRows,
+    cardsByUnit,
     totals
   };
 };
@@ -4598,6 +6179,270 @@ const lastLimitedRecords = computed(() => {
       return compareCharOrder(a.name, b.name);
     });
 });
+
+const buildRelatedRecordCardInfoMap = (matcher) => {
+  const maxEid = safeMaxEventId.value;
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const result = {};
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    if (typeof matcher === 'function' && !matcher(card)) return;
+
+    const rawName = String(card?.Name || '').trim();
+    const baseName = getCardBaseName(rawName);
+    if (!baseName || !CHAR_ORDER[baseName]) return;
+
+    const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
+    if (!sourceKey) return;
+
+    const isNumSource = isNumericEventId(sourceKey);
+    if (!isNumSource && maxEventDate) {
+      const cardDate = parseDateSafe(card?.Date);
+      if (cardDate && cardDate > maxEventDate) return;
+    }
+
+    const cardId = Number(card?.CardID);
+    if (!Number.isFinite(cardId) || cardId <= 0) return;
+    const attr = normalizeAttr(card?.Attribute);
+    const rarity = String(card?.Rarity || '').trim();
+
+    const mapKey = `${baseName}::${sourceKey}`;
+    const prev = result[mapKey];
+    if (!prev || cardId > Number(prev?.cardId || 0)) {
+      result[mapKey] = {
+        cardId,
+        attr: ATTRS.includes(attr) ? attr : '',
+        rarity
+      };
+    }
+  });
+
+  return result;
+};
+
+const relatedLastRecordCardInfoMap = computed(() => buildRelatedRecordCardInfoMap(() => true));
+
+const relatedFourStarCardInfoMap = computed(() => buildRelatedRecordCardInfoMap((card) => (
+  String(card?.Rarity || '').trim() === '4'
+)));
+
+const relatedLimitedCardInfoMap = computed(() => buildRelatedRecordCardInfoMap((card) => {
+  if (String(card?.Rarity || '').trim() !== '4') return false;
+  const cardType = String(card?.Type || '').trim().toLowerCase();
+  return LIMITED_TYPES.has(cardType);
+}));
+
+const getRelatedRecordCardInfo = (name, eventRef, options = {}) => {
+  const baseName = String(name || '').trim();
+  if (!baseName) return { imageSrc: '', attr: '' };
+
+  const sourceKey = String(eventRef?.sourceKey || (isNumericEventId(eventRef?.id) ? eventRef.id : '') || '').trim();
+  if (!sourceKey) return { imageSrc: '', attr: '' };
+
+  const mapKey = `${baseName}::${sourceKey}`;
+  const mode = String(options?.mode || '').trim().toLowerCase();
+  const useFourStarOnly = options?.fourStarOnly === true;
+  const useLimitedOnly = mode === 'limited';
+  const useFourOnly = mode === 'four' || (useFourStarOnly && !useLimitedOnly);
+  const infoMap = useLimitedOnly
+    ? relatedLimitedCardInfoMap.value
+    : (useFourOnly ? relatedFourStarCardInfoMap.value : relatedLastRecordCardInfoMap.value);
+  const info = infoMap[mapKey] || null;
+  const cardId = Number(info?.cardId || 0);
+  if (!Number.isFinite(cardId) || cardId <= 0) return { imageSrc: '', attr: '' };
+
+  return {
+    imageSrc: buildCardImageSrc(cardId, baseName, { rarity: info?.rarity }),
+    attr: ATTRS.includes(String(info?.attr || '')) ? String(info.attr) : ''
+  };
+};
+
+const getRelatedLastRecordCardInfo = (name, eventRef) => {
+  return getRelatedRecordCardInfo(name, eventRef, { mode: 'all' });
+};
+
+const getRelatedLimitedRecordCardInfo = (name, eventRef) => {
+  return getRelatedRecordCardInfo(name, eventRef, { mode: 'limited' });
+};
+
+const vsUnitLastFourCardInfoMap = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const result = {};
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+
+    const fullName = String(card?.Name || '').trim();
+    const baseName = getCardBaseName(fullName);
+    if (!VS_NAMES.includes(baseName)) return;
+
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (!VS_UNIT_SORT_ORDER.includes(unit)) return;
+
+    const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
+    if (!sourceKey) return;
+
+    const isNumSource = isNumericEventId(sourceKey);
+    if (!isNumSource && maxEventDate) {
+      const cardDate = parseDateSafe(card?.Date);
+      if (cardDate && cardDate > maxEventDate) return;
+    }
+
+    const cardId = Number(card?.CardID);
+    if (!Number.isFinite(cardId) || cardId <= 0) return;
+    const attr = normalizeAttr(card?.Attribute);
+
+    const mapKey = `${baseName}::${unit}::${sourceKey}`;
+    const prev = result[mapKey];
+    if (!prev || cardId > Number(prev?.cardId || 0)) {
+      result[mapKey] = {
+        cardId,
+        attr: ATTRS.includes(attr) ? attr : ''
+      };
+    }
+  });
+
+  return result;
+});
+
+const getVsUnitLastFourCardInfo = (row) => {
+  const { baseName, unit } = parseVsUnitKey(row?.key);
+  if (!baseName || !VS_UNIT_SORT_ORDER.includes(unit)) return { imageSrc: '', attr: '' };
+  const sourceKey = String(row?.eventRef?.sourceKey || '').trim();
+  if (!sourceKey) return { imageSrc: '', attr: '' };
+
+  const mapKey = `${baseName}::${unit}::${sourceKey}`;
+  const info = vsUnitLastFourCardInfoMap.value[mapKey] || null;
+  const cardId = Number(info?.cardId || 0);
+  if (!Number.isFinite(cardId) || cardId <= 0) return { imageSrc: '', attr: '' };
+
+  const folder = getCardFolderByName(baseName);
+  if (!folder) return { imageSrc: '', attr: '' };
+  return {
+    imageSrc: buildCardImageSrc(cardId, baseName, { rarity: '4' }),
+    attr: ATTRS.includes(String(info?.attr || '')) ? String(info.attr) : ''
+  };
+};
+
+const lastFourStarDisplayRecords = computed(() => (
+  (lastFourStarRecords.value || []).map((row) => {
+    const cardInfo = getRelatedLastRecordCardInfo(row.name, row.eventRef);
+    return {
+      ...row,
+      cardImageSrc: cardInfo.imageSrc,
+      cardAttr: cardInfo.attr
+    };
+  })
+));
+
+const lastLimitedDisplayRecords = computed(() => (
+  (lastLimitedRecords.value || []).map((row) => {
+    const cardInfo = getRelatedLimitedRecordCardInfo(row.name, row.eventRef);
+    return {
+      ...row,
+      cardImageSrc: cardInfo.imageSrc,
+      cardAttr: cardInfo.attr
+    };
+  })
+));
+
+const vsUnitLastFourDisplayRecords = computed(() => (
+  (vsUnitLastFourRecordsSorted.value || []).map((row) => {
+    const cardInfo = getVsUnitLastFourCardInfo(row);
+    return {
+      ...row,
+      cardImageSrc: cardInfo.imageSrc,
+      cardAttr: cardInfo.attr
+    };
+  })
+));
+
+const fourStarLongestDisplayRecords = computed(() => (
+  (fourStarLongestIntervals.value || []).map((row) => {
+    const startCard = getRelatedRecordCardInfo(row.name, row?.longest?.startRef, { mode: 'four' });
+    const endCard = getRelatedRecordCardInfo(row.name, row?.longest?.endRef, { mode: 'four' });
+    return {
+      ...row,
+      longestStartCardImageSrc: startCard.imageSrc,
+      longestStartCardAttr: startCard.attr,
+      longestEndCardImageSrc: endCard.imageSrc,
+      longestEndCardAttr: endCard.attr
+    };
+  })
+));
+
+const fourStarShortestDisplayRecords = computed(() => (
+  (fourStarShortestIntervals.value || []).map((row) => {
+    const startCard = getRelatedRecordCardInfo(row.name, row?.shortest?.startRef, { mode: 'four' });
+    const endCard = getRelatedRecordCardInfo(row.name, row?.shortest?.endRef, { mode: 'four' });
+    return {
+      ...row,
+      shortestStartCardImageSrc: startCard.imageSrc,
+      shortestStartCardAttr: startCard.attr,
+      shortestEndCardImageSrc: endCard.imageSrc,
+      shortestEndCardAttr: endCard.attr
+    };
+  })
+));
+
+const limitedLongestDisplayRecords = computed(() => (
+  (limitedLongestIntervals.value || []).map((row) => {
+    const startCard = getRelatedRecordCardInfo(row.name, row?.longest?.startRef, { mode: 'limited' });
+    const endCard = getRelatedRecordCardInfo(row.name, row?.longest?.endRef, { mode: 'limited' });
+    return {
+      ...row,
+      longestStartCardImageSrc: startCard.imageSrc,
+      longestStartCardAttr: startCard.attr,
+      longestEndCardImageSrc: endCard.imageSrc,
+      longestEndCardAttr: endCard.attr
+    };
+  })
+));
+
+const limitedShortestDisplayRecords = computed(() => (
+  (limitedShortestIntervals.value || []).map((row) => {
+    const startCard = getRelatedRecordCardInfo(row.name, row?.shortest?.startRef, { mode: 'limited' });
+    const endCard = getRelatedRecordCardInfo(row.name, row?.shortest?.endRef, { mode: 'limited' });
+    return {
+      ...row,
+      shortestStartCardImageSrc: startCard.imageSrc,
+      shortestStartCardAttr: startCard.attr,
+      shortestEndCardImageSrc: endCard.imageSrc,
+      shortestEndCardAttr: endCard.attr
+    };
+  })
+));
+
+const banLongestDisplayRecords = computed(() => (
+  (banLongestIntervals.value || []).map((row) => {
+    const startCard = getRelatedRecordCardInfo(row.name, row?.longest?.startRef, { mode: 'four' });
+    const endCard = getRelatedRecordCardInfo(row.name, row?.longest?.endRef, { mode: 'four' });
+    return {
+      ...row,
+      longestStartCardImageSrc: startCard.imageSrc,
+      longestStartCardAttr: startCard.attr,
+      longestEndCardImageSrc: endCard.imageSrc,
+      longestEndCardAttr: endCard.attr
+    };
+  })
+));
+
+const banShortestDisplayRecords = computed(() => (
+  (banShortestIntervals.value || []).map((row) => {
+    const startCard = getRelatedRecordCardInfo(row.name, row?.shortest?.startRef, { mode: 'four' });
+    const endCard = getRelatedRecordCardInfo(row.name, row?.shortest?.endRef, { mode: 'four' });
+    return {
+      ...row,
+      shortestStartCardImageSrc: startCard.imageSrc,
+      shortestStartCardAttr: startCard.attr,
+      shortestEndCardImageSrc: endCard.imageSrc,
+      shortestEndCardAttr: endCard.attr
+    };
+  })
+));
 
 const fourStarIntervalRecords = computed(() => {
   const nowGapDate = referenceDateStr.value;
@@ -4661,21 +6506,24 @@ const limitedIntervalRecords = computed(() => {
 
 const fourStarLongestIntervals = computed(() => {
   return [...fourStarIntervalRecords.value].sort((a, b) => {
-    if (b.longest.days !== a.longest.days) return b.longest.days - a.longest.days;
-    if (b.longest.periods !== a.longest.periods) return b.longest.periods - a.longest.periods;
+    const ap = Number(a?.longest?.periods ?? -1);
+    const bp = Number(b?.longest?.periods ?? -1);
+    if (bp !== ap) return bp - ap;
+    const ad = Number(a?.longest?.days ?? -1);
+    const bd = Number(b?.longest?.days ?? -1);
+    if (bd !== ad) return bd - ad;
     return compareCharOrder(a.name, b.name);
   });
 });
 
 const fourStarShortestIntervals = computed(() => {
   return [...fourStarIntervalRecords.value].sort((a, b) => {
-    const ad = a.shortest?.days ?? Number.POSITIVE_INFINITY;
-    const bd = b.shortest?.days ?? Number.POSITIVE_INFINITY;
-    if (ad !== bd) return ad - bd;
-
-    const ap = a.shortest?.periods ?? Number.POSITIVE_INFINITY;
-    const bp = b.shortest?.periods ?? Number.POSITIVE_INFINITY;
+    const ap = Number(a?.shortest?.periods ?? Number.POSITIVE_INFINITY);
+    const bp = Number(b?.shortest?.periods ?? Number.POSITIVE_INFINITY);
     if (ap !== bp) return ap - bp;
+    const ad = Number(a?.shortest?.days ?? Number.POSITIVE_INFINITY);
+    const bd = Number(b?.shortest?.days ?? Number.POSITIVE_INFINITY);
+    if (ad !== bd) return ad - bd;
 
     return compareCharOrder(a.name, b.name);
   });
@@ -4683,21 +6531,24 @@ const fourStarShortestIntervals = computed(() => {
 
 const limitedLongestIntervals = computed(() => {
   return [...limitedIntervalRecords.value].sort((a, b) => {
-    if (b.longest.days !== a.longest.days) return b.longest.days - a.longest.days;
-    if (b.longest.periods !== a.longest.periods) return b.longest.periods - a.longest.periods;
+    const ap = Number(a?.longest?.periods ?? -1);
+    const bp = Number(b?.longest?.periods ?? -1);
+    if (bp !== ap) return bp - ap;
+    const ad = Number(a?.longest?.days ?? -1);
+    const bd = Number(b?.longest?.days ?? -1);
+    if (bd !== ad) return bd - ad;
     return compareCharOrder(a.name, b.name);
   });
 });
 
 const limitedShortestIntervals = computed(() => {
   return [...limitedIntervalRecords.value].sort((a, b) => {
-    const ad = a.shortest?.days ?? Number.POSITIVE_INFINITY;
-    const bd = b.shortest?.days ?? Number.POSITIVE_INFINITY;
-    if (ad !== bd) return ad - bd;
-
-    const ap = a.shortest?.periods ?? Number.POSITIVE_INFINITY;
-    const bp = b.shortest?.periods ?? Number.POSITIVE_INFINITY;
+    const ap = Number(a?.shortest?.periods ?? Number.POSITIVE_INFINITY);
+    const bp = Number(b?.shortest?.periods ?? Number.POSITIVE_INFINITY);
     if (ap !== bp) return ap - bp;
+    const ad = Number(a?.shortest?.days ?? Number.POSITIVE_INFINITY);
+    const bd = Number(b?.shortest?.days ?? Number.POSITIVE_INFINITY);
+    if (ad !== bd) return ad - bd;
 
     return compareCharOrder(a.name, b.name);
   });
@@ -4724,6 +6575,7 @@ const banIntervalRecords = computed(() => {
     if (!bucket[name]) bucket[name] = [];
     bucket[name].push({
       id: eid,
+      sourceKey: String(eid),
       date: String(ev?.date || ''),
       typeSeriesId: ev?.type_series_id,
       eventType
@@ -4763,8 +6615,11 @@ const banIntervalRecords = computed(() => {
 
 const banLongestIntervals = computed(() => {
   return [...banIntervalRecords.value].sort((a, b) => {
-    const ad = a.longest?.days ?? -1;
-    const bd = b.longest?.days ?? -1;
+    const ap = Number(a?.longest?.periods ?? -1);
+    const bp = Number(b?.longest?.periods ?? -1);
+    if (bp !== ap) return bp - ap;
+    const ad = Number(a?.longest?.days ?? -1);
+    const bd = Number(b?.longest?.days ?? -1);
     if (bd !== ad) return bd - ad;
     return compareCharOrder(a.name, b.name);
   });
@@ -4772,8 +6627,11 @@ const banLongestIntervals = computed(() => {
 
 const banShortestIntervals = computed(() => {
   return [...banIntervalRecords.value].sort((a, b) => {
-    const ad = a.shortest?.days ?? Number.POSITIVE_INFINITY;
-    const bd = b.shortest?.days ?? Number.POSITIVE_INFINITY;
+    const ap = Number(a?.shortest?.periods ?? Number.POSITIVE_INFINITY);
+    const bp = Number(b?.shortest?.periods ?? Number.POSITIVE_INFINITY);
+    if (ap !== bp) return ap - bp;
+    const ad = Number(a?.shortest?.days ?? Number.POSITIVE_INFINITY);
+    const bd = Number(b?.shortest?.days ?? Number.POSITIVE_INFINITY);
     if (ad !== bd) return ad - bd;
     return compareCharOrder(a.name, b.name);
   });
@@ -5015,13 +6873,30 @@ defineExpose({
 }
 
 .nav-sub-list {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-left: 6px;
+  padding-left: 10px;
+}
+
+.nav-sub-list::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  background: #cbd5e1;
 }
 
 .nav-link-sub {
-  padding: 5px 12px 5px 24px;
+  align-self: stretch;
+  margin-left: 8px;
+  width: calc(100% - 8px);
+  padding: 5px 10px;
+  text-indent: 0;
   font-size: 0.78rem;
 }
 
@@ -5496,6 +7371,10 @@ defineExpose({
   gap: 1px;
 }
 
+.support-member-cell.is-card-mode {
+  gap: 3px;
+}
+
 .support-member-avatar {
   width: 33px;
   height: 33px;
@@ -5642,6 +7521,34 @@ defineExpose({
   padding: 3px 2px;
 }
 
+.lineup-member-cell.is-card-mode {
+  justify-content: flex-start;
+  gap: 3px;
+}
+
+.lineup-slot-card {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 auto;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.lineup-slot-card-img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 90%;
+  height: 90%;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  border-radius: 0;
+  z-index: 1;
+  background-color: #e5e7eb;
+}
+
 .support-member-attr-icon {
   position: absolute;
   top: 2px;
@@ -5681,8 +7588,9 @@ defineExpose({
 }
 
 .lineup-total-cell {
-  font-size: 0.86rem;
-  font-weight: 800;
+  font-size: 1.06rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
   color: var(--lineup-row-fg, #0f172a);
 }
 
@@ -6076,9 +7984,9 @@ defineExpose({
 }
 
 .matrix-table td.matrix-num.matrix-vs-zero {
-  color: #64748b;
-  font-weight: 650;
-  background-color: rgba(148, 163, 184, 0.1);
+  color: #111827;
+  font-weight: 700;
+  background-color: #ffffff !important;
 }
 
 .matrix-pure-toggle {
@@ -6131,6 +8039,10 @@ defineExpose({
   padding: 10px;
 }
 
+.related-panel .record-block {
+  overflow-x: auto;
+}
+
 .record-block h3 {
   margin: 0;
   font-size: 0.98rem;
@@ -6156,6 +8068,10 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.block-head-left .fes-card-mode-toggle {
+  margin-left: 2px;
 }
 
 .record-compact-toggle {
@@ -6201,16 +8117,22 @@ defineExpose({
   white-space: nowrap;
 }
 
-.record-table th + th,
-.record-table td + td {
-  border-left: 1px solid #9fb0c2;
+
+
+td.record-char {
+  display: table-cell !important;
+  vertical-align: middle;
+  text-align: left !important;
 }
 
-.record-char {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  justify-content: flex-start;
+.record-char > * {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.record-char > span.record-avatar-stack,
+.record-char > img.record-avatar {
+  margin-right: 7px;
 }
 
 .vs-unit-score-table .vs-score-char-cell {
@@ -6250,10 +8172,10 @@ defineExpose({
   margin-top: 0;
 }
 
-.record-char > span {
+.record-char > span:not(.record-avatar-stack) {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -6273,6 +8195,117 @@ defineExpose({
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
 }
 
+.record-avatar-stack {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  flex: 0 0 26px;
+  min-width: 26px;
+  overflow: visible;
+}
+
+.record-avatar-stack .record-avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.record-avatar-corner-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  padding: 0;
+}
+
+.record-avatar-corner-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.vs-last-four-card-mode td.record-char {
+  text-align: center !important;
+}
+
+.vs-last-four-card-mode td.record-char > span.record-avatar-stack,
+.vs-last-four-card-mode td.record-char > img.record-avatar {
+  margin-right: 0 !important;
+}
+
+.vs-last-four-avatar-large {
+  width: var(--rel-avatar-size-card, 34px);
+  height: var(--rel-avatar-size-card, 34px);
+}
+
+.vs-last-four-card-mode .record-avatar-stack {
+  width: var(--rel-avatar-size-card, 34px);
+  height: var(--rel-avatar-size-card, 34px);
+  flex-basis: var(--rel-avatar-size-card, 34px);
+  min-width: var(--rel-avatar-size-card, 34px);
+}
+
+.record-avatar-corner-badge.is-large {
+  width: 17px;
+  height: 17px;
+  right: -3px;
+  bottom: -3px;
+}
+
+.last-record-table-card-mode tbody td {
+  height: 76px;
+  vertical-align: middle;
+}
+
+.last-record-table-card-mode td.record-char {
+  text-align: center !important;
+}
+
+.last-record-table-card-mode td.record-char > span.record-avatar-stack,
+.last-record-table-card-mode td.record-char > img.record-avatar {
+  margin-right: 0 !important;
+}
+
+.related-last-avatar-large {
+  width: var(--rel-avatar-size-card, 34px);
+  height: var(--rel-avatar-size-card, 34px);
+}
+
+.related-last-card-cell {
+  width: auto;
+  min-width: 0;
+}
+
+.related-last-card-thumb {
+  width: var(--rel-last-card-frame-size, 62px);
+  height: var(--rel-last-card-frame-size, 62px);
+  margin: 0 auto;
+}
+
+.related-last-card-attr {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: clamp(11px, calc(var(--rel-card-logo-scale, 0.24) * 100%), 18px);
+  height: clamp(11px, calc(var(--rel-card-logo-scale, 0.24) * 100%), 18px);
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.24);
+  z-index: 3;
+}
+
 .mini-unit-logo {
   width: 32px;
   height: 32px;
@@ -6284,10 +8317,9 @@ defineExpose({
   font-weight: 800;
 }
 
-.vs-unit-score-table .record-char {
-  justify-content: center;
+.vs-unit-score-table td.record-char {
+  text-align: center !important;
   width: 100%;
-  gap: 0;
 }
 
 .vs-unit-score-table .record-avatar {
@@ -6334,8 +8366,50 @@ defineExpose({
   color: #94a3b8;
 }
 
+.fes-card-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  user-select: none;
+}
+
+.fes-card-mode-toggle input[type='checkbox'] {
+  margin: 0;
+}
+
+.stats-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1;
+}
+
+.stats-checkbox input[type='checkbox'] {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  position: relative;
+  top: -1px;
+  accent-color: #14b8a6;
+}
+
 .fes-record-table {
   table-layout: fixed;
+}
+
+.fes-record-table.is-card-mode tbody tr:not(.fes-total-row) td {
+  height: auto;
+  min-height: 102px;
 }
 
 .fes-record-table th,
@@ -6357,13 +8431,18 @@ defineExpose({
   font-size: 0.74rem;
 }
 
+.fes-cards-head {
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
 .fes-unit-head,
 .fes-total-head {
   font-weight: 800;
 }
 
 .fes-total-head {
-  background: #e2e8f0;
+  background: transparent;
 }
 
 .fes-total-num {
@@ -6399,6 +8478,118 @@ defineExpose({
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
 }
 
+.fes-card-strip-cell {
+  text-align: left;
+}
+
+.fes-card-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: flex-start;
+  min-height: 60px;
+}
+
+.fes-card-thumb {
+  --fes-card-frame-size: 60px;
+  --fes-card-image-scale: 0.9;
+  position: relative;
+  width: var(--fes-card-frame-size);
+  height: var(--fes-card-frame-size);
+  flex: 0 0 auto;
+}
+
+.fes-card-thumb-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.fes-card-thumb-img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--fes-card-frame-size) * var(--fes-card-image-scale));
+  height: calc(var(--fes-card-frame-size) * var(--fes-card-image-scale));
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  border-radius: 0px;
+  z-index: 1;
+  background-color: #e5e7eb;
+}
+
+.fes-card-thumb-attr {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+  z-index: 3;
+}
+
+.fes-total-attr-wrap-cell {
+  padding: 8px 10px;
+}
+
+.fes-total-attr-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.fes-total-attr-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.fes-total-attr-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.fes-total-attr-num {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.media-load-shimmer:not([data-loaded='1']) {
+  background-image: linear-gradient(110deg, #d1d5db 8%, #f3f4f6 18%, #d1d5db 33%);
+  background-size: 220% 100%;
+  animation: media-shimmer 1.05s linear infinite;
+}
+
+@keyframes media-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -40% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-load-shimmer:not([data-loaded='1']) {
+    animation: none;
+    background-image: none;
+    background-color: #d1d5db;
+  }
+}
+
 .record-table th {
   background: #f8fafc;
   font-weight: 700;
@@ -6408,15 +8599,360 @@ defineExpose({
   white-space: nowrap;
 }
 
+.range-cell.is-card-mode {
+  white-space: normal;
+}
+
 .range-cell > span {
   margin: 0 3px;
+}
+
+.related-panel {
+  --related-record-card-row-height: 88px;
+  /* 头像与卡面尺寸 */
+  --rel-avatar-size: 22px;
+  --rel-avatar-size-card: 34px;
+  --rel-last-card-frame-size: 70px;
+  --rel-interval-card-frame-size: 70px;
+  --rel-card-image-scale: 0.9;
+  --rel-card-logo-scale: 0.24;
+  --rel-jump-chip-min: 64px;
+
+  /* 列宽最小值 */
+  --rel-min-char-col: 40px;
+  --rel-min-card-col: 10px;
+  --rel-min-event-col: 10px;
+  --rel-min-range-col: 40px;
+  --rel-min-date-col: 10px;
+  --rel-min-gap-col: 10px;
+
+  /* 上次记录（不显示卡面）列占比 */
+  --rel-last-char-pct: 28%;
+  --rel-last-event-pct: 20%;
+  --rel-last-date-pct: 26%;
+  --rel-last-gap-pct: 26%;
+
+  /* 上次记录（显示卡面）列占比 */
+  --rel-last-card-char-pct: 10%;
+  --rel-last-card-card-pct: 24%;
+  --rel-last-card-event-pct: 20%;
+  --rel-last-card-date-pct: 23%;
+  --rel-last-card-gap-pct: 23%;
+
+  /* 间隔记录（不显示卡面）列占比 */
+  --rel-int-char-pct: 28%;
+  --rel-int-range-pct: 44%;
+  --rel-int-gap-pct: 28%;
+
+  /* 间隔记录（显示卡面）列占比 */
+  --rel-int-card-char-pct: 10%;
+  --rel-int-card-card-pct: 44%;
+  --rel-int-card-range-pct: 22%;
+  --rel-int-card-gap-pct: 26%;
+}
+
+.related-panel .related-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: auto;
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) {
+  min-width: calc(var(--rel-min-char-col) + var(--rel-min-event-col) + var(--rel-min-date-col) + var(--rel-min-gap-col));
+}
+
+.related-panel .related-table-last.last-record-table-card-mode,
+.related-panel .related-table-vs-last.vs-last-four-card-mode {
+  min-width: calc(var(--rel-min-char-col) + var(--rel-min-card-col) + var(--rel-min-event-col) + var(--rel-min-date-col) + var(--rel-min-gap-col));
+}
+
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) {
+  min-width: calc(var(--rel-min-char-col) + var(--rel-min-range-col) + var(--rel-min-gap-col));
+}
+
+.related-panel .related-table-interval.interval-record-table-card-mode {
+  min-width: calc(var(--rel-min-char-col) + var(--rel-min-card-col) + var(--rel-min-range-col) + var(--rel-min-gap-col));
+}
+
+.related-panel .related-table th,
+.related-panel .related-table td {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.related-panel .related-table th:first-child,
+.related-panel .related-table td:first-child {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode) td.record-char,
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) td.record-char,
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td.record-char {
+  text-align: left !important;
+}
+
+.related-panel .related-table-last.last-record-table-card-mode td.record-char,
+.related-panel .related-table-interval.interval-record-table-card-mode td.record-char,
+.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char {
+  text-align: center !important;
+}
+
+.related-panel .related-table-last.last-record-table-card-mode td.record-char > span.record-avatar-stack,
+.related-panel .related-table-last.last-record-table-card-mode td.record-char > img.record-avatar,
+.related-panel .related-table-interval.interval-record-table-card-mode td.record-char > span.record-avatar-stack,
+.related-panel .related-table-interval.interval-record-table-card-mode td.record-char > img.record-avatar,
+.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char > span.record-avatar-stack,
+.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char > img.record-avatar {
+  margin-right: 0 !important;
+}
+
+.related-panel .related-table .record-char > span:not(.record-avatar-stack) {
+  flex: 0 0 auto;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.related-panel .related-table .record-avatar {
+  width: var(--rel-avatar-size);
+  height: var(--rel-avatar-size);
+}
+
+.related-panel .related-table .record-avatar-stack {
+  width: var(--rel-avatar-size);
+  height: var(--rel-avatar-size);
+  flex: 0 0 var(--rel-avatar-size);
+  min-width: var(--rel-avatar-size);
+}
+
+.related-panel .related-table.last-record-table-card-mode .record-avatar,
+.related-panel .related-table.vs-last-four-card-mode .record-avatar,
+.related-panel .related-table .record-avatar.related-last-avatar-large,
+.related-panel .related-table .record-avatar.interval-avatar-large,
+.related-panel .related-table .record-avatar.vs-last-four-avatar-large {
+  width: var(--rel-avatar-size-card);
+  height: var(--rel-avatar-size-card);
+}
+
+.related-panel .related-table.vs-last-four-card-mode .record-avatar-stack {
+  width: var(--rel-avatar-size-card);
+  height: var(--rel-avatar-size-card);
+  flex: 0 0 var(--rel-avatar-size-card);
+  min-width: var(--rel-avatar-size-card);
+}
+
+.related-panel .related-table .lineup-slot-card-img {
+  width: calc(100% * var(--rel-card-image-scale));
+  height: calc(100% * var(--rel-card-image-scale));
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode) th:first-child,
+.related-panel .related-table-last:not(.last-record-table-card-mode) td:first-child,
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:first-child,
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:first-child {
+  width: var(--rel-last-char-pct);
+  min-width: var(--rel-min-char-col);
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(2),
+.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(2),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(2),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(2) {
+  width: var(--rel-last-event-pct);
+  min-width: var(--rel-min-event-col);
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(3),
+.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(3),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(3),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(3) {
+  width: var(--rel-last-date-pct);
+  min-width: var(--rel-min-date-col);
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(4),
+.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(4),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(4),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(4) {
+  width: var(--rel-last-gap-pct);
+  min-width: var(--rel-min-gap-col);
+}
+
+.related-panel .related-table-last.last-record-table-card-mode th:first-child,
+.related-panel .related-table-last.last-record-table-card-mode td:first-child,
+.related-panel .related-table-vs-last.vs-last-four-card-mode th:first-child,
+.related-panel .related-table-vs-last.vs-last-four-card-mode td:first-child {
+  width: var(--rel-last-card-char-pct);
+  min-width: var(--rel-min-char-col);
+}
+
+.related-panel .related-table-last.last-record-table-card-mode th:nth-child(2),
+.related-panel .related-table-last.last-record-table-card-mode td:nth-child(2),
+.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(2),
+.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(2) {
+  width: var(--rel-last-card-card-pct);
+  min-width: var(--rel-min-card-col);
+}
+
+.related-panel .related-table-last.last-record-table-card-mode th:nth-child(3),
+.related-panel .related-table-last.last-record-table-card-mode td:nth-child(3),
+.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(3),
+.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(3) {
+  width: var(--rel-last-card-event-pct);
+  min-width: var(--rel-min-event-col);
+}
+
+.related-panel .related-table-last.last-record-table-card-mode th:nth-child(4),
+.related-panel .related-table-last.last-record-table-card-mode td:nth-child(4),
+.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(4),
+.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(4) {
+  width: var(--rel-last-card-date-pct);
+  min-width: var(--rel-min-date-col);
+}
+
+.related-panel .related-table-last.last-record-table-card-mode th:nth-child(5),
+.related-panel .related-table-last.last-record-table-card-mode td:nth-child(5),
+.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(5),
+.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(5) {
+  width: var(--rel-last-card-gap-pct);
+  min-width: var(--rel-min-gap-col);
+}
+
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:first-child,
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:first-child {
+  width: var(--rel-int-char-pct);
+  min-width: var(--rel-min-char-col);
+}
+
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:nth-child(2),
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:nth-child(2) {
+  width: var(--rel-int-range-pct);
+  min-width: var(--rel-min-range-col);
+}
+
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:nth-child(3),
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:nth-child(3) {
+  width: var(--rel-int-gap-pct);
+  min-width: var(--rel-min-gap-col);
+}
+
+.interval-record-table-card-mode td.record-char {
+  text-align: center !important;
+}
+
+.interval-record-table-card-mode td.record-char > span.record-avatar-stack,
+.interval-record-table-card-mode td.record-char > img.record-avatar {
+  margin-right: 0 !important;
+}
+
+.vs-last-four-card-mode tbody td,
+.interval-record-table-card-mode tbody td {
+  height: var(--related-record-card-row-height);
+  vertical-align: middle;
+}
+
+.interval-record-table-card-mode {
+  table-layout: fixed;
+}
+
+.related-panel .related-table-interval.interval-record-table-card-mode th:first-child,
+.related-panel .related-table-interval.interval-record-table-card-mode td:first-child {
+  width: var(--rel-int-card-char-pct);
+  min-width: var(--rel-min-char-col);
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(2),
+.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(2) {
+  width: var(--rel-int-card-card-pct);
+  min-width: var(--rel-min-card-col);
+}
+
+.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(3),
+.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(3) {
+  width: var(--rel-int-card-range-pct);
+  min-width: var(--rel-min-range-col);
+}
+
+.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(4),
+.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(4) {
+  width: var(--rel-int-card-gap-pct);
+  min-width: var(--rel-min-gap-col);
+}
+
+.interval-avatar-large {
+  width: 34px;
+  height: 34px;
+}
+
+.range-card-cell {
+  white-space: nowrap;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.interval-card-column {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.interval-jump-column {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.interval-card-column > .interval-stack-arrow {
+  display: none;
+}
+
+.interval-card-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--rel-interval-card-frame-size);
+  min-width: var(--rel-interval-card-frame-size);
+  height: var(--rel-interval-card-frame-size);
+  min-height: var(--rel-interval-card-frame-size);
+}
+
+.interval-card-item.is-stack-item {
+  min-height: 0;
+}
+
+.interval-card-thumb {
+  width: 100%;
+  height: 100%;
+}
+
+.interval-stack-arrow {
+  line-height: 1;
+  color: #475569;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.range-cell.is-card-mode .jump-link {
+  width: min(100%, 90%);
+  min-width: var(--rel-jump-chip-min);
+  max-width: 90%;
 }
 
 .jump-link {
   appearance: none;
   -webkit-appearance: none;
   border: 1px solid rgba(15, 23, 42, 0.18);
-  border-radius: var(--stats-radius-btn);
+  border-radius: var(--stats-radius-btn, 999px);
   padding: 2px 7px;
   font-size: 0.72rem;
   line-height: 1.35;
@@ -6425,6 +8961,26 @@ defineExpose({
   background: var(--record-tint, #e5e7eb);
   cursor: pointer;
   white-space: nowrap;
+}
+
+.related-panel .record-block .jump-link {
+  width: var(--record-jump-chip-width, auto);
+  min-width: var(--record-jump-chip-width, auto);
+  max-width: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.related-panel .range-cell.is-card-mode .jump-link {
+  width: min(100%, 90%);
+  min-width: var(--rel-jump-chip-min);
+  max-width: 90%;
 }
 
 .jump-link:hover:not(:disabled) {
@@ -6467,21 +9023,10 @@ defineExpose({
 }
 
 @media (min-width: 901px) and (max-width: 1360px) {
-  .related-panel .record-char > span {
-    display: none;
-  }
-
-  .related-panel .record-table th:first-child,
-  .related-panel .record-table td:first-child {
-    width: 44px;
-    min-width: 44px;
-    max-width: 44px;
+  .related-panel .related-table th:first-child,
+  .related-panel .related-table td:first-child {
     padding-left: 3px;
     padding-right: 3px;
-  }
-
-  .related-panel .record-char {
-    justify-content: center;
   }
 }
 
@@ -6608,7 +9153,9 @@ defineExpose({
     position: fixed;
     top: calc(env(safe-area-inset-top, 0px) + 52px);
     left: 8px;
-    right: 8px;
+    right: auto;
+    width: min(260px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
     max-height: calc(100dvh - 60px);
     z-index: 4200;
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.22);
@@ -6627,8 +9174,9 @@ defineExpose({
   }
 
   .stats-nav.mobile-floating.is-open {
-    right: 8px;
     left: 8px;
+    right: auto;
+    width: min(260px, calc(100vw - 16px));
     max-height: calc(100dvh - 64px);
   }
 
@@ -6695,7 +9243,10 @@ defineExpose({
   }
 
   .nav-link-sub {
-    padding: 3px 8px 3px 22px;
+    margin-left: 6px;
+    width: calc(100% - 6px);
+    padding: 3px 8px;
+    text-indent: 0;
     font-size: 0.68rem;
   }
 
@@ -6979,7 +9530,8 @@ defineExpose({
   }
 
   .lineup-total-cell {
-    font-size: 0.74rem;
+    font-size: 0.9rem;
+    font-weight: 900;
   }
 
   .festival-card {
@@ -7024,7 +9576,7 @@ defineExpose({
     gap: 4px;
   }
 
-  .record-compact-toggle {
+  .stats-checkbox {
     font-size: 0.66rem;
     white-space: nowrap;
   }
@@ -7056,34 +9608,78 @@ defineExpose({
     word-break: break-word;
   }
 
-  .related-panel .record-table th:first-child,
-  .related-panel .record-table td:first-child {
-    width: 38px;
-    min-width: 38px;
-    max-width: 38px;
+  .related-panel .related-table th:first-child,
+  .related-panel .related-table td:first-child {
     padding-left: 2px;
     padding-right: 2px;
   }
 
   .record-char {
     gap: 4px;
-    justify-content: center;
   }
 
-  .related-panel .record-char > span {
+  .related-panel .related-table-last.last-record-table-card-mode .record-char > span:not(.record-avatar-stack),
+  .related-panel .related-table-interval.interval-record-table-card-mode .record-char > span:not(.record-avatar-stack),
+  .related-panel .related-table-vs-last.vs-last-four-card-mode .record-char > span:not(.record-avatar-stack) {
     display: none;
   }
 
-  .record-char > span {
+  .record-char > span:not(.record-avatar-stack) {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .related-panel .record-char > span:not(.record-avatar-stack) {
+    overflow: visible;
+    text-overflow: clip;
     white-space: nowrap;
   }
 
   .record-avatar {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .related-panel {
+    --related-record-card-row-height: 78px;
+    --rel-avatar-size: 24px;
+    --rel-avatar-size-card: 30px;
+    --rel-last-card-frame-size: 60px;
+    --rel-interval-card-frame-size: 60px;
+    --rel-jump-chip-min: 64px;
+
+    --rel-min-char-col: 10px;
+    --rel-min-card-col: 60px;
+    --rel-min-event-col: 40px;
+    --rel-min-range-col: 40px;
+    --rel-min-date-col: 10px;
+    --rel-min-gap-col: 10px;
+
+    --rel-last-char-pct: 28%;
+    --rel-last-event-pct: 20%;
+    --rel-last-date-pct: 26%;
+    --rel-last-gap-pct: 26%;
+
+    --rel-last-card-char-pct: 10%;
+    --rel-last-card-card-pct: 24%;
+    --rel-last-card-event-pct: 18%;
+    --rel-last-card-date-pct: 24%;
+    --rel-last-card-gap-pct: 24%;
+
+    --rel-int-char-pct: 28%;
+    --rel-int-range-pct: 44%;
+    --rel-int-gap-pct: 28%;
+
+    --rel-int-card-char-pct: 10%;
+    --rel-int-card-card-pct: 40%;
+    --rel-int-card-range-pct: 26%;
+    --rel-int-card-gap-pct: 26%;
+  }
+
+  .interval-card-column {
+    gap: 2px;
   }
 
   .jump-link {
@@ -7093,6 +9689,14 @@ defineExpose({
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .related-panel .jump-link,
+  .related-panel .record-block .jump-link {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
   }
 
   .jump-link.lineup-jump {
@@ -7107,6 +9711,42 @@ defineExpose({
 @media (max-width: 520px) {
   .pjsk-stats {
     padding: 6px;
+  }
+
+  .related-panel {
+    --related-record-card-row-height: 78px;
+    --rel-avatar-size: 24px;
+    --rel-avatar-size-card: 30px;
+    --rel-last-card-frame-size: 60px;
+    --rel-interval-card-frame-size: 60px;
+    --rel-jump-chip-min: 60px;
+
+    --rel-min-char-col: 10px;
+    --rel-min-card-col: 60px;
+    --rel-min-event-col: 40px;
+    --rel-min-range-col: 40px;
+    --rel-min-date-col: 10px;
+    --rel-min-gap-col: 10px;
+
+    --rel-last-char-pct: 28%;
+    --rel-last-event-pct: 20%;
+    --rel-last-date-pct: 26%;
+    --rel-last-gap-pct: 26%;
+
+    --rel-last-card-char-pct: 10%;
+    --rel-last-card-card-pct: 24%;
+    --rel-last-card-event-pct: 18%;
+    --rel-last-card-date-pct: 24%;
+    --rel-last-card-gap-pct: 24%;
+
+    --rel-int-char-pct: 28%;
+    --rel-int-range-pct: 44%;
+    --rel-int-gap-pct: 28%;
+
+    --rel-int-card-char-pct: 10%;
+    --rel-int-card-card-pct: 40%;
+    --rel-int-card-range-pct: 26%;
+    --rel-int-card-gap-pct: 26%;
   }
 
   .floating-menu-btn {
