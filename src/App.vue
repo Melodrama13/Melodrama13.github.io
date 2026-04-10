@@ -34,7 +34,7 @@
         title="统计页：快速调整截止活动ID与展开菜单"
       >
         <span class="stats-top-label">截止ID</span>
-        <button class="stats-top-mini-btn" title="减少 1" @click="adjustStatsTopDisplayEventId(-1)">－</button>
+        <button class="pjsk-ui-btn-circle stats-top-mini-btn" title="减少 1" @click="adjustStatsTopDisplayEventId(-1)">－</button>
         <input
           v-model="statsTopDisplayEventIdDraft"
           class="stats-top-id-input"
@@ -47,8 +47,8 @@
           @input="onStatsTopDisplayIdInput($event.target.value)"
           @blur="onStatsTopDisplayIdBlur"
         />
-        <button class="stats-top-mini-btn" title="增加 1" @click="adjustStatsTopDisplayEventId(1)">＋</button>
-        <button class="stats-top-mini-btn stats-top-reset-btn" :title="`恢复到当前参考活动 ID：${statsTopAutoCurrentId || '-'}`" @click="resetStatsTopDisplayEventId">
+        <button class="pjsk-ui-btn-circle stats-top-mini-btn" title="增加 1" @click="adjustStatsTopDisplayEventId(1)">＋</button>
+        <button class="pjsk-ui-btn-circle stats-top-mini-btn stats-top-reset-btn" :title="`恢复到当前参考活动 ID：${statsTopAutoCurrentId || '-'}`" @click="resetStatsTopDisplayEventId">
           <img src="/data/icon/reset.png" class="stats-top-reset-icon" alt="复位" />
         </button>
       </div>
@@ -304,6 +304,28 @@
     </div>
 
     <div
+      v-if="screenshotExportModalVisible"
+      class="app-screenshot-modal-mask"
+      @click.self="closeScreenshotExportModal"
+    >
+      <div class="app-screenshot-modal" :class="`is-${screenshotExportModalState}`" role="status" aria-live="polite">
+        <div class="app-screenshot-modal-head">
+          <span
+            v-if="screenshotExportModalState === 'capturing' || screenshotExportModalState === 'retrying'"
+            class="app-screenshot-modal-spinner"
+            aria-hidden="true"
+          ></span>
+          <span class="app-screenshot-modal-title">{{ screenshotExportModalTitle }}</span>
+        </div>
+        <p class="app-screenshot-modal-message">{{ screenshotExportModalMessage }}</p>
+        <div v-if="screenshotExportModalState === 'failed'" class="app-screenshot-modal-actions">
+          <button class="io-btn app-screenshot-modal-btn" :disabled="isScreenshotExporting" @click="retryScreenshotExport">重新截图</button>
+          <button class="io-btn app-screenshot-modal-btn app-screenshot-modal-btn-secondary" :disabled="isScreenshotExporting" @click="closeScreenshotExportModal">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <div
       ref="contentAreaRef"
       class="content-area"
       :class="{ 'history-mode': currentTab === 'history' }"
@@ -380,6 +402,11 @@ const exportBirthdayRowsInPng = ref(true);
 const experimentalHighQualityPng = ref(false);
 const isScreenshotExporting = ref(false);
 const screenshotStatusText = ref('');
+const screenshotExportModalVisible = ref(false);
+const screenshotExportModalState = ref('idle');
+const screenshotExportModalTitle = ref('');
+const screenshotExportModalMessage = ref('');
+const screenshotExportModalRetryTask = ref(null);
 const showScreenshotConfirmPanel = ref(false);
 const showCreateSourceConfirmPanel = ref(false);
 const createSourceCloneCurrent = ref(true);
@@ -406,6 +433,7 @@ const releaseLogSkipBuildId = ref('');
 const releaseLogSkipChecked = ref(false);
 const hasAutoShownReleaseLogThisVisit = ref(false);
 let cleanupNoticeTimer = null;
+let screenshotExportModalAutoCloseTimer = null;
 let tabReflowObserver = null;
 let tabReflowRaf = 0;
 let appVersionCheckTimer = null;
@@ -1377,18 +1405,90 @@ const exportPredicts = () => {
   }
 };
 
+const clearScreenshotExportModalAutoClose = () => {
+  if (!screenshotExportModalAutoCloseTimer) return;
+  clearTimeout(screenshotExportModalAutoCloseTimer);
+  screenshotExportModalAutoCloseTimer = null;
+};
+
+const setScreenshotExportModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, autoCloseMs = 0 } = {}) => {
+  clearScreenshotExportModalAutoClose();
+  screenshotExportModalVisible.value = true;
+  screenshotExportModalState.value = state;
+  screenshotExportModalTitle.value = title;
+  screenshotExportModalMessage.value = message;
+  screenshotExportModalRetryTask.value = typeof retryTask === 'function' ? retryTask : null;
+  if (autoCloseMs > 0) {
+    screenshotExportModalAutoCloseTimer = setTimeout(() => {
+      screenshotExportModalVisible.value = false;
+      screenshotExportModalAutoCloseTimer = null;
+    }, autoCloseMs);
+  }
+};
+
+const closeScreenshotExportModal = () => {
+  if (isScreenshotExporting.value && screenshotExportModalState.value !== 'failed') return;
+  clearScreenshotExportModalAutoClose();
+  screenshotExportModalVisible.value = false;
+  screenshotExportModalState.value = 'idle';
+  screenshotExportModalTitle.value = '';
+  screenshotExportModalMessage.value = '';
+  screenshotExportModalRetryTask.value = null;
+};
+
+const retryScreenshotExport = async () => {
+  if (isScreenshotExporting.value) return;
+  const task = screenshotExportModalRetryTask.value;
+  if (typeof task !== 'function') return;
+  screenshotExportModalRetryTask.value = null;
+  await task();
+};
+
+const applyHistoryCaptureProgress = (status, options = {}) => {
+  const stage = String(status?.stage || status?.state || '').trim();
+  const message = String(status?.message || '').trim();
+  if (stage === 'retrying') {
+    setScreenshotExportModalState({
+      state: 'retrying',
+      title: '失败降级重试中',
+      message: message || '截图失败，正在降级重试...'
+    });
+    return;
+  }
+  if (stage === 'capturing') {
+    setScreenshotExportModalState({
+      state: options?.fromRetry ? 'retrying' : 'capturing',
+      title: options?.fromRetry ? '重新截图中' : '截图中',
+      message: message || '正在导出「预测活动」...'
+    });
+    return;
+  }
+  if (stage === 'success') {
+    setScreenshotExportModalState({
+      state: 'success',
+      title: '截图完成',
+      message: message || '预测截图导出成功。',
+      autoCloseMs: 1400
+    });
+  }
+};
+
 const prepareScreenshotExport = async () => {
   const sourceName = String(activePredictSourceName.value || '').trim() || '预测数据源';
   const userName = sanitizeExportFileName(normalizeUserName(predictUserName.value));
   const defaultBaseName = sanitizeExportFileName(`pjsk-${userName}-${sourceName}-预测截图`);
+  const switchedToHistory = currentTab.value !== 'history';
 
-  if (currentTab.value !== 'history') {
+  if (switchedToHistory) {
     setCurrentTab('history');
     await nextTick();
   }
 
   await nextTick();
-  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  if (switchedToHistory) {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  }
 
   const instance = tabComponentRef.value;
   if (!instance || typeof instance.exportPredictedRangePng !== 'function') {
@@ -1422,6 +1522,7 @@ const openScreenshotExportConfirm = async () => {
     if (!prepared.ok) {
       alert(prepared.message || '导出失败，请稍后重试。');
       showScreenshotConfirmPanel.value = false;
+      screenshotStatusText.value = '';
       return;
     }
     screenshotConfirmRange.value = { firstId: prepared.firstId, lastId: prepared.lastId };
@@ -1445,82 +1546,132 @@ const cancelScreenshotExport = () => {
   screenshotRangeEndId.value = '';
 };
 
-const confirmScreenshotExport = async () => {
-  if (isScreenshotExporting.value) return;
-  try {
-    const sourceName = String(activePredictSourceName.value || '').trim() || '预测数据源';
-    const userName = sanitizeExportFileName(normalizeUserName(predictUserName.value));
-    const defaultBaseName = sanitizeExportFileName(`pjsk-${userName}-${sourceName}-预测截图`);
+const buildScreenshotExportRequest = () => {
+  const sourceName = String(activePredictSourceName.value || '').trim() || '预测数据源';
+  const userName = sanitizeExportFileName(normalizeUserName(predictUserName.value));
+  const defaultBaseName = sanitizeExportFileName(`pjsk-${userName}-${sourceName}-预测截图`);
+  const fileBaseName = sanitizeExportFileName(String(screenshotExportFileName.value || '').trim() || defaultBaseName);
+  const rangeStartId = normalizeRangeEventIdInput(screenshotRangeStartId.value || screenshotConfirmRange.value.firstId);
+  const rangeEndId = normalizeRangeEventIdInput(screenshotRangeEndId.value || screenshotConfirmRange.value.lastId);
 
-    isScreenshotExporting.value = true;
-    screenshotStatusText.value = '正在截图，请等待...';
+  if (!rangeStartId || !rangeEndId) {
+    return { ok: false, message: '请输入有效的起止活动ID。', payload: null };
+  }
 
-    if (currentTab.value !== 'history') {
-      setCurrentTab('history');
-      await nextTick();
-    }
+  const predictableRange = getPredictableEventIdRange();
+  if (!predictableRange.ok) {
+    return { ok: false, message: '当前没有可预测活动，无法导出截图。', payload: null };
+  }
 
-    await nextTick();
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const startNum = Number(rangeStartId);
+  const endNum = Number(rangeEndId);
+  const minSelected = Math.min(startNum, endNum);
+  const maxSelected = Math.max(startNum, endNum);
+  if (minSelected < predictableRange.minId || maxSelected > predictableRange.maxId) {
+    return {
+      ok: false,
+      message: `活动ID需在可预测范围内：${predictableRange.minId}~${predictableRange.maxId}`,
+      payload: null
+    };
+  }
 
-    const instance = tabComponentRef.value;
-    if (!instance || typeof instance.exportPredictedRangePng !== 'function') {
-      alert('历史页面尚未准备完成，请稍后重试。');
-      return;
-    }
-
-    const fileBaseName = sanitizeExportFileName(String(screenshotExportFileName.value || '').trim() || defaultBaseName);
-    const rangeStartId = normalizeRangeEventIdInput(screenshotRangeStartId.value || screenshotConfirmRange.value.firstId);
-    const rangeEndId = normalizeRangeEventIdInput(screenshotRangeEndId.value || screenshotConfirmRange.value.lastId);
-
-    if (!rangeStartId || !rangeEndId) {
-      alert('请输入有效的起止活动ID。');
-      return;
-    }
-
-    const predictableRange = getPredictableEventIdRange();
-    if (!predictableRange.ok) {
-      alert('当前没有可预测活动，无法导出截图。');
-      return;
-    }
-
-    const startNum = Number(rangeStartId);
-    const endNum = Number(rangeEndId);
-    const minSelected = Math.min(startNum, endNum);
-    const maxSelected = Math.max(startNum, endNum);
-    if (minSelected < predictableRange.minId || maxSelected > predictableRange.maxId) {
-      alert(`活动ID需在可预测范围内：${predictableRange.minId}~${predictableRange.maxId}`);
-      return;
-    }
-
-    const result = await instance.exportPredictedRangePng({
+  return {
+    ok: true,
+    message: '',
+    payload: {
       includeBirthdayRows: !!exportBirthdayRowsInPng.value,
       fileBaseName,
       experimentalHQ: !!experimentalHighQualityPng.value,
       rangeStartId,
       rangeEndId
+    }
+  };
+};
+
+const runScreenshotExport = async (payload, options = {}) => {
+  const requestPayload = payload && typeof payload === 'object' ? payload : null;
+  if (!requestPayload) return { ok: false, message: '导出参数无效。' };
+
+  isScreenshotExporting.value = true;
+  setScreenshotExportModalState({
+    state: options?.fromRetry ? 'retrying' : 'capturing',
+    title: options?.fromRetry ? '重新截图中' : '截图中',
+    message: '正在准备导出范围...'
+  });
+
+  try {
+    const switchedToHistory = currentTab.value !== 'history';
+    if (switchedToHistory) {
+      setCurrentTab('history');
+      await nextTick();
+    }
+
+    await nextTick();
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    if (switchedToHistory) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+
+    const instance = tabComponentRef.value;
+    if (!instance || typeof instance.exportPredictedRangePng !== 'function') {
+      setScreenshotExportModalState({
+        state: 'failed',
+        title: '截图失败',
+        message: '历史页面尚未准备完成，请稍后重试。可能是渲染问题，再试一次没准行，这次你一定要成功。',
+        retryTask: () => runScreenshotExport(requestPayload, { fromRetry: true })
+      });
+      return { ok: false, message: '历史页面尚未准备完成，请稍后重试。' };
+    }
+
+    const result = await instance.exportPredictedRangePng({
+      ...requestPayload,
+      onStatus: (status) => applyHistoryCaptureProgress(status, { fromRetry: !!options?.fromRetry })
     });
 
     if (!result?.ok) {
-      alert(result?.message || '导出失败，请稍后重试。');
-    } else {
-      showScreenshotConfirmPanel.value = false;
-      screenshotRangeStartId.value = '';
-      screenshotRangeEndId.value = '';
-      screenshotStatusText.value = '截图导出完成。';
-      setTimeout(() => {
-        screenshotStatusText.value = '';
-      }, 1800);
+      const failedMessage = result?.message || '导出失败，可能是渲染问题，再试一次没准行，这次你一定要成功。';
+      setScreenshotExportModalState({
+        state: 'failed',
+        title: '截图失败',
+        message: failedMessage,
+        retryTask: () => runScreenshotExport(requestPayload, { fromRetry: true })
+      });
+      return { ok: false, message: failedMessage };
     }
+
+    showScreenshotConfirmPanel.value = false;
+    screenshotRangeStartId.value = '';
+    screenshotRangeEndId.value = '';
+    setScreenshotExportModalState({
+      state: 'success',
+      title: '截图完成',
+      message: '预测截图导出成功。',
+      autoCloseMs: 1400
+    });
+    return { ok: true, message: '' };
   } catch (error) {
     console.error('导出预测截图失败', error);
-    alert('导出失败，请稍后重试。');
+    const failedMessage = '导出失败，可能是渲染问题，再试一次没准行，这次你一定要成功。';
+    setScreenshotExportModalState({
+      state: 'failed',
+      title: '截图失败',
+      message: failedMessage,
+      retryTask: () => runScreenshotExport(requestPayload, { fromRetry: true })
+    });
+    return { ok: false, message: failedMessage };
   } finally {
     isScreenshotExporting.value = false;
-    if (screenshotStatusText.value && screenshotStatusText.value !== '截图导出完成。') {
-      screenshotStatusText.value = '';
-    }
   }
+};
+
+const confirmScreenshotExport = async () => {
+  if (isScreenshotExporting.value) return;
+  const request = buildScreenshotExportRequest();
+  if (!request.ok) {
+    alert(request.message || '导出参数不正确，请检查后重试。');
+    return;
+  }
+  await runScreenshotExport(request.payload, { fromRetry: false });
 };
 
 const triggerImportPredicts = () => {
@@ -2090,6 +2241,10 @@ onBeforeUnmount(() => {
     clearTimeout(cleanupNoticeTimer);
     cleanupNoticeTimer = null;
   }
+  if (screenshotExportModalAutoCloseTimer) {
+    clearTimeout(screenshotExportModalAutoCloseTimer);
+    screenshotExportModalAutoCloseTimer = null;
+  }
   if (appVersionCheckTimer) {
     clearInterval(appVersionCheckTimer);
     appVersionCheckTimer = null;
@@ -2251,8 +2406,8 @@ watch(isHistoryPredictEditorOpen, (open) => {
   display: block;
   margin-left: auto;
   margin-right: auto;
-  width: min(100%, 240px);
-  max-height: min(48vh, 280px);
+  width: min(100%, 120px);
+  max-height: min(48vh, 160px);
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.45);
   object-fit: contain;
@@ -2318,7 +2473,7 @@ watch(isHistoryPredictEditorOpen, (open) => {
 
 .stats-top-id-input {
   width: 56px;
-  height: var(--stats-top-control-size);
+  height: 24px;
   border: 1px solid #cbd5e1;
   border-radius: 999px;
   padding: 0 6px;
@@ -2338,12 +2493,12 @@ watch(isHistoryPredictEditorOpen, (open) => {
 .stats-top-mini-btn,
 .stats-top-menu-btn {
   flex: 0 0 auto;
-  width: var(--stats-top-control-size);
-  height: var(--stats-top-control-size);
-  min-width: var(--stats-top-control-size);
-  padding: 0 4px;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  padding: 0;
   box-sizing: border-box;
-  border-radius: 999px;
+  border-radius: 50%;
   border: 1px solid #cbd5e1;
   background: #ffffff;
   color: #334155;
@@ -2358,7 +2513,7 @@ watch(isHistoryPredictEditorOpen, (open) => {
 
 .nav-tabs .stats-top-mini-btn,
 .nav-tabs .stats-top-menu-btn {
-  min-height: var(--stats-top-control-size);
+  min-height: 24px;
   padding: 0 4px;
 }
 
@@ -2369,7 +2524,23 @@ watch(isHistoryPredictEditorOpen, (open) => {
 }
 
 .stats-top-reset-btn {
-  min-width: var(--stats-top-control-size);
+  min-width: 24px;
+}
+.stats-top-reset-btn, .stats-top-mini-btn {
+  padding: 0 !important;
+  border-radius: 50% !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  max-width: 24px !important;
+  max-height: 24px !important;
+  flex: 0 0 24px !important;
+  overflow: hidden !important;
+  aspect-ratio: 1 / 1 !important;
+  line-height: calc(24px - 2px) !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
 }
 
 .stats-top-reset-icon {
@@ -2845,6 +3016,84 @@ button.active {
   margin-bottom: 8px;
 }
 
+.app-screenshot-modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 4300;
+  background: rgba(15, 23, 42, 0.36);
+  backdrop-filter: blur(1px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.app-screenshot-modal {
+  width: min(420px, 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+  padding: 14px;
+}
+
+.app-screenshot-modal.is-failed {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.app-screenshot-modal.is-success {
+  border-color: rgba(34, 197, 94, 0.42);
+}
+
+.app-screenshot-modal-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-screenshot-modal-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.app-screenshot-modal-message {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.app-screenshot-modal-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #0ea5e9;
+  animation: app-screenshot-spin 0.85s linear infinite;
+}
+
+.app-screenshot-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.app-screenshot-modal-btn {
+  min-width: 84px;
+}
+
+.app-screenshot-modal-btn-secondary {
+  opacity: 0.9;
+}
+
+@keyframes app-screenshot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .source-export-confirm {
   border: 1px solid #cbd5e1;
   border-radius: 10px;
@@ -3180,7 +3429,7 @@ button.active {
 
   .username-input {
     width: 52px;
-    height: var(--stats-top-control-size);
+    height: 24px;
     font-size: 0.64rem;
     padding: 2px 4px;
     border-radius: 999px;
@@ -3341,7 +3590,7 @@ button.active {
 
   .username-input {
     width: 52px;
-    height: var(--stats-top-control-size);
+    height: 24px;
     border-radius: 999px;
   }
 

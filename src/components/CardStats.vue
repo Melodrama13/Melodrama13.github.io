@@ -315,7 +315,13 @@
 
         <div id="panel-related" data-scroll-anchor="panel-related" class="stats-section card-panel related-panel">
           <div class="section-head">
-            <h2>相关记录</h2>
+            <div class="section-head-left">
+              <h2>相关记录</h2>
+              <label class="fes-card-mode-toggle stats-checkbox" title="统一控制相关记录中可切换卡面的子模块。">
+                <input :checked="relatedPanelShowCardImagesAll" type="checkbox" @change="onRelatedPanelShowAllCardImagesChange" />
+                显示卡面
+              </label>
+            </div>
             <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-related', '相关记录')">PNG</button>
           </div>
 
@@ -1682,35 +1688,35 @@
                   <th v-for="(attr, idx) in ATTRS" :key="`head-${attr}`" :class="matrixGroupClass(idx, ATTRS.length)">
                     <button class="matrix-sort-btn" @click="toggleMatrixSort(attr)">
                       <span>{{ ATTR_LABELS[attr] }}</span>
-                      <span class="matrix-sort-ind">{{ getMatrixSortIndicator(attr) }}</span>
+                      <img class="matrix-sort-icon" :src="getMatrixSortIconSrc(attr)" alt="排序图标" />
                     </button>
                   </th>
                   <th :class="matrixGroupClass(0, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pureScoreCount')"><span>分卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pureScoreCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pureScoreCount')"><span>分卡</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('pureScoreCount')" alt="排序图标" /></button>
                   </th>
                   <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('scoreUpCount')"><span>普分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('scoreUpCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('scoreUpCount')"><span>普分</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('scoreUpCount')" alt="排序图标" /></button>
                   </th>
                   <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pScoreCount')"><span>P 分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pScoreCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pScoreCount')"><span>P 分</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('pScoreCount')" alt="排序图标" /></button>
                   </th>
                   <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('accuracyCount')"><span>判卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('accuracyCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('accuracyCount')"><span>判卡</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('accuracyCount')" alt="排序图标" /></button>
                   </th>
                   <th :class="matrixGroupClass(3, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('recoveryCount')"><span>奶卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('recoveryCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('recoveryCount')"><span>奶卡</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('recoveryCount')" alt="排序图标" /></button>
                   </th>
                   <th :class="matrixGroupClass(0, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('fourStarCount')"><span>四星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('fourStarCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('fourStarCount')"><span>四星</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('fourStarCount')" alt="排序图标" /></button>
                   </th>
                   <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('threeStarCount')"><span>三星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('threeStarCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('threeStarCount')"><span>三星</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('threeStarCount')" alt="排序图标" /></button>
                   </th>
                   <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('twoStarCount')"><span>二星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('twoStarCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('twoStarCount')"><span>二星</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('twoStarCount')" alt="排序图标" /></button>
                   </th>
                   <th :class="matrixGroupClass(3, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('rewardTotalCount')"><span>报酬</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('rewardTotalCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('rewardTotalCount')"><span>报酬</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('rewardTotalCount')" alt="排序图标" /></button>
                   </th>
                 </tr>
               </thead>
@@ -1783,35 +1789,35 @@
                   <th v-for="(attr, idx) in ATTRS" :key="`vs-head-${attr}`" :class="matrixGroupClass(idx, ATTRS.length)">
                     <button class="matrix-sort-btn" @click="toggleMatrixSort(attr)">
                       <span>{{ ATTR_LABELS[attr] }}</span>
-                      <span class="matrix-sort-ind">{{ getMatrixSortIndicator(attr) }}</span>
+                      <img class="matrix-sort-icon" :src="getMatrixSortIconSrc(attr)" alt="排序图标" />
                     </button>
                   </th>
                   <th :class="matrixGroupClass(0, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('unitScoreCount')"><span>团分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('unitScoreCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('unitScoreCount')"><span>团分</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('unitScoreCount')" alt="排序图标" /></button>
                   </th>
                   <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('scoreUpCount')"><span>普分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('scoreUpCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('scoreUpCount')"><span>普分</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('scoreUpCount')" alt="排序图标" /></button>
                   </th>
                   <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pScoreCount')"><span>P 分</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('pScoreCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('pScoreCount')"><span>P 分</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('pScoreCount')" alt="排序图标" /></button>
                   </th>
                   <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('accuracyCount')"><span>判卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('accuracyCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('accuracyCount')"><span>判卡</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('accuracyCount')" alt="排序图标" /></button>
                   </th>
                   <th :class="matrixGroupClass(3, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('recoveryCount')"><span>奶卡</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('recoveryCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('recoveryCount')"><span>奶卡</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('recoveryCount')" alt="排序图标" /></button>
                   </th>
                   <th :class="matrixGroupClass(0, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('fourStarCount')"><span>四星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('fourStarCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('fourStarCount')"><span>四星</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('fourStarCount')" alt="排序图标" /></button>
                   </th>
                   <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('threeStarCount')"><span>三星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('threeStarCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('threeStarCount')"><span>三星</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('threeStarCount')" alt="排序图标" /></button>
                   </th>
                   <th>
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('twoStarCount')"><span>二星</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('twoStarCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('twoStarCount')"><span>二星</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('twoStarCount')" alt="排序图标" /></button>
                   </th>
                   <th :class="matrixGroupClass(3, 4)">
-                    <button class="matrix-sort-btn" @click="toggleMatrixSort('rewardTotalCount')"><span>报酬</span><span class="matrix-sort-ind">{{ getMatrixSortIndicator('rewardTotalCount') }}</span></button>
+                    <button class="matrix-sort-btn" @click="toggleMatrixSort('rewardTotalCount')"><span>报酬</span><img class="matrix-sort-icon" :src="getMatrixSortIconSrc('rewardTotalCount')" alt="排序图标" /></button>
                   </th>
                 </tr>
               </thead>
@@ -1887,6 +1893,28 @@
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <div
+      v-if="screenshotModalVisible"
+      class="screenshot-export-modal-mask"
+      @click.self="closeScreenshotModal"
+    >
+      <div class="screenshot-export-modal" :class="`is-${screenshotModalState}`" role="status" aria-live="polite">
+        <div class="screenshot-export-modal-head">
+          <span
+            v-if="screenshotModalState === 'capturing' || screenshotModalState === 'retrying'"
+            class="screenshot-export-modal-spinner"
+            aria-hidden="true"
+          ></span>
+          <span class="screenshot-export-modal-title">{{ screenshotModalTitle }}</span>
+        </div>
+        <p class="screenshot-export-modal-message">{{ screenshotModalMessage }}</p>
+        <div v-if="screenshotModalState === 'failed'" class="screenshot-export-modal-actions">
+          <button class="card-export-btn screenshot-export-modal-btn" :disabled="isExportingPng" @click="retryScreenshotExport">重新截图</button>
+          <button class="card-export-btn screenshot-export-modal-btn screenshot-export-modal-btn-secondary" :disabled="isExportingPng" @click="closeScreenshotModal">关闭</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1965,6 +1993,12 @@ const festivalFesToggles = reactive({
 const cardStatsRootRef = ref(null);
 let sectionObserver = null;
 const isExportingPng = ref(false);
+const screenshotModalVisible = ref(false);
+const screenshotModalState = ref('idle');
+const screenshotModalTitle = ref('');
+const screenshotModalMessage = ref('');
+const screenshotModalRetryTask = ref(null);
+let screenshotModalAutoCloseTimer = 0;
 let matrixSortAnchorTimer = 0;
 let navSyncRaf = 0;
 let viewportScrollHost = null;
@@ -2412,9 +2446,9 @@ const toggleMatrixSort = (key) => {
   });
 };
 
-const getMatrixSortIndicator = (key) => {
-  if (matrixSortKey.value !== key || !matrixSortOrder.value) return '↕';
-  return matrixSortOrder.value === 'desc' ? '↓' : '↑';
+const getMatrixSortIconSrc = (key) => {
+  if (matrixSortKey.value !== key || !matrixSortOrder.value) return '/data/icon/circle_arrow_up_down.png';
+  return matrixSortOrder.value === 'desc' ? '/data/icon/circle_arrow_down.png' : '/data/icon/circle_arrow_up.png';
 };
 
 const isMatrixDefaultSort = computed(() => !matrixSortKey.value || !matrixSortOrder.value);
@@ -3276,11 +3310,338 @@ const waitNextPaint = () => new Promise((resolve) => {
   });
 });
 
+const clearScreenshotModalAutoClose = () => {
+  if (!screenshotModalAutoCloseTimer) return;
+  clearTimeout(screenshotModalAutoCloseTimer);
+  screenshotModalAutoCloseTimer = 0;
+};
+
+const setScreenshotModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, autoCloseMs = 0 } = {}) => {
+  clearScreenshotModalAutoClose();
+  screenshotModalVisible.value = true;
+  screenshotModalState.value = state;
+  screenshotModalTitle.value = title;
+  screenshotModalMessage.value = message;
+  screenshotModalRetryTask.value = typeof retryTask === 'function' ? retryTask : null;
+  if (autoCloseMs > 0) {
+    screenshotModalAutoCloseTimer = setTimeout(() => {
+      if (!isExportingPng.value) {
+        screenshotModalVisible.value = false;
+      }
+      screenshotModalAutoCloseTimer = 0;
+    }, autoCloseMs);
+  }
+};
+
+const closeScreenshotModal = () => {
+  if (isExportingPng.value && screenshotModalState.value !== 'failed') return;
+  clearScreenshotModalAutoClose();
+  screenshotModalVisible.value = false;
+  screenshotModalState.value = 'idle';
+  screenshotModalTitle.value = '';
+  screenshotModalMessage.value = '';
+  screenshotModalRetryTask.value = null;
+};
+
+const retryScreenshotExport = async () => {
+  if (isExportingPng.value) return;
+  const task = screenshotModalRetryTask.value;
+  if (typeof task !== 'function') return;
+  screenshotModalRetryTask.value = null;
+  await task();
+};
+
+const getCaptureDeviceTier = () => {
+  const width = Number(window?.innerWidth || 0);
+  const height = Number(window?.innerHeight || 0);
+  const minSide = Math.min(width || Number.MAX_SAFE_INTEGER, height || Number.MAX_SAFE_INTEGER);
+  if (width <= 900) {
+    if (minSide >= 680) return 'tablet';
+    return 'phone';
+  }
+  return 'desktop';
+};
+
+const copyCssCustomProperties = (sourceStyle, targetEl) => {
+  if (!(sourceStyle instanceof CSSStyleDeclaration) || !(targetEl instanceof HTMLElement)) return;
+  for (let i = 0; i < sourceStyle.length; i += 1) {
+    const prop = sourceStyle[i];
+    if (!String(prop || '').startsWith('--')) continue;
+    const value = String(sourceStyle.getPropertyValue(prop) || '').trim();
+    if (!value) continue;
+    targetEl.style.setProperty(prop, value);
+  }
+};
+
+const buildExportScaleCandidates = (preferredScale, isMobileScreen) => {
+  const baseScale = Number.isFinite(preferredScale) && preferredScale > 0 ? preferredScale : 1;
+  const ladder = isMobileScreen
+    ? [baseScale, Math.min(baseScale, 1.4), 1.15, 1]
+    : [baseScale, Math.min(baseScale, 1.8), 1.45, 1.2, 1];
+  const seen = new Set();
+  return ladder
+    .map((value) => Math.max(1, Number(value.toFixed(2))))
+    .filter((value) => {
+      const key = String(value);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+};
+
+const countHeavyMediaNodes = (rootEl) => {
+  if (!(rootEl instanceof HTMLElement)) return 0;
+  const mediaNodes = rootEl.querySelectorAll('img');
+  let heavy = 0;
+  mediaNodes.forEach((img) => {
+    const src = String(img?.getAttribute('src') || img?.currentSrc || '').toLowerCase();
+    const cls = String(img?.className || '').toLowerCase();
+    if (src.includes('/cards/') || src.includes('/songs/') || cls.includes('card') || cls.includes('jacket')) {
+      heavy += 1;
+    }
+  });
+  return heavy;
+};
+
+const buildAdaptiveScaleCandidates = (preferredScale, deviceTier, heavyMediaCount) => {
+  const isMobileScreen = deviceTier !== 'desktop';
+  const base = buildExportScaleCandidates(preferredScale, isMobileScreen);
+  if (heavyMediaCount < 18) return base;
+
+  const seen = new Set();
+  const targeted = (deviceTier === 'phone' || deviceTier === 'tablet'
+    ? [Math.max(1.75, Math.min(base[0] || 2, 2.05)), 1.65, 1.45, 1.25]
+    : [Math.max(1.95, base[0] || 2), Math.max(1.8, Math.min(base[0] || 2, 2.2)), 1.65, 1.35]
+  )
+    .map((value) => Math.max(1, Number(value.toFixed(2))))
+    .filter((value) => {
+      const key = String(value);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+  return targeted.length ? targeted : base;
+};
+
+const buildCardCaptureProfile = ({ renderHeight, deviceTier, dpr, heavyMediaCount, isLineupLikePanelExport }) => {
+  const height = Math.max(1, Number(renderHeight || 0));
+  const normalizedDpr = Math.max(1, Number(dpr || 1));
+  const isMobileScreen = deviceTier !== 'desktop';
+  const preferredScale = isLineupLikePanelExport
+    ? (isMobileScreen
+        ? (height > 9000 ? 1.35 : Math.max(1.6, Math.min(2.1, normalizedDpr)))
+        : (height > 12000 ? Math.max(1.25, Math.min(1.6, normalizedDpr)) : Math.max(1.6, normalizedDpr)))
+    : (isMobileScreen
+        ? Math.max(1.9, Math.min(2.25, normalizedDpr))
+        : Math.max(2, normalizedDpr));
+  const scales = buildAdaptiveScaleCandidates(preferredScale, deviceTier, heavyMediaCount);
+  const baseScale = Number(scales[0] || preferredScale || 1);
+  return {
+    preferredScale,
+    scales,
+    baseScale
+  };
+};
+
+const buildCardCaptureMessage = (exportTitle, baseScale) => {
+  const scale = Number(baseScale || 1);
+  return `正在导出「${exportTitle}」... 基础清晰度 x${scale.toFixed(2)}`;
+};
+
+const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, scale }) => {
+  const isMobileScreen = deviceTier !== 'desktop';
+  const totalMegaPixels = (Math.max(1, width) * Math.max(1, height) * Math.max(1, scale) * Math.max(1, scale)) / 1000000;
+  let timeout = 24000;
+  if (deviceTier === 'phone') timeout = 22000;
+  if (deviceTier === 'tablet') timeout = 24000;
+  if (heavyMediaCount >= 18) timeout += isMobileScreen ? 7000 : 7000;
+  if (totalMegaPixels >= 24) timeout += isMobileScreen ? 7000 : 6000;
+  if (totalMegaPixels >= 40) timeout += isMobileScreen ? 9000 : 9000;
+  if (deviceTier === 'phone') return Math.min(56000, timeout);
+  if (deviceTier === 'tablet') return Math.min(60000, timeout);
+  return Math.min(52000, timeout);
+};
+
+const waitForSingleImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
+  if (!(imgEl instanceof HTMLImageElement)) {
+    resolve();
+    return;
+  }
+  if (imgEl.complete) {
+    resolve();
+    return;
+  }
+  let done = false;
+  let timer = 0;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    imgEl.removeEventListener('load', finish);
+    imgEl.removeEventListener('error', finish);
+    if (timer) clearTimeout(timer);
+    resolve();
+  };
+  imgEl.addEventListener('load', finish, { once: true });
+  imgEl.addEventListener('error', finish, { once: true });
+  timer = window.setTimeout(finish, timeoutMs);
+});
+
+const waitForRenderableAssets = async (rootEl, options = {}) => {
+  if (!(rootEl instanceof HTMLElement)) return;
+  const maxWaitMs = Number(options?.maxWaitMs || 0) > 0 ? Number(options.maxWaitMs) : 2600;
+  const maxImages = Number(options?.maxImages || 0) > 0 ? Number(options.maxImages) : 72;
+
+  const fontReadyPromise = (document?.fonts?.ready && typeof document.fonts.ready.then === 'function')
+    ? document.fonts.ready.catch(() => undefined)
+    : Promise.resolve();
+  const images = Array.from(rootEl.querySelectorAll('img')).slice(0, maxImages);
+  const imageReadyPromise = Promise.allSettled(images.map((img) => waitForSingleImageReady(img, Math.min(2400, maxWaitMs))));
+
+  await Promise.race([
+    Promise.allSettled([fontReadyPromise, imageReadyPromise]),
+    new Promise((resolve) => window.setTimeout(resolve, maxWaitMs))
+  ]);
+};
+
+const syncCloneImagesWithSource = (sourceRoot, cloneRoot) => {
+  if (!(sourceRoot instanceof HTMLElement) || !(cloneRoot instanceof HTMLElement)) return;
+  const sourceImages = Array.from(sourceRoot.querySelectorAll('img'));
+  const cloneImages = Array.from(cloneRoot.querySelectorAll('img'));
+  const pairCount = Math.min(sourceImages.length, cloneImages.length);
+
+  for (let idx = 0; idx < pairCount; idx += 1) {
+    const sourceImg = sourceImages[idx];
+    const cloneImg = cloneImages[idx];
+    const sourceUrl = String(sourceImg?.currentSrc || sourceImg?.getAttribute('src') || sourceImg?.src || '').trim();
+
+    cloneImg.setAttribute('loading', 'eager');
+    cloneImg.setAttribute('decoding', 'sync');
+    if ('fetchPriority' in cloneImg) {
+      cloneImg.fetchPriority = 'high';
+    }
+
+    if (sourceUrl) {
+      cloneImg.setAttribute('src', sourceUrl);
+    }
+    if (sourceImg?.dataset?.loaded === '1') {
+      cloneImg.dataset.loaded = '1';
+    }
+    if (sourceImg?.dataset?.failed === '1') {
+      cloneImg.dataset.failed = '1';
+      cloneImg.style.display = 'none';
+    }
+  }
+
+  for (let idx = pairCount; idx < cloneImages.length; idx += 1) {
+    const cloneImg = cloneImages[idx];
+    cloneImg.setAttribute('loading', 'eager');
+    cloneImg.setAttribute('decoding', 'sync');
+    if ('fetchPriority' in cloneImg) {
+      cloneImg.fetchPriority = 'high';
+    }
+  }
+};
+
+const withRenderTimeout = async (promise, timeoutMs) => {
+  let timer = 0;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = window.setTimeout(() => {
+          reject(new Error(`render-timeout-${timeoutMs}`));
+        }, timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+};
+
+const getTableColumnWidths = (tableEl) => {
+  if (!(tableEl instanceof HTMLTableElement)) return [];
+  const headRow = tableEl.querySelector('thead tr');
+  const bodyRow = tableEl.querySelector('tbody tr');
+  const probeRow = headRow || bodyRow;
+  if (!(probeRow instanceof HTMLTableRowElement)) return [];
+  const cells = Array.from(probeRow.children).filter((cell) => cell instanceof HTMLTableCellElement);
+  return cells.map((cell) => Math.max(1, Math.ceil(cell.getBoundingClientRect().width)));
+};
+
+const applyTableColumnWidths = (tableEl, widths) => {
+  if (!(tableEl instanceof HTMLTableElement) || !Array.isArray(widths) || widths.length === 0) return;
+  let colgroup = tableEl.querySelector('colgroup.export-sync-colgroup');
+  if (!(colgroup instanceof HTMLTableColElement) && !(colgroup instanceof HTMLElement)) {
+    colgroup = document.createElement('colgroup');
+    colgroup.className = 'export-sync-colgroup';
+    tableEl.insertBefore(colgroup, tableEl.firstChild);
+  }
+  colgroup.innerHTML = '';
+  widths.forEach((widthPx) => {
+    const col = document.createElement('col');
+    col.style.width = `${widthPx}px`;
+    col.style.minWidth = `${widthPx}px`;
+    colgroup.appendChild(col);
+  });
+
+  const totalWidth = widths.reduce((sum, value) => sum + value, 0);
+  tableEl.style.tableLayout = 'fixed';
+  tableEl.style.width = `${Math.max(1, Math.ceil(totalWidth))}px`;
+  tableEl.style.minWidth = `${Math.max(1, Math.ceil(totalWidth))}px`;
+  tableEl.style.maxWidth = 'none';
+};
+
+const syncRecordBlockLayoutForExport = (sourceBlock, cloneBlock) => {
+  if (!(sourceBlock instanceof HTMLElement) || !(cloneBlock instanceof HTMLElement)) return 0;
+  let expandedWidth = Math.max(sourceBlock.clientWidth, sourceBlock.scrollWidth);
+  const sourceTables = sourceBlock.querySelectorAll('table');
+  const cloneTables = cloneBlock.querySelectorAll('table');
+
+  cloneTables.forEach((cloneTable, idx) => {
+    const sourceTable = sourceTables[idx];
+    if (!(cloneTable instanceof HTMLTableElement) || !(sourceTable instanceof HTMLTableElement)) return;
+    const widths = getTableColumnWidths(sourceTable);
+    if (widths.length > 0) {
+      applyTableColumnWidths(cloneTable, widths);
+    } else {
+      const tableWidth = Math.max(sourceTable.clientWidth, sourceTable.scrollWidth);
+      cloneTable.style.width = `${tableWidth}px`;
+      cloneTable.style.minWidth = `${tableWidth}px`;
+      cloneTable.style.maxWidth = 'none';
+    }
+    expandedWidth = Math.max(expandedWidth, sourceTable.scrollWidth + 20);
+  });
+
+  const sourceBlockHeight = Math.max(sourceBlock.clientHeight, sourceBlock.scrollHeight);
+  cloneBlock.style.overflow = 'visible';
+  cloneBlock.style.maxHeight = 'none';
+  cloneBlock.style.height = `${Math.max(1, Math.ceil(sourceBlockHeight))}px`;
+  cloneBlock.style.width = `${Math.max(1, Math.ceil(expandedWidth))}px`;
+  cloneBlock.style.minWidth = `${Math.max(1, Math.ceil(expandedWidth))}px`;
+  cloneBlock.style.maxWidth = 'none';
+  return expandedWidth;
+};
+
+const getExportFailedMessage = (id) => {
+  const idKey = String(id || '').trim();
+  const isLineupPanel = idKey === 'panel-lineup' || idKey === 'panel-support';
+  const isMobileScreen = window.innerWidth <= 900;
+  if (isLineupPanel && isMobileScreen) {
+    return '降级重试后仍失败。建议改用每个角色卡片右上角 PNG 按钮分批导出，或先收起其余属性后再导出总图。可能是渲染问题，再试一次没准行，这次你一定要成功。';
+  }
+  return '降级重试后仍失败。可能是渲染问题，再试一次没准行，这次你一定要成功。';
+};
+
 const prepareExportClone = async (targetEl) => {
   if (!targetEl) return null;
 
   const rect = targetEl.getBoundingClientRect();
   const sourceStyle = window.getComputedStyle(targetEl);
+  const relatedPanelEl = targetEl.closest('.related-panel');
+  const relatedPanelStyle = relatedPanelEl instanceof HTMLElement ? window.getComputedStyle(relatedPanelEl) : null;
   const sourceRadiusVar = String(sourceStyle.getPropertyValue('--stats-radius-btn') || '').trim();
   const sourceBgColor = String(sourceStyle.backgroundColor || '').trim();
   const hasVisibleBg = sourceBgColor && sourceBgColor !== 'transparent' && sourceBgColor !== 'rgba(0, 0, 0, 0)';
@@ -3296,6 +3657,12 @@ const prepareExportClone = async (targetEl) => {
   clone.style.width = `${Math.max(1, Math.ceil(rect.width))}px`;
   clone.style.maxHeight = 'none';
   clone.style.overflow = 'visible';
+  if (relatedPanelEl instanceof HTMLElement) {
+    clone.classList.add('related-panel');
+  }
+  copyCssCustomProperties(sourceStyle, clone);
+  copyCssCustomProperties(relatedPanelStyle, clone);
+  syncCloneImagesWithSource(targetEl, clone);
   if (sourceRadiusVar) {
     clone.style.setProperty('--stats-radius-btn', sourceRadiusVar);
   }
@@ -3347,6 +3714,23 @@ const prepareExportClone = async (targetEl) => {
     listEl.style.overflow = 'visible';
   });
 
+  // 相关记录子模块存在横向滚动和列宽变量，导出时同步布局避免列宽漂移。
+  let expandedCloneWidth = Math.max(1, Math.ceil(rect.width));
+  if (targetEl.classList.contains('record-block') && clone.classList.contains('record-block')) {
+    expandedCloneWidth = Math.max(expandedCloneWidth, syncRecordBlockLayoutForExport(targetEl, clone));
+  }
+  const sourceRecordBlocks = targetEl.querySelectorAll('.record-block');
+  const cloneRecordBlocks = clone.querySelectorAll('.record-block');
+  cloneRecordBlocks.forEach((block, idx) => {
+    const source = sourceRecordBlocks[idx];
+    const nextWidth = syncRecordBlockLayoutForExport(source, block);
+    expandedCloneWidth = Math.max(expandedCloneWidth, nextWidth + 20);
+  });
+
+  if (expandedCloneWidth > Math.ceil(rect.width)) {
+    clone.style.width = `${expandedCloneWidth}px`;
+  }
+
   document.body.appendChild(clone);
   await waitNextPaint();
   return clone;
@@ -3364,54 +3748,142 @@ const resolveExportElementById = (id) => {
   return exact.closest('.record-block, .festival-card, .lineup-card, .support-card, .card-panel');
 };
 
-const exportElementPng = async (id, title) => {
+const runExportElementPng = async (id, title, options = {}) => {
   if (isExportingPng.value) return;
   const targetEl = resolveExportElementById(id);
   if (!targetEl) {
-    alert('未找到可导出的模块区域。');
+    setScreenshotModalState({
+      state: 'failed',
+      title: '截图失败',
+      message: '未找到可导出的模块区域。'
+    });
     return;
   }
 
   isExportingPng.value = true;
   let cloneEl = null;
   try {
+    const exportTitle = String(title || id || '当前模块');
+    const exportPanelId = String(id || '').trim();
+    const isLineupLikePanelExport = exportPanelId === 'panel-lineup' || exportPanelId === 'panel-support';
+    const deviceTier = getCaptureDeviceTier();
+    const dpr = Number(window.devicePixelRatio || 1);
+    const initialRenderHeight = Math.ceil(targetEl.scrollHeight || targetEl.clientHeight || 0);
+    const initialHeavyMediaCount = countHeavyMediaNodes(targetEl);
+    const initialCaptureProfile = buildCardCaptureProfile({
+      renderHeight: initialRenderHeight,
+      deviceTier,
+      dpr,
+      heavyMediaCount: initialHeavyMediaCount,
+      isLineupLikePanelExport
+    });
+    setScreenshotModalState({
+      state: 'capturing',
+      title: options?.fromRetry ? '重新截图中' : '截图中',
+      message: buildCardCaptureMessage(exportTitle, initialCaptureProfile.baseScale)
+    });
+
+    if (!options?.fromRetry) {
+      // 首轮导出先做一次资源预热，降低“第一次失败、第二次秒过”的概率。
+      await waitForRenderableAssets(targetEl, {
+        maxWaitMs: deviceTier === 'phone' ? 5200 : (deviceTier === 'tablet' ? 5600 : 4200),
+        maxImages: Number.isFinite(initialHeavyMediaCount) && initialHeavyMediaCount > 0 ? Math.min(320, Math.max(180, initialHeavyMediaCount + 80)) : 220
+      });
+      await waitNextPaint();
+    }
+
     cloneEl = await prepareExportClone(targetEl);
     const renderEl = cloneEl || targetEl;
     const renderHeight = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
-    const exportPanelId = String(id || '').trim();
-    const isLineupLikePanelExport = exportPanelId === 'panel-lineup' || exportPanelId === 'panel-support';
-    const isMobileScreen = window.innerWidth <= 900;
-    const renderScale = isLineupLikePanelExport
-      ? (isMobileScreen
-          ? (renderHeight > 8000 ? 1 : Math.max(1, Math.min(1.2, window.devicePixelRatio || 1)))
-          : (renderHeight > 12000 ? Math.max(1.25, Math.min(1.6, window.devicePixelRatio || 1)) : Math.max(1.6, window.devicePixelRatio || 1)))
-      : Math.max(2, window.devicePixelRatio || 1);
-    const canvas = await html2canvas(renderEl, {
-      backgroundColor: '#ffffff',
-      scale: renderScale,
-      useCORS: true,
-      logging: false,
-      width: Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0),
-      height: Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0)
+    const isMobileScreen = deviceTier !== 'desktop';
+    const heavyMediaCount = countHeavyMediaNodes(renderEl);
+    await waitForRenderableAssets(renderEl, {
+      maxWaitMs: deviceTier === 'phone' ? 3600 : (deviceTier === 'tablet' ? 5000 : 4200),
+      maxImages: isMobileScreen ? 180 : 260
     });
+    const captureProfile = buildCardCaptureProfile({
+      renderHeight,
+      deviceTier,
+      dpr,
+      heavyMediaCount,
+      isLineupLikePanelExport
+    });
+    const scales = captureProfile.scales;
+    const baseScale = captureProfile.baseScale;
+    setScreenshotModalState({
+      state: options?.fromRetry ? 'retrying' : 'capturing',
+      title: options?.fromRetry ? '重新截图中' : '截图中',
+      message: buildCardCaptureMessage(exportTitle, baseScale)
+    });
+    const width = Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0);
+    const height = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
+    let canvas = null;
+    let lastError = null;
+
+    for (let idx = 0; idx < scales.length; idx += 1) {
+      const scale = scales[idx];
+      if (idx > 0) {
+        setScreenshotModalState({
+          state: 'retrying',
+          title: '失败降级重试中',
+          message: `截图失败，正在降级重试（${idx}/${scales.length - 1}）...`
+        });
+        await waitNextPaint();
+      }
+
+      try {
+        const renderTimeoutMs = computeRenderTimeoutMs({
+          deviceTier,
+          heavyMediaCount,
+          width,
+          height,
+          scale
+        });
+        canvas = await withRenderTimeout(html2canvas(renderEl, {
+          backgroundColor: '#ffffff',
+          scale,
+          useCORS: true,
+          logging: false,
+          imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
+          width,
+          height
+        }), renderTimeoutMs);
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (!canvas) {
+      throw lastError || new Error('html2canvas failed');
+    }
+
     const fileName = sanitizeExportFileName(`pjsk_${title || id}_${formatExportTimestamp()}`);
     await triggerDownloadPng(canvas, fileName);
+    setScreenshotModalState({
+      state: 'success',
+      title: '截图完成',
+      message: `「${exportTitle}」已导出 PNG。`,
+      autoCloseMs: 1400
+    });
   } catch (error) {
     console.error('导出模块PNG失败', error);
-    const idKey = String(id || '').trim();
-    const isLineupPanel = idKey === 'panel-lineup' || idKey === 'panel-support';
-    const isMobileScreen = window.innerWidth <= 900;
-    if (isLineupPanel && isMobileScreen) {
-      alert('导出失败。\n建议改用每个角色卡片右上角 PNG 按钮分批导出，或先收起其余属性后再导出总图。');
-    } else {
-      alert('导出PNG失败，请稍后重试。');
-    }
+    setScreenshotModalState({
+      state: 'failed',
+      title: '截图失败',
+      message: getExportFailedMessage(id),
+      retryTask: () => runExportElementPng(id, title, { fromRetry: true })
+    });
   } finally {
     if (cloneEl && cloneEl.parentNode) {
       cloneEl.parentNode.removeChild(cloneEl);
     }
     isExportingPng.value = false;
   }
+};
+
+const exportElementPng = async (id, title) => {
+  await runExportElementPng(id, title);
 };
 
 const matrixGroupClass = (idx, len) => ({
@@ -3591,6 +4063,8 @@ onBeforeUnmount(() => {
     relatedJumpMutationObserver = null;
   }
   if (sectionObserver) sectionObserver.disconnect();
+  clearScreenshotModalAutoClose();
+  screenshotModalRetryTask.value = null;
   if (matrixSortAnchorTimer) {
     clearTimeout(matrixSortAnchorTimer);
     matrixSortAnchorTimer = 0;
@@ -4862,6 +5336,34 @@ const onRelatedLastRecordShowCardImagesChange = (event) => {
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
     relatedLastRecordShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const relatedPanelShowCardImagesAll = computed({
+  get: () => (
+    !!relatedLastRecordShowCardImages.value
+    && !!intervalFourShowCardImages.value
+    && !!intervalLimitedShowCardImages.value
+    && !!intervalBanShowCardImages.value
+    && !!vsUnitLastFourShowCardImages.value
+    && !!fesRecordShowCardImages.value
+  ),
+  set: (value) => {
+    const checked = !!value;
+    relatedLastRecordShowCardImages.value = checked;
+    intervalFourShowCardImages.value = checked;
+    intervalLimitedShowCardImages.value = checked;
+    intervalBanShowCardImages.value = checked;
+    vsUnitLastFourShowCardImages.value = checked;
+    fesRecordShowCardImages.value = checked;
+  }
+});
+
+const onRelatedPanelShowAllCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    relatedPanelShowCardImagesAll.value = checked;
   }, anchorEl);
 };
 
@@ -6727,21 +7229,21 @@ defineExpose({
   overflow: hidden;
   border: 1px solid #e5e7eb;
   border-radius: var(--stats-radius-panel);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.4);
   padding: 8px 6px 6px;
 }
 
 .nav-cutoff {
   border: 1px solid #e5e7eb;
   border-radius: var(--stats-radius-panel);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.4);
   padding: 8px;
 }
 
 .nav-name-format {
   border: 1px solid #e5e7eb;
   border-radius: var(--stats-radius-panel);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.4);
   padding: 8px;
   display: inline-flex;
   align-items: center;
@@ -6858,7 +7360,7 @@ defineExpose({
   padding: 6px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 999px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.4);
   color: #374151;
   cursor: pointer;
   font-size: 0.82rem;
@@ -6914,7 +7416,7 @@ defineExpose({
 }
 
 .nav-link.active {
-  background: #dbeafe;
+  background: rgba(219, 234, 254, 0.6);
   border-color: #93c5fd;
   color: #1d4ed8;
 }
@@ -6956,6 +7458,84 @@ defineExpose({
 .card-export-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.screenshot-export-modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.36);
+  backdrop-filter: blur(1px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.screenshot-export-modal {
+  width: min(420px, 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+  padding: 14px;
+}
+
+.screenshot-export-modal.is-failed {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.screenshot-export-modal.is-success {
+  border-color: rgba(34, 197, 94, 0.42);
+}
+
+.screenshot-export-modal-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.screenshot-export-modal-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.screenshot-export-modal-message {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.screenshot-export-modal-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #0ea5e9;
+  animation: screenshot-export-spin 0.85s linear infinite;
+}
+
+.screenshot-export-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.screenshot-export-modal-btn {
+  min-width: 84px;
+}
+
+.screenshot-export-modal-btn-secondary {
+  opacity: 0.9;
+}
+
+@keyframes screenshot-export-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .stats-main-head h1,
@@ -7896,25 +8476,26 @@ defineExpose({
 }
 
 .matrix-sort-btn {
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: #111827;
-  font-size: inherit;
-  font-weight: 700;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 4px;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
   cursor: pointer;
+  padding: 0;
+  width: 100%;
 }
-
-.matrix-sort-ind {
-  font-size: 0.72em;
-  color: #64748b;
+.matrix-sort-btn > span {
+  white-space: nowrap;
 }
-
+.matrix-sort-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
 .row-char {
   text-align: center;
 }
@@ -9154,14 +9735,15 @@ td.record-char {
     top: calc(env(safe-area-inset-top, 0px) + 52px);
     left: 8px;
     right: auto;
-    width: min(260px, calc(100vw - 16px));
+    width: min(240px, calc(100vw - 16px));
     max-width: calc(100vw - 16px);
     max-height: calc(100dvh - 60px);
     z-index: 4200;
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.22);
-    background: #ffffff;
-    opacity: 1;
-    backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 24px !important;
     overflow: hidden;
   }
 
@@ -9171,13 +9753,6 @@ td.record-char {
 
   .stats-nav.mobile-floating.is-collapsed {
     display: none;
-  }
-
-  .stats-nav.mobile-floating.is-open {
-    left: 8px;
-    right: auto;
-    width: min(260px, calc(100vw - 16px));
-    max-height: calc(100dvh - 64px);
   }
 
   .nav-cutoff {

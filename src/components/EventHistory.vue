@@ -4360,8 +4360,66 @@ const getCaptureBoundsFromRows = (listEl, rows) => {
   };
 };
 
+const getHistoryCaptureDeviceTier = () => {
+  const width = Number(window?.innerWidth || 0);
+  const height = Number(window?.innerHeight || 0);
+  const minSide = Math.min(width || Number.MAX_SAFE_INTEGER, height || Number.MAX_SAFE_INTEGER);
+  if (width <= 900) {
+    if (minSide >= 680) return 'tablet';
+    return 'phone';
+  }
+  return 'desktop';
+};
+
+const withCaptureTimeout = async (promise, timeoutMs) => {
+  let timer = 0;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = window.setTimeout(() => {
+          reject(new Error(`capture-timeout-${timeoutMs}`));
+        }, timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
+const computeHistoryCaptureTimeoutMs = ({ deviceTier, width, height, scale }) => {
+  const totalMegaPixels = (Math.max(1, width) * Math.max(1, height) * Math.max(1, scale) * Math.max(1, scale)) / 1000000;
+  let timeout = deviceTier === 'phone' ? 26000 : (deviceTier === 'tablet' ? 28000 : 30000);
+  if (totalMegaPixels >= 18) timeout += 8000;
+  if (totalMegaPixels >= 28) timeout += 10000;
+  if (totalMegaPixels >= 40) timeout += 12000;
+  if (deviceTier === 'phone') return Math.min(62000, timeout);
+  if (deviceTier === 'tablet') return Math.min(70000, timeout);
+  return Math.min(76000, timeout);
+};
+
+const buildHistoryScaleCandidates = ({ bounds, deviceTier, deviceScale, useExperimentalHQ }) => {
+  void bounds;
+  void deviceTier;
+  void deviceScale;
+  const baseScale = useExperimentalHQ ? 2.2 : 2.0;
+  const ladder = useExperimentalHQ
+    ? [baseScale, 2.0, 1.8, 1.6, 1.35, 1.2]
+    : [baseScale, 1.8, 1.6, 1.35, 1.2];
+  const seen = new Set();
+  return ladder
+    .map((value) => Math.max(1, Number(value.toFixed(2))))
+    .filter((value) => {
+      const key = String(value);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+};
+
 const exportPredictedRangePng = async (options = {}) => {
   const includeBirthdayRows = options?.includeBirthdayRows !== false;
+  const onStatus = typeof options?.onStatus === 'function' ? options.onStatus : null;
   const { rows, rowsAllInRange, error } = getExportRowsInRange(includeBirthdayRows, {
     rangeStartId: options?.rangeStartId,
     rangeEndId: options?.rangeEndId
@@ -4372,7 +4430,8 @@ const exportPredictedRangePng = async (options = {}) => {
   if (!listEl) return { ok: false, message: '历史列表尚未渲染完成。' };
 
   try {
-    const isMobile = window.innerWidth <= 768;
+    const deviceTier = getHistoryCaptureDeviceTier();
+    const isMobile = deviceTier !== 'desktop';
     const canvas = await withTemporaryScreenshotOverrides(rowsAllInRange, includeBirthdayRows, isMobile, async () => {
       await nextTick();
       await new Promise((resolve) => requestAnimationFrame(() => resolve()));
@@ -4380,23 +4439,46 @@ const exportPredictedRangePng = async (options = {}) => {
       const bounds = getCaptureBoundsFromRows(listEl, rows);
       const deviceScale = Number(window.devicePixelRatio || 1);
       const useExperimentalHQ = !!options?.experimentalHQ;
-      const budgets = isMobile
-        ? (useExperimentalHQ
-          ? [13_000_000, 9_000_000, 6_800_000, 4_800_000, 3_000_000]
-          : [9_000_000, 6_200_000, 4_200_000, 3_000_000])
-        : [18_000_000];
+      const scales = buildHistoryScaleCandidates({
+        bounds,
+        deviceTier,
+        deviceScale,
+        useExperimentalHQ
+      });
+      const baseScale = Number(scales[0] || 1);
+      onStatus?.({
+        state: 'capturing',
+        stage: 'capturing',
+        baseScale,
+        deviceTier,
+        currentAttempt: 1,
+        totalAttempts: scales.length,
+        message: `正在导出「预测活动」... 基础清晰度 x${baseScale.toFixed(2)}`
+      });
 
       let lastErr = null;
-      for (const pixelBudget of budgets) {
-        const rawScale = Math.sqrt(pixelBudget / Math.max(1, bounds.width * bounds.height));
-        const scale = isMobile
-          ? (useExperimentalHQ
-            ? Math.max(0.42, Math.min(deviceScale, rawScale, 2.0))
-            : Math.max(0.38, Math.min(deviceScale, rawScale, 1.6)))
-          : Math.max(0.45, Math.min(deviceScale, rawScale, 2));
+      for (let idx = 0; idx < scales.length; idx += 1) {
+        const scale = scales[idx];
+        if (idx > 0) {
+          onStatus?.({
+            state: 'retrying',
+            stage: 'retrying',
+            baseScale,
+            deviceTier,
+            currentAttempt: idx + 1,
+            totalAttempts: scales.length,
+            message: `截图失败，正在降级重试（${idx}/${Math.max(1, scales.length - 1)}）...`
+          });
+        }
 
         try {
-          return await html2canvas(listEl, {
+          const timeoutMs = computeHistoryCaptureTimeoutMs({
+            deviceTier,
+            width: bounds.width,
+            height: bounds.height,
+            scale
+          });
+          return await withCaptureTimeout(html2canvas(listEl, {
             backgroundColor: '#f4f7f6',
             scale,
             useCORS: true,
@@ -4408,7 +4490,7 @@ const exportPredictedRangePng = async (options = {}) => {
             height: bounds.height,
             scrollX: 0,
             scrollY: 0
-          });
+          }), timeoutMs);
         } catch (err) {
           lastErr = err;
         }
@@ -4439,10 +4521,20 @@ const exportPredictedRangePng = async (options = {}) => {
     link.click();
     document.body.removeChild(link);
     setTimeout(() => URL.revokeObjectURL(url), 0);
+    onStatus?.({
+      state: 'success',
+      stage: 'success',
+      message: '预测截图导出成功。'
+    });
     return { ok: true, message: '预测截图导出成功。' };
   } catch (err) {
     console.error('导出预测截图失败', err);
-    return { ok: false, message: '导出失败，请重试。' };
+    onStatus?.({
+      state: 'failed',
+      stage: 'failed',
+      message: '导出失败，可能是渲染问题，再试一次没准行，这次你一定要成功。'
+    });
+    return { ok: false, message: '导出失败，可能是渲染问题，再试一次没准行，这次你一定要成功。' };
   }
 };
 
@@ -6935,7 +7027,7 @@ button:not(:disabled):active {
 
 .attr-icon { width: 35px; height: 35px; }
 
-@media (max-width: 1000px) {
+@media (max-width: 900px) {
   .event-history-wrapper {
     --preview-config-top: calc(env(safe-area-inset-top) + 66px);
   }
@@ -6961,7 +7053,7 @@ button:not(:disabled):active {
   .event-history-wrapper.with-editor .event-members { border-top-color: #d6dde8; }
 }
 
-@media (min-width: 901px) and (max-width: 1100px) {
+@media (max-width: 1200px) {
   .filter-bar {
     padding: 9px 4px;
     gap: 8px;
@@ -7005,7 +7097,7 @@ button:not(:disabled):active {
   }
 }
 
-@media (min-width: 1001px) and (max-width: 1366px) and (pointer: coarse) {
+@media (max-width: 1200px) and (pointer: coarse) {
   .filter-panel .chip-group {
     flex-wrap: nowrap;
     gap: 4px;
