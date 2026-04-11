@@ -3557,6 +3557,48 @@ const syncCloneImagesWithSource = (sourceRoot, cloneRoot) => {
   }
 };
 
+const isRenderableSameOriginUrl = (rawUrl) => {
+  const url = String(rawUrl || '').trim();
+  if (!url) return true;
+  if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('about:')) return true;
+  if (url.startsWith('/')) return true;
+  try {
+    const parsed = new URL(url, window.location.href);
+    return parsed.origin === window.location.origin;
+  } catch (_) {
+    return true;
+  }
+};
+
+const sanitizeSongCloneForExport = (cloneRoot) => {
+  if (!(cloneRoot instanceof HTMLElement)) return;
+
+  // html2canvas in static deployment is more fragile with sticky cells.
+  cloneRoot.querySelectorAll('.song-table thead th, .song-list-wrap.is-h-scroll .song-table th:nth-child(2), .song-list-wrap.is-h-scroll .song-table td:nth-child(2)').forEach((cell) => {
+    if (!(cell instanceof HTMLElement)) return;
+    cell.style.position = 'static';
+    cell.style.top = 'auto';
+    cell.style.left = 'auto';
+    cell.style.boxShadow = 'none';
+  });
+
+  // Disable shimmer animation in clone to avoid timing-related empty paints.
+  cloneRoot.querySelectorAll('.media-load-shimmer').forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    node.style.animation = 'none';
+    node.style.backgroundImage = 'none';
+  });
+
+  // Prevent tainted canvas by skipping off-origin images in export clone.
+  cloneRoot.querySelectorAll('img').forEach((imgEl) => {
+    const src = String(imgEl?.getAttribute('src') || imgEl?.currentSrc || '').trim();
+    if (!src) return;
+    if (isRenderableSameOriginUrl(src)) return;
+    imgEl.dataset.failed = '1';
+    imgEl.style.display = 'none';
+  });
+};
+
 const withRenderTimeout = async (promise, timeoutMs, cancelPromise = null) => {
   let timer = 0;
   try {
@@ -3644,6 +3686,7 @@ const prepareSongExportClone = async (targetEl) => {
   copyCssCustomProperties(rootStyle, clone);
   copyCssCustomProperties(sourceStyle, clone);
   syncCloneImagesWithSource(targetEl, clone);
+  sanitizeSongCloneForExport(clone);
 
   if (sourceRadiusVar) {
     clone.style.setProperty('--stats-radius-btn', sourceRadiusVar);
@@ -3678,7 +3721,49 @@ const prepareSongExportClone = async (targetEl) => {
   return clone;
 };
 
-const getSongExportFailedMessage = () => {
+const getCaptureErrorText = (error) => {
+  const message = String(error?.message || error || '').trim();
+  const lower = message.toLowerCase();
+  const timeoutMatch = message.match(/render-timeout-(\d+)/);
+  if (timeoutMatch) {
+    return { text: `渲染超时（>${timeoutMatch[1]}ms）`, retryable: true };
+  }
+  if (lower.includes('export-cancelled')) {
+    return { text: '已取消截图', retryable: false };
+  }
+  if (lower.includes('tainted') || lower.includes('securityerror')) {
+    return { text: '画布被跨域资源污染（tainted canvas）', retryable: false };
+  }
+  if (lower.includes('failed to fetch') || lower.includes('networkerror')) {
+    return { text: '资源加载失败（网络或跨域）', retryable: true };
+  }
+  if (lower.includes('toblob failed') || lower.includes('无法生成 png')) {
+    return { text: 'PNG 编码失败（toBlob）', retryable: true };
+  }
+  if (lower.includes('html2canvas failed')) {
+    return { text: '渲染失败（html2canvas 无返回）', retryable: true };
+  }
+  if (!message) {
+    return { text: '未知错误（无错误消息）', retryable: true };
+  }
+  return { text: `异常：${message}`, retryable: true };
+};
+
+const summarizeCaptureReasons = (reasons, max = 3) => {
+  if (!Array.isArray(reasons) || reasons.length === 0) return '';
+  const sliced = reasons.slice(0, max);
+  const base = sliced.join('；');
+  if (reasons.length > max) {
+    return `${base}；其余 ${reasons.length - max} 次省略`;
+  }
+  return base;
+};
+
+const getSongExportFailedMessage = (reasons = []) => {
+  const summary = summarizeCaptureReasons(reasons, 4);
+  if (summary) {
+    return `降级重试后仍失败。失败链路：${summary}`;
+  }
   return '降级重试后仍失败。可能是渲染问题，再试一次没准行，这次你一定要成功。';
 };
 
@@ -3699,6 +3784,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
   });
 
   let cloneEl = null;
+  const downgradeReasons = [];
   try {
     if (!options?.fromRetry && initialHeavyMediaCount > 0) {
       // 首轮导出先做一次资源预热，降低“第一次失败、第二次秒过”的概率。
@@ -3748,10 +3834,11 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     for (let idx = 0; idx < scales.length; idx += 1) {
       const scale = scales[idx];
       if (idx > 0) {
+        const prevReason = downgradeReasons[downgradeReasons.length - 1] || '';
         setScreenshotModalState({
           state: 'retrying',
           title: '失败降级重试中',
-          message: `截图失败，正在降级到清晰度 x${scale.toFixed(2)} 重试（${idx}/${scales.length - 1}）...`,
+          message: `截图失败，正在降级到清晰度 x${scale.toFixed(2)} 重试（${idx}/${scales.length - 1}）...${prevReason ? ` 上次失败原因：${prevReason}` : ''}`,
           cancelTask: cancelContext.cancel
         });
         await waitNextPaint();
@@ -3779,7 +3866,12 @@ const exportElementPng = async (targetEl, title, options = {}) => {
         }), renderTimeoutMs, cancelContext.cancelPromise);
         break;
       } catch (error) {
+        const detail = getCaptureErrorText(error);
         lastError = error;
+        downgradeReasons.push(`x${scale.toFixed(2)}：${detail.text}`);
+        if (!detail.retryable) {
+          break;
+        }
       }
     }
 
@@ -3789,10 +3881,11 @@ const exportElementPng = async (targetEl, title, options = {}) => {
 
     const safeTitle = sanitizeExportFileName(`song_${title}_${formatExportTimestamp()}`);
     await triggerDownloadPng(canvas, safeTitle);
+    const downgradeSummary = summarizeCaptureReasons(downgradeReasons, 2);
     setScreenshotModalState({
       state: 'success',
       title: '截图完成',
-      message: `「${exportLabel}」已导出 PNG。`,
+      message: `「${exportLabel}」已导出 PNG。${downgradeSummary ? ` 已降级：${downgradeSummary}` : ''}`,
       cancelTask: null,
       autoCloseMs: 1400
     });
@@ -3800,10 +3893,14 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     if (isExportCancelledError(error)) {
       return;
     }
+    const terminalDetail = getCaptureErrorText(error);
+    if (!downgradeReasons.length) {
+      downgradeReasons.push(`终止：${terminalDetail.text}`);
+    }
     setScreenshotModalState({
       state: 'failed',
       title: '截图失败',
-      message: getSongExportFailedMessage(),
+      message: getSongExportFailedMessage(downgradeReasons),
       retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
       cancelTask: null
     });

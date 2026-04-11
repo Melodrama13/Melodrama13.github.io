@@ -3867,7 +3867,49 @@ const syncRecordBlockLayoutForExport = (sourceBlock, cloneBlock) => {
   return expandedWidth;
 };
 
-const getExportFailedMessage = () => {
+const getCaptureErrorText = (error) => {
+  const message = String(error?.message || error || '').trim();
+  const lower = message.toLowerCase();
+  const timeoutMatch = message.match(/render-timeout-(\d+)/);
+  if (timeoutMatch) {
+    return { text: `渲染超时（>${timeoutMatch[1]}ms）`, retryable: true };
+  }
+  if (lower.includes('export-cancelled')) {
+    return { text: '已取消截图', retryable: false };
+  }
+  if (lower.includes('tainted') || lower.includes('securityerror')) {
+    return { text: '画布被跨域资源污染（tainted canvas）', retryable: false };
+  }
+  if (lower.includes('failed to fetch') || lower.includes('networkerror')) {
+    return { text: '资源加载失败（网络或跨域）', retryable: true };
+  }
+  if (lower.includes('toblob failed') || lower.includes('无法生成 png')) {
+    return { text: 'PNG 编码失败（toBlob）', retryable: true };
+  }
+  if (lower.includes('html2canvas failed')) {
+    return { text: '渲染失败（html2canvas 无返回）', retryable: true };
+  }
+  if (!message) {
+    return { text: '未知错误（无错误消息）', retryable: true };
+  }
+  return { text: `异常：${message}`, retryable: true };
+};
+
+const summarizeCaptureReasons = (reasons, max = 3) => {
+  if (!Array.isArray(reasons) || reasons.length === 0) return '';
+  const sliced = reasons.slice(0, max);
+  const base = sliced.join('；');
+  if (reasons.length > max) {
+    return `${base}；其余 ${reasons.length - max} 次省略`;
+  }
+  return base;
+};
+
+const getExportFailedMessage = (reasons = []) => {
+  const summary = summarizeCaptureReasons(reasons, 4);
+  if (summary) {
+    return `降级重试后仍失败。失败链路：${summary}`;
+  }
   return '降级重试后仍失败。可能是渲染问题，再试一次没准行，这次你一定要成功。';
 };
 
@@ -3999,6 +4041,7 @@ const runExportElementPng = async (id, title, options = {}) => {
   isExportingPng.value = true;
   const cancelContext = createExportCancelContext();
   let cloneEl = null;
+  const downgradeReasons = [];
   try {
     const exportTitle = String(title || id || '当前模块');
     const deviceTier = getCaptureDeviceTier();
@@ -4062,10 +4105,11 @@ const runExportElementPng = async (id, title, options = {}) => {
     for (let idx = 0; idx < scales.length; idx += 1) {
       const scale = scales[idx];
       if (idx > 0) {
+        const prevReason = downgradeReasons[downgradeReasons.length - 1] || '';
         setScreenshotModalState({
           state: 'retrying',
           title: '失败降级重试中',
-          message: `截图失败，正在降级到清晰度 x${scale.toFixed(2)} 重试（${idx}/${scales.length - 1}）...`,
+          message: `截图失败，正在降级到清晰度 x${scale.toFixed(2)} 重试（${idx}/${scales.length - 1}）...${prevReason ? ` 上次失败原因：${prevReason}` : ''}`,
           cancelTask: cancelContext.cancel
         });
         await waitNextPaint();
@@ -4093,7 +4137,12 @@ const runExportElementPng = async (id, title, options = {}) => {
         }), renderTimeoutMs, cancelContext.cancelPromise);
         break;
       } catch (error) {
+        const detail = getCaptureErrorText(error);
         lastError = error;
+        downgradeReasons.push(`x${scale.toFixed(2)}：${detail.text}`);
+        if (!detail.retryable) {
+          break;
+        }
       }
     }
 
@@ -4103,10 +4152,11 @@ const runExportElementPng = async (id, title, options = {}) => {
 
     const fileName = sanitizeExportFileName(`pjsk_${title || id}_${formatExportTimestamp()}`);
     await triggerDownloadPng(canvas, fileName);
+    const downgradeSummary = summarizeCaptureReasons(downgradeReasons, 2);
     setScreenshotModalState({
       state: 'success',
       title: '截图完成',
-      message: `「${exportTitle}」已导出 PNG。`,
+      message: `「${exportTitle}」已导出 PNG。${downgradeSummary ? ` 已降级：${downgradeSummary}` : ''}`,
       cancelTask: null,
       autoCloseMs: 1400
     });
@@ -4115,10 +4165,14 @@ const runExportElementPng = async (id, title, options = {}) => {
       return;
     }
     console.error('导出模块PNG失败', error);
+    const terminalDetail = getCaptureErrorText(error);
+    if (!downgradeReasons.length) {
+      downgradeReasons.push(`终止：${terminalDetail.text}`);
+    }
     setScreenshotModalState({
       state: 'failed',
       title: '截图失败',
-      message: getExportFailedMessage(id),
+      message: getExportFailedMessage(downgradeReasons),
       retryTask: () => runExportElementPng(id, title, { fromRetry: true }),
       cancelTask: null
     });
