@@ -81,6 +81,33 @@
               </button>
             </div>
           </div>
+          <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('char-attr')" class="preview-char-select" :class="{ 'is-collapsed': previewCharAttrCollapsed }">
+            <div class="preview-char-select-title">
+              <span>角色花色人选（最多6人）</span>
+              <div class="preview-char-select-actions">
+                <button
+                  class="preview-char-select-toggle"
+                  @click="appendPreviewCharAttrCharsFromCurrentLineup"
+                  :disabled="!canAppendCurrentLineupToPreviewCharAttr"
+                >读取列表</button>
+                <button class="preview-char-select-toggle" @click="clearPreviewCharAttrChars" :disabled="selectedPreviewCharAttrChars.length === 0">清空</button>
+                <button class="preview-char-select-toggle" @click="previewCharAttrCollapsed = !previewCharAttrCollapsed">{{ previewCharAttrCollapsed ? '展开' : '收起' }}</button>
+              </div>
+            </div>
+            <div v-show="!previewCharAttrCollapsed" class="preview-char-chips">
+              <button
+                v-for="name in previewSelectableChars"
+                :key="`pick-char-attr-${name}`"
+                class="preview-char-chip"
+                :class="{ 'is-active': selectedPreviewCharAttrChars.includes(name) }"
+                :disabled="!selectedPreviewCharAttrChars.includes(name) && selectedPreviewCharAttrChars.length >= 6"
+                @click="togglePreviewCharAttrChar(name)"
+                :title="name"
+              >
+                <img :src="`/chibi_s/${getCharAbbr(name)}.webp`" class="preview-char-chip-avatar" />
+              </button>
+            </div>
+          </div>
           <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('festival')" class="preview-char-select preview-festival-select">
             <div class="preview-char-select-title">
               <span>节日（单选）</span>
@@ -317,6 +344,62 @@
                 </table>
               </div>
               <div v-if="previewDailyLineupRows.length === 0" class="preview-step preview-step-empty">
+                <span class="preview-meta">请先在上方选择最多6位角色</span>
+              </div>
+            </template>
+            <template v-else-if="panel.id === 'char-attr'">
+              <div v-for="card in previewCharAttrRows" :key="`char-attr-${card.name}`" class="preview-char-attr-card" :style="getPreviewCharAttrCardStyle(card.name)">
+                <div class="preview-char-attr-head">
+                  <img :src="`/chibi_s/${getCharAbbr(card.name)}.webp`" class="preview-char-attr-avatar" :title="card.name" />
+                  <span class="preview-char-attr-name">{{ card.name }}</span>
+                </div>
+                <table class="preview-char-attr-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>{{ card.mainScoreLabel }}</th>
+                      <th>普</th>
+                      <th>P</th>
+                      <th>判</th>
+                      <th>奶</th>
+                      <th>4</th>
+                      <th>3</th>
+                      <th>2</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="row in card.rows"
+                      :key="`char-attr-row-${card.name}-${row.attr}`"
+                      :style="getPreviewCharAttrRowStyle(row.attr)"
+                    >
+                      <td class="preview-char-attr-attr-cell">
+                        <img :src="`/elements/${String(row.attr).toLowerCase()}.png`" class="preview-char-attr-attr-icon" :title="translateAttr(row.attr)" />
+                      </td>
+                      <td>{{ row.mainScoreCount }}</td>
+                      <td>{{ row.scoreUpCount }}</td>
+                      <td>{{ row.pScoreCount }}</td>
+                      <td>{{ row.accuracyCount }}</td>
+                      <td>{{ row.recoveryCount }}</td>
+                      <td>{{ row.fourStarCount }}</td>
+                      <td>{{ row.threeStarCount }}</td>
+                      <td>{{ row.twoStarCount }}</td>
+                    </tr>
+                    <tr class="preview-char-attr-total-row">
+                      <td>总</td>
+                      <td>{{ card.totalRow.mainScoreCount }}</td>
+                      <td>{{ card.totalRow.scoreUpCount }}</td>
+                      <td>{{ card.totalRow.pScoreCount }}</td>
+                      <td>{{ card.totalRow.accuracyCount }}</td>
+                      <td>{{ card.totalRow.recoveryCount }}</td>
+                      <td>{{ card.totalRow.fourStarCount }}</td>
+                      <td>{{ card.totalRow.threeStarCount }}</td>
+                      <td>{{ card.totalRow.twoStarCount }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div v-if="previewCharAttrRows.length === 0" class="preview-step preview-step-empty">
                 <span class="preview-meta">请先在上方选择最多6位角色</span>
               </div>
             </template>
@@ -1323,6 +1406,7 @@ const previewPanelState = ref({});
 const previewFloatingCollapsed = ref(false);
 const previewAttrCharCollapsed = ref(false);
 const previewDailyLineupCharCollapsed = ref(false);
+const previewCharAttrCollapsed = ref(false);
 const previewConfigDragState = ref({ dragging: false, offsetX: 0, offsetY: 0 });
 const previewConfigPanelPos = ref({ x: null, y: null });
 const previewDragState = ref({ dragging: false, panelId: '', offsetX: 0, offsetY: 0 });
@@ -1531,10 +1615,11 @@ const getPreviewPanelStyle = (panelId) => {
 };
 
 const getPreviewStepsStyle = (panelId) => {
-  if (panelId === 'daily-lineup') {
+  if (panelId === 'daily-lineup' || panelId === 'char-attr') {
     return {
       maxHeight: '380px',
-      overflowY: 'auto'
+      overflowY: 'auto',
+      overflowX: 'hidden'
     };
   }
   return {};
@@ -1886,6 +1971,7 @@ const PREVIEW_PANEL_DEFS = [
   { id: 'two', title: '二星', icon: '2', statKey: 'twoStarCount' },
   { id: 'reward', title: '报酬', icon: '🎁', statKey: 'rewardTotalCount' },
   { id: 'daily-lineup', title: '日挑配队', icon: '📊', statKey: 'dailyLineup' },
+  { id: 'char-attr', title: '角色花色', icon: '📋', statKey: 'charAttr' },
   { id: 'attr-five', title: '花色', icon: '🧩', statKey: 'attrFive' },
   { id: 'festival', title: '节日人选', icon: '🎊', statKey: 'festival', externalKey: 'festival' }
 ];
@@ -1904,6 +1990,7 @@ const PREVIEW_FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs
 const selectedPreviewPanelIds = ref([]);
 const selectedPreviewAttrChars = ref([]);
 const selectedPreviewDailyLineupChars = ref([]);
+const selectedPreviewCharAttrChars = ref([]);
 const currentEditingSelectionNames = ref([]);
 const previewIncludeCollabReward = ref(false);
 const previewIncludeUnitScoreInPureScore = ref(false);
@@ -1963,6 +2050,23 @@ const togglePreviewDailyLineupChar = (name) => {
 
 const clearPreviewDailyLineupChars = () => {
   selectedPreviewDailyLineupChars.value = [];
+};
+
+const togglePreviewCharAttrChar = (name) => {
+  const current = [...selectedPreviewCharAttrChars.value];
+  const idx = current.indexOf(name);
+  if (idx >= 0) {
+    current.splice(idx, 1);
+    selectedPreviewCharAttrChars.value = current;
+    return;
+  }
+  if (current.length >= 6) return;
+  current.push(name);
+  selectedPreviewCharAttrChars.value = current;
+};
+
+const clearPreviewCharAttrChars = () => {
+  selectedPreviewCharAttrChars.value = [];
 };
 
 const normalizeCharName = (value) => String(value || '').trim().split(/\s+/)[0] || '';
@@ -2044,6 +2148,26 @@ const appendPreviewDailyLineupCharsFromCurrentLineup = () => {
     next.push(name);
   });
   selectedPreviewDailyLineupChars.value = next;
+};
+
+const canAppendCurrentLineupToPreviewCharAttr = computed(() => {
+  const source = getCurrentLineupCharNames();
+  if (source.length === 0) return false;
+  if (selectedPreviewCharAttrChars.value.length >= 6) return false;
+  return source.some((name) => !selectedPreviewCharAttrChars.value.includes(name));
+});
+
+const appendPreviewCharAttrCharsFromCurrentLineup = () => {
+  const source = getCurrentLineupCharNames();
+  if (source.length === 0) return;
+
+  const next = [...selectedPreviewCharAttrChars.value];
+  source.forEach((name) => {
+    if (next.length >= 6) return;
+    if (next.includes(name)) return;
+    next.push(name);
+  });
+  selectedPreviewCharAttrChars.value = next;
 };
 
 const handlePredictSelectionChange = (names) => {
@@ -2221,6 +2345,9 @@ watch(selectedPreviewPanelIds, (ids) => {
   }
   if (!ids.includes('daily-lineup')) {
     previewDailyLineupCharCollapsed.value = false;
+  }
+  if (!ids.includes('char-attr')) {
+    previewCharAttrCollapsed.value = false;
   }
 });
 
@@ -3177,6 +3304,100 @@ const previewDailyLineupRows = computed(() => {
     .sort((a, b) => getPreviewCharOrder(a.name) - getPreviewCharOrder(b.name));
 });
 
+const createPreviewCharAttrMetricSeed = () => ({
+  pureScoreCount: 0,
+  unitScoreCount: 0,
+  scoreUpCount: 0,
+  pScoreCount: 0,
+  accuracyCount: 0,
+  recoveryCount: 0,
+  fourStarCount: 0,
+  threeStarCount: 0,
+  twoStarCount: 0
+});
+
+const createPreviewCharAttrSeed = () => ({
+  Pure: createPreviewCharAttrMetricSeed(),
+  Cool: createPreviewCharAttrMetricSeed(),
+  Cute: createPreviewCharAttrMetricSeed(),
+  Happy: createPreviewCharAttrMetricSeed(),
+  Mysterious: createPreviewCharAttrMetricSeed(),
+  total: createPreviewCharAttrMetricSeed()
+});
+
+const previewCharAttrRows = computed(() => {
+  if (!selectedPreviewPanelIds.value.includes('char-attr')) return [];
+  if (!selectedPreviewCharAttrChars.value.length) return [];
+
+  const maxId = Number(previewMaxEventId.value);
+  const pureExcludedSkills = previewIncludeUnitScoreInPureScore.value
+    ? new Set(['accuracy', 'recovery', '-', ''])
+    : new Set(['accuracy', 'recovery', 'unit_score', '-', '']);
+
+  const statsByName = Object.fromEntries(
+    selectedPreviewCharAttrChars.value.map((name) => [name, createPreviewCharAttrSeed()])
+  );
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinPreviewLimit(card, maxId)) return;
+    const baseName = normalizeCharName(card?.Name);
+    if (!statsByName[baseName]) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    if (!PREVIEW_ATTRS.includes(attr)) return;
+
+    const rarity = String(card?.Rarity || '').trim();
+    const skill = String(card?.Skill || '').trim().toLowerCase();
+    const attrBucket = statsByName[baseName][attr];
+    const totalBucket = statsByName[baseName].total;
+    const increase = (key) => {
+      attrBucket[key] += 1;
+      totalBucket[key] += 1;
+    };
+
+    if (rarity === '4') {
+      increase('fourStarCount');
+      if (skill === 'score_up') increase('scoreUpCount');
+      if (skill === 'p_score') increase('pScoreCount');
+      if (skill === 'accuracy') increase('accuracyCount');
+      if (skill === 'recovery') increase('recoveryCount');
+      if (skill === 'unit_score') increase('unitScoreCount');
+      if (!pureExcludedSkills.has(skill)) increase('pureScoreCount');
+    }
+
+    if (rarity === '3') increase('threeStarCount');
+    if (rarity === '2') increase('twoStarCount');
+  });
+
+  const toSummaryRow = (bucket, isVs, attr) => {
+    const source = bucket || createPreviewCharAttrMetricSeed();
+    return {
+      attr,
+      mainScoreCount: isVs ? Number(source.unitScoreCount || 0) : Number(source.pureScoreCount || 0),
+      scoreUpCount: Number(source.scoreUpCount || 0),
+      pScoreCount: Number(source.pScoreCount || 0),
+      accuracyCount: Number(source.accuracyCount || 0),
+      recoveryCount: Number(source.recoveryCount || 0),
+      fourStarCount: Number(source.fourStarCount || 0),
+      threeStarCount: Number(source.threeStarCount || 0),
+      twoStarCount: Number(source.twoStarCount || 0)
+    };
+  };
+
+  return selectedPreviewCharAttrChars.value
+    .map((name) => {
+      const source = statsByName[name] || createPreviewCharAttrSeed();
+      const isVs = isVirtualSinger(name);
+      return {
+        name,
+        mainScoreLabel: isVs ? '团' : '分',
+        rows: PREVIEW_ATTRS.map((attr) => toSummaryRow(source[attr], isVs, attr)),
+        totalRow: toSummaryRow(source.total, isVs, 'total')
+      };
+    })
+    .sort((a, b) => getPreviewCharOrder(a.name) - getPreviewCharOrder(b.name));
+});
+
 const getPreviewDailyPlanStyle = (attr) => {
   const color = PREVIEW_DAILY_ATTR_COLOR[String(attr || '')] || '#94a3b8';
   return {
@@ -3190,6 +3411,21 @@ const getPreviewDailyCardStyle = (name) => {
   return {
     backgroundColor: hexToRgba(color, 0.14),
     borderColor: hexToRgba(color, 0.34)
+  };
+};
+
+const getPreviewCharAttrCardStyle = (name) => {
+  const color = getCharColor(name);
+  return {
+    backgroundColor: hexToRgba(color, 0.14),
+    borderColor: hexToRgba(color, 0.34)
+  };
+};
+
+const getPreviewCharAttrRowStyle = (attr) => {
+  const color = PREVIEW_DAILY_ATTR_COLOR[String(attr || '')] || '#94a3b8';
+  return {
+    '--preview-char-attr-row-bg': hexToRgba(color, 0.16)
   };
 };
 
@@ -3266,7 +3502,7 @@ const previewFloatingPanels = computed(() => {
       id: def.id,
       title: def.title,
       icon: def.icon,
-      steps: (def.id === 'festival' || def.id === 'vs-last-four' || def.id === 'vs-unit-score') ? [] : getPreviewStepsByKey(def.statKey),
+      steps: (def.id === 'festival' || def.id === 'vs-last-four' || def.id === 'vs-unit-score' || def.id === 'daily-lineup' || def.id === 'char-attr') ? [] : getPreviewStepsByKey(def.statKey),
       festivalName: def.id === 'festival' ? activePreviewFestivalName.value : '',
       festivalRows: def.id === 'festival' ? currentPreviewFestivalRows.value : [],
       festivalIncludeFes: def.id === 'festival' ? previewFestivalIncludeFes.value : false,
@@ -5741,6 +5977,78 @@ const getFestivalPreviewUnitLogo = (name) => {
   padding: 0 1px;
   border: 1px solid var(--lineup-row-border, rgba(148, 163, 184, 0.52));
   border-radius: 6px;
+}
+
+.preview-char-attr-card {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.88);
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.preview-char-attr-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.preview-char-attr-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.preview-char-attr-name {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.preview-char-attr-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+  table-layout: fixed;
+}
+
+.preview-char-attr-table th,
+.preview-char-attr-table td {
+  text-align: center;
+  font-size: 0.62rem;
+  color: #0f172a;
+  border-radius: 5px;
+  padding: 2px 1px;
+}
+
+.preview-char-attr-table th:first-child,
+.preview-char-attr-table td:first-child {
+  width: 1.7em;
+}
+
+.preview-char-attr-table thead th,
+.preview-char-attr-total-row td {
+  background: rgba(255, 255, 255, 0.68);
+  font-weight: 700;
+}
+
+.preview-char-attr-table tbody tr td {
+  background: var(--preview-char-attr-row-bg, rgba(255, 255, 255, 0.9));
+}
+
+.preview-char-attr-attr-cell {
+  padding: 0;
+}
+
+.preview-char-attr-attr-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
 
 .preview-vs-mini-table {

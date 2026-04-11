@@ -500,6 +500,13 @@
                   :style="getAnotherCardStyle(row)"
                 >
                   <div v-if="anotherImageMode" class="song-anvo-image-layout">
+                    <button
+                      class="pjsk-ui-btn-pill card-export-btn song-export-btn song-mini-png-btn song-anvo-image-png-btn song-anvo-image-png-btn-mobile"
+                      :disabled="isExportingPng"
+                      @click.stop="exportAnotherCardPng(row)"
+                    >
+                      PNG
+                    </button>
                     <div class="song-anvo-image-head" :title="row.name">
                       <img
                         v-if="row.avatar"
@@ -508,6 +515,13 @@
                         class="song-role-avatar song-image-main-avatar"
                       />
                       <div class="song-image-count">{{ row.count }} 首</div>
+                      <button
+                        class="pjsk-ui-btn-pill card-export-btn song-export-btn song-mini-png-btn song-anvo-image-png-btn song-anvo-image-png-btn-desktop"
+                        :disabled="isExportingPng"
+                        @click.stop="exportAnotherCardPng(row)"
+                      >
+                        PNG
+                      </button>
                     </div>
                     <div class="song-image-jacket-grid">
                       <div
@@ -3391,7 +3405,7 @@ const getCaptureDeviceTier = () => {
   const width = Number(window?.innerWidth || 0);
   const height = Number(window?.innerHeight || 0);
   const minSide = Math.min(width || Number.MAX_SAFE_INTEGER, height || Number.MAX_SAFE_INTEGER);
-  if (width <= 900) {
+  if (width < 1200) {
     if (minSide >= 680) return 'tablet';
     return 'phone';
   }
@@ -3727,6 +3741,7 @@ const syncCloneImagesWithSource = (sourceRoot, cloneRoot) => {
     const sourceImg = sourceImages[idx];
     const cloneImg = cloneImages[idx];
     const sourceUrl = String(sourceImg?.currentSrc || sourceImg?.getAttribute('src') || sourceImg?.src || '').trim();
+    const isBroken = sourceImg?.dataset?.failed === '1' || (sourceImg?.complete && sourceImg?.naturalWidth === 0);
 
     cloneImg.setAttribute('loading', 'eager');
     cloneImg.setAttribute('decoding', 'sync');
@@ -3734,15 +3749,15 @@ const syncCloneImagesWithSource = (sourceRoot, cloneRoot) => {
       cloneImg.fetchPriority = 'high';
     }
 
-    if (sourceUrl) {
+    if (isBroken) {
+      cloneImg.dataset.failed = '1';
+      cloneImg.style.display = 'none';
+      cloneImg.setAttribute('src', CAPTURE_IMAGE_PLACEHOLDER);
+    } else if (sourceUrl) {
       cloneImg.setAttribute('src', sourceUrl);
     }
     if (sourceImg?.dataset?.loaded === '1') {
       cloneImg.dataset.loaded = '1';
-    }
-    if (sourceImg?.dataset?.failed === '1') {
-      cloneImg.dataset.failed = '1';
-      cloneImg.style.display = 'none';
     }
   }
 
@@ -3772,7 +3787,7 @@ const isRenderableSameOriginUrl = (rawUrl) => {
 const sanitizeSongCloneForExport = (cloneRoot) => {
   if (!(cloneRoot instanceof HTMLElement)) return;
 
-  // html2canvas in static deployment is more fragile with sticky cells.
+  // html-to-image in static deployment is more fragile with sticky cells.
   cloneRoot.querySelectorAll('.song-table thead th, .song-list-wrap.is-h-scroll .song-table th:nth-child(2), .song-list-wrap.is-h-scroll .song-table td:nth-child(2)').forEach((cell) => {
     if (!(cell instanceof HTMLElement)) return;
     cell.style.position = 'static';
@@ -3896,6 +3911,219 @@ const copyCssCustomProperties = (sourceStyle, targetEl) => {
   }
 };
 
+const copyCssCustomPropertiesFromAncestors = (sourceEl, targetEl, stopEl = null) => {
+  if (!(sourceEl instanceof HTMLElement) || !(targetEl instanceof HTMLElement)) return;
+  const chain = [];
+  let cursor = sourceEl;
+  while (cursor instanceof HTMLElement) {
+    chain.push(cursor);
+    if (stopEl instanceof HTMLElement && cursor === stopEl) break;
+    cursor = cursor.parentElement;
+  }
+  for (let idx = chain.length - 1; idx >= 0; idx -= 1) {
+    copyCssCustomProperties(window.getComputedStyle(chain[idx]), targetEl);
+  }
+};
+
+const syncCloneFormControlsWithSource = (sourceRoot, cloneRoot) => {
+  if (!(sourceRoot instanceof HTMLElement) || !(cloneRoot instanceof HTMLElement)) return;
+  const sourceInputs = Array.from(sourceRoot.querySelectorAll('input, select, textarea'));
+  const cloneInputs = Array.from(cloneRoot.querySelectorAll('input, select, textarea'));
+  const pairCount = Math.min(sourceInputs.length, cloneInputs.length);
+  for (let idx = 0; idx < pairCount; idx += 1) {
+    const source = sourceInputs[idx];
+    const clone = cloneInputs[idx];
+    if (source instanceof HTMLInputElement && clone instanceof HTMLInputElement) {
+      clone.checked = source.checked;
+      clone.indeterminate = source.indeterminate;
+      clone.value = source.value;
+      if (source.checked) {
+        clone.setAttribute('checked', 'checked');
+      } else {
+        clone.removeAttribute('checked');
+      }
+      if (source.value !== undefined && source.value !== null) {
+        clone.setAttribute('value', String(source.value));
+      }
+      continue;
+    }
+    if (source instanceof HTMLSelectElement && clone instanceof HTMLSelectElement) {
+      clone.selectedIndex = source.selectedIndex;
+      clone.value = source.value;
+      Array.from(clone.options).forEach((opt, optIdx) => {
+        if (!(opt instanceof HTMLOptionElement)) return;
+        const selected = optIdx === source.selectedIndex;
+        opt.selected = selected;
+        if (selected) {
+          opt.setAttribute('selected', 'selected');
+        } else {
+          opt.removeAttribute('selected');
+        }
+      });
+      continue;
+    }
+    if (source instanceof HTMLTextAreaElement && clone instanceof HTMLTextAreaElement) {
+      clone.value = source.value;
+    }
+  }
+};
+
+const syncCloneBackgroundStylesWithSource = (sourceRoot, cloneRoot) => {
+  if (!(sourceRoot instanceof HTMLElement) || !(cloneRoot instanceof HTMLElement)) return;
+  const sourceNodes = [sourceRoot, ...Array.from(sourceRoot.querySelectorAll('*'))];
+  const cloneNodes = [cloneRoot, ...Array.from(cloneRoot.querySelectorAll('*'))];
+  const pairCount = Math.min(sourceNodes.length, cloneNodes.length);
+  for (let idx = 0; idx < pairCount; idx += 1) {
+    const sourceEl = sourceNodes[idx];
+    const cloneEl = cloneNodes[idx];
+    if (!(sourceEl instanceof HTMLElement) || !(cloneEl instanceof HTMLElement)) continue;
+    const computed = window.getComputedStyle(sourceEl);
+    const background = String(computed.background || '').trim();
+    const bgColor = String(computed.backgroundColor || '').trim();
+    const bgImage = String(computed.backgroundImage || '').trim();
+    const border = String(computed.border || '').trim();
+    const borderColor = String(computed.borderColor || '').trim();
+    if (background && background !== 'none') {
+      cloneEl.style.background = background;
+    }
+    if (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') {
+      cloneEl.style.backgroundColor = bgColor;
+    }
+    if (bgImage && bgImage !== 'none') {
+      cloneEl.style.backgroundImage = bgImage;
+    }
+    if (border && border !== '0px none rgb(0, 0, 0)') {
+      cloneEl.style.border = border;
+    } else if (borderColor && borderColor !== 'rgba(0, 0, 0, 0)') {
+      cloneEl.style.borderColor = borderColor;
+    }
+  }
+};
+
+const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((resolve) => {
+  const src = String(url || '').trim();
+  if (!src) {
+    resolve(false);
+    return;
+  }
+  let done = false;
+  let timer = 0;
+  const img = new Image();
+  const finish = (ok) => {
+    if (done) return;
+    done = true;
+    if (timer) clearTimeout(timer);
+    img.onload = null;
+    img.onerror = null;
+    resolve(!!ok);
+  };
+  img.onload = () => finish(true);
+  img.onerror = () => finish(false);
+  try {
+    img.decoding = 'async';
+    img.loading = 'eager';
+    img.referrerPolicy = 'no-referrer';
+  } catch (_) {
+    // Ignore unsupported attributes.
+  }
+  timer = window.setTimeout(() => finish(false), timeoutMs);
+  img.src = src;
+});
+
+const preloadImageUrlsForCapture = async (rootEl, options = {}) => {
+  if (!(rootEl instanceof HTMLElement)) return;
+  const maxImages = Number(options?.maxImages || 0) > 0 ? Number(options.maxImages) : 260;
+  const concurrency = Number(options?.concurrency || 0) > 0 ? Number(options.concurrency) : 8;
+  const timeoutMs = Number(options?.timeoutMs || 0) > 0 ? Number(options.timeoutMs) : 7000;
+  const srcList = Array.from(rootEl.querySelectorAll('img'))
+    .map((imgEl) => String(imgEl?.currentSrc || imgEl?.getAttribute('src') || '').trim())
+    .filter(Boolean)
+    .slice(0, maxImages);
+  const uniq = [...new Set(srcList)];
+  if (!uniq.length) return;
+
+  let cursor = 0;
+  const workers = Array.from({ length: Math.max(1, Math.min(concurrency, uniq.length)) }).map(async () => {
+    while (cursor < uniq.length) {
+      const idx = cursor;
+      cursor += 1;
+      await preloadSingleImageUrlForCapture(uniq[idx], timeoutMs);
+    }
+  });
+  await Promise.allSettled(workers);
+};
+
+const hideTransientMediaForCapture = (rootEl) => {
+  if (!(rootEl instanceof HTMLElement)) return 0;
+  let hidden = 0;
+  rootEl.querySelectorAll('img').forEach((imgEl) => {
+    if (!(imgEl instanceof HTMLImageElement)) return;
+    if (imgEl.complete && imgEl.naturalWidth > 0) return;
+    imgEl.style.display = 'none';
+    imgEl.dataset.failed = '1';
+    hidden += 1;
+  });
+  return hidden;
+};
+
+const recoverCardImagesForTileCapture = async (cardEl, deviceTier = 'phone') => {
+  if (!(cardEl instanceof HTMLElement)) return;
+  const images = Array.from(cardEl.querySelectorAll('img')).filter((imgEl) => imgEl instanceof HTMLImageElement);
+  if (!images.length) return;
+
+  const failedSrcList = [];
+  images.forEach((imgEl) => {
+    imgEl.setAttribute('loading', 'eager');
+    imgEl.setAttribute('decoding', 'sync');
+    if ('fetchPriority' in imgEl) {
+      imgEl.fetchPriority = 'high';
+    }
+    const src = String(imgEl.currentSrc || imgEl.getAttribute('src') || '').trim();
+    if (imgEl.dataset.failed === '1' && src) {
+      imgEl.style.display = '';
+      imgEl.removeAttribute('data-failed');
+      failedSrcList.push(src);
+    }
+  });
+
+  if (failedSrcList.length) {
+    const uniq = [...new Set(failedSrcList)];
+    await Promise.allSettled(uniq.map((src) => preloadSingleImageUrlForCapture(src, 12000)));
+  }
+
+  await waitForRenderableAssets(cardEl, {
+    maxWaitMs: deviceTier === 'phone' ? 3200 : 2600,
+    maxImages: 480
+  });
+  await preloadImageUrlsForCapture(cardEl, {
+    maxImages: 480,
+    concurrency: deviceTier === 'desktop' ? 6 : 4,
+    timeoutMs: deviceTier === 'phone' ? 10000 : 8000
+  });
+};
+
+const buildCapturePixelRatioPlan = (deviceTier) => {
+  const target = 2;
+  const ladder = deviceTier === 'desktop'
+    ? [target, 1]
+    : [target, 1];
+  const seen = new Set();
+  return ladder.filter((value) => {
+    const key = String(value);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const CAPTURE_IMAGE_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
+
+const isEventLikeCaptureError = (error) => {
+  if (typeof Event !== 'undefined' && error instanceof Event) return true;
+  const raw = String(error?.message || error || '').trim().toLowerCase();
+  return raw === '[object event]' || raw.includes('event');
+};
+
 const prepareSongExportClone = async (targetEl) => {
   if (!targetEl) return null;
 
@@ -3911,12 +4139,12 @@ const prepareSongExportClone = async (targetEl) => {
 
   const clone = targetEl.cloneNode(true);
   clone.classList.add('song-export-clone-root');
-  clone.style.position = 'fixed';
-  clone.style.left = '-20000px';
+  clone.style.position = 'relative';
+  clone.style.left = '0';
   clone.style.top = '0';
   clone.style.margin = '0';
   clone.style.pointerEvents = 'none';
-  clone.style.zIndex = '-1';
+  clone.style.zIndex = 'auto';
   clone.style.background = hasVisibleBg ? sourceBgColor : '#ffffff';
   clone.style.width = `${Math.max(1, Math.ceil(rect.width))}px`;
   clone.style.maxHeight = 'none';
@@ -3926,7 +4154,10 @@ const prepareSongExportClone = async (targetEl) => {
   // 否则会出现截图字号/卡片网格与屏幕不一致。
   copyCssCustomProperties(rootStyle, clone);
   copyCssCustomProperties(sourceStyle, clone);
+  copyCssCustomPropertiesFromAncestors(targetEl, clone, rootEl);
   syncCloneImagesWithSource(targetEl, clone);
+  syncCloneFormControlsWithSource(targetEl, clone);
+  syncCloneBackgroundStylesWithSource(targetEl, clone);
   sanitizeSongCloneForExport(clone);
 
   if (sourceRadiusVar) {
@@ -3939,6 +4170,53 @@ const prepareSongExportClone = async (targetEl) => {
   clone.querySelectorAll('#panel-duo-stats .song-mini-icon-btn').forEach((el) => {
     el.style.display = 'none';
   });
+
+  const stabilizeStyle = document.createElement('style');
+  stabilizeStyle.textContent = `
+    .song-export-clone-root,
+    .song-export-clone-root * {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+    .song-export-clone-root *::-webkit-scrollbar {
+      width: 0 !important;
+      height: 0 !important;
+      display: none !important;
+      background: transparent !important;
+    }
+    .song-export-clone-root * {
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+    .song-export-clone-root input[type="checkbox"] {
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      width: 14px !important;
+      height: 14px !important;
+      border: 1px solid #64748b !important;
+      border-radius: 3px !important;
+      background: #ffffff !important;
+      position: relative !important;
+      margin: 0 !important;
+      accent-color: #14b8a6 !important;
+    }
+    .song-export-clone-root input[type="checkbox"]:checked {
+      border-color: #14b8a6 !important;
+      background: #14b8a6 !important;
+    }
+    .song-export-clone-root input[type="checkbox"]:checked::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 3px;
+      height: 7px;
+      border: solid #ffffff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+  `;
+  clone.insertBefore(stabilizeStyle, clone.firstChild);
 
   const scrollSelectors = [
     '.song-insight-scroll',
@@ -3957,14 +4235,32 @@ const prepareSongExportClone = async (targetEl) => {
     block.style.overflow = 'visible';
   });
 
-  document.body.appendChild(clone);
+  const host = document.createElement('div');
+  host.className = 'song-export-clone-host';
+  host.style.position = 'fixed';
+  host.style.left = '-30000px';
+  host.style.top = '0';
+  host.style.width = 'auto';
+  host.style.height = 'auto';
+  host.style.overflow = 'visible';
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = '-1';
+  host.appendChild(clone);
+  document.body.appendChild(host);
   await waitNextPaint();
   return clone;
 };
 
 const getCaptureErrorText = (error) => {
+  if (typeof Event !== 'undefined' && error instanceof Event) {
+    const eventType = String(error.type || 'unknown');
+    return { text: `资源事件异常（${eventType}）`, retryable: true };
+  }
   const message = String(error?.message || error || '').trim();
   const lower = message.toLowerCase();
+  if (lower === '[object event]') {
+    return { text: '资源事件异常（Event）', retryable: true };
+  }
   const timeoutMatch = message.match(/render-timeout-(\d+)/);
   if (timeoutMatch) {
     return { text: `渲染超时（>${timeoutMatch[1]}ms）`, retryable: true };
@@ -3981,8 +4277,8 @@ const getCaptureErrorText = (error) => {
   if (lower.includes('toblob failed') || lower.includes('无法生成 png')) {
     return { text: 'PNG 编码失败（toBlob）', retryable: true };
   }
-  if (lower.includes('html2canvas failed')) {
-    return { text: '渲染失败（html2canvas 无返回）', retryable: true };
+  if (lower.includes('html-to-image failed') || lower.includes('tocanvas failed')) {
+    return { text: '渲染失败（html-to-image 无返回）', retryable: true };
   }
   if (lower.includes('previous-render-still-running')) {
     return { text: '上一轮渲染任务仍未结束（疑似卡死）', retryable: false };
@@ -4011,8 +4307,73 @@ const getSongExportFailedMessage = (reasons = []) => {
   return '降级重试后仍失败。可能是渲染问题，再试一次没准行，这次你一定要成功。';
 };
 
+const freezeCssVariablesForCapture = (targetEl) => {
+  if (!(targetEl instanceof HTMLElement)) {
+    return () => {};
+  }
+  const prevValues = new Map();
+  const computed = window.getComputedStyle(targetEl);
+  for (let idx = 0; idx < computed.length; idx += 1) {
+    const prop = computed[idx];
+    if (!String(prop || '').startsWith('--')) continue;
+    const value = String(computed.getPropertyValue(prop) || '').trim();
+    if (!value) continue;
+    prevValues.set(prop, targetEl.style.getPropertyValue(prop));
+    targetEl.style.setProperty(prop, value);
+  }
+  return () => {
+    prevValues.forEach((prev, prop) => {
+      if (prev) {
+        targetEl.style.setProperty(prop, prev);
+      } else {
+        targetEl.style.removeProperty(prop);
+      }
+    });
+  };
+};
+
+const hideExportControlsForLiveCapture = (rootEl) => {
+  if (!(rootEl instanceof HTMLElement)) {
+    return () => {};
+  }
+  const selectors = [
+    '.song-export-btn',
+    '.song-role-card-tools',
+    '.song-oc-event-unit-tools',
+    '.anvo-mode-switch',
+    '.song-mini-icon-btn'
+  ].join(', ');
+  const nodes = Array.from(rootEl.querySelectorAll(selectors));
+  const touched = [];
+  nodes.forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    touched.push({ node, display: node.style.display });
+    node.style.display = 'none';
+  });
+  return () => {
+    touched.forEach((entry) => {
+      if (!(entry?.node instanceof HTMLElement)) return;
+      entry.node.style.display = entry.display || '';
+    });
+  };
+};
+
+const shouldCaptureLiveElementForExport = (targetEl, options = {}) => {
+  if (options?.captureLiveElement === true) return true;
+  if (!(targetEl instanceof HTMLElement)) return false;
+  return targetEl.classList.contains('song-role-card')
+    || targetEl.classList.contains('song-oc-event-unit-card');
+};
+
 const exportElementPng = async (targetEl, title, options = {}) => {
+  const previousIdle = await waitPendingSongCaptureRenderTask(1200);
+  if (!previousIdle) {
+    forceReleaseSongCaptureRenderTask();
+  }
   const exportLabel = String(options?.taskLabel || title || '当前模块');
+  const deviceTier = getCaptureDeviceTier();
+  const captureLiveElement = shouldCaptureLiveElementForExport(targetEl, options);
+  const cancelContext = createExportCancelContext();
   const exportStartAt = performance.now();
   const formatElapsed = () => `${Math.max(0, Math.round(performance.now() - exportStartAt))}ms`;
 
@@ -4020,38 +4381,160 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     state: 'capturing',
     title: '截图中',
     message: '[初始化] 正在准备捕获 ' + exportLabel,
-    cancelTask: () => {}
+    cancelTask: cancelContext.cancel
   });
 
+  let cloneEl = null;
+  let restoreFrozenCssVars = () => {};
+  let restoreHiddenLiveControls = () => {};
   try {
-    await new Promise(r => setTimeout(r, 600));
+    const sourceImages = Array.from(targetEl.querySelectorAll('img'));
+    sourceImages.forEach((imgEl) => {
+      if (!(imgEl instanceof HTMLImageElement)) return;
+      imgEl.setAttribute('loading', 'eager');
+      imgEl.setAttribute('decoding', 'sync');
+      if ('fetchPriority' in imgEl) {
+        imgEl.fetchPriority = 'high';
+      }
+    });
+
+    await waitForRenderableAssets(targetEl, {
+      maxWaitMs: deviceTier === 'phone' ? 3600 : 3000,
+      maxImages: Math.max(120, Math.min(1200, sourceImages.length + 80))
+    });
+    await preloadImageUrlsForCapture(targetEl, {
+      maxImages: Math.max(120, Math.min(900, sourceImages.length + 60)),
+      concurrency: deviceTier === 'desktop' ? 12 : 6,
+      timeoutMs: deviceTier === 'phone' ? 9000 : 7000
+    });
+
+    if (cancelContext.isCancelled()) {
+      throw new Error('export-cancelled');
+    }
 
     setScreenshotModalState({
       state: 'capturing',
       title: '截图中',
-      message: '[渲染中] ' + exportLabel + '，旧设备可能需要较长时间...',
-      cancelTask: () => {}
+      message: captureLiveElement ? '[布局中] 正在使用页面实时布局...' : '[克隆中] 正在准备导出布局...',
+      cancelTask: cancelContext.cancel
     });
 
-    const canvas = await toCanvas(targetEl, {
-      backgroundColor: '#ffffff',
-      pixelRatio: window.devicePixelRatio && window.devicePixelRatio > 1 ? window.devicePixelRatio : 2,
-      skipFonts: false,
-      filter: (node) => {
-        if (node.classList && (node.classList.contains('export-hide') || node.classList.contains('nav-cutoff-controls'))) {
-          return false;
-        }
-        return true;
+    if (!captureLiveElement) {
+      cloneEl = await prepareSongExportClone(targetEl);
+    }
+    const renderEl = cloneEl || targetEl;
+    if (captureLiveElement) {
+      restoreFrozenCssVars = freezeCssVariablesForCapture(renderEl);
+      restoreHiddenLiveControls = hideExportControlsForLiveCapture(renderEl);
+    }
+
+    const cloneImages = Array.from(renderEl.querySelectorAll('img'));
+    cloneImages.forEach((imgEl) => {
+      if (!(imgEl instanceof HTMLImageElement)) return;
+      imgEl.setAttribute('loading', 'eager');
+      imgEl.setAttribute('decoding', 'sync');
+      if ('fetchPriority' in imgEl) {
+        imgEl.fetchPriority = 'high';
       }
     });
 
-    if (!canvas) throw new Error('toCanvas returned null');
+    await waitForRenderableAssets(renderEl, {
+      maxWaitMs: deviceTier === 'phone' ? 4200 : 3400,
+      maxImages: Math.max(180, Math.min(1400, cloneImages.length + 120))
+    });
+    await preloadImageUrlsForCapture(renderEl, {
+      maxImages: Math.max(180, Math.min(1200, cloneImages.length + 100)),
+      concurrency: deviceTier === 'desktop' ? 12 : 6,
+      timeoutMs: deviceTier === 'phone' ? 9000 : 7000
+    });
+
+    await waitNextPaint();
+
+    if (cancelContext.isCancelled()) {
+      throw new Error('export-cancelled');
+    }
+
+    const width = Math.max(1, Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0));
+    const height = Math.max(1, Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0));
+    const heavyMediaCount = countHeavyMediaNodes(renderEl);
+    const pixelRatioPlan = buildCapturePixelRatioPlan(deviceTier);
+
+    let canvas = null;
+    let lastRenderError = null;
+
+    for (let attemptIdx = 0; attemptIdx < pixelRatioPlan.length; attemptIdx += 1) {
+      const pixelRatio = pixelRatioPlan[attemptIdx];
+      const canvasWidth = Math.max(1, Math.round(width * pixelRatio));
+      const canvasHeight = Math.max(1, Math.round(height * pixelRatio));
+      const renderTimeoutMs = Math.min(
+        56000,
+        Math.max(12000, Math.round(computeRenderTimeoutMs({
+          deviceTier,
+          heavyMediaCount,
+          width,
+          height,
+          scale: pixelRatio
+        }) * (1.35 + (attemptIdx * 0.25))))
+      );
+
+      setScreenshotModalState({
+        state: 'capturing',
+        title: '截图中',
+        message: `[渲染中] ${exportLabel}（${width}x${height}，像素比 x${pixelRatio.toFixed(2)}，尝试 ${attemptIdx + 1}/${pixelRatioPlan.length}）`,
+        cancelTask: cancelContext.cancel
+      });
+
+      try {
+        const renderTask = trackSongCaptureRenderTask(toCanvas(renderEl, {
+          backgroundColor: '#ffffff',
+          width,
+          height,
+          canvasWidth,
+          canvasHeight,
+          pixelRatio: 1,
+          skipFonts: false,
+          cacheBust: false,
+          skipAutoScale: true,
+          imagePlaceholder: CAPTURE_IMAGE_PLACEHOLDER,
+          filter: (node) => {
+            if (node.classList && node.classList.contains('nav-cutoff-controls')) {
+              return false;
+            }
+            return true;
+          }
+        }));
+
+        canvas = await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
+        if (canvas) break;
+      } catch (renderError) {
+        lastRenderError = renderError;
+        if (isExportCancelledError(renderError)) {
+          throw renderError;
+        }
+        if (isRenderTimeoutError(renderError)) {
+          forceReleaseSongCaptureRenderTask();
+        }
+        if (isEventLikeCaptureError(renderError)) {
+          hideTransientMediaForCapture(renderEl);
+          await preloadImageUrlsForCapture(renderEl, {
+            maxImages: 520,
+            concurrency: 4,
+            timeoutMs: 9000
+          });
+          await waitNextPaint();
+        }
+      }
+    }
+
+    if (!canvas) {
+      throw lastRenderError || new Error('toCanvas returned null');
+    }
 
     setScreenshotModalState({
       state: 'exporting',
       title: '导出图片',
       message: '[编码中] 正在生成 PNG 文件...',
-      cancelTask: () => {}
+      cancelTask: cancelContext.cancel
     });
 
     const ts = typeof formatExportTimestamp === 'function' ? formatExportTimestamp() : Date.now();
@@ -4081,14 +4564,41 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       autoCloseMs: 1400
     });
   } catch (error) {
+    if (isExportCancelledError(error)) {
+      setScreenshotModalState({
+        state: 'idle',
+        title: '',
+        message: '',
+        cancelTask: null
+      });
+      return;
+    }
+    if (isRenderTimeoutError(error)) {
+      forceReleaseSongCaptureRenderTask();
+    }
+    const detail = getCaptureErrorText(error);
     console.error('导出失败:', error);
     setScreenshotModalState({
       state: 'failed',
       title: '截图失败',
-      message: '[失败] 导出发生错误: ' + error.message,
+      message: '[失败] 导出发生错误: ' + detail.text,
       retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
       cancelTask: null
     });
+  } finally {
+    restoreFrozenCssVars();
+    restoreHiddenLiveControls();
+    if (screenshotModalCancelTask.value === cancelContext.cancel) {
+      screenshotModalCancelTask.value = null;
+    }
+    if (cloneEl) {
+      const cloneHost = cloneEl.parentNode;
+      if (cloneHost instanceof HTMLElement && cloneHost.classList.contains('song-export-clone-host')) {
+        cloneHost.remove();
+      } else if (cloneEl.parentNode) {
+        cloneEl.parentNode.removeChild(cloneEl);
+      }
+    }
   }
 };
 
@@ -4137,6 +4647,211 @@ const expandOcBookUnitsForExport = (targetUnit = '') => {
   ocBookUnitExpandedMap.value = next;
 };
 
+const exportAnvoPanelByCardsPng = async (targetEl, title, options = {}) => {
+  const previousIdle = await waitPendingSongCaptureRenderTask(1200);
+  if (!previousIdle) {
+    forceReleaseSongCaptureRenderTask();
+  }
+  const exportLabel = String(options?.taskLabel || title || 'Anvo统计');
+  const deviceTier = getCaptureDeviceTier();
+  const cancelContext = createExportCancelContext();
+  const exportStartAt = performance.now();
+  const formatElapsed = () => `${Math.max(0, Math.round(performance.now() - exportStartAt))}ms`;
+
+  const cards = Array.from(targetEl.querySelectorAll('.song-anvo-card')).filter((el) => el instanceof HTMLElement);
+  if (!cards.length) {
+    throw new Error('anvo-cards-not-found');
+  }
+
+  setScreenshotModalState({
+    state: 'capturing',
+    title: '截图中',
+    message: '[初始化] 正在准备分块捕获 ' + exportLabel,
+    cancelTask: cancelContext.cancel
+  });
+
+  let lastRenderError = null;
+  let lastAttemptMeta = null;
+
+  try {
+    await waitForRenderableAssets(targetEl, {
+      maxWaitMs: deviceTier === 'phone' ? 4200 : 3600,
+      maxImages: 1800
+    });
+    await preloadImageUrlsForCapture(targetEl, {
+      maxImages: 1500,
+      concurrency: deviceTier === 'desktop' ? 12 : 6,
+      timeoutMs: deviceTier === 'phone' ? 9000 : 7000
+    });
+
+    const rects = cards.map((card) => card.getBoundingClientRect());
+    const minLeft = Math.min(...rects.map((rect) => rect.left));
+    const minTop = Math.min(...rects.map((rect) => rect.top));
+    const maxRight = Math.max(...rects.map((rect) => rect.right));
+    const maxBottom = Math.max(...rects.map((rect) => rect.bottom));
+    const width = Math.max(1, Math.ceil(maxRight - minLeft));
+    const height = Math.max(1, Math.ceil(maxBottom - minTop));
+
+    const pixelRatioPlan = buildCapturePixelRatioPlan(deviceTier);
+
+    let finalCanvas = null;
+
+    for (let attemptIdx = 0; attemptIdx < pixelRatioPlan.length; attemptIdx += 1) {
+      const pixelRatio = pixelRatioPlan[attemptIdx];
+      const canvasWidth = Math.max(1, Math.round(width * pixelRatio));
+      const canvasHeight = Math.max(1, Math.round(height * pixelRatio));
+      lastAttemptMeta = {
+        pixelRatio,
+        canvasWidth,
+        canvasHeight,
+        width,
+        height,
+        attempt: attemptIdx + 1,
+        attempts: pixelRatioPlan.length
+      };
+
+      const outCanvas = document.createElement('canvas');
+      outCanvas.width = canvasWidth;
+      outCanvas.height = canvasHeight;
+      const ctx = outCanvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('canvas-context-2d-unavailable');
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      try {
+        for (let cardIdx = 0; cardIdx < cards.length; cardIdx += 1) {
+          const cardEl = cards[cardIdx];
+          if (!(cardEl instanceof HTMLElement)) continue;
+
+          setScreenshotModalState({
+            state: 'capturing',
+            title: '截图中',
+            message: `[分块渲染] ${exportLabel}（块 ${cardIdx + 1}/${cards.length}，像素比 x${pixelRatio.toFixed(2)}，尝试 ${attemptIdx + 1}/${pixelRatioPlan.length}）`,
+            cancelTask: cancelContext.cancel
+          });
+
+          let restoreVars = () => {};
+          let restoreControls = () => {};
+          try {
+            restoreVars = freezeCssVariablesForCapture(cardEl);
+            restoreControls = hideExportControlsForLiveCapture(cardEl);
+
+            await recoverCardImagesForTileCapture(cardEl, deviceTier);
+
+            const cardWidth = Math.max(1, Math.ceil(cardEl.scrollWidth || cardEl.clientWidth || cardEl.getBoundingClientRect().width || 0));
+            const cardHeight = Math.max(1, Math.ceil(cardEl.scrollHeight || cardEl.clientHeight || cardEl.getBoundingClientRect().height || 0));
+            const cardCanvasWidth = Math.max(1, Math.round(cardWidth * pixelRatio));
+            const cardCanvasHeight = Math.max(1, Math.round(cardHeight * pixelRatio));
+            const renderTimeoutMs = Math.min(
+              38000,
+              Math.max(10000, Math.round(computeRenderTimeoutMs({
+                deviceTier,
+                heavyMediaCount: countHeavyMediaNodes(cardEl),
+                width: cardWidth,
+                height: cardHeight,
+                scale: pixelRatio
+              }) * 1.25))
+            );
+
+            const renderTask = trackSongCaptureRenderTask(toCanvas(cardEl, {
+              backgroundColor: '#ffffff',
+              width: cardWidth,
+              height: cardHeight,
+              canvasWidth: cardCanvasWidth,
+              canvasHeight: cardCanvasHeight,
+              pixelRatio: 1,
+              skipFonts: false,
+              cacheBust: true,
+              skipAutoScale: true,
+              imagePlaceholder: CAPTURE_IMAGE_PLACEHOLDER
+            }));
+
+            const tileCanvas = await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
+            const rect = rects[cardIdx];
+            const dx = Math.max(0, Math.round((rect.left - minLeft) * pixelRatio));
+            const dy = Math.max(0, Math.round((rect.top - minTop) * pixelRatio));
+            ctx.drawImage(tileCanvas, dx, dy);
+          } finally {
+            restoreVars();
+            restoreControls();
+          }
+        }
+
+        finalCanvas = outCanvas;
+        break;
+      } catch (renderError) {
+        lastRenderError = renderError;
+        if (isExportCancelledError(renderError)) {
+          throw renderError;
+        }
+      }
+    }
+
+    if (!finalCanvas) {
+      throw lastRenderError || new Error('anvo-tile-capture-null');
+    }
+
+    setScreenshotModalState({
+      state: 'exporting',
+      title: '导出图片',
+      message: '[编码中] 正在生成 PNG 文件...',
+      cancelTask: cancelContext.cancel
+    });
+
+    const ts = typeof formatExportTimestamp === 'function' ? formatExportTimestamp() : Date.now();
+    const safeTitle = typeof sanitizeExportFileName === 'function' ? sanitizeExportFileName(`${title}_${ts}`) : `${title}_${ts}`;
+
+    if (typeof triggerDownloadPng === 'function') {
+      await triggerDownloadPng(finalCanvas, safeTitle);
+    } else {
+      finalCanvas.toBlob(blob => {
+        if(!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = safeTitle + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    setScreenshotModalState({
+      state: 'success',
+      title: '导出成功',
+      message: `【${exportLabel}】已导出 PNG（耗时 ${formatElapsed()}）`,
+      cancelTask: null,
+      autoCloseMs: 1400
+    });
+  } catch (error) {
+    if (isExportCancelledError(error)) {
+      setScreenshotModalState({
+        state: 'idle',
+        title: '',
+        message: '',
+        cancelTask: null
+      });
+      return;
+    }
+    const detail = getCaptureErrorText(error);
+    const rawErrorText = String(error?.message || error || '').trim() || '[empty]';
+    setScreenshotModalState({
+      state: 'failed',
+      title: '截图失败',
+      message: '[失败] 导出发生错误: ' + detail.text + ` | 模式:tile-live | 尺寸:${lastAttemptMeta?.width || '-'}x${lastAttemptMeta?.height || '-'} | 画布:${lastAttemptMeta?.canvasWidth || '-'}x${lastAttemptMeta?.canvasHeight || '-'} | 像素比:x${Number(lastAttemptMeta?.pixelRatio || 1).toFixed(2)} | 原始:${rawErrorText}`,
+      retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
+      cancelTask: null
+    });
+  } finally {
+    if (screenshotModalCancelTask.value === cancelContext.cancel) {
+      screenshotModalCancelTask.value = null;
+    }
+  }
+};
+
 const exportSongPanelPng = async (panelId, title) => {
   if (isExportingPng.value) return;
   const targetEl = document.getElementById(panelId);
@@ -4168,10 +4883,20 @@ const exportSongPanelPng = async (panelId, title) => {
 
     await nextTick();
     await waitNextPaint();
-    await exportElementPng(targetEl, title, {
-      taskLabel: title,
-      retryTask: () => exportSongPanelPng(panelId, title)
-    });
+    const useAnvoTileMode = panelId === 'panel-another-vocal'
+      && !!anotherImageMode.value
+      && Number(window?.innerWidth || 0) < 1200;
+    if (useAnvoTileMode) {
+      await exportAnvoPanelByCardsPng(targetEl, title, {
+        taskLabel: title,
+        retryTask: () => exportSongPanelPng(panelId, title)
+      });
+    } else {
+      await exportElementPng(targetEl, title, {
+        taskLabel: title,
+        retryTask: () => exportSongPanelPng(panelId, title)
+      });
+    }
   } catch (error) {
     console.error('导出乐曲统计 PNG 失败', error);
   } finally {
@@ -5356,6 +6081,29 @@ watch(totalSongPages, (nextTotal) => {
   gap: 4px;
   min-width: 68px;
   padding-top: 2px;
+}
+
+.song-anvo-card.is-image-mode {
+  position: relative;
+}
+
+.song-anvo-image-png-btn {
+  min-height: 20px;
+  padding: 2px 6px;
+  font-size: 0.56rem;
+  line-height: 1;
+}
+
+.song-anvo-image-png-btn-desktop {
+  margin-top: 2px;
+}
+
+.song-anvo-image-png-btn-mobile {
+  display: none;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
 }
 
 .song-vs-event-image-head-stats {
@@ -6635,6 +7383,17 @@ watch(totalSongPages, (nextTotal) => {
   .stats-main-head h1 {
     margin-bottom: 8px;
     font-size: 1.1rem;
+  }
+
+  .song-anvo-image-png-btn-desktop {
+    display: none;
+  }
+
+  .song-anvo-image-png-btn-mobile {
+    display: inline-flex;
+    min-height: 18px;
+    padding: 1px 6px;
+    font-size: 0.54rem;
   }
 
   .card-panel {

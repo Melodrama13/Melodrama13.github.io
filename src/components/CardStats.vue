@@ -2100,6 +2100,10 @@ let relatedJumpChipSyncRaf = 0;
 let relatedJumpResizeObserver = null;
 let relatedJumpMutationObserver = null;
 let pendingCardCaptureRenderTask = null;
+let lineupCardLayoutSyncRaf = 0;
+let lineupCardLayoutSyncTimer = 0;
+let lineupCardLayoutResizeObserver = null;
+let lineupCardLayoutMutationObserver = null;
 const mobileNavExpandedGroups = ref({});
 
 //const getCharAbbr = (name) => CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
@@ -3391,10 +3395,16 @@ const setNavCollapsed = (nextCollapsed, preserveCenter = true) => {
   }
   if (!preserveCenter) {
     navCollapsed.value = next;
+    void nextTick(() => {
+      triggerLineupCardModeRowLayoutSyncBurst();
+    });
     return;
   }
   void withInfoAreaTopLeftPinned(() => {
     navCollapsed.value = next;
+    void nextTick(() => {
+      triggerLineupCardModeRowLayoutSyncBurst();
+    });
   });
 };
 
@@ -3416,6 +3426,9 @@ const updateMobileNavState = () => {
     if (isTopLayout) {
       resetMobileNavGroupExpansion();
     }
+    void nextTick(() => {
+      triggerLineupCardModeRowLayoutSyncBurst();
+    });
   };
 
   if (needPreserve) {
@@ -3581,7 +3594,7 @@ const getCaptureDeviceTier = () => {
   const width = Number(window?.innerWidth || 0);
   const height = Number(window?.innerHeight || 0);
   const minSide = Math.min(width || Number.MAX_SAFE_INTEGER, height || Number.MAX_SAFE_INTEGER);
-  if (width <= 900) {
+  if (width < 1200) {
     if (minSide >= 680) return 'tablet';
     return 'phone';
   }
@@ -4063,9 +4076,371 @@ const syncRecordBlockLayoutForExport = (sourceBlock, cloneBlock) => {
   return expandedWidth;
 };
 
+const copyCssCustomPropertiesFromAncestors = (sourceEl, targetEl, stopEl = null) => {
+  if (!(sourceEl instanceof HTMLElement) || !(targetEl instanceof HTMLElement)) return;
+  const chain = [];
+  let cursor = sourceEl;
+  while (cursor instanceof HTMLElement) {
+    chain.push(cursor);
+    if (stopEl instanceof HTMLElement && cursor === stopEl) break;
+    cursor = cursor.parentElement;
+  }
+  for (let idx = chain.length - 1; idx >= 0; idx -= 1) {
+    copyCssCustomProperties(window.getComputedStyle(chain[idx]), targetEl);
+  }
+};
+
+const syncCloneFormControlsWithSource = (sourceRoot, cloneRoot) => {
+  if (!(sourceRoot instanceof HTMLElement) || !(cloneRoot instanceof HTMLElement)) return;
+  const sourceInputs = Array.from(sourceRoot.querySelectorAll('input, select, textarea'));
+  const cloneInputs = Array.from(cloneRoot.querySelectorAll('input, select, textarea'));
+  const pairCount = Math.min(sourceInputs.length, cloneInputs.length);
+  for (let idx = 0; idx < pairCount; idx += 1) {
+    const source = sourceInputs[idx];
+    const clone = cloneInputs[idx];
+    if (source instanceof HTMLInputElement && clone instanceof HTMLInputElement) {
+      clone.checked = source.checked;
+      clone.indeterminate = source.indeterminate;
+      clone.value = source.value;
+      if (source.checked) {
+        clone.setAttribute('checked', 'checked');
+      } else {
+        clone.removeAttribute('checked');
+      }
+      if (source.value !== undefined && source.value !== null) {
+        clone.setAttribute('value', String(source.value));
+      }
+      continue;
+    }
+    if (source instanceof HTMLSelectElement && clone instanceof HTMLSelectElement) {
+      clone.selectedIndex = source.selectedIndex;
+      clone.value = source.value;
+      Array.from(clone.options).forEach((opt, optIdx) => {
+        if (!(opt instanceof HTMLOptionElement)) return;
+        const selected = optIdx === source.selectedIndex;
+        opt.selected = selected;
+        if (selected) {
+          opt.setAttribute('selected', 'selected');
+        } else {
+          opt.removeAttribute('selected');
+        }
+      });
+      continue;
+    }
+    if (source instanceof HTMLTextAreaElement && clone instanceof HTMLTextAreaElement) {
+      clone.value = source.value;
+    }
+  }
+};
+
+const syncCloneBackgroundStylesWithSource = (sourceRoot, cloneRoot) => {
+  if (!(sourceRoot instanceof HTMLElement) || !(cloneRoot instanceof HTMLElement)) return;
+  const sourceNodes = [sourceRoot, ...Array.from(sourceRoot.querySelectorAll('*'))];
+  const cloneNodes = [cloneRoot, ...Array.from(cloneRoot.querySelectorAll('*'))];
+  const pairCount = Math.min(sourceNodes.length, cloneNodes.length);
+  for (let idx = 0; idx < pairCount; idx += 1) {
+    const sourceEl = sourceNodes[idx];
+    const cloneEl = cloneNodes[idx];
+    if (!(sourceEl instanceof HTMLElement) || !(cloneEl instanceof HTMLElement)) continue;
+    const computed = window.getComputedStyle(sourceEl);
+    const background = String(computed.background || '').trim();
+    const bgColor = String(computed.backgroundColor || '').trim();
+    const bgImage = String(computed.backgroundImage || '').trim();
+    const bgRepeat = String(computed.backgroundRepeat || '').trim();
+    const bgPosition = String(computed.backgroundPosition || '').trim();
+    const bgSize = String(computed.backgroundSize || '').trim();
+    const border = String(computed.border || '').trim();
+    const borderColor = String(computed.borderColor || '').trim();
+    // Avoid writing shorthand `background` here: on some cards it serializes with transparent color
+    // and wipes the intended fill while keeping gradient strips.
+    if (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') {
+      cloneEl.style.backgroundColor = bgColor;
+    }
+    if (bgImage && bgImage !== 'none') {
+      cloneEl.style.backgroundImage = bgImage;
+      if (bgRepeat) cloneEl.style.backgroundRepeat = bgRepeat;
+      if (bgPosition) cloneEl.style.backgroundPosition = bgPosition;
+      if (bgSize) cloneEl.style.backgroundSize = bgSize;
+    }
+    if (border && border !== '0px none rgb(0, 0, 0)') {
+      cloneEl.style.border = border;
+    } else if (borderColor && borderColor !== 'rgba(0, 0, 0, 0)') {
+      cloneEl.style.borderColor = borderColor;
+    }
+  }
+};
+
+const isTransparentColor = (colorText) => {
+  const value = String(colorText || '').trim().toLowerCase();
+  return !value || value === 'transparent' || value === 'rgba(0, 0, 0, 0)';
+};
+
+const resolveSingleCardFillFromSource = (sourceEl) => {
+  if (!(sourceEl instanceof HTMLElement)) return '';
+  const inlineBgColor = String(sourceEl.style?.backgroundColor || '').trim();
+  if (!isTransparentColor(inlineBgColor)) return inlineBgColor;
+  const computed = window.getComputedStyle(sourceEl);
+  const bgColor = String(computed.backgroundColor || '').trim();
+  if (!isTransparentColor(bgColor)) return bgColor;
+
+  const resolvedLineupBg = String(computed.getPropertyValue('--lineup-row-bg') || '').trim();
+  if (resolvedLineupBg) return resolvedLineupBg;
+
+  const resolvedRecordTint = String(computed.getPropertyValue('--record-tint') || '').trim();
+  if (resolvedRecordTint) return resolvedRecordTint;
+
+  const rowLikeHost = sourceEl.closest('.lineup-plan-row, tr');
+  if (rowLikeHost instanceof HTMLElement) {
+    const hostComputed = window.getComputedStyle(rowLikeHost);
+    const hostLineupBg = String(hostComputed.getPropertyValue('--lineup-row-bg') || '').trim();
+    if (hostLineupBg) return hostLineupBg;
+    const hostRecordTint = String(hostComputed.getPropertyValue('--record-tint') || '').trim();
+    if (hostRecordTint) return hostRecordTint;
+    const hostBgColor = String(hostComputed.backgroundColor || '').trim();
+    if (!isTransparentColor(hostBgColor)) return hostBgColor;
+  }
+
+  return '';
+};
+
+const syncSingleCardFillStylesWithSource = (sourceRoot, cloneRoot) => {
+  if (!(sourceRoot instanceof HTMLElement) || !(cloneRoot instanceof HTMLElement)) return;
+  const collectNodesIncludingRoot = (rootEl, selector) => {
+    const nodes = [];
+    if (rootEl.matches(selector)) {
+      nodes.push(rootEl);
+    }
+    nodes.push(...Array.from(rootEl.querySelectorAll(selector)));
+    return nodes;
+  };
+  const selectors = [
+    '.lineup-card',
+    '.support-card',
+    '.attr-summary-card',
+    '.lineup-member-cell',
+    '.support-member-cell',
+    '.related-last-card-thumb',
+    '.interval-card-thumb'
+  ];
+  selectors.forEach((selector) => {
+    const sourceNodes = collectNodesIncludingRoot(sourceRoot, selector);
+    const cloneNodes = collectNodesIncludingRoot(cloneRoot, selector);
+    const pairCount = Math.min(sourceNodes.length, cloneNodes.length);
+    for (let idx = 0; idx < pairCount; idx += 1) {
+      const sourceEl = sourceNodes[idx];
+      const cloneEl = cloneNodes[idx];
+      if (!(sourceEl instanceof HTMLElement) || !(cloneEl instanceof HTMLElement)) continue;
+      const computed = window.getComputedStyle(sourceEl);
+      const bgImage = String(computed.backgroundImage || '').trim();
+      const resolvedFill = resolveSingleCardFillFromSource(sourceEl);
+
+      if (resolvedFill) {
+        cloneEl.style.setProperty('background-color', resolvedFill, 'important');
+      }
+      if (bgImage && bgImage !== 'none') {
+        cloneEl.style.setProperty('background-image', bgImage, 'important');
+      }
+    }
+  });
+};
+
+const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((resolve) => {
+  const src = String(url || '').trim();
+  if (!src) {
+    resolve(false);
+    return;
+  }
+  let done = false;
+  let timer = 0;
+  const img = new Image();
+  const finish = (ok) => {
+    if (done) return;
+    done = true;
+    if (timer) clearTimeout(timer);
+    img.onload = null;
+    img.onerror = null;
+    resolve(!!ok);
+  };
+  img.onload = () => finish(true);
+  img.onerror = () => finish(false);
+  try {
+    img.decoding = 'async';
+    img.loading = 'eager';
+    img.referrerPolicy = 'no-referrer';
+  } catch (_) {
+    // Ignore unsupported attributes.
+  }
+  timer = window.setTimeout(() => finish(false), timeoutMs);
+  img.src = src;
+});
+
+const preloadImageUrlsForCapture = async (rootEl, options = {}) => {
+  if (!(rootEl instanceof HTMLElement)) return;
+  const maxImages = Number(options?.maxImages || 0) > 0 ? Number(options.maxImages) : 260;
+  const concurrency = Number(options?.concurrency || 0) > 0 ? Number(options.concurrency) : 8;
+  const timeoutMs = Number(options?.timeoutMs || 0) > 0 ? Number(options.timeoutMs) : 7000;
+  const srcList = Array.from(rootEl.querySelectorAll('img'))
+    .map((imgEl) => String(imgEl?.currentSrc || imgEl?.getAttribute('src') || '').trim())
+    .filter(Boolean)
+    .slice(0, maxImages);
+  const uniq = [...new Set(srcList)];
+  if (!uniq.length) return;
+
+  let cursor = 0;
+  const workers = Array.from({ length: Math.max(1, Math.min(concurrency, uniq.length)) }).map(async () => {
+    while (cursor < uniq.length) {
+      const idx = cursor;
+      cursor += 1;
+      await preloadSingleImageUrlForCapture(uniq[idx], timeoutMs);
+    }
+  });
+  await Promise.allSettled(workers);
+};
+
+const hideTransientMediaForCapture = (rootEl) => {
+  if (!(rootEl instanceof HTMLElement)) return 0;
+  let hidden = 0;
+  rootEl.querySelectorAll('img').forEach((imgEl) => {
+    if (!(imgEl instanceof HTMLImageElement)) return;
+    if (imgEl.complete && imgEl.naturalWidth > 0) return;
+    imgEl.style.display = 'none';
+    imgEl.dataset.failed = '1';
+    hidden += 1;
+  });
+  return hidden;
+};
+
+const buildCapturePixelRatioPlan = (deviceTier) => {
+  const target = 2;
+  const ladder = deviceTier === 'desktop'
+    ? [target, 1]
+    : [target, 1];
+  const seen = new Set();
+  return ladder.filter((value) => {
+    const key = String(value);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const CAPTURE_IMAGE_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
+
+const syncLineupCardModeRowLayout = () => {
+  const rootEl = cardStatsRootRef.value;
+  if (!(rootEl instanceof HTMLElement)) return;
+  const viewportWidth = Number(window?.innerWidth || 0);
+  // Keep pad behavior close to desktop: rely on native grid stretch and avoid JS-forced row heights.
+  // Only keep force-sync for very small screens where card cell width oscillation is more visible.
+  const shouldForce = viewportWidth > 0 && viewportWidth <= 760;
+  const rows = rootEl.querySelectorAll('.lineup-plan-row');
+  rows.forEach((row) => {
+    if (!(row instanceof HTMLElement)) return;
+    if (!shouldForce) {
+      row.style.removeProperty('min-height');
+      row.querySelectorAll('.lineup-member-cell .lineup-slot-card').forEach((slot) => {
+        if (!(slot instanceof HTMLElement)) return;
+        slot.style.removeProperty('height');
+      });
+      return;
+    }
+    const slotCards = row.querySelectorAll('.lineup-member-cell.is-card-mode .lineup-slot-card');
+    if (!slotCards.length) {
+      row.style.removeProperty('min-height');
+      return;
+    }
+    // Clear stale row min-height first, otherwise cells can stay stretched and never shrink.
+    row.style.removeProperty('min-height');
+    slotCards.forEach((slot) => {
+      if (!(slot instanceof HTMLElement)) return;
+      const width = Math.ceil(slot.getBoundingClientRect().width || slot.clientWidth || 0);
+      if (width > 0) {
+        slot.style.height = `${width}px`;
+      }
+    });
+    const rowCells = Array.from(row.children).filter((child) => child instanceof HTMLElement);
+    let maxHeight = 0;
+    rowCells.forEach((cell) => {
+      maxHeight = Math.max(maxHeight, Math.ceil(cell.getBoundingClientRect().height || 0));
+    });
+    if (maxHeight > 0) {
+      row.style.minHeight = `${maxHeight}px`;
+    }
+  });
+};
+
+const scheduleLineupCardModeRowLayoutSync = () => {
+  if (lineupCardLayoutSyncRaf) return;
+  lineupCardLayoutSyncRaf = requestAnimationFrame(() => {
+    lineupCardLayoutSyncRaf = 0;
+    syncLineupCardModeRowLayout();
+  });
+};
+
+const queueLineupCardModeRowLayoutSync = () => {
+  scheduleLineupCardModeRowLayoutSync();
+};
+
+const triggerLineupCardModeRowLayoutSyncBurst = () => {
+  queueLineupCardModeRowLayoutSync();
+  requestAnimationFrame(() => {
+    queueLineupCardModeRowLayoutSync();
+  });
+};
+
+const bindLineupCardModeLayoutObserver = () => {
+  if (lineupCardLayoutResizeObserver) {
+    lineupCardLayoutResizeObserver.disconnect();
+    lineupCardLayoutResizeObserver = null;
+  }
+  if (lineupCardLayoutMutationObserver) {
+    lineupCardLayoutMutationObserver.disconnect();
+    lineupCardLayoutMutationObserver = null;
+  }
+  if (typeof ResizeObserver === 'undefined') return;
+  const rootEl = cardStatsRootRef.value;
+  const statsMain = rootEl instanceof HTMLElement ? rootEl.querySelector('.stats-main') : null;
+  const statsLayout = rootEl instanceof HTMLElement ? rootEl.querySelector('.stats-layout') : null;
+  if (!(statsMain instanceof HTMLElement) && !(statsLayout instanceof HTMLElement) && !(rootEl instanceof HTMLElement)) return;
+  lineupCardLayoutResizeObserver = new ResizeObserver(() => {
+    queueLineupCardModeRowLayoutSync();
+  });
+  if (statsMain instanceof HTMLElement) {
+    lineupCardLayoutResizeObserver.observe(statsMain);
+  }
+  if (statsLayout instanceof HTMLElement) {
+    lineupCardLayoutResizeObserver.observe(statsLayout);
+  }
+  if (rootEl instanceof HTMLElement) {
+    lineupCardLayoutResizeObserver.observe(rootEl);
+  }
+  if (typeof MutationObserver !== 'undefined' && statsLayout instanceof HTMLElement) {
+    lineupCardLayoutMutationObserver = new MutationObserver(() => {
+      triggerLineupCardModeRowLayoutSyncBurst();
+    });
+    lineupCardLayoutMutationObserver.observe(statsLayout, {
+      attributes: true,
+      attributeFilter: ['class', 'style']
+    });
+  }
+};
+
+const isEventLikeCaptureError = (error) => {
+  if (typeof Event !== 'undefined' && error instanceof Event) return true;
+  const raw = String(error?.message || error || '').trim().toLowerCase();
+  return raw === '[object event]' || raw.includes('event');
+};
+
 const getCaptureErrorText = (error) => {
+  if (typeof Event !== 'undefined' && error instanceof Event) {
+    const eventType = String(error.type || 'unknown');
+    return { text: `资源事件异常（${eventType}）`, retryable: true };
+  }
   const message = String(error?.message || error || '').trim();
   const lower = message.toLowerCase();
+  if (lower === '[object event]') {
+    return { text: '资源事件异常（Event）', retryable: true };
+  }
   const timeoutMatch = message.match(/render-timeout-(\d+)/);
   if (timeoutMatch) {
     return { text: `渲染超时（>${timeoutMatch[1]}ms）`, retryable: true };
@@ -4082,8 +4457,8 @@ const getCaptureErrorText = (error) => {
   if (lower.includes('toblob failed') || lower.includes('无法生成 png')) {
     return { text: 'PNG 编码失败（toBlob）', retryable: true };
   }
-  if (lower.includes('html2canvas failed')) {
-    return { text: '渲染失败（html2canvas 无返回）', retryable: true };
+  if (lower.includes('html-to-image failed') || lower.includes('tocanvas failed')) {
+    return { text: '渲染失败（html-to-image 无返回）', retryable: true };
   }
   if (lower.includes('previous-render-still-running')) {
     return { text: '上一轮渲染任务仍未结束（疑似卡死）', retryable: false };
@@ -4115,8 +4490,12 @@ const getExportFailedMessage = (reasons = []) => {
 const prepareExportClone = async (targetEl) => {
   if (!targetEl) return null;
 
+  const rootEl = cardStatsRootRef.value instanceof HTMLElement
+    ? cardStatsRootRef.value
+    : targetEl.closest('.pjsk-stats');
   const rect = targetEl.getBoundingClientRect();
   const sourceStyle = window.getComputedStyle(targetEl);
+  const rootStyle = rootEl instanceof HTMLElement ? window.getComputedStyle(rootEl) : null;
   const relatedPanelEl = targetEl.closest('.related-panel');
   const relatedPanelStyle = relatedPanelEl instanceof HTMLElement ? window.getComputedStyle(relatedPanelEl) : null;
   const sourceRadiusVar = String(sourceStyle.getPropertyValue('--stats-radius-btn') || '').trim();
@@ -4124,22 +4503,35 @@ const prepareExportClone = async (targetEl) => {
   const hasVisibleBg = sourceBgColor && sourceBgColor !== 'transparent' && sourceBgColor !== 'rgba(0, 0, 0, 0)';
   const clone = targetEl.cloneNode(true);
   clone.classList.add('export-clone-root');
-  clone.style.position = 'fixed';
-  clone.style.left = '-20000px';
+  clone.style.position = 'relative';
+  clone.style.left = '0';
   clone.style.top = '0';
   clone.style.margin = '0';
   clone.style.pointerEvents = 'none';
-  clone.style.zIndex = '-1';
-  clone.style.background = hasVisibleBg ? sourceBgColor : '#ffffff';
+  clone.style.zIndex = 'auto';
+  if (!hasVisibleBg) {
+    clone.style.backgroundColor = '#ffffff';
+  }
   clone.style.width = `${Math.max(1, Math.ceil(rect.width))}px`;
   clone.style.maxHeight = 'none';
   clone.style.overflow = 'visible';
   if (relatedPanelEl instanceof HTMLElement) {
     clone.classList.add('related-panel');
   }
+  copyCssCustomProperties(rootStyle, clone);
   copyCssCustomProperties(sourceStyle, clone);
   copyCssCustomProperties(relatedPanelStyle, clone);
+  copyCssCustomPropertiesFromAncestors(targetEl, clone, rootEl);
   syncCloneImagesWithSource(targetEl, clone);
+  syncCloneFormControlsWithSource(targetEl, clone);
+  syncCloneBackgroundStylesWithSource(targetEl, clone);
+  syncSingleCardFillStylesWithSource(targetEl, clone);
+  if (targetEl.classList.contains('lineup-card') || targetEl.classList.contains('support-card') || targetEl.classList.contains('attr-summary-card')) {
+    const explicitFill = resolveSingleCardFillFromSource(targetEl);
+    if (explicitFill) {
+      clone.style.setProperty('background-color', explicitFill, 'important');
+    }
+  }
   if (sourceRadiusVar) {
     clone.style.setProperty('--stats-radius-btn', sourceRadiusVar);
   }
@@ -4151,14 +4543,66 @@ const prepareExportClone = async (targetEl) => {
     btn.style.display = 'none';
   });
   clone.querySelectorAll('.export-hide').forEach((el) => {
-    el.style.display = 'none';
+    if (!(el instanceof HTMLElement)) return;
+    if (el.closest('.stats-checkbox') || el.matches('.stats-checkbox')) return;
+    if (el.querySelector('input[type="checkbox"]')) return;
+    if (el.matches('button, .floating-menu-btn, .nav-collapse-fab, .song-mini-icon-btn')) {
+      el.style.display = 'none';
+    }
   });
-  // html2canvas may over-render inset shadow on low-alpha CFES backgrounds,
+  // html-to-image may over-render inset shadow on low-alpha CFES backgrounds,
   // causing a gray veil in the middle/corners; keep on-screen style unchanged
   // and neutralize this shadow only in export clone.
   clone.querySelectorAll('.lineup-member-cell.is-cfes').forEach((cell) => {
     cell.style.boxShadow = 'none';
   });
+
+  const stabilizeStyle = document.createElement('style');
+  stabilizeStyle.textContent = `
+    .export-clone-root,
+    .export-clone-root * {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+    .export-clone-root *::-webkit-scrollbar {
+      width: 0 !important;
+      height: 0 !important;
+      display: none !important;
+      background: transparent !important;
+    }
+    .export-clone-root * {
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+    .export-clone-root input[type="checkbox"] {
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      width: 14px !important;
+      height: 14px !important;
+      border: 1px solid #64748b !important;
+      border-radius: 3px !important;
+      background: #ffffff !important;
+      position: relative !important;
+      margin: 0 !important;
+      accent-color: #14b8a6 !important;
+    }
+    .export-clone-root input[type="checkbox"]:checked {
+      border-color: #14b8a6 !important;
+      background: #14b8a6 !important;
+    }
+    .export-clone-root input[type="checkbox"]:checked::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 3px;
+      height: 7px;
+      border: solid #ffffff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+  `;
+  clone.insertBefore(stabilizeStyle, clone.firstChild);
 
   const originalMatrixWrap = targetEl.querySelector('.matrix-wrap');
   const cloneMatrixWrap = clone.querySelector('.matrix-wrap');
@@ -4208,7 +4652,18 @@ const prepareExportClone = async (targetEl) => {
     clone.style.width = `${expandedCloneWidth}px`;
   }
 
-  document.body.appendChild(clone);
+  const host = document.createElement('div');
+  host.className = 'export-clone-host';
+  host.style.position = 'fixed';
+  host.style.left = '-30000px';
+  host.style.top = '0';
+  host.style.width = 'auto';
+  host.style.height = 'auto';
+  host.style.overflow = 'visible';
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = '-1';
+  host.appendChild(clone);
+  document.body.appendChild(host);
   await waitNextPaint();
   return clone;
 };
@@ -4225,10 +4680,150 @@ const resolveExportElementById = (id) => {
   return exact.closest('.record-block, .festival-card, .lineup-card, .support-card, .attr-summary-card, .card-panel');
 };
 
+const freezeCssVariablesForCapture = (targetEl) => {
+  if (!(targetEl instanceof HTMLElement)) {
+    return () => {};
+  }
+  const prevValues = new Map();
+  const computed = window.getComputedStyle(targetEl);
+  for (let idx = 0; idx < computed.length; idx += 1) {
+    const prop = computed[idx];
+    if (!String(prop || '').startsWith('--')) continue;
+    const value = String(computed.getPropertyValue(prop) || '').trim();
+    if (!value) continue;
+    prevValues.set(prop, targetEl.style.getPropertyValue(prop));
+    targetEl.style.setProperty(prop, value);
+  }
+  return () => {
+    prevValues.forEach((prev, prop) => {
+      if (prev) {
+        targetEl.style.setProperty(prop, prev);
+      } else {
+        targetEl.style.removeProperty(prop);
+      }
+    });
+  };
+};
+
+const hideExportControlsForLiveCapture = (rootEl) => {
+  if (!(rootEl instanceof HTMLElement)) {
+    return () => {};
+  }
+  const selectors = [
+    '.card-export-btn',
+    '.lineup-toggle-btn',
+    '.song-mini-icon-btn',
+    '.floating-menu-btn',
+    '.nav-collapse-fab'
+  ].join(', ');
+  const nodes = Array.from(rootEl.querySelectorAll(selectors));
+  const touched = [];
+  nodes.forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    touched.push({ node, display: node.style.display });
+    node.style.display = 'none';
+  });
+  return () => {
+    touched.forEach((entry) => {
+      if (!(entry?.node instanceof HTMLElement)) return;
+      entry.node.style.display = entry.display || '';
+    });
+  };
+};
+
+const shouldCaptureLiveElementForExport = (targetEl, options = {}) => {
+  if (options?.captureLiveElement === true) return true;
+  if (!(targetEl instanceof HTMLElement)) return false;
+  return targetEl.classList.contains('lineup-card')
+    || targetEl.classList.contains('support-card')
+    || targetEl.classList.contains('attr-summary-card');
+};
+
+const forceSingleCardFillForLiveCapture = (targetEl) => {
+  if (!(targetEl instanceof HTMLElement)) {
+    return () => {};
+  }
+  const isSingleCard = targetEl.classList.contains('lineup-card')
+    || targetEl.classList.contains('support-card')
+    || targetEl.classList.contains('attr-summary-card');
+  if (!isSingleCard) {
+    return () => {};
+  }
+
+  const selectors = [
+    '.lineup-card',
+    '.support-card',
+    '.attr-summary-card',
+    '.lineup-member-cell',
+    '.support-member-cell',
+    '.related-last-card-thumb',
+    '.interval-card-thumb'
+  ];
+
+  const collectNodesIncludingRoot = (rootEl, selector) => {
+    const nodes = [];
+    if (rootEl.matches(selector)) {
+      nodes.push(rootEl);
+    }
+    nodes.push(...Array.from(rootEl.querySelectorAll(selector)));
+    return nodes;
+  };
+
+  const touched = [];
+  selectors.forEach((selector) => {
+    const nodes = collectNodesIncludingRoot(targetEl, selector);
+    nodes.forEach((node) => {
+      if (!(node instanceof HTMLElement)) return;
+      touched.push({
+        node,
+        backgroundColor: node.style.getPropertyValue('background-color'),
+        backgroundColorPriority: node.style.getPropertyPriority('background-color'),
+        backgroundImage: node.style.getPropertyValue('background-image'),
+        backgroundImagePriority: node.style.getPropertyPriority('background-image')
+      });
+
+      const fill = resolveSingleCardFillFromSource(node);
+      if (fill) {
+        node.style.setProperty('background-color', fill, 'important');
+      }
+      const computed = window.getComputedStyle(node);
+      const bgImage = String(computed.backgroundImage || '').trim();
+      if (bgImage && bgImage !== 'none') {
+        node.style.setProperty('background-image', bgImage, 'important');
+      }
+    });
+  });
+
+  return () => {
+    touched.forEach((entry) => {
+      if (!(entry?.node instanceof HTMLElement)) return;
+      if (entry.backgroundColor) {
+        entry.node.style.setProperty('background-color', entry.backgroundColor, entry.backgroundColorPriority || '');
+      } else {
+        entry.node.style.removeProperty('background-color');
+      }
+      if (entry.backgroundImage) {
+        entry.node.style.setProperty('background-image', entry.backgroundImage, entry.backgroundImagePriority || '');
+      } else {
+        entry.node.style.removeProperty('background-image');
+      }
+    });
+  };
+};
+
 const runExportElementPng = async (id, title, options = {}) => {
-  const targetEl = typeof id === 'string' ? document.getElementById(id) : id;
+  const previousIdle = await waitPendingCardCaptureRenderTask(1200);
+  if (!previousIdle) {
+    forceReleaseCardCaptureRenderTask();
+  }
+
+  const targetEl = typeof id === 'string' ? (resolveExportElementById(id) || document.getElementById(id)) : id;
   if (!targetEl) return setScreenshotModalState({ state: 'error', title: '错误', message: '未找到元素', cancelTask: null });
+
   const exportLabel = String(options?.taskLabel || title || '当前模块');
+  const deviceTier = getCaptureDeviceTier();
+  const captureLiveElement = shouldCaptureLiveElementForExport(targetEl, options);
+  const cancelContext = createExportCancelContext();
   const exportStartAt = performance.now();
   const formatElapsed = () => `${Math.max(0, Math.round(performance.now() - exportStartAt))}ms`;
 
@@ -4236,38 +4831,161 @@ const runExportElementPng = async (id, title, options = {}) => {
     state: 'capturing',
     title: '截图中',
     message: '[初始化] 正在准备捕获 ' + exportLabel,
-    cancelTask: () => {}
+    cancelTask: cancelContext.cancel
   });
 
+  let cloneEl = null;
+  let restoreFrozenCssVars = () => {};
+  let restoreHiddenLiveControls = () => {};
+  let restoreSingleCardFill = () => {};
   try {
-    await new Promise(r => setTimeout(r, 600));
+    const sourceImages = Array.from(targetEl.querySelectorAll('img'));
+    sourceImages.forEach((imgEl) => {
+      if (!(imgEl instanceof HTMLImageElement)) return;
+      imgEl.setAttribute('loading', 'eager');
+      imgEl.setAttribute('decoding', 'sync');
+      if ('fetchPriority' in imgEl) {
+        imgEl.fetchPriority = 'high';
+      }
+    });
+
+    await waitForRenderableAssets(targetEl, {
+      maxWaitMs: deviceTier === 'phone' ? 3600 : 3000,
+      maxImages: Math.max(120, Math.min(1200, sourceImages.length + 80))
+    });
+    await preloadImageUrlsForCapture(targetEl, {
+      maxImages: Math.max(120, Math.min(900, sourceImages.length + 60)),
+      concurrency: deviceTier === 'desktop' ? 12 : 6,
+      timeoutMs: deviceTier === 'phone' ? 9000 : 7000
+    });
+
+    if (cancelContext.isCancelled()) {
+      throw new Error('export-cancelled');
+    }
 
     setScreenshotModalState({
       state: 'capturing',
       title: '截图中',
-      message: '[渲染中] ' + exportLabel + '，旧设备可能需要较长时间...',
-      cancelTask: () => {}
+      message: captureLiveElement ? '[布局中] 正在使用页面实时布局...' : '[克隆中] 正在准备导出布局...',
+      cancelTask: cancelContext.cancel
     });
 
-    const canvas = await toCanvas(targetEl, {
-      backgroundColor: '#ffffff',
-      pixelRatio: window.devicePixelRatio && window.devicePixelRatio > 1 ? window.devicePixelRatio : 2,
-      skipFonts: false,
-      filter: (node) => {
-        if (node.classList && (node.classList.contains('export-hide') || node.classList.contains('nav-cutoff-controls'))) {
-          return false;
-        }
-        return true;
+    if (!captureLiveElement) {
+      cloneEl = await prepareExportClone(targetEl);
+    }
+    const renderEl = cloneEl || targetEl;
+    if (captureLiveElement) {
+      restoreFrozenCssVars = freezeCssVariablesForCapture(renderEl);
+      restoreHiddenLiveControls = hideExportControlsForLiveCapture(renderEl);
+      restoreSingleCardFill = forceSingleCardFillForLiveCapture(renderEl);
+    }
+
+    const cloneImages = Array.from(renderEl.querySelectorAll('img'));
+    cloneImages.forEach((imgEl) => {
+      if (!(imgEl instanceof HTMLImageElement)) return;
+      imgEl.setAttribute('loading', 'eager');
+      imgEl.setAttribute('decoding', 'sync');
+      if ('fetchPriority' in imgEl) {
+        imgEl.fetchPriority = 'high';
       }
     });
 
-    if (!canvas) throw new Error('toCanvas returned null');
+    await waitForRenderableAssets(renderEl, {
+      maxWaitMs: deviceTier === 'phone' ? 4200 : 3400,
+      maxImages: Math.max(180, Math.min(1400, cloneImages.length + 120))
+    });
+    await preloadImageUrlsForCapture(renderEl, {
+      maxImages: Math.max(180, Math.min(1200, cloneImages.length + 100)),
+      concurrency: deviceTier === 'desktop' ? 12 : 6,
+      timeoutMs: deviceTier === 'phone' ? 9000 : 7000
+    });
+
+    await waitNextPaint();
+
+    if (cancelContext.isCancelled()) {
+      throw new Error('export-cancelled');
+    }
+
+    const width = Math.max(1, Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0));
+    const height = Math.max(1, Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0));
+    const heavyMediaCount = countHeavyMediaNodes(renderEl);
+    const pixelRatioPlan = buildCapturePixelRatioPlan(deviceTier);
+    let canvas = null;
+    let lastRenderError = null;
+
+    for (let attemptIdx = 0; attemptIdx < pixelRatioPlan.length; attemptIdx += 1) {
+      const pixelRatio = pixelRatioPlan[attemptIdx];
+      const canvasWidth = Math.max(1, Math.round(width * pixelRatio));
+      const canvasHeight = Math.max(1, Math.round(height * pixelRatio));
+      const renderTimeoutMs = Math.min(
+        56000,
+        Math.max(12000, Math.round(computeRenderTimeoutMs({
+          deviceTier,
+          heavyMediaCount,
+          width,
+          height,
+          scale: pixelRatio
+        }) * (1.35 + (attemptIdx * 0.25))))
+      );
+
+      setScreenshotModalState({
+        state: 'capturing',
+        title: '截图中',
+        message: `[渲染中] ${exportLabel}（${width}x${height}，像素比 x${pixelRatio.toFixed(2)}，尝试 ${attemptIdx + 1}/${pixelRatioPlan.length}）`,
+        cancelTask: cancelContext.cancel
+      });
+
+      try {
+        const renderTask = trackCardCaptureRenderTask(toCanvas(renderEl, {
+          backgroundColor: '#ffffff',
+          width,
+          height,
+          canvasWidth,
+          canvasHeight,
+          pixelRatio: 1,
+          skipFonts: false,
+          cacheBust: false,
+          skipAutoScale: true,
+          imagePlaceholder: CAPTURE_IMAGE_PLACEHOLDER,
+          filter: (node) => {
+            if (node.classList && node.classList.contains('nav-cutoff-controls')) {
+              return false;
+            }
+            return true;
+          }
+        }));
+
+        canvas = await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
+        if (canvas) break;
+      } catch (renderError) {
+        lastRenderError = renderError;
+        if (isExportCancelledError(renderError)) {
+          throw renderError;
+        }
+        if (isRenderTimeoutError(renderError)) {
+          forceReleaseCardCaptureRenderTask();
+        }
+        if (isEventLikeCaptureError(renderError)) {
+          hideTransientMediaForCapture(renderEl);
+          await preloadImageUrlsForCapture(renderEl, {
+            maxImages: 520,
+            concurrency: 4,
+            timeoutMs: 9000
+          });
+          await waitNextPaint();
+        }
+      }
+    }
+
+    if (!canvas) {
+      throw lastRenderError || new Error('toCanvas returned null');
+    }
 
     setScreenshotModalState({
       state: 'exporting',
       title: '导出图片',
       message: '[编码中] 正在生成 PNG 文件...',
-      cancelTask: () => {}
+      cancelTask: cancelContext.cancel
     });
 
     const ts = typeof formatExportTimestamp === 'function' ? formatExportTimestamp() : Date.now();
@@ -4297,14 +5015,42 @@ const runExportElementPng = async (id, title, options = {}) => {
       autoCloseMs: 1400
     });
   } catch (error) {
+    if (isExportCancelledError(error)) {
+      setScreenshotModalState({
+        state: 'idle',
+        title: '',
+        message: '',
+        cancelTask: null
+      });
+      return;
+    }
+    if (isRenderTimeoutError(error)) {
+      forceReleaseCardCaptureRenderTask();
+    }
+    const detail = getCaptureErrorText(error);
     console.error('导出失败:', error);
     setScreenshotModalState({
       state: 'failed',
       title: '截图失败',
-      message: '[失败] 导出发生错误: ' + error.message,
+      message: '[失败] 导出发生错误: ' + detail.text,
       retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
       cancelTask: null
     });
+  } finally {
+    restoreFrozenCssVars();
+    restoreHiddenLiveControls();
+    restoreSingleCardFill();
+    if (screenshotModalCancelTask.value === cancelContext.cancel) {
+      screenshotModalCancelTask.value = null;
+    }
+    if (cloneEl) {
+      const cloneHost = cloneEl.parentNode;
+      if (cloneHost instanceof HTMLElement && cloneHost.classList.contains('export-clone-host')) {
+        cloneHost.remove();
+      } else if (cloneEl.parentNode) {
+        cloneEl.parentNode.removeChild(cloneEl);
+      }
+    }
   }
 };
 
@@ -4456,6 +5202,8 @@ onMounted(() => {
   bindSectionObserver();
   nextTick(() => {
     bindRelatedJumpChipObservers();
+    bindLineupCardModeLayoutObserver();
+    triggerLineupCardModeRowLayoutSyncBurst();
   });
 });
 
@@ -4482,6 +5230,22 @@ onBeforeUnmount(() => {
   if (relatedJumpChipSyncRaf) {
     cancelAnimationFrame(relatedJumpChipSyncRaf);
     relatedJumpChipSyncRaf = 0;
+  }
+  if (lineupCardLayoutSyncRaf) {
+    cancelAnimationFrame(lineupCardLayoutSyncRaf);
+    lineupCardLayoutSyncRaf = 0;
+  }
+  if (lineupCardLayoutSyncTimer) {
+    clearTimeout(lineupCardLayoutSyncTimer);
+    lineupCardLayoutSyncTimer = 0;
+  }
+  if (lineupCardLayoutResizeObserver) {
+    lineupCardLayoutResizeObserver.disconnect();
+    lineupCardLayoutResizeObserver = null;
+  }
+  if (lineupCardLayoutMutationObserver) {
+    lineupCardLayoutMutationObserver.disconnect();
+    lineupCardLayoutMutationObserver = null;
   }
   if (relatedJumpResizeObserver) {
     relatedJumpResizeObserver.disconnect();
@@ -4861,6 +5625,10 @@ const toggleTopBarNavCollapsed = () => {
 watch(displayEventId, () => {
   updateDisplayEventIdDraft();
 }, { immediate: true });
+
+watch(navCollapsed, () => {
+  triggerLineupCardModeRowLayoutSyncBurst();
+});
 
 const safeMaxEventId = computed(() => {
   const n = toFiniteEventId(displayEventId.value);
@@ -5735,6 +6503,9 @@ const onLineupShowCardImagesChange = (event) => {
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
     lineupShowCardImages.value = checked;
+    void nextTick(() => {
+      queueLineupCardModeRowLayoutSync();
+    });
   }, anchorEl);
 };
 
@@ -5743,6 +6514,9 @@ const onSupportShowCardImagesChange = (event) => {
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
     supportShowCardImages.value = checked;
+    void nextTick(() => {
+      queueLineupCardModeRowLayoutSync();
+    });
   }, anchorEl);
 };
 
