@@ -4371,17 +4371,23 @@ const getHistoryCaptureDeviceTier = () => {
   return 'desktop';
 };
 
-const withCaptureTimeout = async (promise, timeoutMs) => {
+const withCaptureTimeout = async (promise, timeoutMs, cancelPromise = null) => {
   let timer = 0;
   try {
-    return await Promise.race([
+    const raceTasks = [
       promise,
       new Promise((_, reject) => {
         timer = window.setTimeout(() => {
           reject(new Error(`capture-timeout-${timeoutMs}`));
         }, timeoutMs);
       })
-    ]);
+    ];
+    if (cancelPromise) {
+      raceTasks.push(cancelPromise.then(() => {
+        throw new Error('export-cancelled');
+      }));
+    }
+    return await Promise.race(raceTasks);
   } finally {
     if (timer) clearTimeout(timer);
   }
@@ -4389,13 +4395,14 @@ const withCaptureTimeout = async (promise, timeoutMs) => {
 
 const computeHistoryCaptureTimeoutMs = ({ deviceTier, width, height, scale }) => {
   const totalMegaPixels = (Math.max(1, width) * Math.max(1, height) * Math.max(1, scale) * Math.max(1, scale)) / 1000000;
-  let timeout = deviceTier === 'phone' ? 26000 : (deviceTier === 'tablet' ? 28000 : 30000);
-  if (totalMegaPixels >= 18) timeout += 8000;
-  if (totalMegaPixels >= 28) timeout += 10000;
-  if (totalMegaPixels >= 40) timeout += 12000;
-  if (deviceTier === 'phone') return Math.min(62000, timeout);
-  if (deviceTier === 'tablet') return Math.min(70000, timeout);
-  return Math.min(76000, timeout);
+  if (totalMegaPixels <= 4) return 4500;
+  if (totalMegaPixels <= 8) return 6200;
+  if (totalMegaPixels <= 14) return 8000;
+  if (totalMegaPixels <= 22) return 9800;
+  if (totalMegaPixels <= 32) return 11800;
+  if (deviceTier === 'phone') return 14500;
+  if (deviceTier === 'tablet') return 16000;
+  return 15000;
 };
 
 const buildHistoryScaleCandidates = ({ bounds, deviceTier, deviceScale, useExperimentalHQ }) => {
@@ -4420,6 +4427,8 @@ const buildHistoryScaleCandidates = ({ bounds, deviceTier, deviceScale, useExper
 const exportPredictedRangePng = async (options = {}) => {
   const includeBirthdayRows = options?.includeBirthdayRows !== false;
   const onStatus = typeof options?.onStatus === 'function' ? options.onStatus : null;
+  const cancelPromise = options?.cancelPromise || null;
+  const isCancelled = typeof options?.isCancelled === 'function' ? options.isCancelled : (() => false);
   const { rows, rowsAllInRange, error } = getExportRowsInRange(includeBirthdayRows, {
     rangeStartId: options?.rangeStartId,
     rangeEndId: options?.rangeEndId
@@ -4445,6 +4454,9 @@ const exportPredictedRangePng = async (options = {}) => {
         deviceScale,
         useExperimentalHQ
       });
+      if (isCancelled()) {
+        throw new Error('export-cancelled');
+      }
       const baseScale = Number(scales[0] || 1);
       onStatus?.({
         state: 'capturing',
@@ -4459,6 +4471,9 @@ const exportPredictedRangePng = async (options = {}) => {
       let lastErr = null;
       for (let idx = 0; idx < scales.length; idx += 1) {
         const scale = scales[idx];
+        if (isCancelled()) {
+          throw new Error('export-cancelled');
+        }
         if (idx > 0) {
           onStatus?.({
             state: 'retrying',
@@ -4467,7 +4482,7 @@ const exportPredictedRangePng = async (options = {}) => {
             deviceTier,
             currentAttempt: idx + 1,
             totalAttempts: scales.length,
-            message: `截图失败，正在降级重试（${idx}/${Math.max(1, scales.length - 1)}）...`
+            message: `截图失败，正在降级到清晰度 x${scale.toFixed(2)} 重试（${idx}/${Math.max(1, scales.length - 1)}）...`
           });
         }
 
@@ -4490,7 +4505,7 @@ const exportPredictedRangePng = async (options = {}) => {
             height: bounds.height,
             scrollX: 0,
             scrollY: 0
-          }), timeoutMs);
+          }), timeoutMs, cancelPromise);
         } catch (err) {
           lastErr = err;
         }
@@ -4528,6 +4543,9 @@ const exportPredictedRangePng = async (options = {}) => {
     });
     return { ok: true, message: '预测截图导出成功。' };
   } catch (err) {
+    if (String(err?.message || '').includes('export-cancelled')) {
+      return { ok: false, cancelled: true, message: '已取消截图。' };
+    }
     console.error('导出预测截图失败', err);
     onStatus?.({
       state: 'failed',

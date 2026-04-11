@@ -184,10 +184,6 @@
             <input v-model="exportBirthdayRowsInPng" type="checkbox" />
             <span>截图导出生日行</span>
           </label>
-          <label v-if="isCompactTopNav" class="source-export-option">
-            <input v-model="experimentalHighQualityPng" type="checkbox" />
-            <span>实验：高清导出（更慢，失败后可能自动降级）</span>
-          </label>
           <div v-if="showScreenshotConfirmPanel" class="source-export-confirm">
             <div class="source-export-confirm-title">将要导出{{ screenshotConfirmRangeText }}期活动</div>
             <div class="source-export-confirm-row source-export-range-row">
@@ -310,12 +306,21 @@
     >
       <div class="app-screenshot-modal" :class="`is-${screenshotExportModalState}`" role="status" aria-live="polite">
         <div class="app-screenshot-modal-head">
-          <span
+          <div class="app-screenshot-modal-head-main">
+            <span
+              v-if="screenshotExportModalState === 'capturing' || screenshotExportModalState === 'retrying'"
+              class="app-screenshot-modal-spinner"
+              aria-hidden="true"
+            ></span>
+            <span class="app-screenshot-modal-title">{{ screenshotExportModalTitle }}</span>
+          </div>
+          <button
             v-if="screenshotExportModalState === 'capturing' || screenshotExportModalState === 'retrying'"
-            class="app-screenshot-modal-spinner"
-            aria-hidden="true"
-          ></span>
-          <span class="app-screenshot-modal-title">{{ screenshotExportModalTitle }}</span>
+            class="io-btn app-screenshot-modal-close-btn"
+            @click="forceCancelScreenshotExport"
+          >
+            取消
+          </button>
         </div>
         <p class="app-screenshot-modal-message">{{ screenshotExportModalMessage }}</p>
         <div v-if="screenshotExportModalState === 'failed'" class="app-screenshot-modal-actions">
@@ -399,7 +404,6 @@ const isEditingPredictUserName = ref(false);
 const isCompactTopNav = ref(false);
 const isStatsTopNavCompact = ref(false);
 const exportBirthdayRowsInPng = ref(true);
-const experimentalHighQualityPng = ref(false);
 const isScreenshotExporting = ref(false);
 const screenshotStatusText = ref('');
 const screenshotExportModalVisible = ref(false);
@@ -407,6 +411,7 @@ const screenshotExportModalState = ref('idle');
 const screenshotExportModalTitle = ref('');
 const screenshotExportModalMessage = ref('');
 const screenshotExportModalRetryTask = ref(null);
+const screenshotExportModalCancelTask = ref(null);
 const showScreenshotConfirmPanel = ref(false);
 const showCreateSourceConfirmPanel = ref(false);
 const createSourceCloneCurrent = ref(true);
@@ -1411,13 +1416,14 @@ const clearScreenshotExportModalAutoClose = () => {
   screenshotExportModalAutoCloseTimer = null;
 };
 
-const setScreenshotExportModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, autoCloseMs = 0 } = {}) => {
+const setScreenshotExportModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, cancelTask = null, autoCloseMs = 0 } = {}) => {
   clearScreenshotExportModalAutoClose();
   screenshotExportModalVisible.value = true;
   screenshotExportModalState.value = state;
   screenshotExportModalTitle.value = title;
   screenshotExportModalMessage.value = message;
   screenshotExportModalRetryTask.value = typeof retryTask === 'function' ? retryTask : null;
+  screenshotExportModalCancelTask.value = typeof cancelTask === 'function' ? cancelTask : null;
   if (autoCloseMs > 0) {
     screenshotExportModalAutoCloseTimer = setTimeout(() => {
       screenshotExportModalVisible.value = false;
@@ -1434,6 +1440,22 @@ const closeScreenshotExportModal = () => {
   screenshotExportModalTitle.value = '';
   screenshotExportModalMessage.value = '';
   screenshotExportModalRetryTask.value = null;
+  screenshotExportModalCancelTask.value = null;
+};
+
+const forceCancelScreenshotExport = () => {
+  const task = screenshotExportModalCancelTask.value;
+  if (typeof task === 'function') {
+    task();
+  }
+  isScreenshotExporting.value = false;
+  clearScreenshotExportModalAutoClose();
+  screenshotExportModalVisible.value = false;
+  screenshotExportModalState.value = 'idle';
+  screenshotExportModalTitle.value = '';
+  screenshotExportModalMessage.value = '';
+  screenshotExportModalRetryTask.value = null;
+  screenshotExportModalCancelTask.value = null;
 };
 
 const retryScreenshotExport = async () => {
@@ -1451,7 +1473,8 @@ const applyHistoryCaptureProgress = (status, options = {}) => {
     setScreenshotExportModalState({
       state: 'retrying',
       title: '失败降级重试中',
-      message: message || '截图失败，正在降级重试...'
+      message: message || '截图失败，正在降级重试...',
+      cancelTask: options?.cancelTask || null
     });
     return;
   }
@@ -1459,7 +1482,8 @@ const applyHistoryCaptureProgress = (status, options = {}) => {
     setScreenshotExportModalState({
       state: options?.fromRetry ? 'retrying' : 'capturing',
       title: options?.fromRetry ? '重新截图中' : '截图中',
-      message: message || '正在导出「预测活动」...'
+      message: message || '正在导出「预测活动」...',
+      cancelTask: options?.cancelTask || null
     });
     return;
   }
@@ -1468,9 +1492,29 @@ const applyHistoryCaptureProgress = (status, options = {}) => {
       state: 'success',
       title: '截图完成',
       message: message || '预测截图导出成功。',
+      cancelTask: null,
       autoCloseMs: 1400
     });
   }
+};
+
+const createScreenshotExportCancelContext = () => {
+  let resolveCancel = null;
+  let cancelled = false;
+  const cancelPromise = new Promise((resolve) => {
+    resolveCancel = resolve;
+  });
+  return {
+    cancelPromise,
+    isCancelled: () => cancelled,
+    cancel: () => {
+      if (cancelled) return;
+      cancelled = true;
+      if (typeof resolveCancel === 'function') {
+        resolveCancel(true);
+      }
+    }
+  };
 };
 
 const prepareScreenshotExport = async () => {
@@ -1581,7 +1625,7 @@ const buildScreenshotExportRequest = () => {
     payload: {
       includeBirthdayRows: !!exportBirthdayRowsInPng.value,
       fileBaseName,
-      experimentalHQ: !!experimentalHighQualityPng.value,
+      experimentalHQ: false,
       rangeStartId,
       rangeEndId
     }
@@ -1593,10 +1637,12 @@ const runScreenshotExport = async (payload, options = {}) => {
   if (!requestPayload) return { ok: false, message: '导出参数无效。' };
 
   isScreenshotExporting.value = true;
+  const cancelContext = createScreenshotExportCancelContext();
   setScreenshotExportModalState({
     state: options?.fromRetry ? 'retrying' : 'capturing',
     title: options?.fromRetry ? '重新截图中' : '截图中',
-    message: '正在准备导出范围...'
+    message: '正在准备导出范围...',
+    cancelTask: cancelContext.cancel
   });
 
   try {
@@ -1618,15 +1664,22 @@ const runScreenshotExport = async (payload, options = {}) => {
         state: 'failed',
         title: '截图失败',
         message: '历史页面尚未准备完成，请稍后重试。可能是渲染问题，再试一次没准行，这次你一定要成功。',
-        retryTask: () => runScreenshotExport(requestPayload, { fromRetry: true })
+        retryTask: () => runScreenshotExport(requestPayload, { fromRetry: true }),
+        cancelTask: null
       });
       return { ok: false, message: '历史页面尚未准备完成，请稍后重试。' };
     }
 
     const result = await instance.exportPredictedRangePng({
       ...requestPayload,
-      onStatus: (status) => applyHistoryCaptureProgress(status, { fromRetry: !!options?.fromRetry })
+      cancelPromise: cancelContext.cancelPromise,
+      isCancelled: cancelContext.isCancelled,
+      onStatus: (status) => applyHistoryCaptureProgress(status, { fromRetry: !!options?.fromRetry, cancelTask: cancelContext.cancel })
     });
+
+    if (result?.cancelled) {
+      return { ok: false, message: '已取消截图。' };
+    }
 
     if (!result?.ok) {
       const failedMessage = result?.message || '导出失败，可能是渲染问题，再试一次没准行，这次你一定要成功。';
@@ -1634,7 +1687,8 @@ const runScreenshotExport = async (payload, options = {}) => {
         state: 'failed',
         title: '截图失败',
         message: failedMessage,
-        retryTask: () => runScreenshotExport(requestPayload, { fromRetry: true })
+        retryTask: () => runScreenshotExport(requestPayload, { fromRetry: true }),
+        cancelTask: null
       });
       return { ok: false, message: failedMessage };
     }
@@ -1646,6 +1700,7 @@ const runScreenshotExport = async (payload, options = {}) => {
       state: 'success',
       title: '截图完成',
       message: '预测截图导出成功。',
+      cancelTask: null,
       autoCloseMs: 1400
     });
     return { ok: true, message: '' };
@@ -1656,10 +1711,14 @@ const runScreenshotExport = async (payload, options = {}) => {
       state: 'failed',
       title: '截图失败',
       message: failedMessage,
-      retryTask: () => runScreenshotExport(requestPayload, { fromRetry: true })
+      retryTask: () => runScreenshotExport(requestPayload, { fromRetry: true }),
+      cancelTask: null
     });
     return { ok: false, message: failedMessage };
   } finally {
+    if (screenshotExportModalCancelTask.value === cancelContext.cancel) {
+      screenshotExportModalCancelTask.value = null;
+    }
     isScreenshotExporting.value = false;
   }
 };
@@ -2229,6 +2288,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateSourceMenuPosition);
   window.removeEventListener('resize', handleStatsSongsViewportResize);
   window.removeEventListener('scroll', updateSourceMenuPosition, true);
+  if (typeof screenshotExportModalCancelTask.value === 'function') {
+    screenshotExportModalCancelTask.value();
+  }
+  screenshotExportModalCancelTask.value = null;
   if (tabReflowObserver) {
     tabReflowObserver.disconnect();
     tabReflowObserver = null;
@@ -3046,6 +3109,13 @@ button.active {
 }
 
 .app-screenshot-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app-screenshot-modal-head-main {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -3086,6 +3156,11 @@ button.active {
 
 .app-screenshot-modal-btn-secondary {
   opacity: 0.9;
+}
+
+.app-screenshot-modal-close-btn {
+  min-width: 56px;
+  padding: 2px 8px;
 }
 
 @keyframes app-screenshot-spin {

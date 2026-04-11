@@ -1457,7 +1457,7 @@
               :id="getLineupCardId(row.name)"
               :data-scroll-anchor="getLineupCardId(row.name)"
               class="lineup-card"
-              :style="{ '--lineup-accent': getCharColor(row.name), backgroundColor: getRecordTint(row.name, 0.2) }"
+              :style="{ '--lineup-accent': getCharColor(row.name), '--unit-card-accent-color': getMatrixUnitColor(row.name), backgroundColor: getRecordTint(row.name, 0.2) }"
             >
               <div class="lineup-char-head">
                 <div class="lineup-char-main">
@@ -1592,7 +1592,7 @@
               :id="getSupportCardId(unitRow.unit)"
               :data-scroll-anchor="getSupportCardId(unitRow.unit)"
               class="support-card"
-              :style="{ backgroundColor: hexToRgba(UNIT_COLORS[unitRow.unit] || '#64748b', 0.12) }"
+              :style="{ '--unit-card-accent-color': getUnitAccentColor(unitRow.unit), backgroundColor: hexToRgba(getUnitAccentColor(unitRow.unit), 0.12) }"
             >
               <div class="support-head">
                 <img :src="supportUnitTitleLogoMap[unitRow.unit] || unitLogoMap[unitRow.unit]" class="support-unit-title-logo" :title="unitRow.unit.toUpperCase()" />
@@ -1669,6 +1669,86 @@
           </div>
         </div>
         
+        <div id="panel-attr-summary" data-scroll-anchor="panel-attr-summary" class="stats-section card-panel matrix-panel attr-summary-panel">
+          <div class="section-head">
+            <h2>花色统计</h2>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-attr-summary', '花色统计')">PNG</button>
+          </div>
+          <div class="attr-summary-grid">
+            <div
+              v-for="card in attrSummaryCards"
+              :key="`attr-summary-${card.name}`"
+              :id="card.anchorId"
+              :data-scroll-anchor="card.anchorId"
+              class="attr-summary-card"
+              :style="{
+                backgroundColor: getCharTint(card.name),
+                '--unit-card-accent-color': getMatrixUnitColor(card.name)
+              }"
+            >
+              <div class="attr-summary-card-head">
+                <div class="attr-summary-head-left">
+                  <img
+                    :src="`/chibi_s/${getCharAbbr(card.name)}.webp`"
+                    class="attr-summary-avatar"
+                    :title="card.name"
+                    :alt="card.name"
+                    :style="{ borderColor: getCharColor(card.name) }"
+                  />
+                  <span class="attr-summary-name">{{ card.name }}</span>
+                </div>
+                <button
+                  class="card-export-btn"
+                  :disabled="isExportingPng"
+                  @click="exportElementPng(card.anchorId, `花色统计_${card.name}`)"
+                >PNG</button>
+              </div>
+
+              <table class="attr-summary-table">
+                <thead>
+                  <tr>
+                    <th>属性</th>
+                    <th>{{ card.mainScoreLabel }}</th>
+                    <th>普分</th>
+                    <th>P 分</th>
+                    <th>判卡</th>
+                    <th>奶卡</th>
+                    <th>四星</th>
+                    <th>三星</th>
+                    <th>二星</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in card.rows" :key="`attr-summary-${card.name}-${row.attr}`" class="attr-summary-data-row" :style="getAttrSummaryAttrRowStyle(row.attr)">
+                    <td class="attr-summary-attr-cell">
+                      <img :src="`/elements/${String(row.attr).toLowerCase()}.png`" class="attr-summary-attr-icon" :alt="ATTR_LABELS[row.attr]" :title="ATTR_LABELS[row.attr]" />
+                    </td>
+                    <td class="attr-summary-num">{{ row.mainScoreCount }}</td>
+                    <td class="attr-summary-num">{{ row.scoreUpCount }}</td>
+                    <td class="attr-summary-num">{{ row.pScoreCount }}</td>
+                    <td class="attr-summary-num">{{ row.accuracyCount }}</td>
+                    <td class="attr-summary-num">{{ row.recoveryCount }}</td>
+                    <td class="attr-summary-num">{{ row.fourStarCount }}</td>
+                    <td class="attr-summary-num">{{ row.threeStarCount }}</td>
+                    <td class="attr-summary-num">{{ row.twoStarCount }}</td>
+                  </tr>
+                  <tr class="attr-summary-total-row">
+                    <td class="attr-summary-attr-cell">总计</td>
+                    <td class="attr-summary-num">{{ card.totalRow.mainScoreCount }}</td>
+                    <td class="attr-summary-num">{{ card.totalRow.scoreUpCount }}</td>
+                    <td class="attr-summary-num">{{ card.totalRow.pScoreCount }}</td>
+                    <td class="attr-summary-num">{{ card.totalRow.accuracyCount }}</td>
+                    <td class="attr-summary-num">{{ card.totalRow.recoveryCount }}</td>
+                    <td class="attr-summary-num">{{ card.totalRow.fourStarCount }}</td>
+                    <td class="attr-summary-num">{{ card.totalRow.threeStarCount }}</td>
+                    <td class="attr-summary-num">{{ card.totalRow.twoStarCount }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div id="panel-matrix" data-scroll-anchor="panel-matrix" class="stats-section card-panel matrix-panel">
           <div class="section-head">
             <div class="section-head-left">
@@ -1903,12 +1983,21 @@
     >
       <div class="screenshot-export-modal" :class="`is-${screenshotModalState}`" role="status" aria-live="polite">
         <div class="screenshot-export-modal-head">
-          <span
+          <div class="screenshot-export-modal-head-main">
+            <span
+              v-if="screenshotModalState === 'capturing' || screenshotModalState === 'retrying'"
+              class="screenshot-export-modal-spinner"
+              aria-hidden="true"
+            ></span>
+            <span class="screenshot-export-modal-title">{{ screenshotModalTitle }}</span>
+          </div>
+          <button
             v-if="screenshotModalState === 'capturing' || screenshotModalState === 'retrying'"
-            class="screenshot-export-modal-spinner"
-            aria-hidden="true"
-          ></span>
-          <span class="screenshot-export-modal-title">{{ screenshotModalTitle }}</span>
+            class="card-export-btn screenshot-export-modal-close-btn"
+            @click="forceCancelScreenshotExport"
+          >
+            取消
+          </button>
         </div>
         <p class="screenshot-export-modal-message">{{ screenshotModalMessage }}</p>
         <div v-if="screenshotModalState === 'failed'" class="screenshot-export-modal-actions">
@@ -1998,6 +2087,7 @@ const screenshotModalState = ref('idle');
 const screenshotModalTitle = ref('');
 const screenshotModalMessage = ref('');
 const screenshotModalRetryTask = ref(null);
+const screenshotModalCancelTask = ref(null);
 let screenshotModalAutoCloseTimer = 0;
 let matrixSortAnchorTimer = 0;
 let navSyncRaf = 0;
@@ -2197,14 +2287,7 @@ watch(
 );
 
 const LINEUP_CHAR_NAMES = computed(() => {
-  const names = Object.keys(CHAR_ORDER).sort((a, b) => (CHAR_ORDER[a] || 999) - (CHAR_ORDER[b] || 999));
-  const lukaIdx = names.indexOf('巡音流歌');
-  const mikuIdx = names.indexOf('初音未来');
-  if (lukaIdx >= 0 && mikuIdx >= 0 && lukaIdx !== mikuIdx + 1) {
-    names.splice(lukaIdx, 1);
-    names.splice(mikuIdx + 1, 0, '巡音流歌');
-  }
-  return names;
+  return toDisplayOrderedCharNames(Object.keys(CHAR_ORDER));
 });
 const ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
 const SUPPORT_WL_ATTR = 'wl';
@@ -2541,7 +2624,20 @@ const daysBetween = (dateA, dateB) => {
   return Math.round(diff / (1000 * 60 * 60 * 24));
 };
 
+const toDisplayOrderedCharNames = (sourceNames) => {
+  const names = [...(sourceNames || [])].sort((a, b) => (CHAR_ORDER[a] || 999) - (CHAR_ORDER[b] || 999));
+  const lukaIdx = names.indexOf('巡音流歌');
+  const mikuIdx = names.indexOf('初音未来');
+  if (lukaIdx >= 0 && mikuIdx >= 0 && lukaIdx !== mikuIdx + 1) {
+    names.splice(lukaIdx, 1);
+    names.splice(mikuIdx + 1, 0, '巡音流歌');
+  }
+  return names;
+};
+
 const compareCharOrder = (a, b) => (CHAR_ORDER[a] || 999) - (CHAR_ORDER[b] || 999);
+
+const getUnitAccentColor = (unit) => UNIT_COLORS[String(unit || '').trim().toLowerCase()] || '#64748b';
 
 const getTypeSeriesText = (value) => {
   const s = String(value ?? '').trim();
@@ -2727,6 +2823,112 @@ const supportUnitNavChildren = computed(() => {
     }));
 });
 
+const createAttrSummaryMetricSeed = () => ({
+  pureScoreCount: 0,
+  unitScoreCount: 0,
+  scoreUpCount: 0,
+  pScoreCount: 0,
+  accuracyCount: 0,
+  recoveryCount: 0,
+  fourStarCount: 0,
+  threeStarCount: 0,
+  twoStarCount: 0
+});
+
+const createAttrSummarySeed = () => ({
+  Pure: createAttrSummaryMetricSeed(),
+  Cool: createAttrSummaryMetricSeed(),
+  Cute: createAttrSummaryMetricSeed(),
+  Happy: createAttrSummaryMetricSeed(),
+  Mysterious: createAttrSummaryMetricSeed(),
+  total: createAttrSummaryMetricSeed()
+});
+
+const attrSummaryCards = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const names = toDisplayOrderedCharNames(Object.keys(CHAR_ORDER));
+  const statsByName = Object.fromEntries(names.map((name) => [name, createAttrSummarySeed()]));
+  const pureExcludedSkills = includeUnitScoreInPureScore.value
+    ? new Set(['accuracy', 'recovery', '-', ''])
+    : new Set(['accuracy', 'recovery', 'unit_score', '-', '']);
+
+  (props.allCards || []).forEach((card) => {
+    const name = String(card?.Name || '').trim();
+    if (!statsByName[name]) return;
+    if (!isCardWithinLimit(card, maxEid)) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    if (!ATTRS.includes(attr)) return;
+
+    const rarity = String(card?.Rarity || '').trim();
+    const skill = String(card?.Skill || '').trim().toLowerCase();
+    const attrBucket = statsByName[name][attr];
+    const totalBucket = statsByName[name].total;
+    const increase = (key) => {
+      attrBucket[key] += 1;
+      totalBucket[key] += 1;
+    };
+
+    if (rarity === '4') {
+      increase('fourStarCount');
+      if (skill === 'score_up') increase('scoreUpCount');
+      if (skill === 'p_score') increase('pScoreCount');
+      if (skill === 'accuracy') increase('accuracyCount');
+      if (skill === 'recovery') increase('recoveryCount');
+      if (skill === 'unit_score') increase('unitScoreCount');
+      if (!pureExcludedSkills.has(skill)) increase('pureScoreCount');
+    }
+
+    if (rarity === '3') increase('threeStarCount');
+    if (rarity === '2') increase('twoStarCount');
+  });
+
+  const toSummaryRow = (bucket, isVs, attr) => {
+    const source = bucket || createAttrSummaryMetricSeed();
+    return {
+      attr,
+      mainScoreCount: isVs ? Number(source.unitScoreCount || 0) : Number(source.pureScoreCount || 0),
+      scoreUpCount: Number(source.scoreUpCount || 0),
+      pScoreCount: Number(source.pScoreCount || 0),
+      accuracyCount: Number(source.accuracyCount || 0),
+      recoveryCount: Number(source.recoveryCount || 0),
+      fourStarCount: Number(source.fourStarCount || 0),
+      threeStarCount: Number(source.threeStarCount || 0),
+      twoStarCount: Number(source.twoStarCount || 0)
+    };
+  };
+
+  return names.map((name) => {
+    const isVs = isVirtualSinger(name);
+    const unit = String(getUnitByChar(name) || '').toLowerCase() || 'vs';
+    const source = statsByName[name] || createAttrSummarySeed();
+    return {
+      name,
+      unit,
+      anchorId: getAttrSummaryCardId(name),
+      mainScoreLabel: isVs ? '团分' : '分卡',
+      rows: ATTRS.map((attr) => toSummaryRow(source[attr], isVs, attr)),
+      totalRow: toSummaryRow(source.total, isVs, 'total')
+    };
+  });
+});
+
+const attrSummaryUnitNavChildren = computed(() => {
+  const firstByUnit = {};
+  (attrSummaryCards.value || []).forEach((card) => {
+    const unit = String(card?.unit || '').toLowerCase();
+    if (!LINEUP_NAV_UNITS.includes(unit)) return;
+    if (!firstByUnit[unit]) firstByUnit[unit] = card;
+  });
+
+  return LINEUP_NAV_UNITS
+    .filter((unit) => !!firstByUnit[unit])
+    .map((unit) => ({
+      id: firstByUnit[unit].anchorId,
+      title: getUnitNavTitle(unit)
+    }));
+});
+
 const navGroups = computed(() => {
   const distChildren = groupPanels.value.map((p) => ({
     id: `panel-${p.id}`,
@@ -2761,6 +2963,11 @@ const navGroups = computed(() => {
       id: 'panel-support',
       title: '支援配队',
       children: supportUnitNavChildren.value
+    },
+    {
+      id: 'panel-attr-summary',
+      title: '花色统计',
+      children: attrSummaryUnitNavChildren.value
     },
     {
       id: 'panel-matrix',
@@ -3316,13 +3523,14 @@ const clearScreenshotModalAutoClose = () => {
   screenshotModalAutoCloseTimer = 0;
 };
 
-const setScreenshotModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, autoCloseMs = 0 } = {}) => {
+const setScreenshotModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, cancelTask = null, autoCloseMs = 0 } = {}) => {
   clearScreenshotModalAutoClose();
   screenshotModalVisible.value = true;
   screenshotModalState.value = state;
   screenshotModalTitle.value = title;
   screenshotModalMessage.value = message;
   screenshotModalRetryTask.value = typeof retryTask === 'function' ? retryTask : null;
+  screenshotModalCancelTask.value = typeof cancelTask === 'function' ? cancelTask : null;
   if (autoCloseMs > 0) {
     screenshotModalAutoCloseTimer = setTimeout(() => {
       if (!isExportingPng.value) {
@@ -3341,6 +3549,22 @@ const closeScreenshotModal = () => {
   screenshotModalTitle.value = '';
   screenshotModalMessage.value = '';
   screenshotModalRetryTask.value = null;
+  screenshotModalCancelTask.value = null;
+};
+
+const forceCancelScreenshotExport = () => {
+  const task = screenshotModalCancelTask.value;
+  if (typeof task === 'function') {
+    task();
+  }
+  isExportingPng.value = false;
+  clearScreenshotModalAutoClose();
+  screenshotModalVisible.value = false;
+  screenshotModalState.value = 'idle';
+  screenshotModalTitle.value = '';
+  screenshotModalMessage.value = '';
+  screenshotModalRetryTask.value = null;
+  screenshotModalCancelTask.value = null;
 };
 
 const retryScreenshotExport = async () => {
@@ -3396,7 +3620,9 @@ const countHeavyMediaNodes = (rootEl) => {
   mediaNodes.forEach((img) => {
     const src = String(img?.getAttribute('src') || img?.currentSrc || '').toLowerCase();
     const cls = String(img?.className || '').toLowerCase();
-    if (src.includes('/cards/') || src.includes('/songs/') || cls.includes('card') || cls.includes('jacket')) {
+    const isIconLike = src.includes('/icon/') || cls.includes('icon') || cls.includes('badge') || cls.includes('chip');
+    if (isIconLike) return;
+    if (src.includes('/cards/') || (src.includes('/songs/') && !src.includes('/icon/')) || cls.includes('card') || cls.includes('jacket')) {
       heavy += 1;
     }
   });
@@ -3424,17 +3650,8 @@ const buildAdaptiveScaleCandidates = (preferredScale, deviceTier, heavyMediaCoun
   return targeted.length ? targeted : base;
 };
 
-const buildCardCaptureProfile = ({ renderHeight, deviceTier, dpr, heavyMediaCount, isLineupLikePanelExport }) => {
-  const height = Math.max(1, Number(renderHeight || 0));
-  const normalizedDpr = Math.max(1, Number(dpr || 1));
-  const isMobileScreen = deviceTier !== 'desktop';
-  const preferredScale = isLineupLikePanelExport
-    ? (isMobileScreen
-        ? (height > 9000 ? 1.35 : Math.max(1.6, Math.min(2.1, normalizedDpr)))
-        : (height > 12000 ? Math.max(1.25, Math.min(1.6, normalizedDpr)) : Math.max(1.6, normalizedDpr)))
-    : (isMobileScreen
-        ? Math.max(1.9, Math.min(2.25, normalizedDpr))
-        : Math.max(2, normalizedDpr));
+const buildCardCaptureProfile = ({ deviceTier, heavyMediaCount }) => {
+  const preferredScale = 2.0;
   const scales = buildAdaptiveScaleCandidates(preferredScale, deviceTier, heavyMediaCount);
   const baseScale = Number(scales[0] || preferredScale || 1);
   return {
@@ -3450,17 +3667,15 @@ const buildCardCaptureMessage = (exportTitle, baseScale) => {
 };
 
 const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, scale }) => {
-  const isMobileScreen = deviceTier !== 'desktop';
   const totalMegaPixels = (Math.max(1, width) * Math.max(1, height) * Math.max(1, scale) * Math.max(1, scale)) / 1000000;
-  let timeout = 24000;
-  if (deviceTier === 'phone') timeout = 22000;
-  if (deviceTier === 'tablet') timeout = 24000;
-  if (heavyMediaCount >= 18) timeout += isMobileScreen ? 7000 : 7000;
-  if (totalMegaPixels >= 24) timeout += isMobileScreen ? 7000 : 6000;
-  if (totalMegaPixels >= 40) timeout += isMobileScreen ? 9000 : 9000;
-  if (deviceTier === 'phone') return Math.min(56000, timeout);
-  if (deviceTier === 'tablet') return Math.min(60000, timeout);
-  return Math.min(52000, timeout);
+  const heavyBoost = heavyMediaCount >= 18 ? 1200 : 0;
+  if (totalMegaPixels <= 4) return 4200 + heavyBoost;
+  if (totalMegaPixels <= 8) return 5600 + heavyBoost;
+  if (totalMegaPixels <= 14) return 7200 + heavyBoost;
+  if (totalMegaPixels <= 22) return 9000 + heavyBoost;
+  if (totalMegaPixels <= 32) return 10800 + heavyBoost;
+  const tierCap = deviceTier === 'phone' ? 14000 : (deviceTier === 'tablet' ? 15500 : 14500);
+  return tierCap + heavyBoost;
 };
 
 const waitForSingleImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
@@ -3543,23 +3758,50 @@ const syncCloneImagesWithSource = (sourceRoot, cloneRoot) => {
   }
 };
 
-const withRenderTimeout = async (promise, timeoutMs) => {
+const withRenderTimeout = async (promise, timeoutMs, cancelPromise = null) => {
   let timer = 0;
   try {
-    return await Promise.race([
+    const raceTasks = [
       promise,
       new Promise((_, reject) => {
         timer = window.setTimeout(() => {
           reject(new Error(`render-timeout-${timeoutMs}`));
         }, timeoutMs);
       })
-    ]);
+    ];
+    if (cancelPromise) {
+      raceTasks.push(cancelPromise.then(() => {
+        throw new Error('export-cancelled');
+      }));
+    }
+    return await Promise.race(raceTasks);
   } finally {
     if (timer) {
       clearTimeout(timer);
     }
   }
 };
+
+const createExportCancelContext = () => {
+  let resolveCancel = null;
+  let cancelled = false;
+  const cancelPromise = new Promise((resolve) => {
+    resolveCancel = resolve;
+  });
+  return {
+    cancelPromise,
+    isCancelled: () => cancelled,
+    cancel: () => {
+      if (cancelled) return;
+      cancelled = true;
+      if (typeof resolveCancel === 'function') {
+        resolveCancel(true);
+      }
+    }
+  };
+};
+
+const isExportCancelledError = (error) => String(error?.message || '').includes('export-cancelled');
 
 const getTableColumnWidths = (tableEl) => {
   if (!(tableEl instanceof HTMLTableElement)) return [];
@@ -3625,13 +3867,7 @@ const syncRecordBlockLayoutForExport = (sourceBlock, cloneBlock) => {
   return expandedWidth;
 };
 
-const getExportFailedMessage = (id) => {
-  const idKey = String(id || '').trim();
-  const isLineupPanel = idKey === 'panel-lineup' || idKey === 'panel-support';
-  const isMobileScreen = window.innerWidth <= 900;
-  if (isLineupPanel && isMobileScreen) {
-    return '降级重试后仍失败。建议改用每个角色卡片右上角 PNG 按钮分批导出，或先收起其余属性后再导出总图。可能是渲染问题，再试一次没准行，这次你一定要成功。';
-  }
+const getExportFailedMessage = () => {
   return '降级重试后仍失败。可能是渲染问题，再试一次没准行，这次你一定要成功。';
 };
 
@@ -3742,10 +3978,10 @@ const resolveExportElementById = (id) => {
 
   const exact = document.getElementById(targetId);
   if (!exact) return null;
-  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('festival-card') || exact.classList.contains('lineup-card') || exact.classList.contains('support-card')) {
+  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('festival-card') || exact.classList.contains('lineup-card') || exact.classList.contains('support-card') || exact.classList.contains('attr-summary-card')) {
     return exact;
   }
-  return exact.closest('.record-block, .festival-card, .lineup-card, .support-card, .card-panel');
+  return exact.closest('.record-block, .festival-card, .lineup-card, .support-card, .attr-summary-card, .card-panel');
 };
 
 const runExportElementPng = async (id, title, options = {}) => {
@@ -3761,59 +3997,62 @@ const runExportElementPng = async (id, title, options = {}) => {
   }
 
   isExportingPng.value = true;
+  const cancelContext = createExportCancelContext();
   let cloneEl = null;
   try {
     const exportTitle = String(title || id || '当前模块');
-    const exportPanelId = String(id || '').trim();
-    const isLineupLikePanelExport = exportPanelId === 'panel-lineup' || exportPanelId === 'panel-support';
     const deviceTier = getCaptureDeviceTier();
-    const dpr = Number(window.devicePixelRatio || 1);
-    const initialRenderHeight = Math.ceil(targetEl.scrollHeight || targetEl.clientHeight || 0);
     const initialHeavyMediaCount = countHeavyMediaNodes(targetEl);
     const initialCaptureProfile = buildCardCaptureProfile({
-      renderHeight: initialRenderHeight,
       deviceTier,
-      dpr,
-      heavyMediaCount: initialHeavyMediaCount,
-      isLineupLikePanelExport
+      heavyMediaCount: initialHeavyMediaCount
     });
     setScreenshotModalState({
       state: 'capturing',
       title: options?.fromRetry ? '重新截图中' : '截图中',
-      message: buildCardCaptureMessage(exportTitle, initialCaptureProfile.baseScale)
+      message: buildCardCaptureMessage(exportTitle, initialCaptureProfile.baseScale),
+      cancelTask: cancelContext.cancel
     });
 
-    if (!options?.fromRetry) {
+    if (!options?.fromRetry && initialHeavyMediaCount > 0) {
       // 首轮导出先做一次资源预热，降低“第一次失败、第二次秒过”的概率。
       await waitForRenderableAssets(targetEl, {
-        maxWaitMs: deviceTier === 'phone' ? 5200 : (deviceTier === 'tablet' ? 5600 : 4200),
-        maxImages: Number.isFinite(initialHeavyMediaCount) && initialHeavyMediaCount > 0 ? Math.min(320, Math.max(180, initialHeavyMediaCount + 80)) : 220
+        maxWaitMs: deviceTier === 'phone' ? 1800 : (deviceTier === 'tablet' ? 2200 : 1800),
+        maxImages: Math.min(180, Math.max(40, initialHeavyMediaCount + 24))
       });
       await waitNextPaint();
+      if (cancelContext.isCancelled()) {
+        throw new Error('export-cancelled');
+      }
     }
 
     cloneEl = await prepareExportClone(targetEl);
+    if (cancelContext.isCancelled()) {
+      throw new Error('export-cancelled');
+    }
     const renderEl = cloneEl || targetEl;
-    const renderHeight = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
     const isMobileScreen = deviceTier !== 'desktop';
     const heavyMediaCount = countHeavyMediaNodes(renderEl);
     await waitForRenderableAssets(renderEl, {
-      maxWaitMs: deviceTier === 'phone' ? 3600 : (deviceTier === 'tablet' ? 5000 : 4200),
-      maxImages: isMobileScreen ? 180 : 260
+      maxWaitMs: heavyMediaCount >= 18
+        ? (deviceTier === 'phone' ? 2400 : (deviceTier === 'tablet' ? 2800 : 2400))
+        : (deviceTier === 'phone' ? 1200 : (deviceTier === 'tablet' ? 1500 : 1200)),
+      maxImages: isMobileScreen ? 140 : 180
     });
+    if (cancelContext.isCancelled()) {
+      throw new Error('export-cancelled');
+    }
     const captureProfile = buildCardCaptureProfile({
-      renderHeight,
       deviceTier,
-      dpr,
-      heavyMediaCount,
-      isLineupLikePanelExport
+      heavyMediaCount
     });
     const scales = captureProfile.scales;
     const baseScale = captureProfile.baseScale;
     setScreenshotModalState({
       state: options?.fromRetry ? 'retrying' : 'capturing',
       title: options?.fromRetry ? '重新截图中' : '截图中',
-      message: buildCardCaptureMessage(exportTitle, baseScale)
+      message: buildCardCaptureMessage(exportTitle, baseScale),
+      cancelTask: cancelContext.cancel
     });
     const width = Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0);
     const height = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
@@ -3826,9 +4065,13 @@ const runExportElementPng = async (id, title, options = {}) => {
         setScreenshotModalState({
           state: 'retrying',
           title: '失败降级重试中',
-          message: `截图失败，正在降级重试（${idx}/${scales.length - 1}）...`
+          message: `截图失败，正在降级到清晰度 x${scale.toFixed(2)} 重试（${idx}/${scales.length - 1}）...`,
+          cancelTask: cancelContext.cancel
         });
         await waitNextPaint();
+        if (cancelContext.isCancelled()) {
+          throw new Error('export-cancelled');
+        }
       }
 
       try {
@@ -3847,7 +4090,7 @@ const runExportElementPng = async (id, title, options = {}) => {
           imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
           width,
           height
-        }), renderTimeoutMs);
+        }), renderTimeoutMs, cancelContext.cancelPromise);
         break;
       } catch (error) {
         lastError = error;
@@ -3864,17 +4107,25 @@ const runExportElementPng = async (id, title, options = {}) => {
       state: 'success',
       title: '截图完成',
       message: `「${exportTitle}」已导出 PNG。`,
+      cancelTask: null,
       autoCloseMs: 1400
     });
   } catch (error) {
+    if (isExportCancelledError(error)) {
+      return;
+    }
     console.error('导出模块PNG失败', error);
     setScreenshotModalState({
       state: 'failed',
       title: '截图失败',
       message: getExportFailedMessage(id),
-      retryTask: () => runExportElementPng(id, title, { fromRetry: true })
+      retryTask: () => runExportElementPng(id, title, { fromRetry: true }),
+      cancelTask: null
     });
   } finally {
+    if (screenshotModalCancelTask.value === cancelContext.cancel) {
+      screenshotModalCancelTask.value = null;
+    }
     if (cloneEl && cloneEl.parentNode) {
       cloneEl.parentNode.removeChild(cloneEl);
     }
@@ -4035,6 +4286,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateMobileNavState);
+  if (typeof screenshotModalCancelTask.value === 'function') {
+    screenshotModalCancelTask.value();
+  }
   if (statsMainInteractionHost instanceof HTMLElement) {
     statsMainInteractionHost.removeEventListener('pointerdown', rememberInteractiveAnchorFromEvent, true);
     statsMainInteractionHost.removeEventListener('keydown', rememberInteractiveAnchorFromEvent, true);
@@ -4065,6 +4319,7 @@ onBeforeUnmount(() => {
   if (sectionObserver) sectionObserver.disconnect();
   clearScreenshotModalAutoClose();
   screenshotModalRetryTask.value = null;
+  screenshotModalCancelTask.value = null;
   if (matrixSortAnchorTimer) {
     clearTimeout(matrixSortAnchorTimer);
     matrixSortAnchorTimer = 0;
@@ -4568,6 +4823,7 @@ const getCardBaseName = (cardName) => String(cardName || '').trim().split(/\s+/)
 
 const getLineupCardId = (name) => `lineup-card-${getCharAbbr(name).toLowerCase()}`;
 const getSupportCardId = (unit) => `support-card-${String(unit || '').toLowerCase()}`;
+const getAttrSummaryCardId = (name) => `attr-summary-${getCharAbbr(name).toLowerCase()}`;
 
 const getSupportMemberIconKey = (slot) => {
   const baseName = String(slot?.name || '').trim().split(/\s+/)[0] || '';
@@ -5530,12 +5786,13 @@ const processedStats = computed(() => {
       stats[name].fourStarCount++;
       stats[name].lastFourStarOrderId = Math.max(Number(stats[name].lastFourStarOrderId || 0), progressOrderId);
 
-      if (eventIdNum !== null && fesLimitedEventIdSet.value.has(eventIdNum)) {
-        const isFesCard = isFesCardType(cardType);
-        if (fesLimitedIncludeFes.value || !isFesCard) {
-          stats[name].fesLimitedCount++;
-          stats[name].lastFesLimitedOrderId = Math.max(Number(stats[name].lastFesLimitedOrderId || 0), progressOrderId);
-        }
+      const isFesCard = isFesCardType(cardType);
+      const isFesLimitedEventCard = eventIdNum !== null && fesLimitedEventIdSet.value.has(eventIdNum);
+      const shouldCountFesLimited = (isFesLimitedEventCard && !isFesCard)
+        || (fesLimitedIncludeFes.value && isFesCard);
+      if (shouldCountFesLimited) {
+        stats[name].fesLimitedCount++;
+        stats[name].lastFesLimitedOrderId = Math.max(Number(stats[name].lastFesLimitedOrderId || 0), progressOrderId);
       }
 
       if (skill === 'p_score') {
@@ -5634,28 +5891,28 @@ const groupByCount = (data, key) => {
 };
 
 const groupPanels = computed(() => [
-  { id: 'four', title: '4星总数分布', cellClass: '', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'fourStarCount') },
-  { id: 'limited', title: '限定总数分布', cellClass: 'lim', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'limitedCount') },
-  { id: 'pure-score', title: '4星分卡数量分布', cellClass: 'pure-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pureScoreCount') },
-  { id: 'reward', title: '报酬总数分布', cellClass: 'reward', showRewardBreakdown: true, groups: groupByCount(processedStats.value, 'rewardTotalCount') },
-  { id: 'p-score', title: '4星P分数量分布', cellClass: 'p-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pScoreCount') },
-  { id: 'score-up', title: '4星普分数量分布', cellClass: 'score-up', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'scoreUpCount') },
-  { id: 'recovery', title: '4星奶卡数量分布', cellClass: 'recovery', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'recoveryCount') },
-  { id: 'accuracy', title: '4星判卡数量分布', cellClass: 'accuracy', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'accuracyCount') },
-  { id: 'three', title: '3星总数分布', cellClass: 'three-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'threeStarCount') },
-  { id: 'two', title: '2星总数分布', cellClass: 'two-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'twoStarCount') },
-  { id: 'banner', title: 'Banner数量分布', cellClass: 'banner', showRewardBreakdown: false,
+  { id: 'four', title: '4星总数', cellClass: '', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'fourStarCount') },
+  { id: 'limited', title: '限定总数', cellClass: 'lim', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'limitedCount') },
+  { id: 'pure-score', title: '4星分卡数', cellClass: 'pure-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pureScoreCount') },
+  { id: 'reward', title: '报酬总数', cellClass: 'reward', showRewardBreakdown: true, groups: groupByCount(processedStats.value, 'rewardTotalCount') },
+  { id: 'p-score', title: '4星P分数', cellClass: 'p-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pScoreCount') },
+  { id: 'score-up', title: '4星普分数', cellClass: 'score-up', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'scoreUpCount') },
+  { id: 'recovery', title: '4星奶卡数', cellClass: 'recovery', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'recoveryCount') },
+  { id: 'accuracy', title: '4星判卡数', cellClass: 'accuracy', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'accuracyCount') },
+  { id: 'three', title: '3星总数', cellClass: 'three-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'threeStarCount') },
+  { id: 'two', title: '2星总数', cellClass: 'two-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'twoStarCount') },
+  { id: 'banner', title: 'Banner数', cellClass: 'banner', showRewardBreakdown: false,
     groups: groupByCount(
       processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
       'bannerCount')
   },
-  { id: 'limited-ban', title: '限Ban数量分布', cellClass: 'limited-ban', showRewardBreakdown: false, 
+  { id: 'limited-ban', title: '限Ban数', cellClass: 'limited-ban', showRewardBreakdown: false, 
     groups: groupByCount(
       processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
       'limitedBanCount')
   },
-  { id: 'fes-limited', title: '百六限定次数分布', cellClass: 'fes-limited', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'fesLimitedCount') },
-  { id: 'fes-limited-ban', title: '百六限Ban次数分布', cellClass: 'fes-limited-ban', showRewardBreakdown: false,
+  { id: 'fes-limited', title: '百六限定次数', cellClass: 'fes-limited', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'fesLimitedCount') },
+  { id: 'fes-limited-ban', title: '百六限Ban次数', cellClass: 'fes-limited-ban', showRewardBreakdown: false,
     groups: groupByCount(
       processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
       'fesLimitedBanCount')
@@ -6123,6 +6380,11 @@ const getAttrExtremeClass = (attr, value, name) => {
 };
 
 const getVsMatrixValueClass = (value) => (Number(value || 0) === 0 ? 'matrix-vs-zero' : '');
+
+const getAttrSummaryAttrRowStyle = (attr) => {
+  const color = ATTR_COLORS[String(attr || '').trim()] || '#94a3b8';
+  return { '--attr-summary-row-bg': hexToSoftSolid(color, 0.84) };
+};
 
 const charEventBuckets = computed(() => {
   const maxEid = safeMaxEventId.value;
@@ -7156,7 +7418,8 @@ defineExpose({
   background: linear-gradient(45deg, rgba(253, 124, 193, 0.30) 0%, rgba(135, 192, 255, 0.30) 50%, rgba(248, 255, 135, 0.30) 100%);
   min-height: 100vh;
   --matrix-sticky-top: 0px;
-  --stats-radius-panel: 18px;
+  --stats-radius-panel: 28px;
+  --stats-radius-card: 22px;
   --stats-radius-btn: 12px;
   --stats-nav-width: 220px;
   --stats-nav-left: 44px;
@@ -7490,6 +7753,13 @@ defineExpose({
 }
 
 .screenshot-export-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.screenshot-export-modal-head-main {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -7530,6 +7800,11 @@ defineExpose({
 
 .screenshot-export-modal-btn-secondary {
   opacity: 0.9;
+}
+
+.screenshot-export-modal-close-btn {
+  min-width: 56px;
+  padding: 2px 8px;
 }
 
 @keyframes screenshot-export-spin {
@@ -7662,7 +7937,7 @@ defineExpose({
   width: 100%;
   border-collapse: collapse;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
@@ -7877,10 +8152,13 @@ defineExpose({
 }
 
 .support-card {
+  position: relative;
   border: 1px solid #dbe3ee;
-  border-radius: 10px;
+  border-radius: var(--stats-radius-card);
   padding: 9px;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+  background-image: linear-gradient(to right, var(--unit-card-accent-color, #94a3b8) 0, var(--unit-card-accent-color, #94a3b8) 3px, transparent 3px, transparent 100%);
+  background-repeat: no-repeat;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.12);
 }
 
 .support-head {
@@ -7965,10 +8243,13 @@ defineExpose({
 }
 
 .lineup-card {
+  position: relative;
   border: 1px solid #dbe3ee;
-  border-radius: 10px;
+  border-radius: var(--stats-radius-card);
   padding: 9px;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+  background-image: linear-gradient(to right, var(--unit-card-accent-color, #94a3b8) 0, var(--unit-card-accent-color, #94a3b8) 3px, transparent 3px, transparent 100%);
+  background-repeat: no-repeat;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.12);
 }
 
 .lineup-char-head {
@@ -8075,7 +8356,7 @@ defineExpose({
 .lineup-total-cell,
 .lineup-member-cell {
   border: 1px solid var(--lineup-row-border, #cbd5e1);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--lineup-row-bg, rgba(255, 255, 255, 0.88));
   color: var(--lineup-row-fg, #111827);
   min-height: 54px;
@@ -8206,7 +8487,7 @@ defineExpose({
 
 .festival-card {
   border: 1px solid #dbe3ee;
-  border-radius: 10px;
+  border-radius: var(--stats-radius-card);
   background: linear-gradient(180deg, #ffffff, #f8fbff);
   padding: 10px;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
@@ -8428,7 +8709,7 @@ defineExpose({
   overflow-y: auto;
   max-height: calc(100vh - 140px);
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .matrix-table th,
@@ -8570,6 +8851,121 @@ defineExpose({
   background-color: #ffffff !important;
 }
 
+.attr-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.attr-summary-card {
+  position: relative;
+  border: 1px solid #dbe3ee;
+  border-radius: var(--stats-radius-card);
+  padding: 8px;
+  background-image: linear-gradient(to right, var(--unit-card-accent-color, #94a3b8) 0, var(--unit-card-accent-color, #94a3b8) 3px, transparent 3px, transparent 100%);
+  background-repeat: no-repeat;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.12);
+}
+
+.attr-summary-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.attr-summary-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.attr-summary-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -2px 3px rgba(15, 23, 42, 0.2),
+    0 1px 3px rgba(15, 23, 42, 0.2);
+}
+
+.attr-summary-name {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attr-summary-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #ffffff;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.attr-summary-table th,
+.attr-summary-table td {
+  border: 1px solid #e2e8f0;
+  padding: 4px 3px;
+  text-align: center;
+
+}
+
+.attr-summary-table thead th,
+.attr-summary-total-row {
+  background: rgba(255, 255, 255, 0.68);
+  font-weight: 700;
+  font-size: 0.74rem;
+  color: #0f172a;
+}
+
+.attr-summary-table tbody tr.attr-summary-data-row td {
+  background: var(--attr-summary-row-bg, #ffffff);
+}
+
+.attr-summary-total-row td {
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.attr-summary-attr-cell {
+  width: 16%;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 1.1;
+  white-space: nowrap;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.attr-summary-attr-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  margin: 0;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.attr-summary-num {
+  color: #1f2937;
+  font-weight: 800;
+  font-size: 0.88rem;
+  line-height: 1;
+  font-family: 'DIN Alternate', 'Avenir Next', 'Trebuchet MS', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+
 .matrix-pure-toggle {
   display: inline-flex;
   align-items: center;
@@ -8615,7 +9011,7 @@ defineExpose({
 
 .record-block {
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: var(--stats-radius-card);
   background: #fff;
   padding: 10px;
 }
@@ -9841,7 +10237,7 @@ td.record-char {
 
   .card-panel {
     padding: 9px;
-    border-radius: 10px;
+    border-radius: 14px;
   }
 
   .card-panel h2 {
@@ -9973,6 +10369,29 @@ td.record-char {
 
   .matrix-table td.matrix-num {
     font-size: 0.98rem;
+  }
+
+  .attr-summary-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .attr-summary-card {
+    padding: 7px;
+  }
+
+  .attr-summary-table th,
+  .attr-summary-table td {
+    padding: 4px 2px;
+  }
+
+  .attr-summary-num {
+    font-size: 0.98rem;
+  }
+
+  .attr-summary-attr-icon {
+    width: 18px;
+    height: 18px;
   }
 
   .fes-record-table tbody tr:not(.fes-total-row) td {

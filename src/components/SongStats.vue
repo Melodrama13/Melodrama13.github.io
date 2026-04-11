@@ -910,12 +910,21 @@
     >
       <div class="song-screenshot-modal" :class="`is-${screenshotModalState}`" role="status" aria-live="polite">
         <div class="song-screenshot-modal-head">
-          <span
+          <div class="song-screenshot-modal-head-main">
+            <span
+              v-if="screenshotModalState === 'capturing' || screenshotModalState === 'retrying'"
+              class="song-screenshot-modal-spinner"
+              aria-hidden="true"
+            ></span>
+            <span class="song-screenshot-modal-title">{{ screenshotModalTitle }}</span>
+          </div>
+          <button
             v-if="screenshotModalState === 'capturing' || screenshotModalState === 'retrying'"
-            class="song-screenshot-modal-spinner"
-            aria-hidden="true"
-          ></span>
-          <span class="song-screenshot-modal-title">{{ screenshotModalTitle }}</span>
+            class="pjsk-ui-btn-pill card-export-btn song-screenshot-modal-close-btn"
+            @click="forceCancelScreenshotExport"
+          >
+            取消
+          </button>
         </div>
         <p class="song-screenshot-modal-message">{{ screenshotModalMessage }}</p>
         <div v-if="screenshotModalState === 'failed'" class="song-screenshot-modal-actions">
@@ -950,6 +959,7 @@ const screenshotModalState = ref('idle');
 const screenshotModalTitle = ref('');
 const screenshotModalMessage = ref('');
 const screenshotModalRetryTask = ref(null);
+const screenshotModalCancelTask = ref(null);
 const currentSongPage = ref(1);
 const songPageSize = ref(10);
 const anotherCardModeMap = ref({});
@@ -1965,8 +1975,12 @@ onBeforeUnmount(() => {
     clearTimeout(songImageTitleToastTimer);
     songImageTitleToastTimer = 0;
   }
+  if (typeof screenshotModalCancelTask.value === 'function') {
+    screenshotModalCancelTask.value();
+  }
   clearScreenshotModalAutoClose();
   screenshotModalRetryTask.value = null;
+  screenshotModalCancelTask.value = null;
   if (navSyncRaf) {
     cancelAnimationFrame(navSyncRaf);
     navSyncRaf = 0;
@@ -3289,13 +3303,14 @@ const clearScreenshotModalAutoClose = () => {
   screenshotModalAutoCloseTimer = 0;
 };
 
-const setScreenshotModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, autoCloseMs = 0 } = {}) => {
+const setScreenshotModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, cancelTask = null, autoCloseMs = 0 } = {}) => {
   clearScreenshotModalAutoClose();
   screenshotModalVisible.value = true;
   screenshotModalState.value = state;
   screenshotModalTitle.value = title;
   screenshotModalMessage.value = message;
   screenshotModalRetryTask.value = typeof retryTask === 'function' ? retryTask : null;
+  screenshotModalCancelTask.value = typeof cancelTask === 'function' ? cancelTask : null;
   if (autoCloseMs > 0) {
     screenshotModalAutoCloseTimer = setTimeout(() => {
       if (!isExportingPng.value) {
@@ -3314,6 +3329,22 @@ const closeScreenshotModal = () => {
   screenshotModalTitle.value = '';
   screenshotModalMessage.value = '';
   screenshotModalRetryTask.value = null;
+  screenshotModalCancelTask.value = null;
+};
+
+const forceCancelScreenshotExport = () => {
+  const task = screenshotModalCancelTask.value;
+  if (typeof task === 'function') {
+    task();
+  }
+  isExportingPng.value = false;
+  clearScreenshotModalAutoClose();
+  screenshotModalVisible.value = false;
+  screenshotModalState.value = 'idle';
+  screenshotModalTitle.value = '';
+  screenshotModalMessage.value = '';
+  screenshotModalRetryTask.value = null;
+  screenshotModalCancelTask.value = null;
 };
 
 const retryScreenshotExport = async () => {
@@ -3388,7 +3419,9 @@ const countHeavyMediaNodes = (rootEl) => {
   mediaNodes.forEach((img) => {
     const src = String(img?.getAttribute('src') || img?.currentSrc || '').toLowerCase();
     const cls = String(img?.className || '').toLowerCase();
-    if (src.includes('/cards/') || src.includes('/songs/') || cls.includes('card') || cls.includes('jacket')) {
+    const isIconLike = src.includes('/icon/') || cls.includes('icon') || cls.includes('badge') || cls.includes('chip');
+    if (isIconLike) return;
+    if (src.includes('/cards/') || (src.includes('/songs/') && !src.includes('/icon/')) || cls.includes('card') || cls.includes('jacket')) {
       heavy += 1;
     }
   });
@@ -3416,13 +3449,8 @@ const buildSongAdaptiveScaleCandidates = (preferredScale, deviceTier, heavyMedia
   return targeted.length ? targeted : base;
 };
 
-const buildSongCaptureProfile = ({ height, deviceTier, dpr, heavyMediaCount }) => {
-  const renderHeight = Math.max(1, Number(height || 0));
-  const normalizedDpr = Math.max(1, Number(dpr || 1));
-  const isMobileScreen = deviceTier !== 'desktop';
-  const preferredScale = isMobileScreen
-    ? (renderHeight > 9000 ? 2.0 : Math.max(1.55, Math.min(2.0, normalizedDpr)))
-    : (renderHeight > 12000 ? Math.max(1.35, Math.min(1.8, normalizedDpr)) : Math.max(2, Math.min(2.3, normalizedDpr)));
+const buildSongCaptureProfile = ({ deviceTier, heavyMediaCount }) => {
+  const preferredScale = 2.0;
   const scales = buildSongAdaptiveScaleCandidates(preferredScale, deviceTier, heavyMediaCount);
   const baseScale = Number(scales[0] || preferredScale || 1);
   return {
@@ -3438,17 +3466,15 @@ const buildSongCaptureMessage = (exportLabel, baseScale) => {
 };
 
 const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, scale }) => {
-  const isMobileScreen = deviceTier !== 'desktop';
   const totalMegaPixels = (Math.max(1, width) * Math.max(1, height) * Math.max(1, scale) * Math.max(1, scale)) / 1000000;
-  let timeout = 24000;
-  if (deviceTier === 'phone') timeout = 22000;
-  if (deviceTier === 'tablet') timeout = 24000;
-  if (heavyMediaCount >= 18) timeout += isMobileScreen ? 7000 : 7000;
-  if (totalMegaPixels >= 24) timeout += isMobileScreen ? 7000 : 6000;
-  if (totalMegaPixels >= 40) timeout += isMobileScreen ? 9000 : 9000;
-  if (deviceTier === 'phone') return Math.min(56000, timeout);
-  if (deviceTier === 'tablet') return Math.min(60000, timeout);
-  return Math.min(52000, timeout);
+  const heavyBoost = heavyMediaCount >= 18 ? 1200 : 0;
+  if (totalMegaPixels <= 4) return 4200 + heavyBoost;
+  if (totalMegaPixels <= 8) return 5600 + heavyBoost;
+  if (totalMegaPixels <= 14) return 7200 + heavyBoost;
+  if (totalMegaPixels <= 22) return 9000 + heavyBoost;
+  if (totalMegaPixels <= 32) return 10800 + heavyBoost;
+  const tierCap = deviceTier === 'phone' ? 14000 : (deviceTier === 'tablet' ? 15500 : 14500);
+  return tierCap + heavyBoost;
 };
 
 const waitForSingleImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
@@ -3531,23 +3557,50 @@ const syncCloneImagesWithSource = (sourceRoot, cloneRoot) => {
   }
 };
 
-const withRenderTimeout = async (promise, timeoutMs) => {
+const withRenderTimeout = async (promise, timeoutMs, cancelPromise = null) => {
   let timer = 0;
   try {
-    return await Promise.race([
+    const raceTasks = [
       promise,
       new Promise((_, reject) => {
         timer = window.setTimeout(() => {
           reject(new Error(`render-timeout-${timeoutMs}`));
         }, timeoutMs);
       })
-    ]);
+    ];
+    if (cancelPromise) {
+      raceTasks.push(cancelPromise.then(() => {
+        throw new Error('export-cancelled');
+      }));
+    }
+    return await Promise.race(raceTasks);
   } finally {
     if (timer) {
       clearTimeout(timer);
     }
   }
 };
+
+const createExportCancelContext = () => {
+  let resolveCancel = null;
+  let cancelled = false;
+  const cancelPromise = new Promise((resolve) => {
+    resolveCancel = resolve;
+  });
+  return {
+    cancelPromise,
+    isCancelled: () => cancelled,
+    cancel: () => {
+      if (cancelled) return;
+      cancelled = true;
+      if (typeof resolveCancel === 'function') {
+        resolveCancel(true);
+      }
+    }
+  };
+};
+
+const isExportCancelledError = (error) => String(error?.message || '').includes('export-cancelled');
 
 const copyCssCustomProperties = (sourceStyle, targetEl) => {
   if (!(sourceStyle instanceof CSSStyleDeclaration) || !(targetEl instanceof HTMLElement)) return;
@@ -3626,56 +3679,59 @@ const prepareSongExportClone = async (targetEl) => {
 };
 
 const getSongExportFailedMessage = () => {
-  const isMobileScreen = window.innerWidth <= 900;
-  if (isMobileScreen) {
-    return '降级重试后仍失败。移动端内存较紧张，建议关闭其他应用后重试，或分模块截图。可能是渲染问题，再试一次没准行，这次你一定要成功。';
-  }
   return '降级重试后仍失败。可能是渲染问题，再试一次没准行，这次你一定要成功。';
 };
 
 const exportElementPng = async (targetEl, title, options = {}) => {
   const exportLabel = String(options?.taskLabel || title || '当前模块');
   const deviceTier = getCaptureDeviceTier();
-  const dpr = Number(window.devicePixelRatio || 1);
-  const initialHeight = Math.ceil(targetEl?.scrollHeight || targetEl?.clientHeight || 0);
   const initialHeavyMediaCount = countHeavyMediaNodes(targetEl);
+  const cancelContext = createExportCancelContext();
   const initialCaptureProfile = buildSongCaptureProfile({
-    height: initialHeight,
     deviceTier,
-    dpr,
     heavyMediaCount: initialHeavyMediaCount
   });
   setScreenshotModalState({
     state: options?.fromRetry ? 'retrying' : 'capturing',
     title: options?.fromRetry ? '重新截图中' : '截图中',
-    message: buildSongCaptureMessage(exportLabel, initialCaptureProfile.baseScale)
+    message: buildSongCaptureMessage(exportLabel, initialCaptureProfile.baseScale),
+    cancelTask: cancelContext.cancel
   });
 
   let cloneEl = null;
   try {
-    if (!options?.fromRetry) {
+    if (!options?.fromRetry && initialHeavyMediaCount > 0) {
       // 首轮导出先做一次资源预热，降低“第一次失败、第二次秒过”的概率。
       await waitForRenderableAssets(targetEl, {
-        maxWaitMs: deviceTier === 'phone' ? 5200 : (deviceTier === 'tablet' ? 5600 : 4200),
-        maxImages: Number.isFinite(initialHeavyMediaCount) && initialHeavyMediaCount > 0 ? Math.min(320, Math.max(180, initialHeavyMediaCount + 80)) : 220
+        maxWaitMs: deviceTier === 'phone' ? 1800 : (deviceTier === 'tablet' ? 2200 : 1800),
+        maxImages: Math.min(180, Math.max(40, initialHeavyMediaCount + 24))
       });
       await waitNextPaint();
+      if (cancelContext.isCancelled()) {
+        throw new Error('export-cancelled');
+      }
     }
 
     cloneEl = await prepareSongExportClone(targetEl);
+    if (cancelContext.isCancelled()) {
+      throw new Error('export-cancelled');
+    }
     const renderEl = cloneEl || targetEl;
     const width = Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0);
     const height = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
     const isMobileScreen = deviceTier !== 'desktop';
     const heavyMediaCount = countHeavyMediaNodes(renderEl);
     await waitForRenderableAssets(renderEl, {
-      maxWaitMs: deviceTier === 'phone' ? 3600 : (deviceTier === 'tablet' ? 5000 : 4200),
-      maxImages: isMobileScreen ? 180 : 260
+      maxWaitMs: heavyMediaCount >= 18
+        ? (deviceTier === 'phone' ? 2400 : (deviceTier === 'tablet' ? 2800 : 2400))
+        : (deviceTier === 'phone' ? 1200 : (deviceTier === 'tablet' ? 1500 : 1200)),
+      maxImages: isMobileScreen ? 140 : 180
     });
+    if (cancelContext.isCancelled()) {
+      throw new Error('export-cancelled');
+    }
     const captureProfile = buildSongCaptureProfile({
-      height,
       deviceTier,
-      dpr,
       heavyMediaCount
     });
     const scales = captureProfile.scales;
@@ -3683,7 +3739,8 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     setScreenshotModalState({
       state: options?.fromRetry ? 'retrying' : 'capturing',
       title: options?.fromRetry ? '重新截图中' : '截图中',
-      message: buildSongCaptureMessage(exportLabel, baseScale)
+      message: buildSongCaptureMessage(exportLabel, baseScale),
+      cancelTask: cancelContext.cancel
     });
     let canvas = null;
     let lastError = null;
@@ -3694,9 +3751,13 @@ const exportElementPng = async (targetEl, title, options = {}) => {
         setScreenshotModalState({
           state: 'retrying',
           title: '失败降级重试中',
-          message: `截图失败，正在降级重试（${idx}/${scales.length - 1}）...`
+          message: `截图失败，正在降级到清晰度 x${scale.toFixed(2)} 重试（${idx}/${scales.length - 1}）...`,
+          cancelTask: cancelContext.cancel
         });
         await waitNextPaint();
+        if (cancelContext.isCancelled()) {
+          throw new Error('export-cancelled');
+        }
       }
 
       try {
@@ -3715,7 +3776,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
           width,
           height
-        }), renderTimeoutMs);
+        }), renderTimeoutMs, cancelContext.cancelPromise);
         break;
       } catch (error) {
         lastError = error;
@@ -3732,17 +3793,25 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       state: 'success',
       title: '截图完成',
       message: `「${exportLabel}」已导出 PNG。`,
+      cancelTask: null,
       autoCloseMs: 1400
     });
   } catch (error) {
+    if (isExportCancelledError(error)) {
+      return;
+    }
     setScreenshotModalState({
       state: 'failed',
       title: '截图失败',
       message: getSongExportFailedMessage(),
-      retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null
+      retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
+      cancelTask: null
     });
     throw error;
   } finally {
+    if (screenshotModalCancelTask.value === cancelContext.cancel) {
+      screenshotModalCancelTask.value = null;
+    }
     if (cloneEl && cloneEl.parentNode) {
       cloneEl.parentNode.removeChild(cloneEl);
     }
@@ -4346,6 +4415,13 @@ watch(totalSongPages, (nextTotal) => {
 }
 
 .song-screenshot-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.song-screenshot-modal-head-main {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -4386,6 +4462,11 @@ watch(totalSongPages, (nextTotal) => {
 
 .song-screenshot-modal-btn-secondary {
   opacity: 0.9;
+}
+
+.song-screenshot-modal-close-btn {
+  min-width: 56px;
+  padding: 2px 8px;
 }
 
 @keyframes song-screenshot-spin {
