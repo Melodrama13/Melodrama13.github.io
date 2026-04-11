@@ -3401,11 +3401,11 @@ const getCaptureDeviceTier = () => {
 const buildSongExportScaleCandidates = (preferredScale, isMobileScreen) => {
   const baseScale = Number.isFinite(preferredScale) && preferredScale > 0 ? preferredScale : 1;
   const ladder = isMobileScreen
-    ? [baseScale, Math.min(baseScale, 1.3), 1.1, 1]
-    : [baseScale, Math.min(baseScale, 1.9), 1.45, 1.2, 1];
+    ? [baseScale, Math.min(baseScale, 1.3), 1.1, 0.9, 0.75, 0.62]
+    : [baseScale, Math.min(baseScale, 1.9), 1.45, 1.2, 1, 0.85];
   const seen = new Set();
   return ladder
-    .map((value) => Math.max(1, Number(value.toFixed(2))))
+    .map((value) => Math.max(0.55, Number(value.toFixed(2))))
     .filter((value) => {
       const key = String(value);
       if (seen.has(key)) return false;
@@ -3437,10 +3437,10 @@ const buildSongAdaptiveScaleCandidates = (preferredScale, deviceTier, heavyMedia
 
   const seen = new Set();
   const targeted = (deviceTier === 'phone' || deviceTier === 'tablet'
-    ? [Math.max(1.7, Math.min(base[0] || 2, 2.0)), 1.55, 1.38, 1.2]
-    : [Math.max(1.95, base[0] || 2), Math.max(1.8, Math.min(base[0] || 2, 2.2)), 1.65, 1.35]
+    ? [Math.max(1.7, Math.min(base[0] || 2, 2.0)), 1.55, 1.38, 1.2, 0.95, 0.78, 0.62]
+    : [Math.max(1.95, base[0] || 2), Math.max(1.8, Math.min(base[0] || 2, 2.2)), 1.65, 1.35, 1.08, 0.9]
   )
-    .map((value) => Math.max(1, Number(value.toFixed(2))))
+    .map((value) => Math.max(0.55, Number(value.toFixed(2))))
     .filter((value) => {
       const key = String(value);
       if (seen.has(key)) return false;
@@ -3477,6 +3477,49 @@ const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, sc
   if (totalMegaPixels <= 32) return 10800 + heavyBoost;
   const tierCap = deviceTier === 'phone' ? 14000 : (deviceTier === 'tablet' ? 15500 : 14500);
   return tierCap + heavyBoost;
+};
+
+const getCaptureRenderBudget = (deviceTier) => {
+  if (deviceTier === 'phone') {
+    return {
+      maxCanvasEdge: 5200,
+      maxCanvasMegaPixels: 14,
+      minScale: 0.5
+    };
+  }
+  if (deviceTier === 'tablet') {
+    return {
+      maxCanvasEdge: 7000,
+      maxCanvasMegaPixels: 22,
+      minScale: 0.55
+    };
+  }
+  return {
+    maxCanvasEdge: 8600,
+    maxCanvasMegaPixels: 34,
+    minScale: 0.6
+  };
+};
+
+const toSafeCaptureScale = ({ requestedScale, width, height, deviceTier }) => {
+  const safeRequested = Number.isFinite(requestedScale) && requestedScale > 0 ? requestedScale : 1;
+  const safeWidth = Math.max(1, Number(width) || 1);
+  const safeHeight = Math.max(1, Number(height) || 1);
+  const budget = getCaptureRenderBudget(deviceTier);
+  const byEdge = Math.min(budget.maxCanvasEdge / safeWidth, budget.maxCanvasEdge / safeHeight);
+  const byArea = Math.sqrt((budget.maxCanvasMegaPixels * 1000000) / (safeWidth * safeHeight));
+  const capScale = Math.min(safeRequested, byEdge, byArea);
+  const boundedScale = Number(Math.max(budget.minScale, capScale).toFixed(2));
+  const adjusted = Math.abs(boundedScale - safeRequested) > 0.0001;
+  const cappedWidth = Math.round(safeWidth * boundedScale);
+  const cappedHeight = Math.round(safeHeight * boundedScale);
+  return {
+    scale: boundedScale,
+    adjusted,
+    budget,
+    cappedWidth,
+    cappedHeight
+  };
 };
 
 const waitForSingleImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
@@ -3937,18 +3980,28 @@ const exportElementPng = async (targetEl, title, options = {}) => {
         // First attempt uses a safer floor on static hosts; then relaxes gradually.
         const timeoutFloor = deviceTier === 'phone' ? 9000 : 7000;
         const hostMultiplier = isGithubPagesHost() ? 1.6 : 1;
+        const safeScaleInfo = toSafeCaptureScale({
+          requestedScale: scale,
+          width,
+          height,
+          deviceTier
+        });
+        const effectiveScale = safeScaleInfo.scale;
         const renderTimeoutMs = Math.min(
           32000,
           Math.round(Math.max(baseRenderTimeoutMs, timeoutFloor) * hostMultiplier * (1 + (idx * 0.45)))
         );
-        updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms`);
+        const scaleNote = safeScaleInfo.adjusted
+          ? `（尺寸保护：x${scale.toFixed(2)}→x${effectiveScale.toFixed(2)}，目标画布 ${safeScaleInfo.cappedWidth}x${safeScaleInfo.cappedHeight}）`
+          : '';
+        updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${effectiveScale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms${scaleNote}`);
         const skippedOptional = dropUnreadyOptionalImagesForCapture(renderEl);
         if (skippedOptional > 0) {
-          updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms；已跳过未就绪图标 ${skippedOptional} 个`);
+          updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${effectiveScale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms；已跳过未就绪图标 ${skippedOptional} 个${scaleNote}`);
         }
         const renderTask = trackSongCaptureRenderTask(html2canvas(renderEl, {
           backgroundColor: '#ffffff',
-          scale,
+          scale: effectiveScale,
           useCORS: true,
           logging: false,
           imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
