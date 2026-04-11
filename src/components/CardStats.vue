@@ -3558,6 +3558,7 @@ const forceCancelScreenshotExport = () => {
   if (typeof task === 'function') {
     task();
   }
+  pendingCardCaptureRenderTask = null;
   isExportingPng.value = false;
   clearScreenshotModalAutoClose();
   screenshotModalVisible.value = false;
@@ -3819,6 +3820,10 @@ const trackCardCaptureRenderTask = (taskPromise) => {
   return tracked;
 };
 
+const forceReleaseCardCaptureRenderTask = () => {
+  pendingCardCaptureRenderTask = null;
+};
+
 const createExportCancelContext = () => {
   let resolveCancel = null;
   let cancelled = false;
@@ -4072,14 +4077,7 @@ const runExportElementPng = async (id, title, options = {}) => {
   if (isExportingPng.value) return;
   const previousIdle = await waitPendingCardCaptureRenderTask(1200);
   if (!previousIdle) {
-    setScreenshotModalState({
-      state: 'failed',
-      title: '截图失败',
-      message: '阶段 初始化：上一轮渲染任务仍未结束（疑似卡死），请稍后重试。',
-      retryTask: () => runExportElementPng(id, title, { fromRetry: true }),
-      cancelTask: null
-    });
-    return;
+    forceReleaseCardCaptureRenderTask();
   }
   const targetEl = resolveExportElementById(id);
   if (!targetEl) {
@@ -4093,6 +4091,19 @@ const runExportElementPng = async (id, title, options = {}) => {
 
   isExportingPng.value = true;
   const cancelContext = createExportCancelContext();
+  const exportStartAt = performance.now();
+  let currentStage = '初始化';
+  const formatElapsed = () => `${Math.max(0, Math.round(performance.now() - exportStartAt))}ms`;
+  const updateCaptureStage = (stage, detail = '', forceState = '') => {
+    currentStage = stage;
+    const modalState = forceState || (options?.fromRetry ? 'retrying' : 'capturing');
+    setScreenshotModalState({
+      state: modalState,
+      title: options?.fromRetry ? '重新截图中' : '截图中',
+      message: `[${stage}] ${detail}${detail ? ' ' : ''}（已用时 ${formatElapsed()}）`,
+      cancelTask: cancelContext.cancel
+    });
+  };
   let cloneEl = null;
   const downgradeReasons = [];
   try {
@@ -4103,14 +4114,10 @@ const runExportElementPng = async (id, title, options = {}) => {
       deviceTier,
       heavyMediaCount: initialHeavyMediaCount
     });
-    setScreenshotModalState({
-      state: 'capturing',
-      title: options?.fromRetry ? '重新截图中' : '截图中',
-      message: buildCardCaptureMessage(exportTitle, initialCaptureProfile.baseScale),
-      cancelTask: cancelContext.cancel
-    });
+    updateCaptureStage('初始化', buildCardCaptureMessage(exportTitle, initialCaptureProfile.baseScale));
 
     if (!options?.fromRetry && initialHeavyMediaCount > 0) {
+      updateCaptureStage('资源预热', `首轮素材预热（节点 ${initialHeavyMediaCount}）`);
       // 首轮导出先做一次资源预热，降低“第一次失败、第二次秒过”的概率。
       await waitForRenderableAssets(targetEl, {
         maxWaitMs: deviceTier === 'phone' ? 1800 : (deviceTier === 'tablet' ? 2200 : 1800),
@@ -4122,13 +4129,18 @@ const runExportElementPng = async (id, title, options = {}) => {
       }
     }
 
+    updateCaptureStage('克隆中', '准备导出克隆节点');
     cloneEl = await prepareExportClone(targetEl);
     if (cancelContext.isCancelled()) {
       throw new Error('export-cancelled');
     }
+    updateCaptureStage('克隆完成', '开始统计渲染尺寸');
     const renderEl = cloneEl || targetEl;
     const isMobileScreen = deviceTier !== 'desktop';
     const heavyMediaCount = countHeavyMediaNodes(renderEl);
+    const width = Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0);
+    const height = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
+    updateCaptureStage('素材确认', `渲染尺寸 ${width}x${height}，重节点 ${heavyMediaCount}`);
     await waitForRenderableAssets(renderEl, {
       maxWaitMs: heavyMediaCount >= 18
         ? (deviceTier === 'phone' ? 2400 : (deviceTier === 'tablet' ? 2800 : 2400))
@@ -4144,14 +4156,7 @@ const runExportElementPng = async (id, title, options = {}) => {
     });
     const scales = captureProfile.scales;
     const baseScale = captureProfile.baseScale;
-    setScreenshotModalState({
-      state: options?.fromRetry ? 'retrying' : 'capturing',
-      title: options?.fromRetry ? '重新截图中' : '截图中',
-      message: buildCardCaptureMessage(exportTitle, baseScale),
-      cancelTask: cancelContext.cancel
-    });
-    const width = Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0);
-    const height = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
+    updateCaptureStage('渲染准备', buildCardCaptureMessage(exportTitle, baseScale));
     let canvas = null;
     let lastError = null;
 
@@ -4159,12 +4164,7 @@ const runExportElementPng = async (id, title, options = {}) => {
       const scale = scales[idx];
       if (idx > 0) {
         const prevReason = downgradeReasons[downgradeReasons.length - 1] || '';
-        setScreenshotModalState({
-          state: 'retrying',
-          title: '失败降级重试中',
-          message: `截图失败，正在降级到清晰度 x${scale.toFixed(2)} 重试（${idx}/${scales.length - 1}）...${prevReason ? ` 上次失败原因：${prevReason}` : ''}`,
-          cancelTask: cancelContext.cancel
-        });
+        updateCaptureStage('失败降级重试中', `降级到清晰度 x${scale.toFixed(2)}（${idx}/${scales.length - 1}）${prevReason ? `；上次失败：${prevReason}` : ''}`, 'retrying');
         await waitNextPaint();
         if (cancelContext.isCancelled()) {
           throw new Error('export-cancelled');
@@ -4190,6 +4190,7 @@ const runExportElementPng = async (id, title, options = {}) => {
           32000,
           Math.round(Math.max(baseRenderTimeoutMs, timeoutFloor) * hostMultiplier * (1 + (idx * 0.45)))
         );
+        updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms`);
         const renderTask = trackCardCaptureRenderTask(html2canvas(renderEl, {
           backgroundColor: '#ffffff',
           scale,
@@ -4204,13 +4205,13 @@ const runExportElementPng = async (id, title, options = {}) => {
       } catch (error) {
         const detail = getCaptureErrorText(error);
         lastError = error;
-        downgradeReasons.push(`x${scale.toFixed(2)}：${detail.text}`);
+        downgradeReasons.push(`阶段 ${currentStage}，x${scale.toFixed(2)}：${detail.text}`);
         if (isRenderTimeoutError(error)) {
           // Timed-out html2canvas tasks are not cancellable; wait briefly for tail completion.
           const settled = await waitPendingCardCaptureRenderTask(deviceTier === 'phone' ? 1800 : 1200);
           if (!settled) {
-            downgradeReasons.push(`x${scale.toFixed(2)}：超时后渲染任务未收尾，停止继续叠加重试`);
-            break;
+            downgradeReasons.push(`阶段 ${currentStage}：超时后渲染任务未收尾，已强制解除等待并继续降级重试`);
+            forceReleaseCardCaptureRenderTask();
           }
         }
         if (!detail.retryable) {
@@ -4223,13 +4224,14 @@ const runExportElementPng = async (id, title, options = {}) => {
       throw lastError || new Error('html2canvas failed');
     }
 
+    updateCaptureStage('编码中', '正在生成 PNG 二进制');
     const fileName = sanitizeExportFileName(`pjsk_${title || id}_${formatExportTimestamp()}`);
     await triggerDownloadPng(canvas, fileName);
     const downgradeSummary = summarizeCaptureReasons(downgradeReasons, 2);
     setScreenshotModalState({
       state: 'success',
       title: '截图完成',
-      message: `「${exportTitle}」已导出 PNG。${downgradeSummary ? ` 已降级：${downgradeSummary}` : ''}`,
+      message: `「${exportTitle}」已导出 PNG（总耗时 ${formatElapsed()}）。${downgradeSummary ? ` 已降级：${downgradeSummary}` : ''}`,
       cancelTask: null,
       autoCloseMs: 1400
     });
@@ -4240,7 +4242,7 @@ const runExportElementPng = async (id, title, options = {}) => {
     console.error('导出模块PNG失败', error);
     const terminalDetail = getCaptureErrorText(error);
     if (!downgradeReasons.length) {
-      downgradeReasons.push(`终止：${terminalDetail.text}`);
+      downgradeReasons.push(`阶段 ${currentStage}：${terminalDetail.text}`);
     }
     setScreenshotModalState({
       state: 'failed',

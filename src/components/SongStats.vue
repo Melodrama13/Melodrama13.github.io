@@ -3338,6 +3338,7 @@ const forceCancelScreenshotExport = () => {
   if (typeof task === 'function') {
     task();
   }
+  pendingSongCaptureRenderTask = null;
   isExportingPng.value = false;
   clearScreenshotModalAutoClose();
   screenshotModalVisible.value = false;
@@ -3660,6 +3661,10 @@ const trackSongCaptureRenderTask = (taskPromise) => {
   return tracked;
 };
 
+const forceReleaseSongCaptureRenderTask = () => {
+  pendingSongCaptureRenderTask = null;
+};
+
 const createExportCancelContext = () => {
   let resolveCancel = null;
   let cancelled = false;
@@ -3812,14 +3817,7 @@ const getSongExportFailedMessage = (reasons = []) => {
 const exportElementPng = async (targetEl, title, options = {}) => {
   const previousIdle = await waitPendingSongCaptureRenderTask(1200);
   if (!previousIdle) {
-    setScreenshotModalState({
-      state: 'failed',
-      title: '截图失败',
-      message: '阶段 初始化：上一轮渲染任务仍未结束（疑似卡死），请稍后重试。',
-      retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
-      cancelTask: null
-    });
-    return;
+    forceReleaseSongCaptureRenderTask();
   }
   const exportLabel = String(options?.taskLabel || title || '当前模块');
   const deviceTier = getCaptureDeviceTier();
@@ -3837,6 +3835,28 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       message: `[${stage}] ${detail}${detail ? ' ' : ''}（已用时 ${formatElapsed()}）`,
       cancelTask: cancelContext.cancel
     });
+  };
+  const dropUnreadyOptionalImagesForCapture = (rootEl) => {
+    if (!(rootEl instanceof HTMLElement)) return 0;
+    let dropped = 0;
+    rootEl.querySelectorAll('img').forEach((imgEl) => {
+      if (!(imgEl instanceof HTMLImageElement)) return;
+      if (imgEl.complete && imgEl.naturalWidth > 0) return;
+      const src = String(imgEl.currentSrc || imgEl.getAttribute('src') || '').toLowerCase();
+      const cls = String(imgEl.className || '').toLowerCase();
+      const isOptionalIcon = src.includes('/elements/')
+        || src.includes('/chibi')
+        || src.includes('/icon/')
+        || cls.includes('icon')
+        || cls.includes('avatar')
+        || cls.includes('logo')
+        || cls.includes('badge');
+      if (!isOptionalIcon) return;
+      imgEl.dataset.failed = '1';
+      imgEl.style.display = 'none';
+      dropped += 1;
+    });
+    return dropped;
   };
   const initialCaptureProfile = buildSongCaptureProfile({
     deviceTier,
@@ -3922,6 +3942,10 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           Math.round(Math.max(baseRenderTimeoutMs, timeoutFloor) * hostMultiplier * (1 + (idx * 0.45)))
         );
         updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms`);
+        const skippedOptional = dropUnreadyOptionalImagesForCapture(renderEl);
+        if (skippedOptional > 0) {
+          updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms；已跳过未就绪图标 ${skippedOptional} 个`);
+        }
         const renderTask = trackSongCaptureRenderTask(html2canvas(renderEl, {
           backgroundColor: '#ffffff',
           scale,
@@ -3941,8 +3965,8 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           // Timed-out html2canvas tasks are not cancellable; wait briefly for tail completion.
           const settled = await waitPendingSongCaptureRenderTask(deviceTier === 'phone' ? 1800 : 1200);
           if (!settled) {
-            downgradeReasons.push(`阶段 ${currentStage}：超时后渲染任务未收尾，停止继续叠加重试`);
-            break;
+            downgradeReasons.push(`阶段 ${currentStage}：超时后渲染任务未收尾，已强制解除等待并继续降级重试`);
+            forceReleaseSongCaptureRenderTask();
           }
         }
         if (!detail.retryable) {
