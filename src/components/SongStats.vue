@@ -994,6 +994,7 @@ let navSyncRaf = 0;
 let statsMainInteractionHost = null;
 let lastInteractiveAnchorEl = null;
 let lastInteractiveAt = 0;
+let pendingSongCaptureRenderTask = null;
 
 const DELETED_SONG_ID_SET = new Set([241, 290]);
 
@@ -3623,6 +3624,26 @@ const withRenderTimeout = async (promise, timeoutMs, cancelPromise = null) => {
   }
 };
 
+const waitPendingSongCaptureRenderTask = async () => {
+  const pending = pendingSongCaptureRenderTask;
+  if (!pending) return;
+  try {
+    await pending;
+  } catch (_) {
+    // Ignore previous render failure; caller handles current retry policy.
+  }
+};
+
+const trackSongCaptureRenderTask = (taskPromise) => {
+  const tracked = Promise.resolve(taskPromise).finally(() => {
+    if (pendingSongCaptureRenderTask === tracked) {
+      pendingSongCaptureRenderTask = null;
+    }
+  });
+  pendingSongCaptureRenderTask = tracked;
+  return tracked;
+};
+
 const createExportCancelContext = () => {
   let resolveCancel = null;
   let cancelled = false;
@@ -3643,6 +3664,8 @@ const createExportCancelContext = () => {
 };
 
 const isExportCancelledError = (error) => String(error?.message || '').includes('export-cancelled');
+const isRenderTimeoutError = (error) => /render-timeout-\d+/.test(String(error?.message || ''));
+const isGithubPagesHost = () => /github\.io$/i.test(String(window?.location?.hostname || ''));
 
 const copyCssCustomProperties = (sourceStyle, targetEl) => {
   if (!(sourceStyle instanceof CSSStyleDeclaration) || !(targetEl instanceof HTMLElement)) return;
@@ -3768,6 +3791,7 @@ const getSongExportFailedMessage = (reasons = []) => {
 };
 
 const exportElementPng = async (targetEl, title, options = {}) => {
+  await waitPendingSongCaptureRenderTask();
   const exportLabel = String(options?.taskLabel || title || '当前模块');
   const deviceTier = getCaptureDeviceTier();
   const initialHeavyMediaCount = countHeavyMediaNodes(targetEl);
@@ -3848,14 +3872,22 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       }
 
       try {
-        const renderTimeoutMs = computeRenderTimeoutMs({
+        await waitPendingSongCaptureRenderTask();
+        const baseRenderTimeoutMs = computeRenderTimeoutMs({
           deviceTier,
           heavyMediaCount,
           width,
           height,
           scale
         });
-        canvas = await withRenderTimeout(html2canvas(renderEl, {
+        // First attempt uses a safer floor on static hosts; then relaxes gradually.
+        const timeoutFloor = deviceTier === 'phone' ? 9000 : 7000;
+        const hostMultiplier = isGithubPagesHost() ? 1.6 : 1;
+        const renderTimeoutMs = Math.min(
+          32000,
+          Math.round(Math.max(baseRenderTimeoutMs, timeoutFloor) * hostMultiplier * (1 + (idx * 0.45)))
+        );
+        const renderTask = trackSongCaptureRenderTask(html2canvas(renderEl, {
           backgroundColor: '#ffffff',
           scale,
           useCORS: true,
@@ -3863,12 +3895,17 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
           width,
           height
-        }), renderTimeoutMs, cancelContext.cancelPromise);
+        }));
+        canvas = await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
         break;
       } catch (error) {
         const detail = getCaptureErrorText(error);
         lastError = error;
         downgradeReasons.push(`x${scale.toFixed(2)}：${detail.text}`);
+        if (isRenderTimeoutError(error)) {
+          // Timed-out html2canvas tasks are not cancellable; wait completion before next retry.
+          await waitPendingSongCaptureRenderTask();
+        }
         if (!detail.retryable) {
           break;
         }

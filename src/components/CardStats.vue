@@ -2099,6 +2099,7 @@ let lastInteractiveAt = 0;
 let relatedJumpChipSyncRaf = 0;
 let relatedJumpResizeObserver = null;
 let relatedJumpMutationObserver = null;
+let pendingCardCaptureRenderTask = null;
 const mobileNavExpandedGroups = ref({});
 
 //const getCharAbbr = (name) => CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
@@ -3782,6 +3783,26 @@ const withRenderTimeout = async (promise, timeoutMs, cancelPromise = null) => {
   }
 };
 
+const waitPendingCardCaptureRenderTask = async () => {
+  const pending = pendingCardCaptureRenderTask;
+  if (!pending) return;
+  try {
+    await pending;
+  } catch (_) {
+    // Ignore previous render failure; caller handles current retry policy.
+  }
+};
+
+const trackCardCaptureRenderTask = (taskPromise) => {
+  const tracked = Promise.resolve(taskPromise).finally(() => {
+    if (pendingCardCaptureRenderTask === tracked) {
+      pendingCardCaptureRenderTask = null;
+    }
+  });
+  pendingCardCaptureRenderTask = tracked;
+  return tracked;
+};
+
 const createExportCancelContext = () => {
   let resolveCancel = null;
   let cancelled = false;
@@ -3802,6 +3823,8 @@ const createExportCancelContext = () => {
 };
 
 const isExportCancelledError = (error) => String(error?.message || '').includes('export-cancelled');
+const isRenderTimeoutError = (error) => /render-timeout-\d+/.test(String(error?.message || ''));
+const isGithubPagesHost = () => /github\.io$/i.test(String(window?.location?.hostname || ''));
 
 const getTableColumnWidths = (tableEl) => {
   if (!(tableEl instanceof HTMLTableElement)) return [];
@@ -4028,6 +4051,7 @@ const resolveExportElementById = (id) => {
 
 const runExportElementPng = async (id, title, options = {}) => {
   if (isExportingPng.value) return;
+  await waitPendingCardCaptureRenderTask();
   const targetEl = resolveExportElementById(id);
   if (!targetEl) {
     setScreenshotModalState({
@@ -4119,14 +4143,22 @@ const runExportElementPng = async (id, title, options = {}) => {
       }
 
       try {
-        const renderTimeoutMs = computeRenderTimeoutMs({
+        await waitPendingCardCaptureRenderTask();
+        const baseRenderTimeoutMs = computeRenderTimeoutMs({
           deviceTier,
           heavyMediaCount,
           width,
           height,
           scale
         });
-        canvas = await withRenderTimeout(html2canvas(renderEl, {
+        // First attempt uses a safer floor on static hosts; then relaxes gradually.
+        const timeoutFloor = deviceTier === 'phone' ? 9000 : 7000;
+        const hostMultiplier = isGithubPagesHost() ? 1.6 : 1;
+        const renderTimeoutMs = Math.min(
+          32000,
+          Math.round(Math.max(baseRenderTimeoutMs, timeoutFloor) * hostMultiplier * (1 + (idx * 0.45)))
+        );
+        const renderTask = trackCardCaptureRenderTask(html2canvas(renderEl, {
           backgroundColor: '#ffffff',
           scale,
           useCORS: true,
@@ -4134,12 +4166,17 @@ const runExportElementPng = async (id, title, options = {}) => {
           imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
           width,
           height
-        }), renderTimeoutMs, cancelContext.cancelPromise);
+        }));
+        canvas = await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
         break;
       } catch (error) {
         const detail = getCaptureErrorText(error);
         lastError = error;
         downgradeReasons.push(`x${scale.toFixed(2)}：${detail.text}`);
+        if (isRenderTimeoutError(error)) {
+          // Timed-out html2canvas tasks are not cancellable; wait completion before next retry.
+          await waitPendingCardCaptureRenderTask();
+        }
         if (!detail.retryable) {
           break;
         }
