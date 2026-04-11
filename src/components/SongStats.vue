@@ -3401,11 +3401,11 @@ const getCaptureDeviceTier = () => {
 const buildSongExportScaleCandidates = (preferredScale, isMobileScreen) => {
   const baseScale = Number.isFinite(preferredScale) && preferredScale > 0 ? preferredScale : 1;
   const ladder = isMobileScreen
-    ? [baseScale, Math.min(baseScale, 1.3), 1.1, 0.9, 0.75, 0.62]
-    : [baseScale, Math.min(baseScale, 1.9), 1.45, 1.2, 1, 0.85];
+    ? [baseScale, Math.min(baseScale, 1.3), 1.1, 1]
+    : [baseScale, Math.min(baseScale, 1.9), 1.45, 1.2, 1];
   const seen = new Set();
   return ladder
-    .map((value) => Math.max(0.55, Number(value.toFixed(2))))
+    .map((value) => Math.max(1, Number(value.toFixed(2))))
     .filter((value) => {
       const key = String(value);
       if (seen.has(key)) return false;
@@ -3437,10 +3437,10 @@ const buildSongAdaptiveScaleCandidates = (preferredScale, deviceTier, heavyMedia
 
   const seen = new Set();
   const targeted = (deviceTier === 'phone' || deviceTier === 'tablet'
-    ? [Math.max(1.7, Math.min(base[0] || 2, 2.0)), 1.55, 1.38, 1.2, 0.95, 0.78, 0.62]
-    : [Math.max(1.95, base[0] || 2), Math.max(1.8, Math.min(base[0] || 2, 2.2)), 1.65, 1.35, 1.08, 0.9]
+    ? [Math.max(1.7, Math.min(base[0] || 2, 2.0)), 1.55, 1.38, 1.2]
+    : [Math.max(1.95, base[0] || 2), Math.max(1.8, Math.min(base[0] || 2, 2.2)), 1.65, 1.35]
   )
-    .map((value) => Math.max(0.55, Number(value.toFixed(2))))
+    .map((value) => Math.max(1, Number(value.toFixed(2))))
     .filter((value) => {
       const key = String(value);
       if (seen.has(key)) return false;
@@ -3479,47 +3479,96 @@ const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, sc
   return tierCap + heavyBoost;
 };
 
-const getCaptureRenderBudget = (deviceTier) => {
-  if (deviceTier === 'phone') {
-    return {
-      maxCanvasEdge: 5200,
-      maxCanvasMegaPixels: 14,
-      minScale: 0.5
-    };
+const getRenderDiagnosticPlan = (attemptIndex) => {
+  if (attemptIndex <= 0) {
+    return { key: 'normal', label: '标准渲染' };
   }
-  if (deviceTier === 'tablet') {
-    return {
-      maxCanvasEdge: 7000,
-      maxCanvasMegaPixels: 22,
-      minScale: 0.55
-    };
+  if (attemptIndex === 1) {
+    return { key: 'style-sanitize', label: '禁用动画/滤镜' };
   }
-  return {
-    maxCanvasEdge: 8600,
-    maxCanvasMegaPixels: 34,
-    minScale: 0.6
-  };
+  if (attemptIndex === 2) {
+    return { key: 'hide-unready-images', label: '隐藏未就绪图片' };
+  }
+  return { key: 'style-no-image', label: '禁用动画/滤镜 + 隐藏全部图片' };
 };
 
-const toSafeCaptureScale = ({ requestedScale, width, height, deviceTier }) => {
-  const safeRequested = Number.isFinite(requestedScale) && requestedScale > 0 ? requestedScale : 1;
-  const safeWidth = Math.max(1, Number(width) || 1);
-  const safeHeight = Math.max(1, Number(height) || 1);
-  const budget = getCaptureRenderBudget(deviceTier);
-  const byEdge = Math.min(budget.maxCanvasEdge / safeWidth, budget.maxCanvasEdge / safeHeight);
-  const byArea = Math.sqrt((budget.maxCanvasMegaPixels * 1000000) / (safeWidth * safeHeight));
-  const capScale = Math.min(safeRequested, byEdge, byArea);
-  const boundedScale = Number(Math.max(budget.minScale, capScale).toFixed(2));
-  const adjusted = Math.abs(boundedScale - safeRequested) > 0.0001;
-  const cappedWidth = Math.round(safeWidth * boundedScale);
-  const cappedHeight = Math.round(safeHeight * boundedScale);
-  return {
-    scale: boundedScale,
-    adjusted,
-    budget,
-    cappedWidth,
-    cappedHeight
-  };
+const applyRenderDiagnosticMitigation = (rootEl, planKey) => {
+  if (!(rootEl instanceof HTMLElement)) {
+    return { styleSanitized: 0, hiddenImages: 0 };
+  }
+  const result = { styleSanitized: 0, hiddenImages: 0 };
+  const needSanitizeStyle = planKey === 'style-sanitize' || planKey === 'style-no-image';
+  const hideAllImages = planKey === 'style-no-image';
+  const hideUnreadyImages = planKey === 'hide-unready-images' || hideAllImages;
+
+  if (needSanitizeStyle) {
+    rootEl.querySelectorAll('*').forEach((node) => {
+      if (!(node instanceof HTMLElement)) return;
+      const computed = window.getComputedStyle(node);
+      let touched = false;
+      if (computed.animationName && computed.animationName !== 'none') {
+        node.style.animation = 'none';
+        touched = true;
+      }
+      if (computed.transitionProperty && computed.transitionProperty !== 'all 0s ease 0s' && computed.transitionDuration !== '0s') {
+        node.style.transition = 'none';
+        touched = true;
+      }
+      if (computed.filter && computed.filter !== 'none') {
+        node.style.filter = 'none';
+        touched = true;
+      }
+      if (computed.backdropFilter && computed.backdropFilter !== 'none') {
+        node.style.backdropFilter = 'none';
+        touched = true;
+      }
+      if (computed.mixBlendMode && computed.mixBlendMode !== 'normal') {
+        node.style.mixBlendMode = 'normal';
+        touched = true;
+      }
+      if (computed.position === 'sticky') {
+        node.style.position = 'static';
+        node.style.top = 'auto';
+        node.style.left = 'auto';
+        touched = true;
+      }
+      if (touched) {
+        result.styleSanitized += 1;
+      }
+    });
+  }
+
+  if (hideUnreadyImages) {
+    rootEl.querySelectorAll('img').forEach((imgEl) => {
+      if (!(imgEl instanceof HTMLImageElement)) return;
+      const ready = imgEl.complete && imgEl.naturalWidth > 0;
+      if (!hideAllImages && ready) return;
+      imgEl.dataset.failed = '1';
+      imgEl.style.display = 'none';
+      result.hiddenImages += 1;
+    });
+  }
+
+  return result;
+};
+
+const getRenderStallSignals = (rootEl) => {
+  if (!(rootEl instanceof HTMLElement)) return '无可用诊断节点';
+  let animated = 0;
+  let filtered = 0;
+  let sticky = 0;
+  rootEl.querySelectorAll('*').forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    const computed = window.getComputedStyle(node);
+    if (computed.animationName && computed.animationName !== 'none') animated += 1;
+    if ((computed.filter && computed.filter !== 'none') || (computed.backdropFilter && computed.backdropFilter !== 'none') || (computed.mixBlendMode && computed.mixBlendMode !== 'normal')) {
+      filtered += 1;
+    }
+    if (computed.position === 'sticky') sticky += 1;
+  });
+  const images = Array.from(rootEl.querySelectorAll('img'));
+  const unreadyImages = images.filter((imgEl) => !(imgEl instanceof HTMLImageElement) || !(imgEl.complete && imgEl.naturalWidth > 0)).length;
+  return `动画节点 ${animated}，滤镜/混合节点 ${filtered}，sticky 节点 ${sticky}，未就绪图片 ${unreadyImages}/${images.length}`;
 };
 
 const waitForSingleImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
@@ -3956,9 +4005,10 @@ const exportElementPng = async (targetEl, title, options = {}) => {
 
     for (let idx = 0; idx < scales.length; idx += 1) {
       const scale = scales[idx];
+      const diagnosticPlan = getRenderDiagnosticPlan(idx);
       if (idx > 0) {
         const prevReason = downgradeReasons[downgradeReasons.length - 1] || '';
-        updateCaptureStage('失败降级重试中', `降级到清晰度 x${scale.toFixed(2)}（${idx}/${scales.length - 1}）${prevReason ? `；上次失败：${prevReason}` : ''}`, 'retrying');
+        updateCaptureStage('失败降级重试中', `降级到清晰度 x${scale.toFixed(2)}（${idx}/${scales.length - 1}）；诊断策略：${diagnosticPlan.label}${prevReason ? `；上次失败：${prevReason}` : ''}`, 'retrying');
         await waitNextPaint();
         if (cancelContext.isCancelled()) {
           throw new Error('export-cancelled');
@@ -3980,28 +4030,22 @@ const exportElementPng = async (targetEl, title, options = {}) => {
         // First attempt uses a safer floor on static hosts; then relaxes gradually.
         const timeoutFloor = deviceTier === 'phone' ? 9000 : 7000;
         const hostMultiplier = isGithubPagesHost() ? 1.6 : 1;
-        const safeScaleInfo = toSafeCaptureScale({
-          requestedScale: scale,
-          width,
-          height,
-          deviceTier
-        });
-        const effectiveScale = safeScaleInfo.scale;
         const renderTimeoutMs = Math.min(
           32000,
           Math.round(Math.max(baseRenderTimeoutMs, timeoutFloor) * hostMultiplier * (1 + (idx * 0.45)))
         );
-        const scaleNote = safeScaleInfo.adjusted
-          ? `（尺寸保护：x${scale.toFixed(2)}→x${effectiveScale.toFixed(2)}，目标画布 ${safeScaleInfo.cappedWidth}x${safeScaleInfo.cappedHeight}）`
-          : '';
-        updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${effectiveScale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms${scaleNote}`);
+        const mitigation = applyRenderDiagnosticMitigation(renderEl, diagnosticPlan.key);
+        const mitigationNote = diagnosticPlan.key === 'normal'
+          ? ''
+          : `；策略 ${diagnosticPlan.label}（样式处理 ${mitigation.styleSanitized}，隐藏图片 ${mitigation.hiddenImages}）`;
+        updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms${mitigationNote}`);
         const skippedOptional = dropUnreadyOptionalImagesForCapture(renderEl);
         if (skippedOptional > 0) {
-          updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${effectiveScale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms；已跳过未就绪图标 ${skippedOptional} 个${scaleNote}`);
+          updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms；已跳过未就绪图标 ${skippedOptional} 个${mitigationNote}`);
         }
         const renderTask = trackSongCaptureRenderTask(html2canvas(renderEl, {
           backgroundColor: '#ffffff',
-          scale: effectiveScale,
+          scale,
           useCORS: true,
           logging: false,
           imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
@@ -4009,12 +4053,16 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           height
         }));
         canvas = await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
+        if (diagnosticPlan.key !== 'normal') {
+          downgradeReasons.push(`阶段 ${currentStage}：应用「${diagnosticPlan.label}」后渲染恢复（x${scale.toFixed(2)}）`);
+        }
         break;
       } catch (error) {
         const detail = getCaptureErrorText(error);
         lastError = error;
         downgradeReasons.push(`阶段 ${currentStage}，x${scale.toFixed(2)}：${detail.text}`);
         if (isRenderTimeoutError(error)) {
+          downgradeReasons.push(`阶段 ${currentStage}：卡点诊断 ${getRenderStallSignals(renderEl)}`);
           // Timed-out html2canvas tasks are not cancellable; wait briefly for tail completion.
           const settled = await waitPendingSongCaptureRenderTask(deviceTier === 'phone' ? 1800 : 1200);
           if (!settled) {
