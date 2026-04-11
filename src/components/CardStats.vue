@@ -2011,7 +2011,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, reactive } from 'vue';
-import html2canvas from 'html2canvas';
+import { toCanvas } from 'html-to-image';
 // 1. 接收两个 Props
 const props = defineProps({
   allEvents: { type: Array, default: () => [] },
@@ -4226,234 +4226,85 @@ const resolveExportElementById = (id) => {
 };
 
 const runExportElementPng = async (id, title, options = {}) => {
-  if (isExportingPng.value) return;
-  const previousIdle = await waitPendingCardCaptureRenderTask(1200);
-  if (!previousIdle) {
-    forceReleaseCardCaptureRenderTask();
-  }
-  const targetEl = resolveExportElementById(id);
-  if (!targetEl) {
-    setScreenshotModalState({
-      state: 'failed',
-      title: '截图失败',
-      message: '未找到可导出的模块区域。'
-    });
-    return;
-  }
-
-  isExportingPng.value = true;
-  const cancelContext = createExportCancelContext();
+  const targetEl = typeof id === 'string' ? document.getElementById(id) : id;
+  if (!targetEl) return setScreenshotModalState({ state: 'error', title: '错误', message: '未找到元素', cancelTask: null });
+  const exportLabel = String(options?.taskLabel || title || '当前模块');
   const exportStartAt = performance.now();
-  let currentStage = '初始化';
   const formatElapsed = () => `${Math.max(0, Math.round(performance.now() - exportStartAt))}ms`;
-  const updateCaptureStage = (stage, detail = '', forceState = '') => {
-    currentStage = stage;
-    const modalState = forceState || (options?.fromRetry ? 'retrying' : 'capturing');
-    setScreenshotModalState({
-      state: modalState,
-      title: options?.fromRetry ? '重新截图中' : '截图中',
-      message: `[${stage}] ${detail}${detail ? ' ' : ''}（已用时 ${formatElapsed()}）`,
-      cancelTask: cancelContext.cancel
-    });
-  };
-  let cloneEl = null;
-  const downgradeReasons = [];
+
+  setScreenshotModalState({
+    state: 'capturing',
+    title: '截图中',
+    message: '[初始化] 正在准备捕获 ' + exportLabel,
+    cancelTask: () => {}
+  });
+
   try {
-    const exportTitle = String(title || id || '当前模块');
-    const deviceTier = getCaptureDeviceTier();
-    const initialHeavyMediaCount = countHeavyMediaNodes(targetEl);
-    const initialCaptureProfile = buildCardCaptureProfile({
-      deviceTier,
-      heavyMediaCount: initialHeavyMediaCount
-    });
-    updateCaptureStage('初始化', buildCardCaptureMessage(exportTitle, initialCaptureProfile.baseScale));
+    await new Promise(r => setTimeout(r, 600));
 
-    if (!options?.fromRetry && initialHeavyMediaCount > 0) {
-      updateCaptureStage('资源预热', `首轮素材预热（节点 ${initialHeavyMediaCount}）`);
-      // 首轮导出先做一次资源预热，降低“第一次失败、第二次秒过”的概率。
-      await waitForRenderableAssets(targetEl, {
-        maxWaitMs: deviceTier === 'phone' ? 1800 : (deviceTier === 'tablet' ? 2200 : 1800),
-        maxImages: Math.min(180, Math.max(40, initialHeavyMediaCount + 24))
+    setScreenshotModalState({
+      state: 'capturing',
+      title: '截图中',
+      message: '[渲染中] ' + exportLabel + '，旧设备可能需要较长时间...',
+      cancelTask: () => {}
+    });
+
+    const canvas = await toCanvas(targetEl, {
+      backgroundColor: '#ffffff',
+      pixelRatio: window.devicePixelRatio && window.devicePixelRatio > 1 ? window.devicePixelRatio : 2,
+      skipFonts: false,
+      filter: (node) => {
+        if (node.classList && (node.classList.contains('export-hide') || node.classList.contains('nav-cutoff-controls'))) {
+          return false;
+        }
+        return true;
+      }
+    });
+
+    if (!canvas) throw new Error('toCanvas returned null');
+
+    setScreenshotModalState({
+      state: 'exporting',
+      title: '导出图片',
+      message: '[编码中] 正在生成 PNG 文件...',
+      cancelTask: () => {}
+    });
+
+    const ts = typeof formatExportTimestamp === 'function' ? formatExportTimestamp() : Date.now();
+    const safeTitle = typeof sanitizeExportFileName === 'function' ? sanitizeExportFileName(`${title}_${ts}`) : `${title}_${ts}`;
+
+    if (typeof triggerDownloadPng === 'function') {
+      await triggerDownloadPng(canvas, safeTitle);
+    } else {
+      canvas.toBlob(blob => {
+        if(!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = safeTitle + ".png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       });
-      await waitNextPaint();
-      if (cancelContext.isCancelled()) {
-        throw new Error('export-cancelled');
-      }
     }
 
-    updateCaptureStage('克隆中', '准备导出克隆节点');
-    cloneEl = await prepareExportClone(targetEl);
-    if (cancelContext.isCancelled()) {
-      throw new Error('export-cancelled');
-    }
-    updateCaptureStage('克隆完成', '开始统计渲染尺寸');
-    const renderEl = cloneEl || targetEl;
-    const isMobileScreen = deviceTier !== 'desktop';
-    const heavyMediaCount = countHeavyMediaNodes(renderEl);
-    const width = Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0);
-    const height = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
-    updateCaptureStage('素材确认', `渲染尺寸 ${width}x${height}，重节点 ${heavyMediaCount}`);
-    await waitForRenderableAssets(renderEl, {
-      maxWaitMs: heavyMediaCount >= 18
-        ? (deviceTier === 'phone' ? 2400 : (deviceTier === 'tablet' ? 2800 : 2400))
-        : (deviceTier === 'phone' ? 1200 : (deviceTier === 'tablet' ? 1500 : 1200)),
-      maxImages: isMobileScreen ? 140 : 180
-    });
-    if (cancelContext.isCancelled()) {
-      throw new Error('export-cancelled');
-    }
-    const captureProfile = buildCardCaptureProfile({
-      deviceTier,
-      heavyMediaCount
-    });
-    const scales = captureProfile.scales;
-    const baseScale = captureProfile.baseScale;
-    updateCaptureStage('渲染准备', buildCardCaptureMessage(exportTitle, baseScale));
-    let canvas = null;
-    let lastError = null;
-
-    for (let idx = 0; idx < scales.length; idx += 1) {
-      const scale = scales[idx];
-      const diagnosticPlan = getRenderDiagnosticPlan(idx);
-      if (idx > 0) {
-        const prevReason = downgradeReasons[downgradeReasons.length - 1] || '';
-        updateCaptureStage('失败降级重试中', `降级到清晰度 x${scale.toFixed(2)}（${idx}/${scales.length - 1}）；诊断策略：${diagnosticPlan.label}${prevReason ? `；上次失败：${prevReason}` : ''}`, 'retrying');
-        await waitNextPaint();
-        if (cancelContext.isCancelled()) {
-          throw new Error('export-cancelled');
-        }
-      }
-
-      try {
-        const renderIdle = await waitPendingCardCaptureRenderTask(1200);
-        if (!renderIdle) {
-          throw new Error('previous-render-still-running');
-        }
-        const baseRenderTimeoutMs = computeRenderTimeoutMs({
-          deviceTier,
-          heavyMediaCount,
-          width,
-          height,
-          scale
-        });
-        // First attempt uses a safer floor on static hosts; then relaxes gradually.
-        const timeoutFloor = deviceTier === 'phone' ? 9000 : 7000;
-        const hostMultiplier = isGithubPagesHost() ? 1.6 : 1;
-        const renderTimeoutMs = Math.min(
-          32000,
-          Math.round(Math.max(baseRenderTimeoutMs, timeoutFloor) * hostMultiplier * (1 + (idx * 0.45)))
-        );
-        const mitigation = applyRenderDiagnosticMitigation(renderEl, diagnosticPlan.key);
-        const mitigationNote = diagnosticPlan.key === 'normal'
-          ? ''
-          : `；策略 ${diagnosticPlan.label}（样式处理 ${mitigation.styleSanitized}，装饰扁平 ${mitigation.flattenedDecor}，隐藏图片 ${mitigation.hiddenImages}${mitigation.pseudoDisabled ? '，伪元素关闭' : ''}）`;
-        updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms${mitigationNote}`);
-        const renderTask = trackCardCaptureRenderTask(html2canvas(renderEl, {
-          backgroundColor: '#ffffff',
-          scale,
-          useCORS: true,
-          logging: false,
-          imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
-          width,
-          height
-        }));
-        canvas = await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
-        if (diagnosticPlan.key !== 'normal') {
-          downgradeReasons.push(`阶段 ${currentStage}：应用「${diagnosticPlan.label}」后渲染恢复（x${scale.toFixed(2)}）`);
-        }
-        break;
-      } catch (error) {
-        const detail = getCaptureErrorText(error);
-        lastError = error;
-        downgradeReasons.push(`阶段 ${currentStage}，x${scale.toFixed(2)}：${detail.text}`);
-        if (isRenderTimeoutError(error)) {
-          downgradeReasons.push(`阶段 ${currentStage}：卡点诊断 ${getRenderStallSignals(renderEl)}`);
-          // Timed-out html2canvas tasks are not cancellable; wait briefly for tail completion.
-          const settled = await waitPendingCardCaptureRenderTask(deviceTier === 'phone' ? 1800 : 1200);
-          if (!settled) {
-            downgradeReasons.push(`阶段 ${currentStage}：超时后渲染任务未收尾，已强制解除等待并继续降级重试`);
-            forceReleaseCardCaptureRenderTask();
-          }
-        }
-        if (!detail.retryable) {
-          break;
-        }
-      }
-    }
-
-    if (!canvas && cloneEl) {
-      try {
-        const sourceWidth = Math.ceil(targetEl.scrollWidth || targetEl.clientWidth || 0);
-        const sourceHeight = Math.ceil(targetEl.scrollHeight || targetEl.clientHeight || 0);
-        const sourceScale = Number(scales[0] || baseScale || 1);
-        const sourceTimeoutMs = Math.min(
-          36000,
-          Math.round(Math.max(computeRenderTimeoutMs({
-            deviceTier,
-            heavyMediaCount: initialHeavyMediaCount,
-            width: sourceWidth,
-            height: sourceHeight,
-            scale: sourceScale
-          }), deviceTier === 'phone' ? 10000 : 8000) * (isGithubPagesHost() ? 1.6 : 1))
-        );
-        updateCaptureStage('结构诊断中', `克隆链路失败，尝试原节点直渲染（x${sourceScale.toFixed(2)}，阈值 ${sourceTimeoutMs}ms）`, 'retrying');
-        const sourceRenderTask = trackCardCaptureRenderTask(html2canvas(targetEl, {
-          backgroundColor: '#ffffff',
-          scale: sourceScale,
-          useCORS: true,
-          logging: false,
-          imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
-          width: sourceWidth,
-          height: sourceHeight
-        }));
-        canvas = await withRenderTimeout(sourceRenderTask, sourceTimeoutMs, cancelContext.cancelPromise);
-        downgradeReasons.push('阶段 结构诊断中：原节点直渲染成功（提示克隆链路与样式组合可能触发卡死）');
-      } catch (sourceError) {
-        lastError = sourceError;
-        const sourceDetail = getCaptureErrorText(sourceError);
-        downgradeReasons.push(`阶段 结构诊断中：原节点直渲染失败（${sourceDetail.text}）`);
-      }
-    }
-
-    if (!canvas) {
-      throw lastError || new Error('html2canvas failed');
-    }
-
-    updateCaptureStage('编码中', '正在生成 PNG 二进制');
-    const fileName = sanitizeExportFileName(`pjsk_${title || id}_${formatExportTimestamp()}`);
-    await triggerDownloadPng(canvas, fileName);
-    const downgradeSummary = summarizeCaptureReasons(downgradeReasons, 2);
     setScreenshotModalState({
       state: 'success',
-      title: '截图完成',
-      message: `「${exportTitle}」已导出 PNG（总耗时 ${formatElapsed()}）。${downgradeSummary ? ` 已降级：${downgradeSummary}` : ''}`,
+      title: '导出成功',
+      message: `【${exportLabel}】已导出 PNG（耗时 ${formatElapsed()}）`,
       cancelTask: null,
       autoCloseMs: 1400
     });
   } catch (error) {
-    if (isExportCancelledError(error)) {
-      return;
-    }
-    console.error('导出模块PNG失败', error);
-    const terminalDetail = getCaptureErrorText(error);
-    if (!downgradeReasons.length) {
-      downgradeReasons.push(`阶段 ${currentStage}：${terminalDetail.text}`);
-    }
+    console.error('导出失败:', error);
     setScreenshotModalState({
       state: 'failed',
       title: '截图失败',
-      message: getExportFailedMessage(downgradeReasons),
-      retryTask: () => runExportElementPng(id, title, { fromRetry: true }),
+      message: '[失败] 导出发生错误: ' + error.message,
+      retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
       cancelTask: null
     });
-  } finally {
-    if (screenshotModalCancelTask.value === cancelContext.cancel) {
-      screenshotModalCancelTask.value = null;
-    }
-    if (cloneEl && cloneEl.parentNode) {
-      cloneEl.parentNode.removeChild(cloneEl);
-    }
-    isExportingPng.value = false;
   }
 };
 
