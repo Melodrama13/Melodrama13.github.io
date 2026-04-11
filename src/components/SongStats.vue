@@ -3624,13 +3624,29 @@ const withRenderTimeout = async (promise, timeoutMs, cancelPromise = null) => {
   }
 };
 
-const waitPendingSongCaptureRenderTask = async () => {
+const waitPendingSongCaptureRenderTask = async (maxWaitMs = 0) => {
   const pending = pendingSongCaptureRenderTask;
-  if (!pending) return;
+  if (!pending) return true;
+  if (!(maxWaitMs > 0)) {
+    try {
+      await pending;
+      return true;
+    } catch (_) {
+      // Ignore previous render failure; caller handles current retry policy.
+      return true;
+    }
+  }
   try {
-    await pending;
+    const settled = await Promise.race([
+      pending.then(() => true).catch(() => true),
+      new Promise((resolve) => {
+        window.setTimeout(() => resolve(false), maxWaitMs);
+      })
+    ]);
+    return !!settled;
   } catch (_) {
     // Ignore previous render failure; caller handles current retry policy.
+    return true;
   }
 };
 
@@ -3766,6 +3782,9 @@ const getCaptureErrorText = (error) => {
   if (lower.includes('html2canvas failed')) {
     return { text: '渲染失败（html2canvas 无返回）', retryable: true };
   }
+  if (lower.includes('previous-render-still-running')) {
+    return { text: '上一轮渲染任务仍未结束（疑似卡死）', retryable: false };
+  }
   if (!message) {
     return { text: '未知错误（无错误消息）', retryable: true };
   }
@@ -3791,26 +3810,45 @@ const getSongExportFailedMessage = (reasons = []) => {
 };
 
 const exportElementPng = async (targetEl, title, options = {}) => {
-  await waitPendingSongCaptureRenderTask();
+  const previousIdle = await waitPendingSongCaptureRenderTask(1200);
+  if (!previousIdle) {
+    setScreenshotModalState({
+      state: 'failed',
+      title: '截图失败',
+      message: '阶段 初始化：上一轮渲染任务仍未结束（疑似卡死），请稍后重试。',
+      retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
+      cancelTask: null
+    });
+    return;
+  }
   const exportLabel = String(options?.taskLabel || title || '当前模块');
   const deviceTier = getCaptureDeviceTier();
   const initialHeavyMediaCount = countHeavyMediaNodes(targetEl);
   const cancelContext = createExportCancelContext();
+  const exportStartAt = performance.now();
+  let currentStage = '初始化';
+  const formatElapsed = () => `${Math.max(0, Math.round(performance.now() - exportStartAt))}ms`;
+  const updateCaptureStage = (stage, detail = '', forceState = '') => {
+    currentStage = stage;
+    const modalState = forceState || (options?.fromRetry ? 'retrying' : 'capturing');
+    setScreenshotModalState({
+      state: modalState,
+      title: options?.fromRetry ? '重新截图中' : '截图中',
+      message: `[${stage}] ${detail}${detail ? ' ' : ''}（已用时 ${formatElapsed()}）`,
+      cancelTask: cancelContext.cancel
+    });
+  };
   const initialCaptureProfile = buildSongCaptureProfile({
     deviceTier,
     heavyMediaCount: initialHeavyMediaCount
   });
-  setScreenshotModalState({
-    state: options?.fromRetry ? 'retrying' : 'capturing',
-    title: options?.fromRetry ? '重新截图中' : '截图中',
-    message: buildSongCaptureMessage(exportLabel, initialCaptureProfile.baseScale),
-    cancelTask: cancelContext.cancel
-  });
+  updateCaptureStage('初始化', buildSongCaptureMessage(exportLabel, initialCaptureProfile.baseScale));
 
   let cloneEl = null;
   const downgradeReasons = [];
   try {
     if (!options?.fromRetry && initialHeavyMediaCount > 0) {
+      updateCaptureStage('资源预热', `首轮素材预热（节点 ${initialHeavyMediaCount}）`);
       // 首轮导出先做一次资源预热，降低“第一次失败、第二次秒过”的概率。
       await waitForRenderableAssets(targetEl, {
         maxWaitMs: deviceTier === 'phone' ? 1800 : (deviceTier === 'tablet' ? 2200 : 1800),
@@ -3822,15 +3860,18 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       }
     }
 
+    updateCaptureStage('克隆中', '准备导出克隆节点');
     cloneEl = await prepareSongExportClone(targetEl);
     if (cancelContext.isCancelled()) {
       throw new Error('export-cancelled');
     }
+    updateCaptureStage('克隆完成', '开始统计渲染尺寸');
     const renderEl = cloneEl || targetEl;
     const width = Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0);
     const height = Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0);
     const isMobileScreen = deviceTier !== 'desktop';
     const heavyMediaCount = countHeavyMediaNodes(renderEl);
+    updateCaptureStage('素材确认', `渲染尺寸 ${width}x${height}，重节点 ${heavyMediaCount}`);
     await waitForRenderableAssets(renderEl, {
       maxWaitMs: heavyMediaCount >= 18
         ? (deviceTier === 'phone' ? 2400 : (deviceTier === 'tablet' ? 2800 : 2400))
@@ -3846,12 +3887,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     });
     const scales = captureProfile.scales;
     const baseScale = captureProfile.baseScale;
-    setScreenshotModalState({
-      state: options?.fromRetry ? 'retrying' : 'capturing',
-      title: options?.fromRetry ? '重新截图中' : '截图中',
-      message: buildSongCaptureMessage(exportLabel, baseScale),
-      cancelTask: cancelContext.cancel
-    });
+    updateCaptureStage('渲染准备', buildSongCaptureMessage(exportLabel, baseScale));
     let canvas = null;
     let lastError = null;
 
@@ -3859,12 +3895,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       const scale = scales[idx];
       if (idx > 0) {
         const prevReason = downgradeReasons[downgradeReasons.length - 1] || '';
-        setScreenshotModalState({
-          state: 'retrying',
-          title: '失败降级重试中',
-          message: `截图失败，正在降级到清晰度 x${scale.toFixed(2)} 重试（${idx}/${scales.length - 1}）...${prevReason ? ` 上次失败原因：${prevReason}` : ''}`,
-          cancelTask: cancelContext.cancel
-        });
+        updateCaptureStage('失败降级重试中', `降级到清晰度 x${scale.toFixed(2)}（${idx}/${scales.length - 1}）${prevReason ? `；上次失败：${prevReason}` : ''}`, 'retrying');
         await waitNextPaint();
         if (cancelContext.isCancelled()) {
           throw new Error('export-cancelled');
@@ -3872,7 +3903,10 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       }
 
       try {
-        await waitPendingSongCaptureRenderTask();
+        const renderIdle = await waitPendingSongCaptureRenderTask(1200);
+        if (!renderIdle) {
+          throw new Error('previous-render-still-running');
+        }
         const baseRenderTimeoutMs = computeRenderTimeoutMs({
           deviceTier,
           heavyMediaCount,
@@ -3887,6 +3921,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           32000,
           Math.round(Math.max(baseRenderTimeoutMs, timeoutFloor) * hostMultiplier * (1 + (idx * 0.45)))
         );
+        updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms`);
         const renderTask = trackSongCaptureRenderTask(html2canvas(renderEl, {
           backgroundColor: '#ffffff',
           scale,
@@ -3901,10 +3936,14 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       } catch (error) {
         const detail = getCaptureErrorText(error);
         lastError = error;
-        downgradeReasons.push(`x${scale.toFixed(2)}：${detail.text}`);
+        downgradeReasons.push(`阶段 ${currentStage}，x${scale.toFixed(2)}：${detail.text}`);
         if (isRenderTimeoutError(error)) {
-          // Timed-out html2canvas tasks are not cancellable; wait completion before next retry.
-          await waitPendingSongCaptureRenderTask();
+          // Timed-out html2canvas tasks are not cancellable; wait briefly for tail completion.
+          const settled = await waitPendingSongCaptureRenderTask(deviceTier === 'phone' ? 1800 : 1200);
+          if (!settled) {
+            downgradeReasons.push(`阶段 ${currentStage}：超时后渲染任务未收尾，停止继续叠加重试`);
+            break;
+          }
         }
         if (!detail.retryable) {
           break;
@@ -3916,13 +3955,14 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       throw lastError || new Error('html2canvas failed');
     }
 
+    updateCaptureStage('编码中', '正在生成 PNG 二进制');
     const safeTitle = sanitizeExportFileName(`song_${title}_${formatExportTimestamp()}`);
     await triggerDownloadPng(canvas, safeTitle);
     const downgradeSummary = summarizeCaptureReasons(downgradeReasons, 2);
     setScreenshotModalState({
       state: 'success',
       title: '截图完成',
-      message: `「${exportLabel}」已导出 PNG。${downgradeSummary ? ` 已降级：${downgradeSummary}` : ''}`,
+      message: `「${exportLabel}」已导出 PNG（总耗时 ${formatElapsed()}）。${downgradeSummary ? ` 已降级：${downgradeSummary}` : ''}`,
       cancelTask: null,
       autoCloseMs: 1400
     });
@@ -3932,7 +3972,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     }
     const terminalDetail = getCaptureErrorText(error);
     if (!downgradeReasons.length) {
-      downgradeReasons.push(`终止：${terminalDetail.text}`);
+      downgradeReasons.push(`阶段 ${currentStage}：${terminalDetail.text}`);
     }
     setScreenshotModalState({
       state: 'failed',

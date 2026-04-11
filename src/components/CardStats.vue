@@ -3783,13 +3783,29 @@ const withRenderTimeout = async (promise, timeoutMs, cancelPromise = null) => {
   }
 };
 
-const waitPendingCardCaptureRenderTask = async () => {
+const waitPendingCardCaptureRenderTask = async (maxWaitMs = 0) => {
   const pending = pendingCardCaptureRenderTask;
-  if (!pending) return;
+  if (!pending) return true;
+  if (!(maxWaitMs > 0)) {
+    try {
+      await pending;
+      return true;
+    } catch (_) {
+      // Ignore previous render failure; caller handles current retry policy.
+      return true;
+    }
+  }
   try {
-    await pending;
+    const settled = await Promise.race([
+      pending.then(() => true).catch(() => true),
+      new Promise((resolve) => {
+        window.setTimeout(() => resolve(false), maxWaitMs);
+      })
+    ]);
+    return !!settled;
   } catch (_) {
     // Ignore previous render failure; caller handles current retry policy.
+    return true;
   }
 };
 
@@ -3911,6 +3927,9 @@ const getCaptureErrorText = (error) => {
   }
   if (lower.includes('html2canvas failed')) {
     return { text: '渲染失败（html2canvas 无返回）', retryable: true };
+  }
+  if (lower.includes('previous-render-still-running')) {
+    return { text: '上一轮渲染任务仍未结束（疑似卡死）', retryable: false };
   }
   if (!message) {
     return { text: '未知错误（无错误消息）', retryable: true };
@@ -4051,7 +4070,17 @@ const resolveExportElementById = (id) => {
 
 const runExportElementPng = async (id, title, options = {}) => {
   if (isExportingPng.value) return;
-  await waitPendingCardCaptureRenderTask();
+  const previousIdle = await waitPendingCardCaptureRenderTask(1200);
+  if (!previousIdle) {
+    setScreenshotModalState({
+      state: 'failed',
+      title: '截图失败',
+      message: '阶段 初始化：上一轮渲染任务仍未结束（疑似卡死），请稍后重试。',
+      retryTask: () => runExportElementPng(id, title, { fromRetry: true }),
+      cancelTask: null
+    });
+    return;
+  }
   const targetEl = resolveExportElementById(id);
   if (!targetEl) {
     setScreenshotModalState({
@@ -4143,7 +4172,10 @@ const runExportElementPng = async (id, title, options = {}) => {
       }
 
       try {
-        await waitPendingCardCaptureRenderTask();
+        const renderIdle = await waitPendingCardCaptureRenderTask(1200);
+        if (!renderIdle) {
+          throw new Error('previous-render-still-running');
+        }
         const baseRenderTimeoutMs = computeRenderTimeoutMs({
           deviceTier,
           heavyMediaCount,
@@ -4174,8 +4206,12 @@ const runExportElementPng = async (id, title, options = {}) => {
         lastError = error;
         downgradeReasons.push(`x${scale.toFixed(2)}：${detail.text}`);
         if (isRenderTimeoutError(error)) {
-          // Timed-out html2canvas tasks are not cancellable; wait completion before next retry.
-          await waitPendingCardCaptureRenderTask();
+          // Timed-out html2canvas tasks are not cancellable; wait briefly for tail completion.
+          const settled = await waitPendingCardCaptureRenderTask(deviceTier === 'phone' ? 1800 : 1200);
+          if (!settled) {
+            downgradeReasons.push(`x${scale.toFixed(2)}：超时后渲染任务未收尾，停止继续叠加重试`);
+            break;
+          }
         }
         if (!detail.retryable) {
           break;
