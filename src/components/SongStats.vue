@@ -3492,7 +3492,52 @@ const getRenderDiagnosticPlan = (attemptIndex) => {
   if (attemptIndex === 3) {
     return { key: 'hide-unready-images', label: '隐藏未就绪图片' };
   }
-  return { key: 'style-no-image', label: '禁用动画/滤镜 + 隐藏全部图片' };
+  if (attemptIndex === 4) {
+    return { key: 'style-no-image', label: '禁用动画/滤镜 + 隐藏全部图片' };
+  }
+  return { key: 'text-probe', label: '纯文本探针（移除非文本节点）' };
+};
+
+const nextCaptureMarkerId = () => `capture-${Date.now()}-${Math.floor(Math.random() * 1e8)}`;
+
+const buildCaptureCloneGlobalCss = (planKey) => {
+  const cssParts = [
+    '.song-screenshot-modal-mask, .screenshot-export-modal-mask, .floating-menu-btn, .stats-nav, .nav-collapse-fab { display: none !important; }'
+  ];
+  if (planKey !== 'normal') {
+    cssParts.push('* { animation: none !important; transition: none !important; }');
+    cssParts.push('* { filter: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; mix-blend-mode: normal !important; }');
+    cssParts.push('* { position: static !important; top: auto !important; left: auto !important; }');
+  }
+  if (planKey === 'flatten-decor' || planKey === 'style-no-image' || planKey === 'text-probe') {
+    cssParts.push('* { box-shadow: none !important; text-shadow: none !important; background-image: none !important; clip-path: none !important; mask-image: none !important; -webkit-mask-image: none !important; }');
+    cssParts.push('*::before, *::after { content: none !important; animation: none !important; transition: none !important; box-shadow: none !important; text-shadow: none !important; background-image: none !important; }');
+  }
+  if (planKey === 'style-no-image' || planKey === 'text-probe') {
+    cssParts.push('img, svg, video, canvas, picture, source { display: none !important; }');
+  }
+  return cssParts.join('\n');
+};
+
+const applyCaptureProbeInClonedDoc = (clonedDoc, captureId, planKey) => {
+  if (!(clonedDoc instanceof Document)) return;
+  const styleEl = clonedDoc.createElement('style');
+  styleEl.setAttribute('data-export-diag-global', '1');
+  styleEl.textContent = buildCaptureCloneGlobalCss(planKey);
+  clonedDoc.head.appendChild(styleEl);
+
+  const cloneTarget = clonedDoc.querySelector(`[data-export-capture-id="${captureId}"]`);
+  if (!(cloneTarget instanceof HTMLElement)) return;
+  if (planKey !== 'text-probe') return;
+
+  cloneTarget.querySelectorAll('img, svg, video, canvas, iframe, picture, source').forEach((node) => node.remove());
+  cloneTarget.querySelectorAll('*').forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    if (node.children.length > 0) return;
+    const text = String(node.textContent || '').trim();
+    if (text) return;
+    node.remove();
+  });
 };
 
 const applyRenderDiagnosticMitigation = (rootEl, planKey) => {
@@ -4058,17 +4103,23 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       heavyMediaCount
     });
     const scales = captureProfile.scales;
+    const attemptScales = [...scales];
+    const minAttemptCount = 6;
+    const fallbackScale = Number(attemptScales[attemptScales.length - 1] || 1);
+    while (attemptScales.length < minAttemptCount) {
+      attemptScales.push(fallbackScale);
+    }
     const baseScale = captureProfile.baseScale;
     updateCaptureStage('渲染准备', buildSongCaptureMessage(exportLabel, baseScale));
     let canvas = null;
     let lastError = null;
 
-    for (let idx = 0; idx < scales.length; idx += 1) {
-      const scale = scales[idx];
+    for (let idx = 0; idx < attemptScales.length; idx += 1) {
+      const scale = attemptScales[idx];
       const diagnosticPlan = getRenderDiagnosticPlan(idx);
       if (idx > 0) {
         const prevReason = downgradeReasons[downgradeReasons.length - 1] || '';
-        updateCaptureStage('失败降级重试中', `降级到清晰度 x${scale.toFixed(2)}（${idx}/${scales.length - 1}）；诊断策略：${diagnosticPlan.label}${prevReason ? `；上次失败：${prevReason}` : ''}`, 'retrying');
+        updateCaptureStage('失败降级重试中', `降级到清晰度 x${scale.toFixed(2)}（${idx}/${attemptScales.length - 1}）；诊断策略：${diagnosticPlan.label}${prevReason ? `；上次失败：${prevReason}` : ''}`, 'retrying');
         await waitNextPaint();
         if (cancelContext.isCancelled()) {
           throw new Error('export-cancelled');
@@ -4098,11 +4149,14 @@ const exportElementPng = async (targetEl, title, options = {}) => {
         const mitigationNote = diagnosticPlan.key === 'normal'
           ? ''
           : `；策略 ${diagnosticPlan.label}（样式处理 ${mitigation.styleSanitized}，装饰扁平 ${mitigation.flattenedDecor}，隐藏图片 ${mitigation.hiddenImages}${mitigation.pseudoDisabled ? '，伪元素关闭' : ''}）`;
-        updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms${mitigationNote}`);
+        updateCaptureStage('渲染中', `第 ${idx + 1}/${attemptScales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms${mitigationNote}`);
         const skippedOptional = dropUnreadyOptionalImagesForCapture(renderEl);
         if (skippedOptional > 0) {
-          updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms；已跳过未就绪图标 ${skippedOptional} 个${mitigationNote}`);
+          updateCaptureStage('渲染中', `第 ${idx + 1}/${attemptScales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms；已跳过未就绪图标 ${skippedOptional} 个${mitigationNote}`);
         }
+        const captureMarkerId = nextCaptureMarkerId();
+        const prevCaptureMarker = renderEl.getAttribute('data-export-capture-id');
+        renderEl.setAttribute('data-export-capture-id', captureMarkerId);
         const renderTask = trackSongCaptureRenderTask(html2canvas(renderEl, {
           backgroundColor: '#ffffff',
           scale,
@@ -4110,7 +4164,16 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           logging: false,
           imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
           width,
-          height
+          height,
+          onclone: (clonedDoc) => {
+            applyCaptureProbeInClonedDoc(clonedDoc, captureMarkerId, diagnosticPlan.key);
+          }
+        }).finally(() => {
+          if (prevCaptureMarker) {
+            renderEl.setAttribute('data-export-capture-id', prevCaptureMarker);
+          } else {
+            renderEl.removeAttribute('data-export-capture-id');
+          }
         }));
         canvas = await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
         if (diagnosticPlan.key !== 'normal') {
@@ -4152,6 +4215,9 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           }), deviceTier === 'phone' ? 10000 : 8000) * (isGithubPagesHost() ? 1.6 : 1))
         );
         updateCaptureStage('结构诊断中', `克隆链路失败，尝试原节点直渲染（x${sourceScale.toFixed(2)}，阈值 ${sourceTimeoutMs}ms）`, 'retrying');
+        const sourceMarkerId = nextCaptureMarkerId();
+        const prevSourceMarker = targetEl.getAttribute('data-export-capture-id');
+        targetEl.setAttribute('data-export-capture-id', sourceMarkerId);
         const sourceRenderTask = trackSongCaptureRenderTask(html2canvas(targetEl, {
           backgroundColor: '#ffffff',
           scale: sourceScale,
@@ -4159,10 +4225,19 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           logging: false,
           imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
           width: sourceWidth,
-          height: sourceHeight
+          height: sourceHeight,
+          onclone: (clonedDoc) => {
+            applyCaptureProbeInClonedDoc(clonedDoc, sourceMarkerId, 'text-probe');
+          }
+        }).finally(() => {
+          if (prevSourceMarker) {
+            targetEl.setAttribute('data-export-capture-id', prevSourceMarker);
+          } else {
+            targetEl.removeAttribute('data-export-capture-id');
+          }
         }));
         canvas = await withRenderTimeout(sourceRenderTask, sourceTimeoutMs, cancelContext.cancelPromise);
-        downgradeReasons.push(`阶段 结构诊断中：原节点直渲染成功（提示克隆链路与样式组合可能触发卡死）`);
+        downgradeReasons.push('阶段 结构诊断中：原节点直渲染成功（且 text-probe 生效）');
       } catch (sourceError) {
         lastError = sourceError;
         const sourceDetail = getCaptureErrorText(sourceError);
