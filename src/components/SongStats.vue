@@ -3487,6 +3487,9 @@ const getRenderDiagnosticPlan = (attemptIndex) => {
     return { key: 'style-sanitize', label: '禁用动画/滤镜' };
   }
   if (attemptIndex === 2) {
+    return { key: 'flatten-decor', label: '扁平化装饰层（阴影/渐变/伪元素）' };
+  }
+  if (attemptIndex === 3) {
     return { key: 'hide-unready-images', label: '隐藏未就绪图片' };
   }
   return { key: 'style-no-image', label: '禁用动画/滤镜 + 隐藏全部图片' };
@@ -3494,12 +3497,23 @@ const getRenderDiagnosticPlan = (attemptIndex) => {
 
 const applyRenderDiagnosticMitigation = (rootEl, planKey) => {
   if (!(rootEl instanceof HTMLElement)) {
-    return { styleSanitized: 0, hiddenImages: 0 };
+    return {
+      styleSanitized: 0,
+      hiddenImages: 0,
+      flattenedDecor: 0,
+      pseudoDisabled: false
+    };
   }
-  const result = { styleSanitized: 0, hiddenImages: 0 };
+  const result = {
+    styleSanitized: 0,
+    hiddenImages: 0,
+    flattenedDecor: 0,
+    pseudoDisabled: false
+  };
   const needSanitizeStyle = planKey === 'style-sanitize' || planKey === 'style-no-image';
   const hideAllImages = planKey === 'style-no-image';
   const hideUnreadyImages = planKey === 'hide-unready-images' || hideAllImages;
+  const flattenDecor = planKey === 'flatten-decor' || planKey === 'style-no-image';
 
   if (needSanitizeStyle) {
     rootEl.querySelectorAll('*').forEach((node) => {
@@ -3534,6 +3548,52 @@ const applyRenderDiagnosticMitigation = (rootEl, planKey) => {
       }
       if (touched) {
         result.styleSanitized += 1;
+      }
+    });
+  }
+
+  if (flattenDecor) {
+    if (!rootEl.querySelector('style[data-export-diag="pseudo-off"]')) {
+      const pseudoStyle = document.createElement('style');
+      pseudoStyle.setAttribute('data-export-diag', 'pseudo-off');
+      pseudoStyle.textContent = '*::before,*::after{content:none !important;animation:none !important;transition:none !important;box-shadow:none !important;text-shadow:none !important;}';
+      rootEl.appendChild(pseudoStyle);
+      result.pseudoDisabled = true;
+    }
+    rootEl.querySelectorAll('*').forEach((node) => {
+      if (!(node instanceof HTMLElement)) return;
+      const computed = window.getComputedStyle(node);
+      let touched = false;
+      if (computed.boxShadow && computed.boxShadow !== 'none') {
+        node.style.boxShadow = 'none';
+        touched = true;
+      }
+      if (computed.textShadow && computed.textShadow !== 'none') {
+        node.style.textShadow = 'none';
+        touched = true;
+      }
+      if (computed.backgroundImage && computed.backgroundImage !== 'none') {
+        node.style.backgroundImage = 'none';
+        touched = true;
+      }
+      if (computed.clipPath && computed.clipPath !== 'none') {
+        node.style.clipPath = 'none';
+        touched = true;
+      }
+      if (computed.webkitMaskImage && computed.webkitMaskImage !== 'none') {
+        node.style.webkitMaskImage = 'none';
+        touched = true;
+      }
+      if (computed.maskImage && computed.maskImage !== 'none') {
+        node.style.maskImage = 'none';
+        touched = true;
+      }
+      if (computed.overflow === 'clip') {
+        node.style.overflow = 'visible';
+        touched = true;
+      }
+      if (touched) {
+        result.flattenedDecor += 1;
       }
     });
   }
@@ -4037,7 +4097,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
         const mitigation = applyRenderDiagnosticMitigation(renderEl, diagnosticPlan.key);
         const mitigationNote = diagnosticPlan.key === 'normal'
           ? ''
-          : `；策略 ${diagnosticPlan.label}（样式处理 ${mitigation.styleSanitized}，隐藏图片 ${mitigation.hiddenImages}）`;
+          : `；策略 ${diagnosticPlan.label}（样式处理 ${mitigation.styleSanitized}，装饰扁平 ${mitigation.flattenedDecor}，隐藏图片 ${mitigation.hiddenImages}${mitigation.pseudoDisabled ? '，伪元素关闭' : ''}）`;
         updateCaptureStage('渲染中', `第 ${idx + 1}/${scales.length} 轮，清晰度 x${scale.toFixed(2)}，超时阈值 ${renderTimeoutMs}ms${mitigationNote}`);
         const skippedOptional = dropUnreadyOptionalImagesForCapture(renderEl);
         if (skippedOptional > 0) {
@@ -4073,6 +4133,40 @@ const exportElementPng = async (targetEl, title, options = {}) => {
         if (!detail.retryable) {
           break;
         }
+      }
+    }
+
+    if (!canvas && cloneEl) {
+      try {
+        const sourceWidth = Math.ceil(targetEl.scrollWidth || targetEl.clientWidth || 0);
+        const sourceHeight = Math.ceil(targetEl.scrollHeight || targetEl.clientHeight || 0);
+        const sourceScale = Number(scales[0] || baseScale || 1);
+        const sourceTimeoutMs = Math.min(
+          36000,
+          Math.round(Math.max(computeRenderTimeoutMs({
+            deviceTier,
+            heavyMediaCount: initialHeavyMediaCount,
+            width: sourceWidth,
+            height: sourceHeight,
+            scale: sourceScale
+          }), deviceTier === 'phone' ? 10000 : 8000) * (isGithubPagesHost() ? 1.6 : 1))
+        );
+        updateCaptureStage('结构诊断中', `克隆链路失败，尝试原节点直渲染（x${sourceScale.toFixed(2)}，阈值 ${sourceTimeoutMs}ms）`, 'retrying');
+        const sourceRenderTask = trackSongCaptureRenderTask(html2canvas(targetEl, {
+          backgroundColor: '#ffffff',
+          scale: sourceScale,
+          useCORS: true,
+          logging: false,
+          imageTimeout: deviceTier === 'phone' ? 11000 : 18000,
+          width: sourceWidth,
+          height: sourceHeight
+        }));
+        canvas = await withRenderTimeout(sourceRenderTask, sourceTimeoutMs, cancelContext.cancelPromise);
+        downgradeReasons.push(`阶段 结构诊断中：原节点直渲染成功（提示克隆链路与样式组合可能触发卡死）`);
+      } catch (sourceError) {
+        lastError = sourceError;
+        const sourceDetail = getCaptureErrorText(sourceError);
+        downgradeReasons.push(`阶段 结构诊断中：原节点直渲染失败（${sourceDetail.text}）`);
       }
     }
 
