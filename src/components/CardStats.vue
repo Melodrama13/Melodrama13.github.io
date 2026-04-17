@@ -1188,18 +1188,149 @@
               <table v-else class="record-table vs-unit-score-table vs-unit-last-four-mini-table">
                 <thead>
                   <tr>
-                    <th>V\团</th>
-                    <th v-for="u in VS_UNIT_SORT_ORDER" :key="`mini-head-${u}`" :style="getVsMiniUnitHeadStyle(u)">
-                      <img :src="unitLogoMap[u]" class="mini-unit-logo" :alt="u" />
+                    <th>团体</th>
+                    <th v-for="name in VS_NAMES" :key="`mini-head-${name}`" :style="getVsMiniVsHeadStyle(name)">
+                      <img :src="`/chibi_s/${getCharAbbr(name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(name) }" />
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in vsUnitLastFourCompactRows" :key="`mini-row-${row.name}`">
-                    <td class="record-char vs-score-char-cell" :style="getVsMiniVsHeadStyle(row.name)">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                  <tr v-for="row in vsUnitLastFourCompactUnitRows" :key="`mini-row-${row.unit}`">
+                    <td class="record-char vs-score-char-cell" :style="getVsMiniUnitHeadStyle(row.unit)">
+                      <img :src="unitLogoMap[row.unit]" class="mini-unit-logo" :alt="row.unit" />
                     </td>
-                    <td v-for="u in VS_UNIT_SORT_ORDER" :key="`mini-cell-${row.name}-${u}`" class="vs-mini-days-cell" :style="getVsMiniDataCellStyle(row.daysByUnit[u])">{{ row.daysByUnit[u] }}</td>
+                    <td v-for="name in VS_NAMES" :key="`mini-cell-${row.unit}-${name}`" class="vs-mini-days-cell" :style="getVsMiniDataCellStyle(row.daysByVs[name])">{{ row.daysByVs[name] }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-vs-unit-four-count" data-scroll-anchor="rel-vs-unit-four-count" class="record-block">
+              <div class="record-head-row">
+                <div class="record-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-vs-unit-four-count') }}</h3>
+                  <div class="record-head-controls">
+                    <label class="record-compact-toggle stats-checkbox">
+                      <input :checked="vsUnitFourCountCompact" type="checkbox" @change="onVsUnitFourCountCompactChange" />
+                      简略版本
+                    </label>
+                    <label v-if="!vsUnitFourCountCompact" class="fes-card-mode-toggle stats-checkbox">
+                      <input :checked="vsUnitFourCountShowCardImages" type="checkbox" @change="onVsUnitFourCountShowCardImagesChange" />
+                      显示卡面
+                    </label>
+                    <button
+                      v-if="!vsUnitFourCountCompact"
+                      class="record-sort-btn"
+                      :class="{ active: vsUnitFourCountSort !== 'char' }"
+                      @click="onToggleVsUnitFourCountSort"
+                    >
+                      {{ vsUnitFourCountSortLabel }}
+                    </button>
+                  </div>
+                </div>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-four-count', '相关记录_各团VS四星数')">PNG</button>
+              </div>
+
+              <table v-if="!vsUnitFourCountCompact" :class="['record-table', 'related-table', 'related-table-vs-last', 'vs-four-count-detail-table', { 'vs-last-four-card-mode': vsUnitFourCountShowCardImages }]">
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>数量</th>
+                    <th>{{ vsUnitFourCountShowCardImages ? '卡面' : '属性' }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in vsUnitFourCountDisplayRecords" :key="`vs-four-detail-row-${row.key}`" :style="{ backgroundColor: getRecordTint(row.name), '--record-tint': getRecordTint(row.name, 0.3) }">
+                    <td class="record-char">
+                      <span class="record-avatar-stack">
+                        <img
+                          :src="getVsUnitVariantAvatarSrc(row.key, row.name)"
+                          class="record-avatar"
+                          :class="{ 'vs-last-four-avatar-large': vsUnitFourCountShowCardImages }"
+                          :style="{ borderColor: getCharColor(row.name) }"
+                          @error="onVsUnitVariantAvatarError"
+                        />
+                        <span v-if="getVsUnitLogoByKey(row.key)" class="record-avatar-corner-badge" :class="{ 'is-large': vsUnitFourCountShowCardImages }">
+                          <img :src="getVsUnitLogoByKey(row.key)" class="record-avatar-corner-logo" :alt="row.label" />
+                        </span>
+                      </span>
+                      <span v-if="!vsUnitFourCountShowCardImages">{{ row.label }}</span>
+                    </td>
+                    <td class="vs-four-count-value-cell"><span class="vs-four-count-value">{{ row.count }}</span></td>
+                    <td>
+                      <template v-if="vsUnitFourCountShowCardImages">
+                        <div v-if="row.cards.length" class="score-card-wrap">
+                          <div
+                            v-for="(card, idx) in row.cards"
+                            :key="`vs-four-card-${row.key}-${card.cardId || 'na'}-${idx}`"
+                            class="fes-card-thumb"
+                            :title="`${row.label} #${card.cardId || '-'}`"
+                          >
+                            <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                            <img
+                              v-if="card.imageSrc"
+                              :src="card.imageSrc"
+                              :alt="`${row.label} 卡面`"
+                              class="fes-card-thumb-img media-load-shimmer"
+                              loading="lazy"
+                              decoding="async"
+                              @load="onMediaImageLoad"
+                              @error="onMediaImageError"
+                            />
+                            <img
+                              v-if="ATTRS.includes(card.attr)"
+                              :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                              class="fes-card-thumb-attr"
+                              :alt="ATTR_LABELS[card.attr]"
+                              :title="ATTR_LABELS[card.attr]"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </div>
+                        </div>
+                        <span v-else class="score-empty">-</span>
+                      </template>
+                      <template v-else>
+                        <div v-if="row.attrs.length" class="score-attr-wrap">
+                          <img
+                            v-for="(attr, idx) in row.attrs"
+                            :key="`vs-four-attr-${row.key}-${idx}`"
+                            :src="`/elements/${String(attr).toLowerCase()}.png`"
+                            :title="ATTR_LABELS[attr] || attr"
+                            :alt="ATTR_LABELS[attr] || attr"
+                            class="score-attr-icon"
+                          />
+                        </div>
+                        <span v-else class="score-empty">-</span>
+                      </template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <table v-else class="record-table vs-unit-score-table vs-unit-last-four-mini-table">
+                <thead>
+                  <tr>
+                    <th>团体</th>
+                    <th v-for="name in VS_NAMES" :key="`vs-four-count-head-${name}`" :style="getVsScoreVsHeadStyle(name)">
+                      <img :src="`/chibi_s/${getCharAbbr(name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(name) }" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in vsUnitFourCountRows" :key="`vs-four-count-row-${row.unit}`">
+                    <td class="record-char vs-score-char-cell" :style="getVsScoreUnitHeadStyle(row.unit)">
+                      <img :src="unitLogoMap[row.unit]" class="mini-unit-logo" :alt="row.unit" />
+                    </td>
+                    <td
+                      v-for="name in VS_NAMES"
+                      :key="`vs-four-count-cell-${row.unit}-${name}`"
+                      :class="['vs-mini-days-cell', getVsFourCountMiniCellClass(row.countByVs[name])]"
+                      :style="getVsScoreCellStyle(name, row.unit)"
+                    >
+                      <span v-if="Number(row.countByVs[name] || 0) > 0">{{ row.countByVs[name] }}</span>
+                      <span v-else class="score-empty">-</span>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -1207,28 +1338,63 @@
 
             <div id="rel-vs-unit-score" data-scroll-anchor="rel-vs-unit-score" class="record-block">
               <div class="block-head">
-                <h3>{{ getRelatedRecordTitle('rel-vs-unit-score') }}</h3>
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-vs-unit-score') }}</h3>
+                  <label class="fes-card-mode-toggle stats-checkbox">
+                    <input :checked="vsUnitScoreShowCardImages" type="checkbox" @change="onVsUnitScoreShowCardImagesChange" />
+                    <span>显示卡面</span>
+                  </label>
+                </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-score', '相关记录_团分统计')">PNG</button>
               </div>
-              <table class="record-table vs-unit-score-table">
+              <table :class="['record-table', 'vs-unit-score-table', { 'is-card-mode': vsUnitScoreShowCardImages }]">
                 <thead>
                   <tr>
-                    <th>V\团</th>
-                    <th v-for="u in VS_UNIT_SORT_ORDER" :key="`score-head-${u}`" :style="getVsScoreUnitHeadStyle(u)">
-                      <img :src="unitLogoMap[u]" class="mini-unit-logo" :alt="u" />
+                    <th>团体</th>
+                    <th v-for="name in VS_NAMES" :key="`score-head-${name}`" :style="getVsScoreVsHeadStyle(name)">
+                      <img :src="`/chibi_s/${getCharAbbr(name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(name) }" />
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in vsUnitScoreAttrRows" :key="`score-row-${row.name}`">
-                    <td class="record-char vs-score-char-cell" :style="getVsScoreVsHeadStyle(row.name)">
-                      <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(row.name) }" />
+                  <tr v-for="row in vsUnitScoreAttrByUnitRows" :key="`score-row-${row.unit}`">
+                    <td class="record-char vs-score-char-cell" :style="getVsScoreUnitHeadStyle(row.unit)">
+                      <img :src="unitLogoMap[row.unit]" class="mini-unit-logo" :alt="row.unit" />
                     </td>
-                    <td v-for="u in VS_UNIT_SORT_ORDER" :key="`score-cell-${row.name}-${u}`" :style="getVsScoreCellStyle(row.name, u)">
-                      <div v-if="row.attrsByUnit[u]?.length" class="score-attr-wrap">
+                    <td v-for="name in VS_NAMES" :key="`score-cell-${row.unit}-${name}`" :style="getVsScoreCellStyle(name, row.unit)">
+                      <div v-if="vsUnitScoreShowCardImages && row.cardsByVs[name]?.length" class="score-card-wrap">
+                        <div
+                          v-for="(card, idx) in row.cardsByVs[name]"
+                          :key="`score-card-${row.unit}-${name}-${card.cardId || 'na'}-${idx}`"
+                          class="fes-card-thumb"
+                          :title="`${name} #${card.cardId || '-'}`"
+                        >
+                          <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                          <img
+                            v-if="card.imageSrc"
+                            :src="card.imageSrc"
+                            :alt="`${name} 卡面`"
+                            class="fes-card-thumb-img media-load-shimmer"
+                            loading="lazy"
+                            decoding="async"
+                            @load="onMediaImageLoad"
+                            @error="onMediaImageError"
+                          />
+                          <img
+                            v-if="ATTRS.includes(card.attr)"
+                            :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                            class="fes-card-thumb-attr"
+                            :alt="ATTR_LABELS[card.attr]"
+                            :title="ATTR_LABELS[card.attr]"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                      </div>
+                      <div v-else-if="row.attrsByVs[name]?.length" class="score-attr-wrap">
                         <img
-                          v-for="(attr, idx) in row.attrsByUnit[u]"
-                          :key="`score-attr-${row.name}-${u}-${idx}`"
+                          v-for="(attr, idx) in row.attrsByVs[name]"
+                          :key="`score-attr-${row.unit}-${name}-${idx}`"
                           :src="`/elements/${String(attr).toLowerCase()}.png`"
                           :title="attr"
                           class="score-attr-icon"
@@ -1236,6 +1402,131 @@
                       </div>
                       <span v-else class="score-empty">-</span>
                     </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="rel-vs-original-stat" data-scroll-anchor="rel-vs-original-stat" class="record-block">
+              <div class="block-head">
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-vs-original-stat') }}</h3>
+                  <label class="fes-card-mode-toggle stats-checkbox">
+                    <input :checked="vsOriginalStatShowCardImages" type="checkbox" @change="onVsOriginalStatShowCardImagesChange" />
+                    <span>显示卡面</span>
+                  </label>
+                </div>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-original-stat', '相关记录_原V统计')">PNG</button>
+              </div>
+              <table :class="['record-table', 'vs-unit-score-table', 'vs-original-stat-table', { 'is-card-mode': vsOriginalStatShowCardImages }]">
+                <thead>
+                  <tr>
+                    <th>类型</th>
+                    <th v-for="name in VS_NAMES" :key="`vs-original-head-${name}`" :style="getVsScoreVsHeadStyle(name)">
+                      <img :src="`/chibi_s/${getCharAbbr(name)}.webp`" class="record-avatar" :style="{ borderColor: getCharColor(name) }" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in vsOriginalStatRows" :key="`vs-original-row-${row.type}`">
+                    <td class="record-char vs-original-type-cell">{{ row.type }}</td>
+                    <td
+                      v-if="vsOriginalStatShowCardImages && row.type === '其他'"
+                      :colspan="VS_NAMES.length"
+                      :style="getVsOriginalStatCellStyle(VS_NAMES[0] || '')"
+                    >
+                      <div v-if="getVsOriginalOtherRowCards(row).length" class="score-card-wrap score-card-wrap-merged-six">
+                        <div
+                          v-for="(card, idx) in getVsOriginalOtherRowCards(row)"
+                          :key="`vs-original-other-card-${card.cardId || 'na'}-${idx}`"
+                          class="fes-card-thumb"
+                          :title="`${card.name} #${card.cardId || '-'}`"
+                        >
+                          <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                          <img
+                            v-if="card.imageSrc"
+                            :src="card.imageSrc"
+                            :alt="`${card.name} 卡面`"
+                            class="fes-card-thumb-img media-load-shimmer"
+                            loading="lazy"
+                            decoding="async"
+                            @load="onMediaImageLoad"
+                            @error="onMediaImageError"
+                          />
+                          <img
+                            v-if="ATTRS.includes(card.attr)"
+                            :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                            class="fes-card-thumb-attr"
+                            :alt="ATTR_LABELS[card.attr]"
+                            :title="ATTR_LABELS[card.attr]"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                      </div>
+                      <span v-else class="score-empty">-</span>
+                    </td>
+                    <td
+                      v-else-if="!vsOriginalStatShowCardImages && row.type === '其他'"
+                      :colspan="VS_NAMES.length"
+                      class="vs-original-other-compact-cell"
+                    >
+                      <div class="score-attr-wrap">
+                        <img
+                          v-for="(attr, idx) in getVsOriginalOtherRowAttrs(row)"
+                          :key="`vs-original-other-compact-attr-${idx}`"
+                          :src="`/elements/${String(attr).toLowerCase()}.png`"
+                          :title="ATTR_LABELS[attr] || attr"
+                          :alt="ATTR_LABELS[attr] || attr"
+                          class="score-attr-icon"
+                        />
+                      </div>
+                      <span v-if="!getVsOriginalOtherRowAttrs(row).length" class="score-empty">-</span>
+                    </td>
+                    <template v-else>
+                      <td v-for="name in VS_NAMES" :key="`vs-original-cell-${row.type}-${name}`" :style="getVsOriginalStatCellStyle(name)">
+                        <div v-if="vsOriginalStatShowCardImages && row.cardsByVs[name]?.length" class="score-card-wrap">
+                          <div
+                            v-for="(card, idx) in row.cardsByVs[name]"
+                            :key="`vs-original-card-${row.type}-${name}-${card.cardId || 'na'}-${idx}`"
+                            class="fes-card-thumb"
+                            :title="`${name} #${card.cardId || '-'}`"
+                          >
+                            <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                            <img
+                              v-if="card.imageSrc"
+                              :src="card.imageSrc"
+                              :alt="`${name} 卡面`"
+                              class="fes-card-thumb-img media-load-shimmer"
+                              loading="lazy"
+                              decoding="async"
+                              @load="onMediaImageLoad"
+                              @error="onMediaImageError"
+                            />
+                            <img
+                              v-if="ATTRS.includes(card.attr)"
+                              :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                              class="fes-card-thumb-attr"
+                              :alt="ATTR_LABELS[card.attr]"
+                              :title="ATTR_LABELS[card.attr]"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </div>
+                        </div>
+                        <div v-else-if="row.attrsByVs[name]?.length" class="score-attr-wrap">
+                          <img
+                            v-for="(attr, idx) in row.attrsByVs[name]"
+                            :key="`vs-original-attr-${row.type}-${name}-${idx}`"
+                            :src="`/elements/${String(attr).toLowerCase()}.png`"
+                            :title="ATTR_LABELS[attr] || attr"
+                            :alt="ATTR_LABELS[attr] || attr"
+                            class="score-attr-icon"
+                          />
+                        </div>
+                        <span v-else class="score-empty">-</span>
+                      </td>
+                    </template>
                   </tr>
                 </tbody>
               </table>
@@ -2033,8 +2324,13 @@ const matrixSortKey = ref('');
 const matrixSortOrder = ref('');
 const suppressMatrixViewportAnchor = ref(false);
 const vsUnitLastFourSort = ref('char');
+const vsUnitFourCountSort = ref('char');
 const vsUnitLastFourCompact = ref(true);
 const vsUnitLastFourShowCardImages = ref(false);
+const vsUnitFourCountCompact = ref(true);
+const vsUnitFourCountShowCardImages = ref(false);
+const vsUnitScoreShowCardImages = ref(false);
+const vsOriginalStatShowCardImages = ref(false);
 const includeCollabRewardCards = ref(false);
 const hideDistCharNames = ref(true);
 const hideFestivalCharNames = ref(true);
@@ -2326,6 +2622,7 @@ const SPECIAL_FESTIVALS = ['新年', '婚活', '情人节', '白情', '半周年
 const FESTIVAL_ANCHOR_IDS = Object.fromEntries(SPECIAL_FESTIVALS.map((fest, idx) => [fest, `festival-${idx + 1}`]));
 const FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
 const VS_UNIT_SORT_ORDER = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
+const VS_ORIGINAL_STAT_TYPES = ['大罪', 'CFES', 'BFES', 'WL1', 'WL2', 'WL3', '其他'];
 const RELATED_FES_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'];
 const SUPPORT_UNITS = ['vs', 'ln', 'mmj', 'vbs', 'ws', 'nc'];
 const LINEUP_NAV_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'];
@@ -2597,10 +2894,43 @@ const onVsUnitLastFourCompactChange = (event) => {
   }, anchorEl);
 };
 
+const onVsUnitFourCountCompactChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    vsUnitFourCountCompact.value = checked;
+  }, anchorEl);
+};
+
+const toggleVsUnitFourCountSort = () => {
+  if (vsUnitFourCountSort.value === 'char') {
+    vsUnitFourCountSort.value = 'count-desc';
+    return;
+  }
+  if (vsUnitFourCountSort.value === 'count-desc') {
+    vsUnitFourCountSort.value = 'count-asc';
+    return;
+  }
+  vsUnitFourCountSort.value = 'char';
+};
+
+const onToggleVsUnitFourCountSort = (event) => {
+  const anchorEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  void withInteractionPinnedPosition(() => {
+    toggleVsUnitFourCountSort();
+  }, anchorEl);
+};
+
 const vsUnitLastFourSortLabel = computed(() => {
   if (vsUnitLastFourSort.value === 'date-desc') return '日期↓';
   if (vsUnitLastFourSort.value === 'date-asc') return '日期↑';
   return '日期';
+});
+
+const vsUnitFourCountSortLabel = computed(() => {
+  if (vsUnitFourCountSort.value === 'count-desc') return '数量↓';
+  if (vsUnitFourCountSort.value === 'count-asc') return '数量↑';
+  return '数量';
 });
 
 const getRecordTint = (name, alpha = 0.3) => hexToRgba(getCharColor(name), alpha);
@@ -2780,7 +3110,9 @@ const RELATED_RECORD_ITEMS = [
   { id: 'rel-ban-long', title: 'Ban最长间隔' },
   { id: 'rel-ban-short', title: 'Ban最短间隔' },
   { id: 'rel-vs-unit-last-four', title: '各团VS上次四星' },
+  { id: 'rel-vs-unit-four-count', title: '各团VS四星数' },
   { id: 'rel-vs-unit-score', title: '团分统计' },
+  { id: 'rel-vs-original-stat', title: '原V统计' },
   { id: 'rel-cfes-stat', title: 'CFES统计' },
   { id: 'rel-bfes-stat', title: 'BFES统计' }
 ];
@@ -5831,19 +6163,45 @@ const getLineupSkillInfo = (card) => {
 
 const buildLineupEventRef = (card) => {
   const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
+  const cardType = String(card?.Type || '').trim().toLowerCase();
+  const skillKind = String(card?.Skill || '').trim().toLowerCase();
+  const fesType = cardType === 'bfes' || cardType === 'cfes'
+    ? cardType
+    : (skillKind === 'bfes_up' ? 'bfes' : (skillKind.startsWith('cfes') ? 'cfes' : ''));
+  const isFesCard = isFesCardType(cardType) || !!fesType;
+
+  const attachFesMeta = (eventRef) => ({
+    ...eventRef,
+    isFesCard,
+    fesType
+  });
+
   if (!sourceKey) {
     return { eventRef: null, eventLabel: '-' };
   }
   if (!isNumericEventId(sourceKey)) {
     const label = SPECIAL_EVENT_KEY_LABELS[sourceKey] || sourceKey;
-    return { eventRef: { id: sourceKey }, eventLabel: label };
+    return {
+      eventRef: attachFesMeta({
+        id: sourceKey,
+        sourceKey,
+        date: String(card?.Date || '').trim()
+      }),
+      eventLabel: label
+    };
   }
   const ev = eventsById.value[Number(sourceKey)];
   if (!ev) {
     if (Number(sourceKey) === 0) {
-      return { eventRef: { id: 0, sourceKey: '0' }, eventLabel: '开服' };
+      return {
+        eventRef: attachFesMeta({ id: 0, sourceKey: '0', date: String(card?.Date || '').trim() }),
+        eventLabel: '开服'
+      };
     }
-    return { eventRef: { id: Number(sourceKey) }, eventLabel: `ID ${sourceKey}` };
+    return {
+      eventRef: attachFesMeta({ id: Number(sourceKey), sourceKey, date: String(card?.Date || '').trim() }),
+      eventLabel: `ID ${sourceKey}`
+    };
   }
   const eventRef = {
     id: Number(ev.id),
@@ -5854,7 +6212,7 @@ const buildLineupEventRef = (card) => {
     unit: String(ev.unit || '').trim(),
     sourceKey: String(ev.id)
   };
-  return { eventRef, eventLabel: getNonBanEventMark(eventRef) };
+  return { eventRef: attachFesMeta(eventRef), eventLabel: getNonBanEventMark(eventRef) };
 };
 
 const getLineupEventMark = (eventRef, useSingleMark = false) => {
@@ -5944,6 +6302,43 @@ const evalLineupMembers = (cards) => {
   return { total: baseTotal + captainBonus, members };
 };
 
+const getEventRefRecencyScore = (eventRef) => {
+  const dateText = String(eventRef?.date || '').trim();
+  const dateObj = parseDateSafe(dateText);
+  if (dateObj) return dateObj.getTime();
+
+  const sourceKey = String(eventRef?.sourceKey || eventRef?.id || '').trim();
+  if (isNumericEventId(sourceKey)) return Number(sourceKey);
+  return 0;
+};
+
+const compareMemberFreshness = (nextMembers, bestMembers) => {
+  const normalize = (members) => {
+    return [...(members || [])]
+      .map((item) => ({
+        recency: getEventRefRecencyScore(item?.eventRef),
+        cardId: Number(String(item?.cardId || '').trim()) || 0
+      }))
+      .sort((a, b) => {
+        if (b.recency !== a.recency) return b.recency - a.recency;
+        return b.cardId - a.cardId;
+      });
+  };
+
+  const next = normalize(nextMembers);
+  const best = normalize(bestMembers);
+  const size = Math.max(next.length, best.length);
+
+  for (let i = 0; i < size; i += 1) {
+    const n = next[i] || { recency: 0, cardId: 0 };
+    const b = best[i] || { recency: 0, cardId: 0 };
+    if (n.recency !== b.recency) return n.recency - b.recency;
+    if (n.cardId !== b.cardId) return n.cardId - b.cardId;
+  }
+
+  return 0;
+};
+
 const compareLineupSolvedHit = (nextHit, bestHit) => {
   if (!bestHit) return true;
   if (nextHit.total !== bestHit.total) return nextHit.total > bestHit.total;
@@ -5956,9 +6351,9 @@ const compareLineupSolvedHit = (nextHit, bestHit) => {
   const bestCfes = bestHit.members.filter((m) => m.fesKind === 'cfes').length;
   if (nextCfes !== bestCfes) return nextCfes > bestCfes;
 
-  const nextNewest = Math.max(...nextHit.members.map((m) => Number(m.eventRef?.id || 0)));
-  const bestNewest = Math.max(...bestHit.members.map((m) => Number(m.eventRef?.id || 0)));
-  return nextNewest > bestNewest;
+  const freshnessDiff = compareMemberFreshness(nextHit.members, bestHit.members);
+  if (freshnessDiff !== 0) return freshnessDiff > 0;
+  return false;
 };
 
 const solveSingleCharLineup = (cards) => {
@@ -6551,6 +6946,9 @@ const relatedPanelShowCardImagesAll = computed({
     && !!intervalLimitedShowCardImages.value
     && !!intervalBanShowCardImages.value
     && !!vsUnitLastFourShowCardImages.value
+    && !!vsUnitFourCountShowCardImages.value
+    && !!vsUnitScoreShowCardImages.value
+    && !!vsOriginalStatShowCardImages.value
     && !!fesRecordShowCardImages.value
   ),
   set: (value) => {
@@ -6560,6 +6958,9 @@ const relatedPanelShowCardImagesAll = computed({
     intervalLimitedShowCardImages.value = checked;
     intervalBanShowCardImages.value = checked;
     vsUnitLastFourShowCardImages.value = checked;
+    vsUnitFourCountShowCardImages.value = checked;
+    vsUnitScoreShowCardImages.value = checked;
+    vsOriginalStatShowCardImages.value = checked;
     fesRecordShowCardImages.value = checked;
   }
 });
@@ -6585,6 +6986,30 @@ const onVsUnitLastFourShowCardImagesChange = (event) => {
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
     vsUnitLastFourShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const onVsUnitFourCountShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    vsUnitFourCountShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const onVsUnitScoreShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    vsUnitScoreShowCardImages.value = checked;
+  }, anchorEl);
+};
+
+const onVsOriginalStatShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    vsOriginalStatShowCardImages.value = checked;
   }, anchorEl);
 };
 
@@ -7453,9 +7878,45 @@ const parseVsUnitKey = (key) => {
   return { baseName, unit };
 };
 
+const getVsUnitVariantAvatarSrc = (key, name) => {
+  const { unit } = parseVsUnitKey(key);
+  const baseName = String(name || '').trim();
+  const fallbackAbbr = String(getCharAbbr(baseName) || '').trim().toLowerCase();
+  const baseAbbr = String(CHAR_MAP[baseName] || fallbackAbbr).trim().toLowerCase();
+  if (baseAbbr && unit) {
+    return `/chibi_s/${baseAbbr}_${unit}.webp`;
+  }
+  return `/chibi_s/${fallbackAbbr || baseAbbr}.webp`;
+};
+
+const onVsUnitVariantAvatarError = (event) => {
+  const target = event?.target;
+  if (!(target instanceof HTMLImageElement)) return;
+  if (target.dataset.fallbackApplied === '1') return;
+
+  const altText = String(target.alt || '').trim();
+  const fallbackAbbr = String(getCharAbbr(altText) || '').trim().toLowerCase();
+  if (!fallbackAbbr) return;
+  target.dataset.fallbackApplied = '1';
+  target.src = `/chibi_s/${fallbackAbbr}.webp`;
+};
+
 const getVsUnitLogoByKey = (key) => {
   const { unit } = parseVsUnitKey(key);
   return unitLogoMap[unit] || '';
+};
+
+const getVsOriginalStatType = (card, sourceKey) => {
+  const normalizedSourceKey = String(sourceKey || '').trim().toLowerCase();
+  if (normalizedSourceKey === 'c1') return '大罪';
+
+  const cardType = String(card?.Type || '').trim().toLowerCase();
+  if (cardType === 'cfes') return 'CFES';
+  if (cardType === 'bfes') return 'BFES';
+  if (cardType.startsWith('wl1')) return 'WL1';
+  if (cardType.startsWith('wl2')) return 'WL2';
+  if (cardType.startsWith('wl3')) return 'WL3';
+  return '其他';
 };
 
 const VS_UNIT_ROW_KEYS = VS_NAMES.flatMap((vsName) =>
@@ -7588,6 +8049,20 @@ const vsUnitLastFourCompactRows = computed(() => {
   return VS_NAMES.map((name) => rowMap[name]);
 });
 
+const vsUnitLastFourCompactUnitRows = computed(() => {
+  const rowMap = Object.fromEntries(
+    VS_UNIT_SORT_ORDER.map((unit) => [unit, { unit, daysByVs: Object.fromEntries(VS_NAMES.map((name) => [name, 0])) }])
+  );
+
+  vsUnitLastFourRecords.value.forEach((item) => {
+    const { baseName, unit } = parseVsUnitKey(item.key);
+    if (!rowMap[unit] || !VS_NAMES.includes(baseName)) return;
+    rowMap[unit].daysByVs[baseName] = Number(item.days || 0);
+  });
+
+  return VS_UNIT_SORT_ORDER.map((unit) => rowMap[unit]);
+});
+
 const vsUnitScoreAttrRows = computed(() => {
   const maxEid = safeMaxEventId.value;
   const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
@@ -7629,9 +8104,286 @@ const vsUnitScoreAttrRows = computed(() => {
   return VS_NAMES.map((name) => rowMap[name]);
 });
 
+const vsUnitScoreAttrByUnitRows = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const rowMap = Object.fromEntries(
+    VS_UNIT_SORT_ORDER.map((unit) => [
+      unit,
+      {
+        unit,
+        attrsByVs: Object.fromEntries(VS_NAMES.map((name) => [name, []])),
+        cardsByVs: Object.fromEntries(VS_NAMES.map((name) => [name, []]))
+      }
+    ])
+  );
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    const skill = String(card?.Skill || '').trim().toLowerCase();
+    if (skill !== 'unit_score') return;
+
+    const fullName = String(card?.Name || '').trim();
+    const baseName = fullName.split(/\s+/)[0] || fullName;
+    if (!VS_NAMES.includes(baseName)) return;
+
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (!VS_UNIT_SORT_ORDER.includes(unit)) return;
+
+    const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
+    if (!sourceKey) return;
+    const isNum = isNumericEventId(sourceKey);
+    const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
+    const eventDate = parseDateSafe(String(ev?.date || card?.Date || '').trim());
+    if (!eventDate) return;
+    if (!isNum && maxEventDate && eventDate > maxEventDate) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    const cardId = getCardProgressOrderId(card);
+    rowMap[unit].cardsByVs[baseName].push({
+      cardId,
+      attr,
+      name: baseName,
+      imageSrc: buildCardImageSrc(card?.CardID, baseName, { rarity: String(card?.Rarity || '4') })
+    });
+  });
+
+  return VS_UNIT_SORT_ORDER.map((unit) => {
+    const row = rowMap[unit];
+    VS_NAMES.forEach((name) => {
+      row.cardsByVs[name].sort((a, b) => {
+        const aid = Number(a?.cardId || 0);
+        const bid = Number(b?.cardId || 0);
+        if (aid !== bid) return aid - bid;
+        return ATTRS.indexOf(a?.attr) - ATTRS.indexOf(b?.attr);
+      });
+      row.attrsByVs[name] = row.cardsByVs[name]
+        .map((item) => item?.attr)
+        .filter((attr) => ATTRS.includes(attr));
+    });
+    return row;
+  });
+});
+
+const vsUnitFourCountDetailRecords = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const rowMap = Object.fromEntries(
+    VS_UNIT_ROW_KEYS.map((key) => {
+      const { baseName } = parseVsUnitKey(key);
+      return [
+        key,
+        {
+          key,
+          name: baseName,
+          label: getVsUnitRecordLabel(key),
+          count: 0,
+          attrs: [],
+          cards: []
+        }
+      ];
+    })
+  );
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+
+    const fullName = String(card?.Name || '').trim();
+    const baseName = fullName.split(/\s+/)[0] || fullName;
+    if (!VS_NAMES.includes(baseName)) return;
+
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (!VS_UNIT_SORT_ORDER.includes(unit)) return;
+
+    const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
+    if (!sourceKey) return;
+    const isNum = isNumericEventId(sourceKey);
+    const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
+    const eventDate = parseDateSafe(String(ev?.date || card?.Date || '').trim());
+    if (!eventDate) return;
+    if (!isNum && maxEventDate && eventDate > maxEventDate) return;
+
+    const key = buildVsUnitKey(baseName, unit);
+    const row = rowMap[key];
+    if (!row) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    row.cards.push({
+      cardId: getCardProgressOrderId(card),
+      attr,
+      name: baseName,
+      imageSrc: buildCardImageSrc(card?.CardID, baseName, { rarity: String(card?.Rarity || '4') })
+    });
+  });
+
+  return VS_UNIT_ROW_KEYS.map((key) => {
+    const row = rowMap[key];
+    row.cards.sort((a, b) => {
+      const aid = Number(a?.cardId || 0);
+      const bid = Number(b?.cardId || 0);
+      if (aid !== bid) return aid - bid;
+      return ATTRS.indexOf(a?.attr) - ATTRS.indexOf(b?.attr);
+    });
+    row.attrs = row.cards
+      .map((item) => item?.attr)
+      .filter((attr) => ATTRS.includes(attr));
+    row.count = row.cards.length;
+    return row;
+  });
+});
+
+const vsUnitFourCountRows = computed(() => {
+  const rowMap = Object.fromEntries(
+    VS_UNIT_SORT_ORDER.map((unit) => [
+      unit,
+      {
+        unit,
+        countByVs: Object.fromEntries(VS_NAMES.map((name) => [name, 0]))
+      }
+    ])
+  );
+
+  vsUnitFourCountDetailRecords.value.forEach((item) => {
+    const { baseName, unit } = parseVsUnitKey(item?.key);
+    if (!rowMap[unit] || !VS_NAMES.includes(baseName)) return;
+    rowMap[unit].countByVs[baseName] = Number(item?.count || 0);
+  });
+
+  return VS_UNIT_SORT_ORDER.map((unit) => rowMap[unit]);
+});
+
+const vsUnitFourCountMax = computed(() => {
+  const values = vsUnitFourCountRows.value
+    .flatMap((row) => VS_NAMES.map((name) => Number(row?.countByVs?.[name] || 0)))
+    .filter((v) => Number.isFinite(v) && v > 0);
+  return values.length ? Math.max(...values) : 0;
+});
+
+const vsUnitFourCountMin = computed(() => {
+  const values = vsUnitFourCountRows.value
+    .flatMap((row) => VS_NAMES.map((name) => Number(row?.countByVs?.[name] || 0)))
+    .filter((v) => Number.isFinite(v) && v > 0);
+  return values.length ? Math.min(...values) : 0;
+});
+
+const getVsFourCountMiniCellClass = (value) => {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  if (n === vsUnitFourCountMax.value && vsUnitFourCountMax.value > 0) return 'vs-four-count-max';
+  if (n === vsUnitFourCountMin.value && vsUnitFourCountMin.value > 0) return 'vs-four-count-min';
+  return '';
+};
+
+const vsUnitFourCountDisplayRecords = computed(() => {
+  const rows = [...vsUnitFourCountDetailRecords.value];
+  if (vsUnitFourCountSort.value === 'count-desc') {
+    return rows.sort((a, b) => {
+      const av = Number(a?.count || 0);
+      const bv = Number(b?.count || 0);
+      if (bv !== av) return bv - av;
+      return VS_UNIT_ROW_KEYS.indexOf(a.key) - VS_UNIT_ROW_KEYS.indexOf(b.key);
+    });
+  }
+  if (vsUnitFourCountSort.value === 'count-asc') {
+    return rows.sort((a, b) => {
+      const av = Number(a?.count || 0);
+      const bv = Number(b?.count || 0);
+      if (av !== bv) return av - bv;
+      return VS_UNIT_ROW_KEYS.indexOf(a.key) - VS_UNIT_ROW_KEYS.indexOf(b.key);
+    });
+  }
+  return rows;
+});
+
+const vsOriginalStatRows = computed(() => {
+  const maxEid = safeMaxEventId.value;
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const rowMap = Object.fromEntries(
+    VS_ORIGINAL_STAT_TYPES.map((type) => [
+      type,
+      {
+        type,
+        attrsByVs: Object.fromEntries(VS_NAMES.map((name) => [name, []])),
+        cardsByVs: Object.fromEntries(VS_NAMES.map((name) => [name, []]))
+      }
+    ])
+  );
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+
+    const fullName = String(card?.Name || '').trim();
+    const baseName = fullName.split(/\s+/)[0] || fullName;
+    if (!VS_NAMES.includes(baseName)) return;
+
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (unit !== 'vs') return;
+
+    const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
+    if (!sourceKey) return;
+    const isNum = isNumericEventId(sourceKey);
+    const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
+    const eventDate = parseDateSafe(String(ev?.date || card?.Date || '').trim());
+    if (!eventDate) return;
+    if (!isNum && maxEventDate && eventDate > maxEventDate) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    const statType = getVsOriginalStatType(card, sourceKey);
+    if (!rowMap[statType]) return;
+    rowMap[statType].cardsByVs[baseName].push({
+      cardId: getCardProgressOrderId(card),
+      attr,
+      name: baseName,
+      imageSrc: buildCardImageSrc(card?.CardID, baseName, { rarity: String(card?.Rarity || '4') })
+    });
+  });
+
+  return VS_ORIGINAL_STAT_TYPES.map((type) => {
+    const row = rowMap[type];
+    VS_NAMES.forEach((name) => {
+      row.cardsByVs[name].sort((a, b) => {
+        const aid = Number(a?.cardId || 0);
+        const bid = Number(b?.cardId || 0);
+        if (aid !== bid) return aid - bid;
+        return ATTRS.indexOf(a?.attr) - ATTRS.indexOf(b?.attr);
+      });
+      row.attrsByVs[name] = row.cardsByVs[name]
+        .map((item) => item?.attr)
+        .filter((attr) => ATTRS.includes(attr));
+    });
+    return row;
+  });
+});
+
+const getVsOriginalOtherRowCards = (row) => {
+  if (!row?.cardsByVs) return [];
+  if (VS_NAMES.includes('初音未来') && row.cardsByVs['初音未来']?.length) {
+    return row.cardsByVs['初音未来'];
+  }
+  for (let i = 0; i < VS_NAMES.length; i += 1) {
+    const key = VS_NAMES[i];
+    if (row.cardsByVs[key]?.length) return row.cardsByVs[key];
+  }
+  return [];
+};
+
+const getVsOriginalOtherRowAttrs = (row) => {
+  if (!row?.attrsByVs) return [];
+  if (VS_NAMES.includes('初音未来') && row.attrsByVs['初音未来']?.length) {
+    return row.attrsByVs['初音未来'];
+  }
+  for (let i = 0; i < VS_NAMES.length; i += 1) {
+    const key = VS_NAMES[i];
+    if (row.attrsByVs[key]?.length) return row.attrsByVs[key];
+  }
+  return [];
+};
+
 const vsUnitLastFourMaxDays = computed(() => {
-  const values = vsUnitLastFourCompactRows.value
-    .flatMap((row) => VS_UNIT_SORT_ORDER.map((u) => Number(row?.daysByUnit?.[u] || 0)))
+  const values = vsUnitLastFourCompactUnitRows.value
+    .flatMap((row) => VS_NAMES.map((name) => Number(row?.daysByVs?.[name] || 0)))
     .filter((v) => v > 0);
   return values.length ? Math.max(...values) : 0;
 });
@@ -7654,6 +8406,11 @@ const getVsScoreVsHeadStyle = (name) => ({
 
 const getVsScoreCellStyle = (name, unit) => ({
   backgroundImage: `linear-gradient(${hexToRgba(getCharColor(name), 0.12)}, ${hexToRgba(getCharColor(name), 0.12)}), linear-gradient(${hexToRgba(UNIT_COLORS[unit] || '#9ca3af', 0.12)}, ${hexToRgba(UNIT_COLORS[unit] || '#9ca3af', 0.12)})`,
+  backgroundColor: '#f8fafc'
+});
+
+const getVsOriginalStatCellStyle = (name) => ({
+  backgroundImage: `linear-gradient(${hexToRgba(getCharColor(name), 0.14)}, ${hexToRgba(getCharColor(name), 0.14)})`,
   backgroundColor: '#f8fafc'
 });
 
@@ -10259,33 +11016,187 @@ td.record-char {
 
 .vs-unit-score-table th:first-child,
 .vs-unit-score-table td:first-child {
-  width: 64px;
-  min-width: 64px;
-  max-width: 64px;
-  padding-left: 4px;
-  padding-right: 4px;
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  padding-left: 2px;
+  padding-right: 2px;
 }
 
 .vs-unit-score-table th,
 .vs-unit-score-table td {
   text-align: center;
   vertical-align: middle;
-  padding: 9px 8px;
+  padding: 6px 5px;
+}
+
+.vs-unit-score-table.is-card-mode th,
+.vs-unit-score-table.is-card-mode td {
+  padding: 2px;
+}
+
+.vs-four-count-value {
+  display: inline-block;
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.vs-original-stat-table th:first-child,
+.vs-original-stat-table td:first-child {
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+}
+
+.vs-original-stat-table .vs-original-type-cell {
+  text-align: center !important;
+  font-weight: 800;
+  color: #334155;
+  background-color: #f1f5f9;
 }
 
 .score-attr-wrap {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 3px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  width: 100%;
+  margin: 0;
   border-radius: 10px;
-  padding: 2px 4px;
+  padding: 0;
 }
 
 .score-attr-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
+}
+
+.vs-four-count-detail-table .score-attr-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.score-card-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 126px;
+  min-height: 60px;
+  margin: 0 auto;
+}
+
+.score-card-wrap .fes-card-thumb {
+  --fes-card-frame-size: 56px;
+}
+
+.score-card-wrap-single {
+  max-width: 100%;
+}
+
+.score-card-wrap-merged-six {
+  max-width: 100%;
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) {
+  min-width: calc(var(--rel-min-char-col) + var(--rel-min-event-col));
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode {
+  min-width: calc(var(--rel-min-char-col) + var(--rel-min-card-col));
+}
+
+.related-panel .vs-four-count-detail-table:not(.vs-last-four-card-mode) td.record-char {
+  text-align: left !important;
+}
+
+.related-panel .vs-four-count-detail-table.vs-last-four-card-mode td.record-char {
+  text-align: center !important;
+}
+
+.vs-four-count-value-cell {
+  text-align: center;
+}
+
+.vs-four-count-detail-table td:last-child {
+  text-align: left;
+}
+
+.vs-four-count-detail-table .score-card-wrap {
+  justify-content: flex-start;
+  max-width: none;
+}
+
+.vs-four-count-detail-table .score-attr-wrap {
+  justify-content: flex-start;
+}
+
+.vs-unit-score-table:not(.is-card-mode) .score-attr-wrap,
+.vs-original-stat-table:not(.is-card-mode) .score-attr-wrap {
+  justify-content: center;
+}
+
+.vs-unit-score-table.is-card-mode .score-card-wrap,
+.vs-original-stat-table.is-card-mode .score-card-wrap {
+  gap: 2px;
+  justify-content: center;
+  align-items: flex-start;
+  max-width: none;
+  min-height: 0;
+}
+
+.vs-unit-score-table.is-card-mode .score-card-wrap .fes-card-thumb,
+.vs-original-stat-table.is-card-mode .score-card-wrap .fes-card-thumb {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 100%;
+}
+
+.vs-original-stat-table.is-card-mode .score-card-wrap-merged-six {
+  justify-content: flex-start;
+}
+
+.vs-original-stat-table.is-card-mode .score-card-wrap-merged-six .fes-card-thumb {
+  width: calc((100% - 10px) / 6);
+  max-width: calc((100% - 10px) / 6);
+  flex-basis: calc((100% - 10px) / 6);
+}
+
+.vs-unit-score-table.is-card-mode .score-card-wrap .fes-card-thumb-img,
+.vs-original-stat-table.is-card-mode .score-card-wrap .fes-card-thumb-img {
+  width: 90%;
+  height: 90%;
+}
+
+.vs-unit-score-table.is-card-mode .score-card-wrap .fes-card-thumb-attr,
+.vs-original-stat-table.is-card-mode .score-card-wrap .fes-card-thumb-attr {
+  left: 2px;
+  top: 2px;
+  width: clamp(10px, 24%, 16px);
+  height: clamp(10px, 24%, 16px);
+}
+
+.vs-unit-last-four-mini-table .vs-mini-days-cell.vs-four-count-max {
+  color: #dc2626;
+  font-weight: 900;
+}
+
+.vs-unit-last-four-mini-table .vs-mini-days-cell.vs-four-count-min {
+  color: #2563eb;
+  font-weight: 900;
+}
+
+.vs-original-other-compact-cell {
+  background: rgba(57, 197, 187, 0.2);
 }
 
 .score-empty {
@@ -10747,6 +11658,42 @@ td.record-char {
   min-width: var(--rel-min-gap-col);
 }
 
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:first-child,
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:first-child {
+  width: var(--rel-last-char-pct);
+  min-width: var(--rel-min-char-col);
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:nth-child(2),
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:nth-child(2) {
+  width: 14%;
+  min-width: 50px;
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:nth-child(3),
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:nth-child(3) {
+  width: auto;
+  min-width: 200px;
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:first-child,
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:first-child {
+  width: var(--rel-last-card-char-pct);
+  min-width: var(--rel-min-char-col);
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:nth-child(2),
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:nth-child(2) {
+  width: 12%;
+  min-width: 50px;
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:nth-child(3),
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:nth-child(3) {
+  width: auto;
+  min-width: 220px;
+}
+
 .related-panel .related-table-interval:not(.interval-record-table-card-mode) th:first-child,
 .related-panel .related-table-interval:not(.interval-record-table-card-mode) td:first-child {
   width: var(--rel-int-char-pct);
@@ -10933,18 +11880,23 @@ td.record-char {
     padding: 12px 10px;
   }
 
+  .vs-unit-score-table.is-card-mode th,
+  .vs-unit-score-table.is-card-mode td {
+    padding: 3px;
+  }
+
   .vs-unit-last-four-mini-table .vs-mini-days-cell {
     font-size: 1.16rem;
     font-weight: 800;
   }
 
   .score-attr-wrap {
-    gap: 4px;
+    gap: 2px;
   }
 
   .score-attr-icon {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
   }
 }
 
@@ -10956,21 +11908,6 @@ td.record-char {
   }
 }
 
-@media (max-width: 1200px) {
-  .pjsk-stats {
-    --stats-nav-width: 196px;
-    --stats-nav-left: 34px;
-    --stats-nav-top: 78px;
-  }
-
-  .stats-layout { grid-template-columns: var(--stats-nav-width) 1fr; }
-  .stats-layout.nav-collapsed { grid-template-columns: 1fr; }
-  .stats-nav {
-    height: calc(100vh - var(--stats-nav-top) - 10px);
-    max-height: calc(100vh - var(--stats-nav-top) - 10px);
-  }
-  .pjsk-stats { padding: 14px; }
-}
 
 @media (min-width: 1201px) {
   .nav-cutoff-controls {
@@ -10985,6 +11922,29 @@ td.record-char {
 }
 
 @media (min-width: 901px) and (max-width: 1200px) {
+  .pjsk-stats {
+    --stats-nav-width: 196px;
+    --stats-nav-left: 34px;
+    --stats-nav-top: 78px;
+  }
+
+  .stats-layout { grid-template-columns: var(--stats-nav-width) 1fr; }
+  .stats-layout.nav-collapsed { grid-template-columns: 1fr; }
+  .stats-nav {
+    height: calc(100vh - var(--stats-nav-top) - 10px);
+    max-height: calc(100vh - var(--stats-nav-top) - 10px);
+  }
+  .pjsk-stats { padding: 14px; }
+
+  .score-attr-wrap {
+    gap: 2px;
+  }
+
+  .score-attr-icon {
+    width: 22px;
+    height: 22px;
+  }
+
   .nav-cutoff {
     padding: 7px;
   }
@@ -11534,6 +12494,13 @@ td.record-char {
     height: 24px;
   }
 
+  .vs-original-stat-table th:first-child,
+  .vs-original-stat-table td:first-child {
+    width: 52px;
+    min-width: 52px;
+    max-width: 52px;
+  }
+
   .mini-unit-logo {
     width: 24px;
     height: 24px;
@@ -11742,6 +12709,15 @@ td.record-char {
   .avatar-img {
     width: 38px;
     height: 38px;
+  }
+
+  .score-attr-wrap {
+    gap: 2px;
+  }
+
+  .score-attr-icon {
+    width: 20px;
+    height: 20px;
   }
 
   .record-table {

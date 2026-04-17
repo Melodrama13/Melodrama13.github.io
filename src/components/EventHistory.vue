@@ -1,20 +1,20 @@
 <template>
-  <div ref="historyWrapperRef" class="event-history-wrapper" :class="{ 'with-editor': isEditorOpen }">
+  <div ref="historyWrapperRef" class="event-history-wrapper" :class="{ 'with-editor': isEditorOpen && !isBottomPredictEditorMode }">
     <transition name="float-stats-fade">
       <div
         v-if="isEditorOpen"
         class="predict-preview-floating"
         aria-live="polite"
       >
-        <div class="preview-config-panel" :class="{ 'is-collapsed': previewFloatingCollapsed }" :style="previewConfigPanelStyle" @mousedown="bringPreviewConfigToFront" @touchstart="bringPreviewConfigToFront">
+        <div class="preview-config-panel" :class="{ 'is-collapsed': previewFloatingCollapsed || previewConfigBodyCollapsed }" :style="previewConfigPanelStyle" @mousedown="bringPreviewConfigToFront" @touchstart="bringPreviewConfigToFront">
           <div class="preview-config-head" @mousedown.prevent="startDragPreviewConfig($event)" @touchstart.prevent="startDragPreviewConfigTouch($event)">
             <span>悬浮统计（最多6个）</span>
             <div class="preview-config-actions">
-              <button class="preview-config-reset" @mousedown.stop @touchstart.stop @click="previewFloatingCollapsed = !previewFloatingCollapsed">{{ previewFloatingCollapsed ? '展开统计' : '收起统计' }}</button>
-              <button v-if="!previewFloatingCollapsed" class="preview-config-reset" @mousedown.stop @touchstart.stop @click="resetPreviewPanelLayout">重置布局</button>
+              <button class="preview-config-reset" @mousedown.stop @touchstart.stop @click="previewConfigBodyCollapsed = !previewConfigBodyCollapsed">{{ previewConfigBodyCollapsed ? '展开' : '收起' }}</button>
+              <button v-if="!previewConfigBodyCollapsed" class="preview-config-reset" @mousedown.stop @touchstart.stop @click="resetPreviewPanelLayout">重置布局</button>
             </div>
           </div>
-          <div v-show="!previewFloatingCollapsed" class="preview-config-options">
+          <div v-show="!previewFloatingCollapsed && !previewConfigBodyCollapsed" class="preview-config-options">
             <button
               v-for="opt in previewPanelOptions"
               :key="`opt-${opt.id}`"
@@ -27,7 +27,7 @@
               {{ opt.title }}
             </button>
           </div>
-          <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('attr-five')" class="preview-char-select" :class="{ 'is-collapsed': previewAttrCharCollapsed }">
+          <div v-if="!previewFloatingCollapsed && !previewConfigBodyCollapsed && selectedPreviewPanelIds.includes('attr-five')" class="preview-char-select" :class="{ 'is-collapsed': !isPreviewCharSelectExpanded('attr-five') }">
             <div class="preview-char-select-title">
               <span>属性统计人选（最多8人）</span>
               <div class="preview-char-select-actions">
@@ -37,10 +37,10 @@
                   :disabled="!canAppendCurrentLineupToPreviewAttr"
                 >获取列表</button>
                 <button class="preview-char-select-toggle" @click="clearPreviewAttrChars" :disabled="selectedPreviewAttrChars.length === 0">清空</button>
-                <button class="preview-char-select-toggle" @click="previewAttrCharCollapsed = !previewAttrCharCollapsed">{{ previewAttrCharCollapsed ? '展开' : '收起' }}</button>
+                <button class="preview-char-select-toggle" @click="togglePreviewCharSelectExpanded('attr-five')">{{ isPreviewCharSelectExpanded('attr-five') ? '收起' : '展开' }}</button>
               </div>
             </div>
-            <div v-show="!previewAttrCharCollapsed" class="preview-char-chips">
+            <div v-show="isPreviewCharSelectExpanded('attr-five')" class="preview-char-chips">
               <button
                 v-for="name in previewSelectableChars"
                 :key="`pick-${name}`"
@@ -54,7 +54,7 @@
               </button>
             </div>
           </div>
-          <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('daily-lineup')" class="preview-char-select" :class="{ 'is-collapsed': previewDailyLineupCharCollapsed }">
+          <div v-if="!previewFloatingCollapsed && !previewConfigBodyCollapsed && selectedPreviewPanelIds.includes('daily-lineup')" class="preview-char-select" :class="{ 'is-collapsed': !isPreviewCharSelectExpanded('daily-lineup') }">
             <div class="preview-char-select-title">
               <span>日挑配队人选（最多6人）</span>
               <div class="preview-char-select-actions">
@@ -64,10 +64,10 @@
                   :disabled="!canAppendCurrentLineupToPreviewDailyLineup"
                 >读取列表</button>
                 <button class="preview-char-select-toggle" @click="clearPreviewDailyLineupChars" :disabled="selectedPreviewDailyLineupChars.length === 0">清空</button>
-                <button class="preview-char-select-toggle" @click="previewDailyLineupCharCollapsed = !previewDailyLineupCharCollapsed">{{ previewDailyLineupCharCollapsed ? '展开' : '收起' }}</button>
+                <button class="preview-char-select-toggle" @click="togglePreviewCharSelectExpanded('daily-lineup')">{{ isPreviewCharSelectExpanded('daily-lineup') ? '收起' : '展开' }}</button>
               </div>
             </div>
-            <div v-show="!previewDailyLineupCharCollapsed" class="preview-char-chips">
+            <div v-show="isPreviewCharSelectExpanded('daily-lineup')" class="preview-char-chips">
               <button
                 v-for="name in previewSelectableChars"
                 :key="`pick-daily-${name}`"
@@ -81,7 +81,7 @@
               </button>
             </div>
           </div>
-          <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('char-attr')" class="preview-char-select" :class="{ 'is-collapsed': previewCharAttrCollapsed }">
+          <div v-if="!previewFloatingCollapsed && !previewConfigBodyCollapsed && selectedPreviewPanelIds.includes('char-attr')" class="preview-char-select" :class="{ 'is-collapsed': !isPreviewCharSelectExpanded('char-attr') }">
             <div class="preview-char-select-title">
               <span>角色花色人选（最多6人）</span>
               <div class="preview-char-select-actions">
@@ -91,10 +91,10 @@
                   :disabled="!canAppendCurrentLineupToPreviewCharAttr"
                 >读取列表</button>
                 <button class="preview-char-select-toggle" @click="clearPreviewCharAttrChars" :disabled="selectedPreviewCharAttrChars.length === 0">清空</button>
-                <button class="preview-char-select-toggle" @click="previewCharAttrCollapsed = !previewCharAttrCollapsed">{{ previewCharAttrCollapsed ? '展开' : '收起' }}</button>
+                <button class="preview-char-select-toggle" @click="togglePreviewCharSelectExpanded('char-attr')">{{ isPreviewCharSelectExpanded('char-attr') ? '收起' : '展开' }}</button>
               </div>
             </div>
-            <div v-show="!previewCharAttrCollapsed" class="preview-char-chips">
+            <div v-show="isPreviewCharSelectExpanded('char-attr')" class="preview-char-chips">
               <button
                 v-for="name in previewSelectableChars"
                 :key="`pick-char-attr-${name}`"
@@ -108,7 +108,7 @@
               </button>
             </div>
           </div>
-          <div v-if="!previewFloatingCollapsed && selectedPreviewPanelIds.includes('festival')" class="preview-char-select preview-festival-select">
+          <div v-if="!previewFloatingCollapsed && !previewConfigBodyCollapsed && selectedPreviewPanelIds.includes('festival')" class="preview-char-select preview-festival-select">
             <div class="preview-char-select-title">
               <span>节日（单选）</span>
             </div>
@@ -265,19 +265,41 @@
               <table class="preview-vs-mini-table">
                 <thead>
                   <tr>
-                    <th>角色</th>
-                    <th v-for="u in PREVIEW_BOX_UNITS" :key="`pv-vs-head-${u}`">
-                      <img :src="`/elements/${u}.png`" class="preview-vs-mini-unit-logo" :title="u.toUpperCase()" />
+                    <th></th>
+                    <th v-for="name in PREVIEW_VS_NAMES" :key="`pv-vs-head-${name}`">
+                      <img :src="`/chars/${getCharAbbr(name)}.png`" class="preview-vs-mini-avatar" :title="name" />
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in previewVsLastFourCompactRows" :key="`pv-vs-row-${row.name}`">
+                  <tr v-for="row in previewVsLastFourUnitRows" :key="`pv-vs-row-${row.unit}`">
                     <th>
-                      <img :src="`/chars/${getCharAbbr(row.name)}.png`" class="preview-vs-mini-avatar" :title="row.name" />
+                      <img :src="`/elements/${row.unit}.png`" class="preview-vs-mini-unit-logo" :title="row.unit.toUpperCase()" />
                     </th>
-                    <td v-for="u in PREVIEW_BOX_UNITS" :key="`pv-vs-cell-${row.name}-${u}`" :style="getPreviewVsMiniDataCellStyle(row.daysByUnit[u])">
-                      {{ row.daysByUnit[u] }}
+                    <td v-for="name in PREVIEW_VS_NAMES" :key="`pv-vs-cell-${row.unit}-${name}`" :style="getPreviewVsMiniDataCellStyle(row.daysByVs[name])">
+                      {{ row.daysByVs[name] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </template>
+            <template v-else-if="panel.id === 'vs-unit-four-count'">
+              <table class="preview-vs-mini-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th v-for="name in PREVIEW_VS_NAMES" :key="`pv-vs-four-head-${name}`">
+                      <img :src="`/chars/${getCharAbbr(name)}.png`" class="preview-vs-mini-avatar" :title="name" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in previewVsUnitFourCountUnitRows" :key="`pv-vs-four-row-${row.unit}`">
+                    <th>
+                      <img :src="`/elements/${row.unit}.png`" class="preview-vs-mini-unit-logo" :title="row.unit.toUpperCase()" />
+                    </th>
+                    <td v-for="name in PREVIEW_VS_NAMES" :key="`pv-vs-four-cell-${row.unit}-${name}`" :style="getPreviewVsFourCountCellStyle(row.countByVs[name])">
+                      {{ Number(row.countByVs[name] || 0) > 0 ? row.countByVs[name] : '-' }}
                     </td>
                   </tr>
                 </tbody>
@@ -287,22 +309,51 @@
               <table class="preview-vs-score-table">
                 <thead>
                   <tr>
-                    <th>V\团</th>
-                    <th v-for="u in PREVIEW_BOX_UNITS" :key="`pv-score-head-${u}`">
-                      <img :src="`/elements/${u}.png`" class="preview-vs-mini-unit-logo" :title="u.toUpperCase()" />
+                    <th></th>
+                    <th v-for="name in PREVIEW_VS_NAMES" :key="`pv-score-head-${name}`">
+                      <img :src="`/chars/${getCharAbbr(name)}.png`" class="preview-vs-mini-avatar" :title="name" />
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in previewVsUnitScoreRows" :key="`pv-score-row-${row.name}`">
+                  <tr v-for="row in previewVsUnitScoreUnitRows" :key="`pv-score-row-${row.unit}`">
                     <th>
-                      <img :src="`/chars/${getCharAbbr(row.name)}.png`" class="preview-vs-mini-avatar" :title="row.name" />
+                      <img :src="`/elements/${row.unit}.png`" class="preview-vs-mini-unit-logo" :title="row.unit.toUpperCase()" />
                     </th>
-                    <td v-for="u in PREVIEW_BOX_UNITS" :key="`pv-score-cell-${row.name}-${u}`">
-                      <div v-if="row.attrsByUnit[u]?.length" class="preview-vs-score-icons">
+                    <td v-for="name in PREVIEW_VS_NAMES" :key="`pv-score-cell-${row.unit}-${name}`">
+                      <div v-if="row.attrsByVs[name]?.length" class="preview-vs-score-icons">
                         <img
-                          v-for="(attr, idx) in row.attrsByUnit[u]"
-                          :key="`pv-score-attr-${row.name}-${u}-${idx}`"
+                          v-for="(attr, idx) in row.attrsByVs[name]"
+                          :key="`pv-score-attr-${row.unit}-${name}-${idx}`"
+                          :src="`/elements/${String(attr).toLowerCase()}.png`"
+                          class="preview-vs-score-attr"
+                          :title="attr"
+                        />
+                      </div>
+                      <span v-else class="preview-vs-score-empty">-</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </template>
+            <template v-else-if="panel.id === 'vs-original'">
+              <table class="preview-vs-score-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th v-for="name in PREVIEW_VS_NAMES" :key="`pv-original-head-${name}`">
+                      <img :src="`/chars/${getCharAbbr(name)}.png`" class="preview-vs-mini-avatar" :title="name" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in previewVsOriginalRows" :key="`pv-original-row-${row.type}`">
+                    <th>{{ row.type }}</th>
+                    <td v-for="name in PREVIEW_VS_NAMES" :key="`pv-original-cell-${row.type}-${name}`">
+                      <div v-if="row.attrsByVs[name]?.length" class="preview-vs-score-icons">
+                        <img
+                          v-for="(attr, idx) in row.attrsByVs[name]"
+                          :key="`pv-original-attr-${row.type}-${name}-${idx}`"
                           :src="`/elements/${String(attr).toLowerCase()}.png`"
                           class="preview-vs-score-attr"
                           :title="attr"
@@ -749,7 +800,7 @@
               </template>
             </div>
             <div
-              v-if="isEditorOpen && formatSeriesCompact(row.event)"
+              v-if="isEditorOpen && !isBottomPredictEditorMode && formatSeriesCompact(row.event)"
               class="editor-series-chip"
               :style="getEditorSeriesStyle(row.event)"
             >
@@ -757,7 +808,7 @@
             </div>
           </div>
 
-          <div v-if="!isEditorOpen" class="event-main-content">
+          <div v-if="!shouldApplyEditorHideRules" class="event-main-content">
             <div class="event-title-row">
               <span class="event-title">{{ row.event.event_title }}</span>
             </div>
@@ -876,7 +927,7 @@
             </div>
           </div>
 
-          <div v-if="!isEditorOpen" class="vs-section">
+          <div v-if="!shouldApplyEditorHideRules" class="vs-section">
             <div class="vs-top-row">
               <div v-if="row.event.virtual_singer" class="vs-list">
                 <img v-for="vs in parseVS(row.event.virtual_singer)" :key="vs" :src="`/chars/${getCharAbbr(vs)}.png`" :title="vs" class="vs-avatar" />
@@ -1404,9 +1455,30 @@ const previewPanelLayers = ref({});
 const previewConfigLayer = ref(0);
 const previewPanelState = ref({});
 const previewFloatingCollapsed = ref(false);
-const previewAttrCharCollapsed = ref(false);
-const previewDailyLineupCharCollapsed = ref(false);
-const previewCharAttrCollapsed = ref(false);
+const previewConfigBodyCollapsed = ref(false);
+const previewExpandedCharSelectId = ref('');
+const PREVIEW_CHAR_SELECT_IDS = Object.freeze(['attr-five', 'daily-lineup', 'char-attr']);
+
+const isPreviewCharSelectExpanded = (selectId) => previewExpandedCharSelectId.value === String(selectId || '');
+
+const togglePreviewCharSelectExpanded = (selectId) => {
+  const id = String(selectId || '');
+  if (!id) return;
+  previewExpandedCharSelectId.value = previewExpandedCharSelectId.value === id ? '' : id;
+};
+
+const syncPreviewCharSelectExpandedState = (selectedPanelIds) => {
+  const visibleSelectors = PREVIEW_CHAR_SELECT_IDS.filter((id) => selectedPanelIds.includes(id));
+  if (!visibleSelectors.length) {
+    previewExpandedCharSelectId.value = '';
+    return;
+  }
+  if (!visibleSelectors.includes(previewExpandedCharSelectId.value)) {
+    previewExpandedCharSelectId.value = visibleSelectors[0];
+  }
+};
+
+syncPreviewCharSelectExpandedState([]);
 const previewConfigDragState = ref({ dragging: false, offsetX: 0, offsetY: 0 });
 const previewConfigPanelPos = ref({ x: null, y: null });
 const previewDragState = ref({ dragging: false, panelId: '', offsetX: 0, offsetY: 0 });
@@ -1567,6 +1639,8 @@ const getPreviewPanelBaseSize = (panelId) => {
   if (panelId === 'daily-lineup') return { width: 228, height: 390 };
   if (panelId === 'festival') return { width: 236, height: 350 };
   if (panelId === 'vs-last-four') return { width: 236, height: 242 };
+  if (panelId === 'vs-unit-four-count') return { width: 236, height: 242 };
+  if (panelId === 'vs-original') return { width: 236, height: 260 };
   if (panelId === 'reward') return { width: 208, height: 260 };
   return { width: 208, height: 260 };
 };
@@ -1961,7 +2035,9 @@ const PREVIEW_PANEL_DEFS = [
   { id: 'banner', title: 'Banner', icon: 'B', statKey: 'bannerCount', externalKey: 'bannerCount' },
   { id: 'limited-ban', title: '限Ban', icon: '🚫', statKey: 'limitedBanCount', externalKey: 'limitedBanCount' },
   { id: 'vs-last-four', title: 'V上次四星', icon: 'V', statKey: 'vsLastFour' },
+  { id: 'vs-unit-four-count', title: '团V四星', icon: '4', statKey: 'vsUnitFourCount' },
   { id: 'vs-unit-score', title: '团分', icon: 'U', statKey: 'vsUnitScore' },
+  { id: 'vs-original', title: '原V', icon: 'O', statKey: 'vsOriginal' },
   { id: 'pure-score', title: '分卡', icon: 'S', statKey: 'pureScoreCount' },
   { id: 'p-score', title: 'P分', icon: 'P', statKey: 'pScoreCount' },
   { id: 'score-up', title: '普分', icon: 'N', statKey: 'scoreUpCount', externalKey: 'scoreUpCount' },
@@ -2340,15 +2416,7 @@ const togglePreviewPanelType = (panelId) => {
 };
 
 watch(selectedPreviewPanelIds, (ids) => {
-  if (!ids.includes('attr-five')) {
-    previewAttrCharCollapsed.value = false;
-  }
-  if (!ids.includes('daily-lineup')) {
-    previewDailyLineupCharCollapsed.value = false;
-  }
-  if (!ids.includes('char-attr')) {
-    previewCharAttrCollapsed.value = false;
-  }
+  syncPreviewCharSelectExpandedState(ids);
 });
 
 const isCollabPoolEvent = (event) => {
@@ -2628,6 +2696,21 @@ const previewFestivalIncludeFes = computed(() => {
 const previewFestivalShowFes = computed(() => canTogglePreviewFestivalFes(activePreviewFestivalName.value));
 
 const PREVIEW_VS_NAMES = ['初音未来', '镜音铃', '镜音连', '巡音流歌', 'MEIKO', 'KAITO'];
+const PREVIEW_VS_ORIGINAL_STAT_TYPES = ['大罪', 'CF', 'BF', 'WL1', 'WL2', 'WL3', '其他'];
+const PREVIEW_ATTR_ORDER = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
+
+const getPreviewVsOriginalStatType = (card, sourceKey) => {
+  const normalizedSourceKey = String(sourceKey || '').trim().toLowerCase();
+  if (normalizedSourceKey === 'c1') return '大罪';
+
+  const cardType = String(card?.Type || '').trim().toLowerCase();
+  if (cardType === 'cfes') return 'CF';
+  if (cardType === 'bfes') return 'BF';
+  if (cardType.startsWith('wl1')) return 'WL1';
+  if (cardType.startsWith('wl2')) return 'WL2';
+  if (cardType.startsWith('wl3')) return 'WL3';
+  return '其他';
+};
 
 const previewVsLastFourMap = computed(() => {
   const result = {};
@@ -2688,6 +2771,64 @@ const previewVsLastFourCompactRows = computed(() => {
   });
 });
 
+const previewVsLastFourUnitRows = computed(() => {
+  const rowMap = Object.fromEntries(
+    previewVsLastFourCompactRows.value.map((row) => [row.name, row])
+  );
+  return PREVIEW_BOX_UNITS.map((unit) => {
+    const daysByVs = {};
+    PREVIEW_VS_NAMES.forEach((name) => {
+      daysByVs[name] = rowMap[name]?.daysByUnit?.[unit] ?? '-';
+    });
+    return { unit, daysByVs };
+  });
+});
+
+const previewVsUnitFourCountCompactRows = computed(() => {
+  const maxId = Number(previewMaxEventId.value);
+  const rows = Object.fromEntries(
+    PREVIEW_VS_NAMES.map((name) => [
+      name,
+      {
+        name,
+        countByUnit: Object.fromEntries(PREVIEW_BOX_UNITS.map((u) => [u, 0]))
+      }
+    ])
+  );
+
+  if (!Number.isFinite(maxId) || maxId <= 0) {
+    return PREVIEW_VS_NAMES.map((name) => rows[name]);
+  }
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinPreviewLimit(card, maxId)) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+
+    const baseName = String(card?.Name || '').trim().split(/\s+/)[0] || '';
+    if (!PREVIEW_VS_NAMES.includes(baseName)) return;
+
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (!PREVIEW_BOX_UNITS.includes(unit)) return;
+
+    rows[baseName].countByUnit[unit] += 1;
+  });
+
+  return PREVIEW_VS_NAMES.map((name) => rows[name]);
+});
+
+const previewVsUnitFourCountUnitRows = computed(() => {
+  const rowMap = Object.fromEntries(
+    previewVsUnitFourCountCompactRows.value.map((row) => [row.name, row])
+  );
+  return PREVIEW_BOX_UNITS.map((unit) => {
+    const countByVs = {};
+    PREVIEW_VS_NAMES.forEach((name) => {
+      countByVs[name] = Number(rowMap[name]?.countByUnit?.[unit] || 0);
+    });
+    return { unit, countByVs };
+  });
+});
+
 const previewVsUnitScoreRows = computed(() => {
   const maxId = Number(previewMaxEventId.value);
   const rows = Object.fromEntries(
@@ -2716,12 +2857,81 @@ const previewVsUnitScoreRows = computed(() => {
     if (!PREVIEW_BOX_UNITS.includes(unit)) return;
 
     const attr = normalizeAttr(card?.Attribute);
-    if (!['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'].includes(attr)) return;
+    if (!PREVIEW_ATTR_ORDER.includes(attr)) return;
 
     rows[baseName].attrsByUnit[unit].push(attr);
   });
 
   return PREVIEW_VS_NAMES.map((name) => rows[name]);
+});
+
+const previewVsUnitScoreUnitRows = computed(() => {
+  const rowMap = Object.fromEntries(
+    previewVsUnitScoreRows.value.map((row) => [row.name, row])
+  );
+  return PREVIEW_BOX_UNITS.map((unit) => {
+    const attrsByVs = {};
+    PREVIEW_VS_NAMES.forEach((name) => {
+      attrsByVs[name] = rowMap[name]?.attrsByUnit?.[unit] || [];
+    });
+    return { unit, attrsByVs };
+  });
+});
+
+const previewVsOriginalRows = computed(() => {
+  const maxId = Number(previewMaxEventId.value);
+  const rows = Object.fromEntries(
+    PREVIEW_VS_ORIGINAL_STAT_TYPES.map((type) => [
+      type,
+      {
+        type,
+        attrsByVs: Object.fromEntries(PREVIEW_VS_NAMES.map((name) => [name, []]))
+      }
+    ])
+  );
+
+  if (!Number.isFinite(maxId) || maxId <= 0) {
+    return PREVIEW_VS_ORIGINAL_STAT_TYPES.map((type) => rows[type]);
+  }
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinPreviewLimit(card, maxId)) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+
+    const baseName = String(card?.Name || '').trim().split(/\s+/)[0] || '';
+    if (!PREVIEW_VS_NAMES.includes(baseName)) return;
+
+    const unit = String(card?.Affiliation || '').trim().toLowerCase();
+    if (unit !== 'vs') return;
+
+    const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
+    if (!sourceKey) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    if (!PREVIEW_ATTR_ORDER.includes(attr)) return;
+
+    const statType = getPreviewVsOriginalStatType(card, sourceKey);
+    if (!rows[statType]) return;
+
+    rows[statType].attrsByVs[baseName].push({
+      attr,
+      orderId: getPreviewCardProgressOrderId(card)
+    });
+  });
+
+  return PREVIEW_VS_ORIGINAL_STAT_TYPES.map((type) => {
+    const row = rows[type];
+    PREVIEW_VS_NAMES.forEach((name) => {
+      row.attrsByVs[name] = row.attrsByVs[name]
+        .sort((a, b) => {
+          const orderDiff = Number(a?.orderId || 0) - Number(b?.orderId || 0);
+          if (orderDiff !== 0) return orderDiff;
+          return PREVIEW_ATTR_ORDER.indexOf(a?.attr) - PREVIEW_ATTR_ORDER.indexOf(b?.attr);
+        })
+        .map((item) => item.attr);
+    });
+    return row;
+  });
 });
 
 const previewVsLastFourMaxDays = computed(() => {
@@ -2733,6 +2943,28 @@ const previewVsLastFourMaxDays = computed(() => {
     });
   });
   return Math.max(1, max);
+});
+
+const previewVsUnitFourCountMax = computed(() => {
+  let max = 0;
+  previewVsUnitFourCountCompactRows.value.forEach((row) => {
+    PREVIEW_BOX_UNITS.forEach((unit) => {
+      const v = Number(row?.countByUnit?.[unit] || 0);
+      if (Number.isFinite(v) && v > max) max = v;
+    });
+  });
+  return Math.max(1, max);
+});
+
+const previewVsUnitFourCountMin = computed(() => {
+  let min = Infinity;
+  previewVsUnitFourCountCompactRows.value.forEach((row) => {
+    PREVIEW_BOX_UNITS.forEach((unit) => {
+      const v = Number(row?.countByUnit?.[unit] || 0);
+      if (Number.isFinite(v) && v > 0 && v < min) min = v;
+    });
+  });
+  return Number.isFinite(min) ? min : 0;
 });
 
 const getPreviewVsMiniDataCellStyle = (value) => {
@@ -2749,6 +2981,35 @@ const getPreviewVsMiniDataCellStyle = (value) => {
   return {
     backgroundColor: `rgb(${shade}, ${shade}, ${shade})`,
     color: text,
+    fontWeight: 600
+  };
+};
+
+const getPreviewVsFourCountCellStyle = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) {
+    return {
+      backgroundColor: 'rgba(148, 163, 184, 0.12)',
+      color: '#64748b'
+    };
+  }
+  if (n === previewVsUnitFourCountMax.value && previewVsUnitFourCountMax.value > 0) {
+    return {
+      backgroundColor: 'rgba(148, 163, 184, 0.12)',
+      color: '#dc2626',
+      fontWeight: 700
+    };
+  }
+  if (n === previewVsUnitFourCountMin.value && previewVsUnitFourCountMin.value > 0 && previewVsUnitFourCountMin.value !== previewVsUnitFourCountMax.value) {
+    return {
+      backgroundColor: 'rgba(148, 163, 184, 0.12)',
+      color: '#2563eb',
+      fontWeight: 700
+    };
+  }
+  return {
+    backgroundColor: 'rgba(148, 163, 184, 0.12)',
+    color: '#0f172a',
     fontWeight: 600
   };
 };
@@ -3502,7 +3763,15 @@ const previewFloatingPanels = computed(() => {
       id: def.id,
       title: def.title,
       icon: def.icon,
-      steps: (def.id === 'festival' || def.id === 'vs-last-four' || def.id === 'vs-unit-score' || def.id === 'daily-lineup' || def.id === 'char-attr') ? [] : getPreviewStepsByKey(def.statKey),
+      steps: (
+        def.id === 'festival'
+        || def.id === 'vs-last-four'
+        || def.id === 'vs-unit-four-count'
+        || def.id === 'vs-unit-score'
+        || def.id === 'vs-original'
+        || def.id === 'daily-lineup'
+        || def.id === 'char-attr'
+      ) ? [] : getPreviewStepsByKey(def.statKey),
       festivalName: def.id === 'festival' ? activePreviewFestivalName.value : '',
       festivalRows: def.id === 'festival' ? currentPreviewFestivalRows.value : [],
       festivalIncludeFes: def.id === 'festival' ? previewFestivalIncludeFes.value : false,
@@ -4212,11 +4481,14 @@ const viewportAnchor = ref({ id: '', top: 0 });
 const pendingJumpEventId = ref('');
 const suppressRestoreUntil = ref(0);
 const isCompactFilterBar = ref(false);
+const isBottomPredictEditorMode = ref(false);
+const shouldApplyEditorHideRules = computed(() => isEditorOpen.value && !isBottomPredictEditorMode.value);
 let resizeRafId = 0;
 let jumpRetryTimer = 0;
 
 const updateCompactFilterState = () => {
   isCompactFilterBar.value = window.innerWidth <= 900;
+  isBottomPredictEditorMode.value = window.innerWidth <= 900;
 };
 
 const saveHistoryScroll = () => {
@@ -5448,8 +5720,9 @@ const getFestivalPreviewUnitLogo = (name) => {
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
   padding: 8px;
   pointer-events: auto;
-  max-height: 42vh;
-  overflow: auto;
+  max-height: min(84vh, calc(100vh - var(--preview-config-top) - 10px));
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .preview-config-head {
@@ -5476,7 +5749,6 @@ const getFestivalPreviewUnitLogo = (name) => {
 }
 
 .preview-config-panel.is-collapsed {
-  width: 210px;
   max-height: none;
   overflow: visible;
 }
@@ -7361,7 +7633,7 @@ button:not(:disabled):active {
   .preview-config-panel {
     width: 320px;
     left: 8px;
-    max-height: 46vh;
+    max-height: min(82vh, calc(100vh - var(--preview-config-top) - 8px));
   }
 
   .preview-panel {
@@ -7425,17 +7697,19 @@ button:not(:disabled):active {
 
 @media (max-width: 1200px) and (pointer: coarse) {
   .filter-panel .chip-group {
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
     gap: 4px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 2px;
+    width: 100%;
+    overflow: visible;
+    padding-bottom: 0;
   }
 
   .filter-panel .char-chip {
-    width: 36px;
-    height: 36px;
-    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto;
+    flex: 0 0 30px;
   }
 
   .filter-panel .chip-img {
