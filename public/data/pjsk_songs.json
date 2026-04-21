@@ -4404,7 +4404,8 @@
       "normal": 14,
       "hard": 20,
       "expert": 26,
-      "master": 32
+      "master": 32,
+      "append": 31
     },
     "vocals": [
       {
@@ -28575,10 +28576,10 @@
       {
         "vocal_id": 1794,
         "type": "another_vocal",
+        "released_at": "2026/4/17",
         "characters": [
           "宵崎奏"
-        ],
-        "released_at": "2026/4/17"
+        ]
       }
     ]
   },
@@ -31582,16 +31583,17 @@
   {
     "id": 679,
     "title": "CRASH THE PARTY",
+    "pronunciation": "くらっしゅ ざ ぱーてぃ",
     "composer": "KIRA, monii, Johnny R",
     "lyricist": "Sena Kiryuin, monii, KIRA",
     "arranger": "KIRA",
     "isNewlyWrittenMusic": true,
-    "releaseDate": "2026-04-16 21:05:00",
+    "releaseDate": "2026-04-16 22:05:00",
     "categories": [
       "3DMV",
       "2DMV"
     ],
-    "tags": [
+    "units": [
       "all",
       "vbs"
     ],
@@ -31606,39 +31608,40 @@
       {
         "vocal_id": 1236,
         "type": "original_song",
+        "released_at": "2026/4/16",
         "characters": [
           "初音未来",
           "重音テト",
           "GUMI"
-        ],
-        "released_at": "2026/4/16"
+        ]
       },
       {
         "vocal_id": 1793,
         "type": "sekai",
+        "released_at": "2026/4/16",
         "characters": [
           "白石杏",
           "巡音流歌",
           "小豆泽心羽",
           "东云彰人",
           "青柳冬弥"
-        ],
-        "released_at": "2026/4/16"
+        ]
       }
     ]
   },
   {
     "id": 680,
     "title": "Who?",
+    "pronunciation": "ふー？",
     "composer": "Azari",
     "lyricist": "Azari",
     "arranger": "Azari",
     "isNewlyWrittenMusic": false,
-    "releaseDate": "2026-04-20 14:00:00",
+    "releaseDate": "2026-04-20 15:00:00",
     "categories": [
       "3DMV"
     ],
-    "tags": [
+    "units": [
       "all",
       "nc"
     ],
@@ -31653,23 +31656,23 @@
       {
         "vocal_id": 1237,
         "type": "original_song",
+        "released_at": "2026/4/20",
         "characters": [
           "歌愛ユキ",
           "flower"
-        ],
-        "released_at": "2026/4/20"
+        ]
       },
       {
         "vocal_id": 1795,
         "type": "sekai",
+        "released_at": "2026/4/20",
         "characters": [
           "镜音连",
           "宵崎奏",
           "朝比奈真冬",
           "东云绘名",
           "晓山瑞希"
-        ],
-        "released_at": "2026/4/20"
+        ]
       }
     ]
   },
@@ -32585,15 +32588,16 @@
   {
     "id": 710,
     "title": "ヘッジホッグ",
+    "pronunciation": "へっじほっぐ",
     "composer": "Noz.",
     "lyricist": "Noz.",
     "arranger": "Noz.",
     "isNewlyWrittenMusic": false,
-    "releaseDate": "2026-04-13 14:00:00",
+    "releaseDate": "2026-04-13 15:00:00",
     "categories": [
       "image"
     ],
-    "tags": [
+    "units": [
       "all",
       "ln"
     ],
@@ -32608,22 +32612,22 @@
       {
         "vocal_id": 1267,
         "type": "original_song",
+        "released_at": "2026/4/13",
         "characters": [
           "镜音铃"
-        ],
-        "released_at": "2026/4/13"
+        ]
       },
       {
         "vocal_id": 1792,
         "type": "sekai",
+        "released_at": "2026/4/13",
         "characters": [
           "镜音铃",
           "星乃一歌",
           "天马咲希",
           "望月穗波",
           "日野森志步"
-        ],
-        "released_at": "2026/4/13"
+        ]
       }
     ]
   },
@@ -33221,15 +33225,16 @@
   {
     "id": 737,
     "title": "導火愛",
+    "pronunciation": "どうかあい",
     "composer": "Tonbi",
     "lyricist": "Tonbi",
     "arranger": "Tonbi",
     "isNewlyWrittenMusic": false,
-    "releaseDate": "2026-04-24 14:00:00",
+    "releaseDate": "2026-04-24 15:00:00",
     "categories": [
       "image"
     ],
-    "tags": [
+    "units": [
       "all",
       "vs",
       "vocaloid"
@@ -33245,10 +33250,10 @@
       {
         "vocal_id": 1294,
         "type": "original_song",
+        "released_at": "2026/4/24",
         "characters": [
           "MEIKO"
-        ],
-        "released_at": "2026/4/24"
+        ]
       }
     ]
   }

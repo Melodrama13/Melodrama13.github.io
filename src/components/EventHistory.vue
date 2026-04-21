@@ -158,6 +158,28 @@
               <span>联动</span>
             </label>
             <label
+              v-if="panel.id === 'three'"
+              class="preview-head-toggle"
+              title="勾选后，三星按报酬统计。"
+              @mousedown.stop
+              @touchstart.stop
+              @click.stop
+            >
+              <input v-model="previewThreeUseRewardCount" type="checkbox" />
+              <span>报酬</span>
+            </label>
+            <label
+              v-if="panel.id === 'two'"
+              class="preview-head-toggle"
+              title="勾选后，二星按报酬统计。"
+              @mousedown.stop
+              @touchstart.stop
+              @click.stop
+            >
+              <input v-model="previewTwoUseRewardCount" type="checkbox" />
+              <span>报酬</span>
+            </label>
+            <label
               v-if="panel.id === 'pure-score'"
               class="preview-head-toggle"
               title="勾选后，分卡统计会计入团分卡。"
@@ -2069,6 +2091,8 @@ const selectedPreviewDailyLineupChars = ref([]);
 const selectedPreviewCharAttrChars = ref([]);
 const currentEditingSelectionNames = ref([]);
 const previewIncludeCollabReward = ref(false);
+const previewThreeUseRewardCount = ref(true);
+const previewTwoUseRewardCount = ref(true);
 const previewIncludeUnitScoreInPureScore = ref(false);
 const previewLimitedBanEventTypeFilter = ref('all');
 const previewBannerEventTypeFilter = ref('all');
@@ -3157,6 +3181,8 @@ const getPreviewStepProgressOrderKey = (name, key) => {
   if (key === 'accuracyCount') return Number(row.lastAccuracyOrderId || 0);
   if (key === 'threeStarCount') return Number(row.lastThreeStarOrderId || 0);
   if (key === 'twoStarCount') return Number(row.lastTwoStarOrderId || 0);
+  if (key === 'rewardThreeCount') return Number(row.lastRewardOrderId || 0);
+  if (key === 'rewardTwoCount') return Number(row.lastRewardOrderId || 0);
   if (key === 'rewardTotalCount') return Number(row.lastRewardOrderId || 0);
   if (key === 'bannerCount') return Number(row.lastBannerOrderId || 0);
   if (key === 'limitedBanCount') return Number(row.lastLimitedBanOrderId || 0);
@@ -3721,13 +3747,19 @@ const buildPreviewSteps = (key) => {
 };
 
 const getPreviewStepsByKey = (key) => {
-  if (key === 'limitedBanCount' && previewLimitedBanEventTypeFilter.value !== 'all') {
+  const resolvedKey = (() => {
+    if (key === 'threeStarCount' && previewThreeUseRewardCount.value) return 'rewardThreeCount';
+    if (key === 'twoStarCount' && previewTwoUseRewardCount.value) return 'rewardTwoCount';
+    return key;
+  })();
+
+  if (resolvedKey === 'limitedBanCount' && previewLimitedBanEventTypeFilter.value !== 'all') {
     return previewLimitedBanSteps.value;
   }
-  if (key === 'bannerCount' && previewBannerEventTypeFilter.value !== 'all') {
+  if (resolvedKey === 'bannerCount' && previewBannerEventTypeFilter.value !== 'all') {
     return previewBannerSteps.value;
   }
-  const panelDef = PREVIEW_PANEL_DEFS.find((d) => d.statKey === key);
+  const panelDef = PREVIEW_PANEL_DEFS.find((d) => d.statKey === resolvedKey);
   const external = props.statsPreviewData;
   const externalMaxId = Number(external?.maxEventId);
   if (panelDef?.externalKey && Number.isFinite(externalMaxId) && externalMaxId === Number(previewMaxEventId.value)) {
@@ -3739,13 +3771,13 @@ const getPreviewStepsByKey = (key) => {
       }));
     }
   }
-  if (key === 'limitedBanCount') {
+  if (resolvedKey === 'limitedBanCount') {
     return previewLimitedBanSteps.value;
   }
-  if (key === 'bannerCount') {
+  if (resolvedKey === 'bannerCount') {
     return previewBannerSteps.value;
   }
-  return buildPreviewSteps(key);
+  return buildPreviewSteps(resolvedKey);
 };
 
 const getPreviewAttrRowStyle = (name) => {

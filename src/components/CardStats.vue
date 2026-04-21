@@ -130,6 +130,22 @@
                     统计联动
                   </label>
                   <label
+                    v-if="panel.id === 'three'"
+                    class="reward-collab-toggle stats-checkbox"
+                    title="勾选后，三星总数按报酬三星统计（包括联动）。"
+                  >
+                    <input v-model="useRewardCountForThreeStar" type="checkbox" />
+                    报酬
+                  </label>
+                  <label
+                    v-if="panel.id === 'two'"
+                    class="reward-collab-toggle stats-checkbox"
+                    title="勾选后，二星总数按报酬二星统计（包括联动）。"
+                  >
+                    <input v-model="useRewardCountForTwoStar" type="checkbox" />
+                    报酬
+                  </label>
+                  <label
                     v-if="panel.id === 'pure-score'"
                     class="reward-collab-toggle stats-checkbox"
                     title="勾选后，4星分卡会计入团分卡。"
@@ -2332,6 +2348,8 @@ const vsUnitFourCountShowCardImages = ref(false);
 const vsUnitScoreShowCardImages = ref(false);
 const vsOriginalStatShowCardImages = ref(false);
 const includeCollabRewardCards = ref(false);
+const useRewardCountForThreeStar = ref(true);
+const useRewardCountForTwoStar = ref(true);
 const hideDistCharNames = ref(true);
 const hideFestivalCharNames = ref(true);
 const navNameFormat = ref('single');
@@ -5617,12 +5635,13 @@ const isCardWithinLimit = (card, maxEid) => {
   return true;
 };
 
-const isEventRewardCard = (card) => {
+const isEventRewardCard = (card, options = {}) => {
   const rarity = String(card?.Rarity || '').trim();
   if (!['2', '3'].includes(rarity)) return false;
+  const includeCollab = options?.includeCollab === true || includeCollabRewardCards.value;
   // 默认按活动卡计算报酬；勾选后额外计入联动二/三星。
   if (isNumericEventId(card?.EventID)) return true;
-  if (!includeCollabRewardCards.value) return false;
+  if (!includeCollab) return false;
   return String(card?.Type || '').trim().toLowerCase() === 'collab';
 };
 
@@ -6392,7 +6411,11 @@ const buildLineupPlan = (captainName, attr, attrPool) => {
 
   const orderedMembers = [...solved.members].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
-    return Number(b.eventRef?.id || 0) - Number(a.eventRef?.id || 0);
+    const recencyDiff = getEventRefRecencyScore(b?.eventRef) - getEventRefRecencyScore(a?.eventRef);
+    if (recencyDiff !== 0) return recencyDiff;
+    const bCardId = Number(String(b?.cardId || '').trim()) || 0;
+    const aCardId = Number(String(a?.cardId || '').trim()) || 0;
+    return bCardId - aCardId;
   });
 
   const memberSlots = [...orderedMembers];
@@ -6416,7 +6439,11 @@ const compareLineupCardForPick = (a, b) => {
   const aCfes = a?.fesKind === 'cfes' ? 1 : 0;
   const bCfes = b?.fesKind === 'cfes' ? 1 : 0;
   if (bCfes !== aCfes) return bCfes - aCfes;
-  return Number(b?.eventRef?.id || 0) - Number(a?.eventRef?.id || 0);
+  const recencyDiff = getEventRefRecencyScore(b?.eventRef) - getEventRefRecencyScore(a?.eventRef);
+  if (recencyDiff !== 0) return recencyDiff;
+  const bCardId = Number(String(b?.cardId || '').trim()) || 0;
+  const aCardId = Number(String(a?.cardId || '').trim()) || 0;
+  return bCardId - aCardId;
 };
 
 const compressSupportCards = (cards) => {
@@ -6441,7 +6468,11 @@ const evalSupportMembers = (cards) => {
   const lineupHit = evalLineupMembers(cards);
   const orderedMembers = [...lineupHit.members].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
-    return Number(b.eventRef?.id || 0) - Number(a.eventRef?.id || 0);
+    const recencyDiff = getEventRefRecencyScore(b?.eventRef) - getEventRefRecencyScore(a?.eventRef);
+    if (recencyDiff !== 0) return recencyDiff;
+    const bCardId = Number(String(b?.cardId || '').trim()) || 0;
+    const aCardId = Number(String(a?.cardId || '').trim()) || 0;
+    return bCardId - aCardId;
   });
   const captainScore = Number(orderedMembers[0]?.score || 0);
   const othersScore = orderedMembers.slice(1).reduce((sum, m) => sum + Number(m.score || 0), 0);
@@ -7080,6 +7111,10 @@ const getStatProgressOrderKey = (row, key) => {
   if (key === 'accuracyCount') return Number(row?.lastAccuracyOrderId || 0);
   if (key === 'threeStarCount') return Number(row?.lastThreeStarOrderId || 0);
   if (key === 'twoStarCount') return Number(row?.lastTwoStarOrderId || 0);
+  if (key === 'rewardThreeCount') return Number(row?.lastRewardOrderId || 0);
+  if (key === 'rewardTwoCount') return Number(row?.lastRewardOrderId || 0);
+  if (key === 'rewardThreeCountWithCollab') return Number(row?.lastRewardWithCollabOrderId || 0);
+  if (key === 'rewardTwoCountWithCollab') return Number(row?.lastRewardWithCollabOrderId || 0);
   if (key === 'rewardTotalCount') return Number(row?.lastRewardOrderId || 0);
   if (key === 'bannerCount') return Number(row?.lastBannerOrderId || 0);
   if (key === 'limitedBanCount') return Number(row?.lastLimitedBanOrderId || 0);
@@ -7118,6 +7153,8 @@ const processedStats = computed(() => {
         threeStarCount: 0,
         rewardTwoCount: 0,
         rewardThreeCount: 0,
+        rewardTwoCountWithCollab: 0,
+        rewardThreeCountWithCollab: 0,
         bannerCount: 0,
         limitedBanCount: 0,
         fesLimitedCount: 0,
@@ -7138,6 +7175,7 @@ const processedStats = computed(() => {
         lastThreeStarOrderId: 0,
         lastTwoStarOrderId: 0,
         lastRewardOrderId: 0,
+        lastRewardWithCollabOrderId: 0,
         lastBannerOrderId: 0,
         lastLimitedBanOrderId: 0,
         lastFesLimitedOrderId: 0,
@@ -7214,6 +7252,12 @@ const processedStats = computed(() => {
       stats[name].lastRewardOrderId = Math.max(Number(stats[name].lastRewardOrderId || 0), progressOrderId);
     }
 
+    if (isEventRewardCard(card, { includeCollab: true })) {
+      if (rarity === '3') stats[name].rewardThreeCountWithCollab++;
+      if (rarity === '2') stats[name].rewardTwoCountWithCollab++;
+      stats[name].lastRewardWithCollabOrderId = Math.max(Number(stats[name].lastRewardWithCollabOrderId || 0), progressOrderId);
+    }
+
     // 统计限定卡片 (含 Fes 和 联名限定)
     if (LIMITED_TYPES.has(cardType)) {
       stats[name].limitedCount++;
@@ -7273,8 +7317,20 @@ const groupPanels = computed(() => [
   { id: 'score-up', title: '4星普分数', cellClass: 'score-up', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'scoreUpCount') },
   { id: 'recovery', title: '4星奶卡数', cellClass: 'recovery', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'recoveryCount') },
   { id: 'accuracy', title: '4星判卡数', cellClass: 'accuracy', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'accuracyCount') },
-  { id: 'three', title: '3星总数', cellClass: 'three-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'threeStarCount') },
-  { id: 'two', title: '2星总数', cellClass: 'two-star', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'twoStarCount') },
+  {
+    id: 'three',
+    title: '3星总数',
+    cellClass: 'three-star',
+    showRewardBreakdown: false,
+    groups: groupByCount(processedStats.value, useRewardCountForThreeStar.value ? 'rewardThreeCountWithCollab' : 'threeStarCount')
+  },
+  {
+    id: 'two',
+    title: '2星总数',
+    cellClass: 'two-star',
+    showRewardBreakdown: false,
+    groups: groupByCount(processedStats.value, useRewardCountForTwoStar.value ? 'rewardTwoCountWithCollab' : 'twoStarCount')
+  },
   { id: 'banner', title: 'Banner数', cellClass: 'banner', showRewardBreakdown: false,
     groups: groupByCount(
       processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
