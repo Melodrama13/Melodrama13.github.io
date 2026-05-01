@@ -3,7 +3,8 @@ import vue from '@vitejs/plugin-vue'
 
 const buildId = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)
 const releaseNotes = [
-  '现在优化了各页面png截图导出的功能！应该不会出现导出卡住的问题了吧（？），如果还有问题请务必反馈！',
+  'WL3现在不计入限定卡统计。',
+  '现在优化了各页面png截图导出的功能！',
   '活动页面可以查看卡面与曲绘了！',
   '乐曲检索功能支持罗马音/假名搜索。',
   '增加了各角色对应花色统计。',

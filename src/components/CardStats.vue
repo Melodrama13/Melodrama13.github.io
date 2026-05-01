@@ -2610,7 +2610,7 @@ const LINEUP_CHAR_NAMES = computed(() => {
 });
 const ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
 const SUPPORT_WL_ATTR = 'wl';
-const LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t', 'wl3']);//加入wl3为限定卡
+const LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t']);//删去wl3为限定卡
 const FES_CARD_TYPES = new Set(['cfes', 'bfes']);
 const FES_SKILL_TYPES = new Set(['cfes', 'bfes_up']);
 const EXCLUDED_PERIOD_EVENT_TYPES = new Set(['测试']);

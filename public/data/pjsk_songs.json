@@ -30284,6 +30284,14 @@
           "天马咲希",
           "望月穗波"
         ]
+      },
+      {
+        "vocal_id": 1799,
+        "type": "another_vocal",
+        "released_at": "2026/4/30",
+        "characters": [
+          "日野森志步"
+        ]
       }
     ]
   },
@@ -30466,6 +30474,22 @@
           "星乃一歌",
           "天马咲希",
           "日野森志步"
+        ]
+      },
+      {
+        "vocal_id": 1797,
+        "type": "another_vocal",
+        "released_at": "2026/4/30",
+        "characters": [
+          "望月穗波"
+        ]
+      },
+      {
+        "vocal_id": 1798,
+        "type": "another_vocal",
+        "released_at": "2026/4/30",
+        "characters": [
+          "镜音铃"
         ]
       }
     ]
@@ -32737,6 +32761,50 @@
     ]
   },
   {
+    "id": 715,
+    "title": "魔法少女幸福論",
+    "pronunciation": "まほうしょうじょこうふくろん",
+    "composer": "トーマ",
+    "lyricist": "トーマ",
+    "arranger": "トーマ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-05-02 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "ws"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 19,
+      "expert": 26,
+      "master": 31
+    },
+    "vocals": [
+      {
+        "vocal_id": 1272,
+        "type": "original_song",
+        "released_at": "2026/5/2",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 1800,
+        "type": "sekai",
+        "released_at": "2026/5/2",
+        "characters": [
+          "MEIKO",
+          "凤笑梦",
+          "草薙宁宁"
+        ]
+      }
+    ]
+  },
+  {
     "id": 716,
     "title": "透過する温度",
     "pronunciation": "とうかするおんど",
@@ -33253,6 +33321,48 @@
         "released_at": "2026/4/24",
         "characters": [
           "MEIKO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 739,
+    "title": "世界の歩き方",
+    "pronunciation": "せかいのあるきかた",
+    "composer": "ユリイ・カノン",
+    "lyricist": "ユリイ・カノン",
+    "arranger": "ユリイ・カノン",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-04-28 20:15:00",
+    "categories": [
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "ln",
+      "mmj",
+      "ws",
+      "nc",
+      "other"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 12,
+      "hard": 17,
+      "expert": 23,
+      "master": 28
+    },
+    "vocals": [
+      {
+        "vocal_id": 1796,
+        "type": "sekai",
+        "released_at": "2026/4/28",
+        "characters": [
+          "星乃一歌",
+          "桐谷遥",
+          "凤笑梦",
+          "宵崎奏",
+          "初音未来"
         ]
       }
     ]

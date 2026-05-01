@@ -860,7 +860,8 @@
                   <img :src="`/chars/${getCharAbbr(card.Name)}.png`" class="member-avatar" />
                   <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/${card.Attribute.toLowerCase()}.png`" class="card-attr-icon" />
                   <img v-if="isVirtualSinger(card.Name)" :src="`/elements/${card.Affiliation.toLowerCase()}.png`" class="sub-unit-logo" />
-                  <div v-if="['limited', 'collab_t', 'wl3'].includes(card.Type?.toLowerCase())" class="lim-tag">期间限定</div>  
+                  <div v-if="['limited', 'collab_t'].includes(card.Type?.toLowerCase())" class="lim-tag">期间限定</div>  
+                  <div v-if="['wl1', 'wl2', 'wl3'].includes(card.Type?.toLowerCase())" class="lim-tag">WL限定</div>
                   <div class="stars-overlay">
                     <img v-for="n in parseInt(card.Rarity)" :key="n" :src="card.Rarity == 4 ? '/elements/rstar.png' : '/elements/ystar.png'" class="star-icon" />
                   </div>
@@ -2019,7 +2020,7 @@ const removePredict = (event) => {
 const sortDesc = ref(false); 
 const listRef = ref(null);
 const currentActiveId = ref(null);
-const PREVIEW_LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t', 'wl3']);  //补充了WL3
+const PREVIEW_LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t']);  //删去了WL3
 const FES_CARD_TYPES = new Set(['cfes', 'bfes']);
 const PREVIEW_FESTIVAL_TYPES = ['新年', '婚活', '情人节', '白情', '半周年', '周年'];
 const PREVIEW_BOX_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
