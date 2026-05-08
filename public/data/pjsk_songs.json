@@ -23782,6 +23782,14 @@
           "东云彰人",
           "青柳冬弥"
         ]
+      },
+      {
+        "vocal_id": 1802,
+        "type": "another_vocal",
+        "released_at": "2026/5/8",
+        "characters": [
+          "青柳冬弥"
+        ]
       }
     ]
   },
@@ -29991,6 +29999,22 @@
           "东云彰人",
           "青柳冬弥"
         ]
+      },
+      {
+        "vocal_id": 1803,
+        "type": "another_vocal",
+        "released_at": "2026/5/8",
+        "characters": [
+          "小豆泽心羽"
+        ]
+      },
+      {
+        "vocal_id": 1804,
+        "type": "another_vocal",
+        "released_at": "2026/5/8",
+        "characters": [
+          "初音未来"
+        ]
       }
     ]
   },
@@ -30991,6 +31015,54 @@
     ]
   },
   {
+    "id": 661,
+    "title": "卑怯戦隊うろたんだー",
+    "pronunciation": "ひきょーせんたいうろたんだー",
+    "composer": "シンP",
+    "lyricist": "シンP",
+    "arranger": "シンP",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-05-11 15:00:00",
+    "categories": [
+      "3DMV"
+    ],
+    "units": [
+      "all",
+      "ws"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 12,
+      "hard": 17,
+      "expert": 24,
+      "master": 31
+    },
+    "vocals": [
+      {
+        "vocal_id": 1218,
+        "type": "original_song",
+        "released_at": "2026/5/11",
+        "characters": [
+          "KAITO",
+          "MEIKO",
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 1806,
+        "type": "sekai",
+        "released_at": "2026/5/11",
+        "characters": [
+          "KAITO",
+          "天马司",
+          "凤笑梦",
+          "草薙宁宁",
+          "神代类"
+        ]
+      }
+    ]
+  },
+  {
     "id": 662,
     "title": "告白",
     "pronunciation": "こくはく",
@@ -31696,6 +31768,53 @@
           "朝比奈真冬",
           "东云绘名",
           "晓山瑞希"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 681,
+    "title": "星に一番近い場所",
+    "pronunciation": "ほしにいちばんちかいばしょ",
+    "composer": "TOKOTOKO",
+    "lyricist": "TOKOTOKO",
+    "arranger": "TOKOTOKO",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-05-06 22:05:00",
+    "categories": [
+      "3DMV"
+    ],
+    "units": [
+      "all",
+      "ln"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 12,
+      "hard": 17,
+      "expert": 25,
+      "master": 28
+    },
+    "vocals": [
+      {
+        "vocal_id": 1238,
+        "type": "original_song",
+        "released_at": "2026/5/6",
+        "characters": [
+          "镜音铃",
+          "镜音连"
+        ]
+      },
+      {
+        "vocal_id": 1801,
+        "type": "sekai",
+        "released_at": "2026/5/6",
+        "characters": [
+          "望月穗波",
+          "镜音连",
+          "星乃一歌",
+          "天马咲希",
+          "日野森志步"
         ]
       }
     ]
@@ -33343,6 +33462,7 @@
       "mmj",
       "ws",
       "nc",
+      "vocaloid",
       "other"
     ],
     "difficulties": {
@@ -33363,6 +33483,45 @@
           "凤笑梦",
           "宵崎奏",
           "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 740,
+    "title": "羽歌",
+    "pronunciation": "うか",
+    "composer": "遼遼",
+    "lyricist": "遼遼",
+    "arranger": "遼遼",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-05-08 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vbs"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 17,
+      "expert": 23,
+      "master": 28,
+      "append": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1805,
+        "type": "sekai",
+        "released_at": "2026/5/8",
+        "characters": [
+          "小豆泽心羽",
+          "KAITO",
+          "白石杏",
+          "东云彰人",
+          "青柳冬弥"
         ]
       }
     ]
