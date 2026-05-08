@@ -31782,7 +31782,8 @@
     "isNewlyWrittenMusic": true,
     "releaseDate": "2026-05-06 22:05:00",
     "categories": [
-      "3DMV"
+      "3DMV",
+      "2DMV"
     ],
     "units": [
       "all",
@@ -33497,7 +33498,7 @@
     "isNewlyWrittenMusic": true,
     "releaseDate": "2026-05-08 15:00:00",
     "categories": [
-      "image"
+      "2DMV"
     ],
     "units": [
       "all",

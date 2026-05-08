@@ -2563,6 +2563,7 @@ const virtualSingerSongStats = computed(() => {
 
   (Array.isArray(props.allEvents) ? props.allEvents : []).forEach((ev) => {
     if (ev?.isPredict) return;
+    if (ev?.event_type !== '箱活') return;
     if (!Number.isFinite(Number(ev?.id))) return;
     const songId = toFiniteSongId(ev?.song_id);
     if (songId === null) return;
