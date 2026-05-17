@@ -675,6 +675,15 @@
           "镜音连",
           "KAITO"
         ]
+      },
+      {
+        "vocal_id": 1807,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "桐谷遥",
+          "白石杏"
+        ]
       }
     ]
   },
@@ -4272,7 +4281,8 @@
       "normal": 13,
       "hard": 18,
       "expert": 26,
-      "master": 30
+      "master": 30,
+      "append": 31
     },
     "vocals": [
       {
@@ -7037,6 +7047,15 @@
         "characters": [
           "MEIKO"
         ]
+      },
+      {
+        "vocal_id": 1808,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "星乃一歌",
+          "草薙宁宁"
+        ]
       }
     ]
   },
@@ -9468,6 +9487,15 @@
           "草薙宁宁",
           "神代类"
         ]
+      },
+      {
+        "vocal_id": 1809,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "东云彰人",
+          "东云绘名"
+        ]
       }
     ]
   },
@@ -9671,6 +9699,16 @@
         "released_at": "2022/10/12",
         "characters": [
           "神代类"
+        ]
+      },
+      {
+        "vocal_id": 1810,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "日野森志步",
+          "花里实乃里",
+          "小豆泽心羽"
         ]
       }
     ]
@@ -10068,6 +10106,15 @@
         "released_at": "2009/1/30",
         "characters": [
           "日野森志步"
+        ]
+      },
+      {
+        "vocal_id": 1811,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "青柳冬弥",
+          "天马司"
         ]
       }
     ]
@@ -11145,6 +11192,16 @@
           "初音未来",
           "GUMI"
         ]
+      },
+      {
+        "vocal_id": 1812,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "镜音铃",
+          "巡音流歌",
+          "MEIKO"
+        ]
       }
     ]
   },
@@ -11904,6 +11961,15 @@
         "characters": [
           "镜音铃",
           "镜音连"
+        ]
+      },
+      {
+        "vocal_id": 1813,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "望月穗波",
+          "宵崎奏"
         ]
       }
     ]
@@ -16292,6 +16358,19 @@
         "characters": [
           "初音未来"
         ]
+      },
+      {
+        "vocal_id": 1814,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "初音未来",
+          "镜音铃",
+          "镜音连",
+          "巡音流歌",
+          "MEIKO",
+          "KAITO"
+        ]
       }
     ]
   },
@@ -19970,6 +20049,19 @@
         "characters": [
           "初音未来"
         ]
+      },
+      {
+        "vocal_id": 1815,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "初音未来",
+          "镜音铃",
+          "镜音连",
+          "巡音流歌",
+          "MEIKO",
+          "KAITO"
+        ]
       }
     ]
   },
@@ -22345,6 +22437,15 @@
         "characters": [
           "MEIKO"
         ]
+      },
+      {
+        "vocal_id": 1816,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "日野森雫",
+          "朝比奈真冬"
+        ]
       }
     ]
   },
@@ -23834,6 +23935,16 @@
           "巡音流歌",
           "宵崎奏",
           "东云绘名"
+        ]
+      },
+      {
+        "vocal_id": 1817,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "天马咲希",
+          "桃井爱莉",
+          "凤笑梦"
         ]
       }
     ]
@@ -26524,6 +26635,22 @@
           "东云绘名",
           "晓山瑞希"
         ]
+      },
+      {
+        "vocal_id": 1821,
+        "type": "another_vocal",
+        "released_at": "2026/5/17",
+        "characters": [
+          "朝比奈真冬"
+        ]
+      },
+      {
+        "vocal_id": 1822,
+        "type": "another_vocal",
+        "released_at": "2026/5/17",
+        "characters": [
+          "东云绘名"
+        ]
       }
     ]
   },
@@ -27319,6 +27446,15 @@
           "白石杏",
           "东云彰人",
           "青柳冬弥"
+        ]
+      },
+      {
+        "vocal_id": 1818,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "神代类",
+          "晓山瑞希"
         ]
       }
     ]
@@ -30627,6 +30763,14 @@
           "草薙宁宁",
           "神代类"
         ]
+      },
+      {
+        "vocal_id": 1820,
+        "type": "another_vocal",
+        "released_at": "2026/5/17",
+        "characters": [
+          "天马司"
+        ]
       }
     ]
   },
@@ -31304,6 +31448,16 @@
         "characters": [
           "重音テト"
         ]
+      },
+      {
+        "vocal_id": 1819,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "初音未来",
+          "镜音连",
+          "KAITO"
+        ]
       }
     ]
   },
@@ -31816,6 +31970,57 @@
           "星乃一歌",
           "天马咲希",
           "日野森志步"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 682,
+    "title": "あなたしか見えないの",
+    "pronunciation": "あなたしかみえないの",
+    "composer": "r-906",
+    "lyricist": "r-906",
+    "arranger": "r-906",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-05-18 15:00:00",
+    "categories": [
+      "3DMV"
+    ],
+    "units": [
+      "all",
+      "mmj"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 12,
+      "hard": 17,
+      "expert": 25,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1239,
+        "type": "original_song",
+        "released_at": "2026/5/18",
+        "characters": [
+          "初音未来",
+          "可不",
+          "裏命",
+          "星界",
+          "狐子",
+          "羽累"
+        ]
+      },
+      {
+        "vocal_id": 1823,
+        "type": "sekai",
+        "released_at": "2026/5/18",
+        "characters": [
+          "巡音流歌",
+          "花里实乃里",
+          "桐谷遥",
+          "桃井爱莉",
+          "日野森雫"
         ]
       }
     ]
@@ -32811,6 +33016,50 @@
     ]
   },
   {
+    "id": 712,
+    "title": "比較症候群",
+    "pronunciation": "ひかくしょうこうぐん",
+    "composer": "葵木ゴウ",
+    "lyricist": "葵木ゴウ",
+    "arranger": "葵木ゴウ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-05-22 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "nc"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 14,
+      "hard": 19,
+      "expert": 24,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1269,
+        "type": "original_song",
+        "released_at": "2026/5/22",
+        "characters": [
+          "音街ウナ"
+        ]
+      },
+      {
+        "vocal_id": 1824,
+        "type": "sekai",
+        "released_at": "2026/5/22",
+        "characters": [
+          "KAITO",
+          "宵崎奏",
+          "东云绘名"
+        ]
+      }
+    ]
+  },
+  {
     "id": 713,
     "title": "Nyanyanyanyanyanyanya!",
     "pronunciation": "にゃにゃにゃにゃにゃにゃにゃ",
@@ -33441,6 +33690,41 @@
         "released_at": "2026/4/24",
         "characters": [
           "MEIKO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 738,
+    "title": "ストラタでまちあわせ",
+    "pronunciation": "すとらたでまちあわせ",
+    "composer": "メキメキ地蔵",
+    "lyricist": "メキメキ地蔵",
+    "arranger": "メキメキ地蔵",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-05-25 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 12,
+      "hard": 16,
+      "expert": 22,
+      "master": 27
+    },
+    "vocals": [
+      {
+        "vocal_id": 1295,
+        "type": "original_song",
+        "released_at": "2026/5/25",
+        "characters": [
+          "巡音流歌"
         ]
       }
     ]

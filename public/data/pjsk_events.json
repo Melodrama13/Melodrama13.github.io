@@ -2637,7 +2637,7 @@
     "gacha_type": "普通限定",
     "type_series_id": 3,
     "rerun1": "2025/10/12",
-    "rerun2": "",
+    "rerun2": "2026/5/12",
     "unit": "",
     "banner": "草薙宁宁",
     "event_attribute": "Pure",
@@ -3050,7 +3050,7 @@
     "event_type": "箱活",
     "gacha_type": "普通限定",
     "type_series_id": 6,
-    "rerun1": "",
+    "rerun1": "2026/5/12",
     "rerun2": "",
     "unit": "NC",
     "banner": "朝比奈真冬",
@@ -3722,7 +3722,7 @@
     "banner": "神代类",
     "event_attribute": "Cool",
     "song_id": 735,
-    "song_alias": "",
+    "song_alias": "傀儡的现世",
     "virtual_singer": "MEIKO"
   },
   {
@@ -3758,7 +3758,7 @@
     "banner": "",
     "event_attribute": "",
     "song_id": "739",
-    "song_alias": "",
+    "song_alias": "世界的行进方式",
     "virtual_singer": "MIKU"
   },
   {
@@ -3776,7 +3776,7 @@
     "banner": "望月穗波",
     "event_attribute": "Mysterious",
     "song_id": "681",
-    "song_alias": "",
+    "song_alias": "离星星最近的地方",
     "virtual_singer": "LEN"
   },
   {
@@ -3800,8 +3800,8 @@
   {
     "id": 205,
     "date": "2026/5/17",
-    "event_title": "",
-    "gacha_title": "",
+    "event_title": "Great Yell for Dreamers！",
+    "gacha_title": "Vie for the Title",
     "festival": "",
     "event_type": "World Link",
     "gacha_type": "UE限定",
