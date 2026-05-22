@@ -5626,12 +5626,43 @@ const normalizeAttr = (attr) => {
   return map[String(attr || '').trim().toLowerCase()] || '';
 };
 
-const isNumericEventId = (eventId) => /^\d+$/.test(String(eventId || '').trim());
+const normalizeSourceKey = (value) => String(value ?? '').trim();
+const isNumericEventId = (eventId) => /^\d+$/.test(normalizeSourceKey(eventId));
+
+const eventDateBySourceKey = computed(() => {
+  const map = {};
+  (props.allEvents || []).forEach((ev) => {
+    const key = normalizeSourceKey(ev?.id);
+    const date = parseDateSafe(ev?.date);
+    if (!key || !date) return;
+    map[key] = date;
+  });
+  return map;
+});
+
+const getCardSourceDate = (card) => {
+  const cardDate = parseDateSafe(card?.Date);
+  if (cardDate) return cardDate;
+  const eventKey = normalizeSourceKey(card?.EventID);
+  if (eventKey && eventDateBySourceKey.value[eventKey]) return eventDateBySourceKey.value[eventKey];
+  const gachaKey = normalizeSourceKey(card?.GachaID);
+  if (gachaKey && eventDateBySourceKey.value[gachaKey]) return eventDateBySourceKey.value[gachaKey];
+  return null;
+};
+
+const getStatsCutoffDate = (maxEid) => {
+  const key = normalizeSourceKey(maxEid);
+  return key ? (eventDateBySourceKey.value[key] || null) : null;
+};
 
 const isCardWithinLimit = (card, maxEid) => {
   const eid = String(card?.EventID || '').trim();
-  if (eid === 'ori') return true;
   if (isNumericEventId(eid)) return Number(eid) <= Number(maxEid);
+  const cutoffDate = getStatsCutoffDate(maxEid);
+  if (!cutoffDate) return true;
+  const sourceDate = getCardSourceDate(card);
+  if (!sourceDate) return true;
+  if (sourceDate.getTime() !== cutoffDate.getTime()) return sourceDate < cutoffDate;
   return true;
 };
 
@@ -7111,10 +7142,10 @@ const getStatProgressOrderKey = (row, key) => {
   if (key === 'accuracyCount') return Number(row?.lastAccuracyOrderId || 0);
   if (key === 'threeStarCount') return Number(row?.lastThreeStarOrderId || 0);
   if (key === 'twoStarCount') return Number(row?.lastTwoStarOrderId || 0);
-  if (key === 'rewardThreeCount') return Number(row?.lastRewardOrderId || 0);
-  if (key === 'rewardTwoCount') return Number(row?.lastRewardOrderId || 0);
-  if (key === 'rewardThreeCountWithCollab') return Number(row?.lastRewardWithCollabOrderId || 0);
-  if (key === 'rewardTwoCountWithCollab') return Number(row?.lastRewardWithCollabOrderId || 0);
+  if (key === 'rewardThreeCount') return Number(row?.lastRewardThreeOrderId || 0);
+  if (key === 'rewardTwoCount') return Number(row?.lastRewardTwoOrderId || 0);
+  if (key === 'rewardThreeCountWithCollab') return Number(row?.lastRewardThreeWithCollabOrderId || 0);
+  if (key === 'rewardTwoCountWithCollab') return Number(row?.lastRewardTwoWithCollabOrderId || 0);
   if (key === 'rewardTotalCount') return Number(row?.lastRewardOrderId || 0);
   if (key === 'bannerCount') return Number(row?.lastBannerOrderId || 0);
   if (key === 'limitedBanCount') return Number(row?.lastLimitedBanOrderId || 0);
@@ -7175,7 +7206,11 @@ const processedStats = computed(() => {
         lastThreeStarOrderId: 0,
         lastTwoStarOrderId: 0,
         lastRewardOrderId: 0,
+        lastRewardThreeOrderId: 0,
+        lastRewardTwoOrderId: 0,
         lastRewardWithCollabOrderId: 0,
+        lastRewardThreeWithCollabOrderId: 0,
+        lastRewardTwoWithCollabOrderId: 0,
         lastBannerOrderId: 0,
         lastLimitedBanOrderId: 0,
         lastFesLimitedOrderId: 0,
@@ -7247,14 +7282,26 @@ const processedStats = computed(() => {
     }
 
     if (isEventRewardCard(card)) {
-      if (rarity === '3') stats[name].rewardThreeCount++;
-      if (rarity === '2') stats[name].rewardTwoCount++;
+      if (rarity === '3') {
+        stats[name].rewardThreeCount++;
+        stats[name].lastRewardThreeOrderId = Math.max(Number(stats[name].lastRewardThreeOrderId || 0), progressOrderId);
+      }
+      if (rarity === '2') {
+        stats[name].rewardTwoCount++;
+        stats[name].lastRewardTwoOrderId = Math.max(Number(stats[name].lastRewardTwoOrderId || 0), progressOrderId);
+      }
       stats[name].lastRewardOrderId = Math.max(Number(stats[name].lastRewardOrderId || 0), progressOrderId);
     }
 
     if (isEventRewardCard(card, { includeCollab: true })) {
-      if (rarity === '3') stats[name].rewardThreeCountWithCollab++;
-      if (rarity === '2') stats[name].rewardTwoCountWithCollab++;
+      if (rarity === '3') {
+        stats[name].rewardThreeCountWithCollab++;
+        stats[name].lastRewardThreeWithCollabOrderId = Math.max(Number(stats[name].lastRewardThreeWithCollabOrderId || 0), progressOrderId);
+      }
+      if (rarity === '2') {
+        stats[name].rewardTwoCountWithCollab++;
+        stats[name].lastRewardTwoWithCollabOrderId = Math.max(Number(stats[name].lastRewardTwoWithCollabOrderId || 0), progressOrderId);
+      }
       stats[name].lastRewardWithCollabOrderId = Math.max(Number(stats[name].lastRewardWithCollabOrderId || 0), progressOrderId);
     }
 

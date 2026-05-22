@@ -28,7 +28,7 @@
       {
         "vocal_id": 1,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -64,7 +64,7 @@
       {
         "vocal_id": 2,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -72,7 +72,7 @@
       {
         "vocal_id": 3,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌"
@@ -81,7 +81,7 @@
       {
         "vocal_id": 465,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/12/20",
         "characters": [
           "镜音连",
           "KAITO"
@@ -117,7 +117,7 @@
       {
         "vocal_id": 5,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -125,7 +125,7 @@
       {
         "vocal_id": 6,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌"
@@ -134,7 +134,7 @@
       {
         "vocal_id": 113,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "星乃一歌"
         ]
@@ -142,7 +142,7 @@
       {
         "vocal_id": 391,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/9/10",
         "characters": [
           "天马咲希"
         ]
@@ -150,7 +150,7 @@
       {
         "vocal_id": 486,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/1/21",
         "characters": [
           "初音未来",
           "巡音流歌"
@@ -187,7 +187,7 @@
       {
         "vocal_id": 7,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -195,7 +195,7 @@
       {
         "vocal_id": 8,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌"
@@ -204,7 +204,7 @@
       {
         "vocal_id": 80,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "星乃一歌"
         ]
@@ -212,7 +212,7 @@
       {
         "vocal_id": 597,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/5/10",
         "characters": [
           "镜音铃"
         ]
@@ -220,7 +220,7 @@
       {
         "vocal_id": 114,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "MEIKO"
         ]
@@ -267,7 +267,7 @@
       {
         "vocal_id": 9,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -275,7 +275,7 @@
       {
         "vocal_id": 111,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "巡音流歌",
@@ -285,7 +285,7 @@
       {
         "vocal_id": 10,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -295,7 +295,7 @@
       {
         "vocal_id": 218,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/2/10",
         "characters": [
           "天马咲希"
         ]
@@ -333,7 +333,7 @@
       {
         "vocal_id": 11,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌",
           "GUMI"
@@ -342,7 +342,7 @@
       {
         "vocal_id": 87,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -353,7 +353,7 @@
       {
         "vocal_id": 12,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "花里实乃里",
           "桐谷遥",
@@ -364,7 +364,7 @@
       {
         "vocal_id": 88,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "花里实乃里",
           "桐谷遥"
@@ -373,7 +373,7 @@
       {
         "vocal_id": 89,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "桃井爱莉",
           "日野森雫"
@@ -382,7 +382,7 @@
       {
         "vocal_id": 571,
         "type": "april_fool_2022",
-        "released_at": "2009/1/30",
+        "released_at": "2022/4/1",
         "characters": [
           "日野森志步",
           "日野森雫",
@@ -422,7 +422,7 @@
       {
         "vocal_id": 13,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -430,7 +430,7 @@
       {
         "vocal_id": 14,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "花里实乃里",
@@ -442,7 +442,7 @@
       {
         "vocal_id": 82,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/11",
         "characters": [
           "花里实乃里",
           "桃井爱莉"
@@ -478,7 +478,7 @@
       {
         "vocal_id": 15,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "MEIKO"
         ]
@@ -486,7 +486,7 @@
       {
         "vocal_id": 16,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "MEIKO",
           "桐谷遥",
@@ -496,7 +496,7 @@
       {
         "vocal_id": 292,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/21",
         "characters": [
           "桐谷遥"
         ]
@@ -504,7 +504,7 @@
       {
         "vocal_id": 83,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/21",
         "characters": [
           "日野森雫"
         ]
@@ -539,7 +539,7 @@
       {
         "vocal_id": 17,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "巡音流歌"
@@ -548,7 +548,7 @@
       {
         "vocal_id": 18,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "巡音流歌",
@@ -559,7 +559,7 @@
       {
         "vocal_id": 174,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/6/30",
         "characters": [
           "小豆泽心羽"
         ]
@@ -567,7 +567,7 @@
       {
         "vocal_id": 175,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/6/30",
         "characters": [
           "白石杏"
         ]
@@ -601,7 +601,7 @@
       {
         "vocal_id": 20,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "星乃一歌"
         ]
@@ -637,7 +637,7 @@
       {
         "vocal_id": 21,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -645,7 +645,7 @@
       {
         "vocal_id": 22,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云绘名",
           "晓山瑞希"
@@ -654,7 +654,7 @@
       {
         "vocal_id": 90,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "晓山瑞希"
         ]
@@ -662,7 +662,7 @@
       {
         "vocal_id": 91,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云绘名"
         ]
@@ -670,7 +670,7 @@
       {
         "vocal_id": 531,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/2/9",
         "characters": [
           "镜音连",
           "KAITO"
@@ -716,7 +716,7 @@
       {
         "vocal_id": 23,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连"
         ]
@@ -724,7 +724,7 @@
       {
         "vocal_id": 24,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "天马司",
@@ -734,7 +734,7 @@
       {
         "vocal_id": 125,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/4",
         "characters": [
           "KAITO"
         ]
@@ -769,7 +769,7 @@
       {
         "vocal_id": 25,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -777,7 +777,7 @@
       {
         "vocal_id": 26,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "宵崎奏"
@@ -786,7 +786,7 @@
       {
         "vocal_id": 126,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/5",
         "characters": [
           "宵崎奏"
         ]
@@ -794,7 +794,7 @@
       {
         "vocal_id": 127,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/5",
         "characters": [
           "镜音铃"
         ]
@@ -802,7 +802,7 @@
       {
         "vocal_id": 128,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/5",
         "characters": [
           "巡音流歌"
         ]
@@ -838,7 +838,7 @@
       {
         "vocal_id": 27,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "镜音连"
@@ -847,7 +847,7 @@
       {
         "vocal_id": 28,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "镜音连",
@@ -885,7 +885,7 @@
       {
         "vocal_id": 29,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌"
         ]
@@ -893,7 +893,7 @@
       {
         "vocal_id": 30,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌",
           "小豆泽心羽",
@@ -903,7 +903,7 @@
       {
         "vocal_id": 122,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/3",
         "characters": [
           "小豆泽心羽"
         ]
@@ -911,7 +911,7 @@
       {
         "vocal_id": 123,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/3",
         "characters": [
           "白石杏"
         ]
@@ -946,7 +946,7 @@
       {
         "vocal_id": 31,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "KAITO"
         ]
@@ -954,7 +954,7 @@
       {
         "vocal_id": 32,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "KAITO",
           "东云彰人",
@@ -964,7 +964,7 @@
       {
         "vocal_id": 119,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连"
         ]
@@ -1001,7 +1001,7 @@
       {
         "vocal_id": 33,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1009,7 +1009,7 @@
       {
         "vocal_id": 34,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "天马司",
@@ -1048,7 +1048,7 @@
       {
         "vocal_id": 35,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1056,7 +1056,7 @@
       {
         "vocal_id": 36,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "天马司",
@@ -1066,7 +1066,7 @@
       {
         "vocal_id": 92,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马司"
         ]
@@ -1074,7 +1074,7 @@
       {
         "vocal_id": 93,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "神代类"
         ]
@@ -1112,7 +1112,7 @@
       {
         "vocal_id": 37,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -1120,7 +1120,7 @@
       {
         "vocal_id": 112,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -1132,7 +1132,7 @@
       {
         "vocal_id": 38,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "天马司",
@@ -1144,7 +1144,7 @@
       {
         "vocal_id": 94,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "凤笑梦"
         ]
@@ -1152,7 +1152,7 @@
       {
         "vocal_id": 95,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "草薙宁宁"
         ]
@@ -1187,7 +1187,7 @@
       {
         "vocal_id": 39,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1223,7 +1223,7 @@
       {
         "vocal_id": 40,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1259,7 +1259,7 @@
       {
         "vocal_id": 41,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1294,7 +1294,7 @@
       {
         "vocal_id": 42,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1329,7 +1329,7 @@
       {
         "vocal_id": 43,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1364,7 +1364,7 @@
       {
         "vocal_id": 44,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1399,7 +1399,7 @@
       {
         "vocal_id": 45,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1434,7 +1434,7 @@
       {
         "vocal_id": 46,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -1483,7 +1483,7 @@
       {
         "vocal_id": 96,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1491,7 +1491,7 @@
       {
         "vocal_id": 47,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马司",
           "凤笑梦",
@@ -1503,7 +1503,7 @@
       {
         "vocal_id": 97,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马司",
           "凤笑梦"
@@ -1512,7 +1512,7 @@
       {
         "vocal_id": 98,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "草薙宁宁",
           "神代类"
@@ -1550,7 +1550,7 @@
       {
         "vocal_id": 166,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "镜音连"
@@ -1559,7 +1559,7 @@
       {
         "vocal_id": 72,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "MEIKO",
@@ -1571,7 +1571,7 @@
       {
         "vocal_id": 48,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "神代类",
           "初音未来",
@@ -1610,7 +1610,7 @@
       {
         "vocal_id": 99,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -1620,7 +1620,7 @@
       {
         "vocal_id": 49,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "小豆泽心羽",
           "白石杏",
@@ -1660,7 +1660,7 @@
       {
         "vocal_id": 171,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1668,7 +1668,7 @@
       {
         "vocal_id": 172,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "MEIKO",
@@ -1680,7 +1680,7 @@
       {
         "vocal_id": 50,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "白石杏",
           "初音未来",
@@ -1692,7 +1692,7 @@
       {
         "vocal_id": 170,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/12/8",
         "characters": [
           "小豆泽心羽",
           "白石杏"
@@ -1728,7 +1728,7 @@
       {
         "vocal_id": 100,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -1739,7 +1739,7 @@
       {
         "vocal_id": 51,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "花里实乃里",
           "桐谷遥",
@@ -1785,7 +1785,7 @@
       {
         "vocal_id": 52,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "宵崎奏",
           "朝比奈真冬",
@@ -1797,7 +1797,7 @@
       {
         "vocal_id": 115,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "宵崎奏"
         ]
@@ -1805,7 +1805,7 @@
       {
         "vocal_id": 116,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "朝比奈真冬"
         ]
@@ -1813,7 +1813,7 @@
       {
         "vocal_id": 117,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云绘名"
         ]
@@ -1821,7 +1821,7 @@
       {
         "vocal_id": 118,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "晓山瑞希"
         ]
@@ -1855,7 +1855,7 @@
       {
         "vocal_id": 53,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "东云绘名",
@@ -1865,7 +1865,7 @@
       {
         "vocal_id": 252,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/3/30",
         "characters": [
           "东云绘名"
         ]
@@ -1909,7 +1909,7 @@
       {
         "vocal_id": 134,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1917,7 +1917,7 @@
       {
         "vocal_id": 54,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "朝比奈真冬",
           "初音未来",
@@ -1929,7 +1929,7 @@
       {
         "vocal_id": 135,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/20",
         "characters": [
           "朝比奈真冬"
         ]
@@ -1981,7 +1981,7 @@
       {
         "vocal_id": 101,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -1989,7 +1989,7 @@
       {
         "vocal_id": 55,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "星乃一歌",
           "天马咲希",
@@ -2001,7 +2001,7 @@
       {
         "vocal_id": 102,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "望月穗波"
         ]
@@ -2009,7 +2009,7 @@
       {
         "vocal_id": 103,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "日野森志步"
         ]
@@ -2017,7 +2017,7 @@
       {
         "vocal_id": 104,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马咲希"
         ]
@@ -2052,7 +2052,7 @@
       {
         "vocal_id": 664,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2060,7 +2060,7 @@
       {
         "vocal_id": 56,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马咲希",
           "初音未来",
@@ -2072,7 +2072,7 @@
       {
         "vocal_id": 132,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/18",
         "characters": [
           "望月穗波"
         ]
@@ -2080,7 +2080,7 @@
       {
         "vocal_id": 133,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/18",
         "characters": [
           "日野森志步"
         ]
@@ -2115,7 +2115,7 @@
       {
         "vocal_id": 57,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2123,7 +2123,7 @@
       {
         "vocal_id": 58,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "朝比奈真冬",
@@ -2161,7 +2161,7 @@
       {
         "vocal_id": 59,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2169,7 +2169,7 @@
       {
         "vocal_id": 60,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "宵崎奏",
@@ -2207,7 +2207,7 @@
       {
         "vocal_id": 61,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2215,7 +2215,7 @@
       {
         "vocal_id": 567,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -2225,7 +2225,7 @@
       {
         "vocal_id": 129,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "凤笑梦",
@@ -2235,7 +2235,7 @@
       {
         "vocal_id": 130,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/7",
         "characters": [
           "凤笑梦"
         ]
@@ -2273,7 +2273,7 @@
       {
         "vocal_id": 62,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "GUMI"
         ]
@@ -2281,7 +2281,7 @@
       {
         "vocal_id": 110,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "KAITO"
@@ -2290,7 +2290,7 @@
       {
         "vocal_id": 75,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云彰人",
           "青柳冬弥"
@@ -2299,7 +2299,7 @@
       {
         "vocal_id": 105,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云彰人"
         ]
@@ -2307,7 +2307,7 @@
       {
         "vocal_id": 106,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "青柳冬弥"
         ]
@@ -2352,7 +2352,7 @@
       {
         "vocal_id": 63,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2360,7 +2360,7 @@
       {
         "vocal_id": 164,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "花里实乃里",
@@ -2400,7 +2400,7 @@
       {
         "vocal_id": 64,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2408,7 +2408,7 @@
       {
         "vocal_id": 466,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -2418,7 +2418,7 @@
       {
         "vocal_id": 76,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "桃井爱莉",
@@ -2455,7 +2455,7 @@
       {
         "vocal_id": 65,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2490,7 +2490,7 @@
       {
         "vocal_id": 66,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2498,7 +2498,7 @@
       {
         "vocal_id": 120,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "花里实乃里",
@@ -2508,7 +2508,7 @@
       {
         "vocal_id": 124,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/2",
         "characters": [
           "桐谷遥"
         ]
@@ -2544,7 +2544,7 @@
       {
         "vocal_id": 67,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2552,7 +2552,7 @@
       {
         "vocal_id": 181,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "巡音流歌",
@@ -2562,7 +2562,7 @@
       {
         "vocal_id": 182,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "宵崎奏",
@@ -2572,7 +2572,7 @@
       {
         "vocal_id": 183,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/12/14",
         "characters": [
           "宵崎奏"
         ]
@@ -2580,7 +2580,7 @@
       {
         "vocal_id": 184,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/12/14",
         "characters": [
           "晓山瑞希"
         ]
@@ -2616,7 +2616,7 @@
       {
         "vocal_id": 68,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2624,7 +2624,7 @@
       {
         "vocal_id": 167,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -2634,7 +2634,7 @@
       {
         "vocal_id": 392,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/9/10",
         "characters": [
           "望月穗波"
         ]
@@ -2670,7 +2670,7 @@
       {
         "vocal_id": 69,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -2691,7 +2691,7 @@
       {
         "vocal_id": 107,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "星乃一歌",
           "天马司",
@@ -2730,7 +2730,7 @@
       {
         "vocal_id": 70,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃"
@@ -2739,7 +2739,7 @@
       {
         "vocal_id": 108,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "花里实乃里",
           "小豆泽心羽",
@@ -2777,7 +2777,7 @@
       {
         "vocal_id": 71,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "镜音连"
@@ -2786,7 +2786,7 @@
       {
         "vocal_id": 109,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "镜音连",
@@ -2824,7 +2824,7 @@
       {
         "vocal_id": 73,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "IA"
         ]
@@ -2832,7 +2832,7 @@
       {
         "vocal_id": 131,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "东云彰人",
@@ -2842,7 +2842,7 @@
       {
         "vocal_id": 168,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/9",
         "characters": [
           "东云彰人"
         ]
@@ -2850,7 +2850,7 @@
       {
         "vocal_id": 169,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/10/9",
         "characters": [
           "青柳冬弥"
         ]
@@ -2858,7 +2858,7 @@
       {
         "vocal_id": 290,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/4/30",
         "characters": [
           "镜音连"
         ]
@@ -2893,7 +2893,7 @@
       {
         "vocal_id": 74,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -2928,7 +2928,7 @@
       {
         "vocal_id": 77,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃"
@@ -2964,7 +2964,7 @@
       {
         "vocal_id": 84,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连"
         ]
@@ -2999,7 +2999,7 @@
       {
         "vocal_id": 81,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌"
         ]
@@ -3034,7 +3034,7 @@
       {
         "vocal_id": 78,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "MEIKO",
           "KAITO"
@@ -3071,7 +3071,7 @@
       {
         "vocal_id": 86,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -3079,7 +3079,7 @@
       {
         "vocal_id": 189,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "花里实乃里",
@@ -3089,7 +3089,7 @@
       {
         "vocal_id": 201,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/12/30",
         "characters": [
           "花里实乃里"
         ]
@@ -3097,7 +3097,7 @@
       {
         "vocal_id": 190,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/12/30",
         "characters": [
           "桃井爱莉"
         ]
@@ -3132,7 +3132,7 @@
       {
         "vocal_id": 194,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马司",
           "凤笑梦",
@@ -3143,7 +3143,7 @@
       {
         "vocal_id": 195,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/1/3",
         "characters": [
           "天马司",
           "草薙宁宁"
@@ -3180,7 +3180,7 @@
       {
         "vocal_id": 138,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -3188,7 +3188,7 @@
       {
         "vocal_id": 203,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "日野森雫",
           "巡音流歌",
@@ -3200,7 +3200,7 @@
       {
         "vocal_id": 204,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/1/29",
         "characters": [
           "桐谷遥"
         ]
@@ -3208,7 +3208,7 @@
       {
         "vocal_id": 205,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/1/29",
         "characters": [
           "日野森雫"
         ]
@@ -3216,7 +3216,7 @@
       {
         "vocal_id": 370,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/8/10",
         "characters": [
           "巡音流歌"
         ]
@@ -3251,7 +3251,7 @@
       {
         "vocal_id": 139,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连"
         ]
@@ -3259,7 +3259,7 @@
       {
         "vocal_id": 208,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云绘名",
           "镜音铃",
@@ -3271,7 +3271,7 @@
       {
         "vocal_id": 224,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/2/26",
         "characters": [
           "东云绘名"
         ]
@@ -3279,7 +3279,7 @@
       {
         "vocal_id": 231,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/2/26",
         "characters": [
           "镜音铃"
         ]
@@ -3316,7 +3316,7 @@
       {
         "vocal_id": 85,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -3324,7 +3324,7 @@
       {
         "vocal_id": 187,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌"
@@ -3333,7 +3333,7 @@
       {
         "vocal_id": 188,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/12/28",
         "characters": [
           "星乃一歌"
         ]
@@ -3369,7 +3369,7 @@
       {
         "vocal_id": 79,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -3377,7 +3377,7 @@
       {
         "vocal_id": 163,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "朝比奈真冬",
@@ -3387,7 +3387,7 @@
       {
         "vocal_id": 141,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/11/1",
         "characters": [
           "朝比奈真冬"
         ]
@@ -3395,7 +3395,7 @@
       {
         "vocal_id": 398,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/9/21",
         "characters": [
           "晓山瑞希"
         ]
@@ -3438,7 +3438,7 @@
       {
         "vocal_id": 121,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌"
@@ -3447,7 +3447,7 @@
       {
         "vocal_id": 570,
         "type": "april_fool_2022",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -3487,7 +3487,7 @@
       {
         "vocal_id": 142,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "VY2V3"
         ]
@@ -3495,7 +3495,7 @@
       {
         "vocal_id": 196,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "朝比奈真冬",
@@ -3534,7 +3534,7 @@
       {
         "vocal_id": 143,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌",
           "初音未来",
@@ -3546,7 +3546,7 @@
       {
         "vocal_id": 230,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "KAITO",
           "东云彰人",
@@ -3556,7 +3556,7 @@
       {
         "vocal_id": 232,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/3/15",
         "characters": [
           "东云彰人"
         ]
@@ -3564,7 +3564,7 @@
       {
         "vocal_id": 233,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/3/15",
         "characters": [
           "青柳冬弥"
         ]
@@ -3572,7 +3572,7 @@
       {
         "vocal_id": 234,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/3/15",
         "characters": [
           "KAITO"
         ]
@@ -3580,7 +3580,7 @@
       {
         "vocal_id": 572,
         "type": "april_fool_2022",
-        "released_at": "2009/1/30",
+        "released_at": "2022/4/1",
         "characters": [
           "KAITO",
           "东云彰人",
@@ -3619,7 +3619,7 @@
       {
         "vocal_id": 144,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -3627,7 +3627,7 @@
       {
         "vocal_id": 235,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -3639,7 +3639,7 @@
       {
         "vocal_id": 236,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/3/22",
         "characters": [
           "星乃一歌",
           "望月穗波"
@@ -3648,7 +3648,7 @@
       {
         "vocal_id": 237,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/3/22",
         "characters": [
           "天马咲希",
           "日野森志步"
@@ -3684,7 +3684,7 @@
       {
         "vocal_id": 145,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -3692,7 +3692,7 @@
       {
         "vocal_id": 179,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "望月穗波",
           "初音未来",
@@ -3704,7 +3704,7 @@
       {
         "vocal_id": 197,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/1/10",
         "characters": [
           "天马咲希"
         ]
@@ -3712,7 +3712,7 @@
       {
         "vocal_id": 198,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/1/10",
         "characters": [
           "望月穗波"
         ]
@@ -3749,7 +3749,7 @@
       {
         "vocal_id": 146,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -3757,7 +3757,7 @@
       {
         "vocal_id": 399,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "巡音流歌",
@@ -3767,7 +3767,7 @@
       {
         "vocal_id": 400,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "星乃一歌",
@@ -3777,7 +3777,7 @@
       {
         "vocal_id": 401,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/2",
         "characters": [
           "日野森志步"
         ]
@@ -3785,7 +3785,7 @@
       {
         "vocal_id": 402,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/2",
         "characters": [
           "初音未来"
         ]
@@ -3793,7 +3793,7 @@
       {
         "vocal_id": 566,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/3/30",
         "characters": [
           "镜音连"
         ]
@@ -3836,7 +3836,7 @@
       {
         "vocal_id": 147,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "桃井爱莉",
           "初音未来",
@@ -3877,7 +3877,7 @@
       {
         "vocal_id": 148,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "GUMI"
         ]
@@ -3885,7 +3885,7 @@
       {
         "vocal_id": 180,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌",
           "小豆泽心羽",
@@ -3897,7 +3897,7 @@
       {
         "vocal_id": 193,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/1/2",
         "characters": [
           "小豆泽心羽",
           "青柳冬弥"
@@ -3906,7 +3906,7 @@
       {
         "vocal_id": 192,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/1/2",
         "characters": [
           "白石杏",
           "东云彰人"
@@ -3943,7 +3943,7 @@
       {
         "vocal_id": 149,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -3953,7 +3953,7 @@
       {
         "vocal_id": 207,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "青柳冬弥",
           "初音未来",
@@ -3965,7 +3965,7 @@
       {
         "vocal_id": 212,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/3/30",
         "characters": [
           "东云彰人",
           "青柳冬弥"
@@ -3974,7 +3974,7 @@
       {
         "vocal_id": 213,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/3/30",
         "characters": [
           "小豆泽心羽",
           "白石杏"
@@ -4010,7 +4010,7 @@
       {
         "vocal_id": 150,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4018,7 +4018,7 @@
       {
         "vocal_id": 275,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "KAITO",
           "东云彰人",
@@ -4028,7 +4028,7 @@
       {
         "vocal_id": 276,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/3",
         "characters": [
           "青柳冬弥"
         ]
@@ -4063,7 +4063,7 @@
       {
         "vocal_id": 151,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -4076,7 +4076,7 @@
       {
         "vocal_id": 185,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "草薙宁宁",
           "MEIKO",
@@ -4087,7 +4087,7 @@
       {
         "vocal_id": 186,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/12/20",
         "characters": [
           "草薙宁宁",
           "神代类"
@@ -4096,7 +4096,7 @@
       {
         "vocal_id": 206,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2020/12/20",
         "characters": [
           "MEIKO",
           "KAITO"
@@ -4132,7 +4132,7 @@
       {
         "vocal_id": 152,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "KAITO"
@@ -4169,7 +4169,7 @@
       {
         "vocal_id": 153,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -4177,7 +4177,7 @@
       {
         "vocal_id": 225,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "凤笑梦",
           "镜音连",
@@ -4189,7 +4189,7 @@
       {
         "vocal_id": 226,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/2/28",
         "characters": [
           "凤笑梦"
         ]
@@ -4232,7 +4232,7 @@
       {
         "vocal_id": 154,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4240,7 +4240,7 @@
       {
         "vocal_id": 253,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "天马司",
@@ -4252,7 +4252,7 @@
       {
         "vocal_id": 255,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/4/5",
         "characters": [
           "神代类"
         ]
@@ -4288,7 +4288,7 @@
       {
         "vocal_id": 155,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4296,7 +4296,7 @@
       {
         "vocal_id": 209,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "花里实乃里",
@@ -4306,7 +4306,7 @@
       {
         "vocal_id": 210,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/2/6",
         "characters": [
           "花里实乃里"
         ]
@@ -4314,7 +4314,7 @@
       {
         "vocal_id": 211,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/2/6",
         "characters": [
           "日野森雫"
         ]
@@ -4349,7 +4349,7 @@
       {
         "vocal_id": 156,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4384,7 +4384,7 @@
       {
         "vocal_id": 157,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4421,7 +4421,7 @@
       {
         "vocal_id": 158,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4429,7 +4429,7 @@
       {
         "vocal_id": 191,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -4483,7 +4483,7 @@
       {
         "vocal_id": 159,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4491,7 +4491,7 @@
       {
         "vocal_id": 395,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "宵崎奏",
@@ -4501,7 +4501,7 @@
       {
         "vocal_id": 396,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/9/21",
         "characters": [
           "宵崎奏"
         ]
@@ -4509,7 +4509,7 @@
       {
         "vocal_id": 397,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/9/21",
         "characters": [
           "朝比奈真冬"
         ]
@@ -4545,7 +4545,7 @@
       {
         "vocal_id": 160,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -4553,7 +4553,7 @@
       {
         "vocal_id": 238,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "花里实乃里",
           "镜音铃",
@@ -4565,7 +4565,7 @@
       {
         "vocal_id": 239,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/3/30",
         "characters": [
           "花里实乃里"
         ]
@@ -4573,7 +4573,7 @@
       {
         "vocal_id": 240,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/3/30",
         "characters": [
           "桃井爱莉"
         ]
@@ -4608,7 +4608,7 @@
       {
         "vocal_id": 161,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4643,7 +4643,7 @@
       {
         "vocal_id": 162,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4678,7 +4678,7 @@
       {
         "vocal_id": 165,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4715,7 +4715,7 @@
       {
         "vocal_id": 291,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃"
@@ -4724,7 +4724,7 @@
       {
         "vocal_id": 173,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "晓山瑞希",
           "MEIKO",
@@ -4736,7 +4736,7 @@
       {
         "vocal_id": 264,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/4/19",
         "characters": [
           "宵崎奏"
         ]
@@ -4744,7 +4744,7 @@
       {
         "vocal_id": 265,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/4/19",
         "characters": [
           "朝比奈真冬"
         ]
@@ -4752,7 +4752,7 @@
       {
         "vocal_id": 266,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/4/19",
         "characters": [
           "东云绘名"
         ]
@@ -4760,7 +4760,7 @@
       {
         "vocal_id": 267,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/4/19",
         "characters": [
           "晓山瑞希"
         ]
@@ -4795,7 +4795,7 @@
       {
         "vocal_id": 176,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4830,7 +4830,7 @@
       {
         "vocal_id": 177,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4865,7 +4865,7 @@
       {
         "vocal_id": 178,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "巡音流歌"
@@ -4902,7 +4902,7 @@
       {
         "vocal_id": 199,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "歌愛ユキ"
         ]
@@ -4910,7 +4910,7 @@
       {
         "vocal_id": 297,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -4920,7 +4920,7 @@
       {
         "vocal_id": 298,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/6/30",
         "characters": [
           "天马咲希"
         ]
@@ -4956,7 +4956,7 @@
       {
         "vocal_id": 200,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -4964,7 +4964,7 @@
       {
         "vocal_id": 308,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "巡音流歌",
@@ -4974,7 +4974,7 @@
       {
         "vocal_id": 309,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "桃井爱莉",
@@ -4984,7 +4984,7 @@
       {
         "vocal_id": 310,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/6/7",
         "characters": [
           "桃井爱莉"
         ]
@@ -4992,7 +4992,7 @@
       {
         "vocal_id": 311,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/6/7",
         "characters": [
           "日野森雫"
         ]
@@ -5027,7 +5027,7 @@
       {
         "vocal_id": 202,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "音街ウナ",
           "镜音铃"
@@ -5036,7 +5036,7 @@
       {
         "vocal_id": 220,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "凤笑梦",
@@ -5046,7 +5046,7 @@
       {
         "vocal_id": 221,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/2/19",
         "characters": [
           "凤笑梦"
         ]
@@ -5054,7 +5054,7 @@
       {
         "vocal_id": 222,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/2/19",
         "characters": [
           "草薙宁宁"
         ]
@@ -5062,7 +5062,7 @@
       {
         "vocal_id": 573,
         "type": "april_fool_2022",
-        "released_at": "2009/1/30",
+        "released_at": "2022/4/1",
         "characters": [
           "镜音铃",
           "桐谷遥",
@@ -5103,7 +5103,7 @@
       {
         "vocal_id": 214,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌"
         ]
@@ -5111,7 +5111,7 @@
       {
         "vocal_id": 260,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌",
           "花里实乃里",
@@ -5123,7 +5123,7 @@
       {
         "vocal_id": 261,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/4/12",
         "characters": [
           "桐谷遥"
         ]
@@ -5131,7 +5131,7 @@
       {
         "vocal_id": 262,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/4/12",
         "characters": [
           "桃井爱莉"
         ]
@@ -5139,7 +5139,7 @@
       {
         "vocal_id": 263,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/4/12",
         "characters": [
           "日野森雫"
         ]
@@ -5175,7 +5175,7 @@
       {
         "vocal_id": 215,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -5210,7 +5210,7 @@
       {
         "vocal_id": 216,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -5218,7 +5218,7 @@
       {
         "vocal_id": 227,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "朝比奈真冬",
           "晓山瑞希"
@@ -5256,7 +5256,7 @@
       {
         "vocal_id": 316,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -5264,7 +5264,7 @@
       {
         "vocal_id": 217,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云彰人",
           "KAITO",
@@ -5276,7 +5276,7 @@
       {
         "vocal_id": 284,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/6/11",
         "characters": [
           "东云彰人"
         ]
@@ -5321,7 +5321,7 @@
       {
         "vocal_id": 219,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "KAITO"
@@ -5330,7 +5330,7 @@
       {
         "vocal_id": 319,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马司",
           "KAITO",
@@ -5342,7 +5342,7 @@
       {
         "vocal_id": 320,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/11",
         "characters": [
           "天马司"
         ]
@@ -5350,7 +5350,7 @@
       {
         "vocal_id": 321,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/11",
         "characters": [
           "凤笑梦"
         ]
@@ -5358,7 +5358,7 @@
       {
         "vocal_id": 322,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/11",
         "characters": [
           "草薙宁宁"
         ]
@@ -5366,7 +5366,7 @@
       {
         "vocal_id": 323,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/11",
         "characters": [
           "神代类"
         ]
@@ -5402,7 +5402,7 @@
       {
         "vocal_id": 223,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -5438,7 +5438,7 @@
       {
         "vocal_id": 228,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -5446,7 +5446,7 @@
       {
         "vocal_id": 347,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "宵崎奏",
@@ -5458,7 +5458,7 @@
       {
         "vocal_id": 357,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/28",
         "characters": [
           "朝比奈真冬"
         ]
@@ -5466,7 +5466,7 @@
       {
         "vocal_id": 358,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/28",
         "characters": [
           "东云绘名"
         ]
@@ -5474,7 +5474,7 @@
       {
         "vocal_id": 359,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/28",
         "characters": [
           "晓山瑞希"
         ]
@@ -5518,7 +5518,7 @@
       {
         "vocal_id": 229,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -5526,7 +5526,7 @@
       {
         "vocal_id": 330,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马咲希",
           "初音未来",
@@ -5538,7 +5538,7 @@
       {
         "vocal_id": 337,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/9",
         "characters": [
           "天马咲希"
         ]
@@ -5546,7 +5546,7 @@
       {
         "vocal_id": 338,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/9",
         "characters": [
           "望月穗波"
         ]
@@ -5554,7 +5554,7 @@
       {
         "vocal_id": 339,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/9",
         "characters": [
           "日野森志步"
         ]
@@ -5589,7 +5589,7 @@
       {
         "vocal_id": 241,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -5625,7 +5625,7 @@
       {
         "vocal_id": 242,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌"
         ]
@@ -5633,7 +5633,7 @@
       {
         "vocal_id": 243,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "日野森志步",
           "巡音流歌",
@@ -5645,7 +5645,7 @@
       {
         "vocal_id": 269,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/31",
         "characters": [
           "星乃一歌"
         ]
@@ -5653,7 +5653,7 @@
       {
         "vocal_id": 270,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/31",
         "characters": [
           "望月穗波"
         ]
@@ -5661,7 +5661,7 @@
       {
         "vocal_id": 271,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/31",
         "characters": [
           "日野森志步"
         ]
@@ -5697,7 +5697,7 @@
       {
         "vocal_id": 244,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -5705,7 +5705,7 @@
       {
         "vocal_id": 414,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "小豆泽心羽",
@@ -5757,7 +5757,7 @@
       {
         "vocal_id": 245,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连"
         ]
@@ -5765,7 +5765,7 @@
       {
         "vocal_id": 246,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "天马司",
@@ -5777,7 +5777,7 @@
       {
         "vocal_id": 247,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/11/11",
         "characters": [
           "凤笑梦"
         ]
@@ -5785,7 +5785,7 @@
       {
         "vocal_id": 251,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/11/11",
         "characters": [
           "草薙宁宁"
         ]
@@ -5821,7 +5821,7 @@
       {
         "vocal_id": 248,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "IA"
         ]
@@ -5829,7 +5829,7 @@
       {
         "vocal_id": 249,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌"
@@ -5838,7 +5838,7 @@
       {
         "vocal_id": 250,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/12",
         "characters": [
           "星乃一歌"
         ]
@@ -5846,7 +5846,7 @@
       {
         "vocal_id": 351,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/12",
         "characters": [
           "初音未来"
         ]
@@ -5892,7 +5892,7 @@
       {
         "vocal_id": 256,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "IA"
         ]
@@ -5900,7 +5900,7 @@
       {
         "vocal_id": 257,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "小豆泽心羽",
@@ -5912,7 +5912,7 @@
       {
         "vocal_id": 383,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/8/23",
         "characters": [
           "小豆泽心羽",
           "东云彰人"
@@ -5921,7 +5921,7 @@
       {
         "vocal_id": 384,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/8/23",
         "characters": [
           "白石杏",
           "青柳冬弥"
@@ -5957,7 +5957,7 @@
       {
         "vocal_id": 258,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -5993,7 +5993,7 @@
       {
         "vocal_id": 259,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "GUMI"
         ]
@@ -6001,7 +6001,7 @@
       {
         "vocal_id": 287,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马司",
           "神代类"
@@ -6010,7 +6010,7 @@
       {
         "vocal_id": 288,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/6/11",
         "characters": [
           "天马司"
         ]
@@ -6018,7 +6018,7 @@
       {
         "vocal_id": 289,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/6/11",
         "characters": [
           "神代类"
         ]
@@ -6075,7 +6075,7 @@
       {
         "vocal_id": 268,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -6083,7 +6083,7 @@
       {
         "vocal_id": 277,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "宵崎奏"
@@ -6092,7 +6092,7 @@
       {
         "vocal_id": 278,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/6",
         "characters": [
           "星乃一歌"
         ]
@@ -6100,7 +6100,7 @@
       {
         "vocal_id": 279,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/6",
         "characters": [
           "日野森雫"
         ]
@@ -6108,7 +6108,7 @@
       {
         "vocal_id": 280,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/6",
         "characters": [
           "小豆泽心羽"
         ]
@@ -6116,7 +6116,7 @@
       {
         "vocal_id": 281,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/6",
         "characters": [
           "草薙宁宁"
         ]
@@ -6124,7 +6124,7 @@
       {
         "vocal_id": 282,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/6",
         "characters": [
           "宵崎奏"
         ]
@@ -6159,7 +6159,7 @@
       {
         "vocal_id": 272,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -6167,7 +6167,7 @@
       {
         "vocal_id": 375,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "桃井爱莉",
           "镜音连",
@@ -6179,7 +6179,7 @@
       {
         "vocal_id": 376,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/8/18",
         "characters": [
           "桃井爱莉"
         ]
@@ -6221,7 +6221,7 @@
       {
         "vocal_id": 273,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -6229,7 +6229,7 @@
       {
         "vocal_id": 690,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -6242,7 +6242,7 @@
       {
         "vocal_id": 388,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "星乃一歌",
           "花里实乃里",
@@ -6255,7 +6255,7 @@
       {
         "vocal_id": 407,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/9/30",
         "characters": [
           "星乃一歌"
         ]
@@ -6263,7 +6263,7 @@
       {
         "vocal_id": 408,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/9/30",
         "characters": [
           "花里实乃里"
         ]
@@ -6271,7 +6271,7 @@
       {
         "vocal_id": 409,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/9/30",
         "characters": [
           "小豆泽心羽"
         ]
@@ -6279,7 +6279,7 @@
       {
         "vocal_id": 410,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/9/30",
         "characters": [
           "天马司"
         ]
@@ -6287,7 +6287,7 @@
       {
         "vocal_id": 411,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/9/30",
         "characters": [
           "宵崎奏"
         ]
@@ -6340,7 +6340,7 @@
       {
         "vocal_id": 274,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -6348,7 +6348,7 @@
       {
         "vocal_id": 387,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "朝比奈真冬",
           "镜音铃",
@@ -6360,7 +6360,7 @@
       {
         "vocal_id": 440,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/11/11",
         "characters": [
           "宵崎奏"
         ]
@@ -6368,7 +6368,7 @@
       {
         "vocal_id": 441,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/11/11",
         "characters": [
           "朝比奈真冬"
         ]
@@ -6404,7 +6404,7 @@
       {
         "vocal_id": 285,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -6412,7 +6412,7 @@
       {
         "vocal_id": 286,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "小豆泽心羽",
@@ -6424,7 +6424,7 @@
       {
         "vocal_id": 317,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/11",
         "characters": [
           "小豆泽心羽",
           "青柳冬弥"
@@ -6433,7 +6433,7 @@
       {
         "vocal_id": 318,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/11",
         "characters": [
           "白石杏",
           "东云彰人"
@@ -6477,7 +6477,7 @@
       {
         "vocal_id": 293,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃"
@@ -6486,7 +6486,7 @@
       {
         "vocal_id": 294,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "桐谷遥",
           "MEIKO",
@@ -6498,7 +6498,7 @@
       {
         "vocal_id": 295,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/5/21",
         "characters": [
           "花里实乃里"
         ]
@@ -6533,7 +6533,7 @@
       {
         "vocal_id": 300,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -6541,7 +6541,7 @@
       {
         "vocal_id": 301,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云绘名",
           "晓山瑞希"
@@ -6550,7 +6550,7 @@
       {
         "vocal_id": 412,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/4",
         "characters": [
           "东云绘名"
         ]
@@ -6558,7 +6558,7 @@
       {
         "vocal_id": 413,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/4",
         "characters": [
           "晓山瑞希"
         ]
@@ -6566,7 +6566,7 @@
       {
         "vocal_id": 574,
         "type": "april_fool_2022",
-        "released_at": "2009/1/30",
+        "released_at": "2022/4/1",
         "characters": [
           "望月穗波",
           "花里实乃里",
@@ -6620,7 +6620,7 @@
       {
         "vocal_id": 302,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "镜音连"
@@ -6629,7 +6629,7 @@
       {
         "vocal_id": 303,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "镜音连",
@@ -6668,7 +6668,7 @@
       {
         "vocal_id": 304,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -6676,7 +6676,7 @@
       {
         "vocal_id": 305,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "花里实乃里",
@@ -6688,7 +6688,7 @@
       {
         "vocal_id": 452,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/11/29",
         "characters": [
           "花里实乃里",
           "桐谷遥"
@@ -6697,7 +6697,7 @@
       {
         "vocal_id": 453,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/11/29",
         "characters": [
           "桃井爱莉",
           "日野森雫"
@@ -6734,7 +6734,7 @@
       {
         "vocal_id": 306,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -6742,7 +6742,7 @@
       {
         "vocal_id": 307,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌"
@@ -6779,7 +6779,7 @@
       {
         "vocal_id": 537,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -6787,7 +6787,7 @@
       {
         "vocal_id": 312,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "宵崎奏",
           "巡音流歌",
@@ -6799,7 +6799,7 @@
       {
         "vocal_id": 331,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/6/21",
         "characters": [
           "宵崎奏"
         ]
@@ -6807,7 +6807,7 @@
       {
         "vocal_id": 332,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/6/21",
         "characters": [
           "朝比奈真冬"
         ]
@@ -6815,7 +6815,7 @@
       {
         "vocal_id": 333,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/6/21",
         "characters": [
           "东云绘名"
         ]
@@ -6823,7 +6823,7 @@
       {
         "vocal_id": 334,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/6/21",
         "characters": [
           "晓山瑞希"
         ]
@@ -6867,7 +6867,7 @@
       {
         "vocal_id": 313,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "GUMI"
         ]
@@ -6903,7 +6903,7 @@
       {
         "vocal_id": 314,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -6938,7 +6938,7 @@
       {
         "vocal_id": 315,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "GUMI"
         ]
@@ -6973,7 +6973,7 @@
       {
         "vocal_id": 324,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7009,7 +7009,7 @@
       {
         "vocal_id": 325,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "GUMI"
         ]
@@ -7017,7 +7017,7 @@
       {
         "vocal_id": 326,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌",
           "桐谷遥",
@@ -7027,7 +7027,7 @@
       {
         "vocal_id": 327,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/19",
         "characters": [
           "桐谷遥"
         ]
@@ -7035,7 +7035,7 @@
       {
         "vocal_id": 352,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/19",
         "characters": [
           "巡音流歌"
         ]
@@ -7043,7 +7043,7 @@
       {
         "vocal_id": 678,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/30",
         "characters": [
           "MEIKO"
         ]
@@ -7087,7 +7087,7 @@
       {
         "vocal_id": 328,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7095,7 +7095,7 @@
       {
         "vocal_id": 329,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -7105,7 +7105,7 @@
       {
         "vocal_id": 487,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/5/20",
         "characters": [
           "星乃一歌"
         ]
@@ -7113,7 +7113,7 @@
       {
         "vocal_id": 488,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/5/20",
         "characters": [
           "望月穗波"
         ]
@@ -7149,7 +7149,7 @@
       {
         "vocal_id": 335,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7157,7 +7157,7 @@
       {
         "vocal_id": 336,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "小豆泽心羽",
           "镜音连",
@@ -7169,7 +7169,7 @@
       {
         "vocal_id": 348,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/9",
         "characters": [
           "小豆泽心羽"
         ]
@@ -7177,7 +7177,7 @@
       {
         "vocal_id": 349,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/7/9",
         "characters": [
           "白石杏"
         ]
@@ -7236,7 +7236,7 @@
       {
         "vocal_id": 340,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7244,7 +7244,7 @@
       {
         "vocal_id": 341,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "花里实乃里",
@@ -7254,7 +7254,7 @@
       {
         "vocal_id": 416,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/10",
         "characters": [
           "桃井爱莉"
         ]
@@ -7290,7 +7290,7 @@
       {
         "vocal_id": 342,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7298,7 +7298,7 @@
       {
         "vocal_id": 343,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "天马司",
@@ -7308,7 +7308,7 @@
       {
         "vocal_id": 538,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/2/24",
         "characters": [
           "天马司"
         ]
@@ -7316,7 +7316,7 @@
       {
         "vocal_id": 539,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/2/24",
         "characters": [
           "神代类"
         ]
@@ -7359,7 +7359,7 @@
       {
         "vocal_id": 344,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7367,7 +7367,7 @@
       {
         "vocal_id": 425,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "望月穗波",
           "镜音连",
@@ -7379,7 +7379,7 @@
       {
         "vocal_id": 426,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/9/9",
         "characters": [
           "星乃一歌"
         ]
@@ -7387,7 +7387,7 @@
       {
         "vocal_id": 427,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/9/9",
         "characters": [
           "天马咲希"
         ]
@@ -7395,7 +7395,7 @@
       {
         "vocal_id": 428,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/9/9",
         "characters": [
           "望月穗波"
         ]
@@ -7403,7 +7403,7 @@
       {
         "vocal_id": 665,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/9/9",
         "characters": [
           "日野森志步"
         ]
@@ -7448,7 +7448,7 @@
       {
         "vocal_id": 345,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -7456,7 +7456,7 @@
       {
         "vocal_id": 394,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "神代类",
           "镜音铃",
@@ -7468,7 +7468,7 @@
       {
         "vocal_id": 479,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/1/12",
         "characters": [
           "天马司"
         ]
@@ -7476,7 +7476,7 @@
       {
         "vocal_id": 480,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/1/12",
         "characters": [
           "神代类"
         ]
@@ -7511,7 +7511,7 @@
       {
         "vocal_id": 346,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7545,7 +7545,7 @@
       {
         "vocal_id": 353,
         "type": "instrumental",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": []
       }
     ]
@@ -7577,7 +7577,7 @@
       {
         "vocal_id": 354,
         "type": "instrumental",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": []
       }
     ]
@@ -7609,7 +7609,7 @@
       {
         "vocal_id": 355,
         "type": "instrumental",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": []
       }
     ]
@@ -7642,7 +7642,7 @@
       {
         "vocal_id": 360,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7677,7 +7677,7 @@
       {
         "vocal_id": 361,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7685,7 +7685,7 @@
       {
         "vocal_id": 379,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "草薙宁宁",
           "巡音流歌",
@@ -7724,7 +7724,7 @@
       {
         "vocal_id": 362,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7732,7 +7732,7 @@
       {
         "vocal_id": 436,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "小豆泽心羽",
@@ -7744,7 +7744,7 @@
       {
         "vocal_id": 437,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/6/20",
         "characters": [
           "白石杏"
         ]
@@ -7752,7 +7752,7 @@
       {
         "vocal_id": 438,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/6/20",
         "characters": [
           "东云彰人"
         ]
@@ -7760,7 +7760,7 @@
       {
         "vocal_id": 439,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/6/20",
         "characters": [
           "青柳冬弥"
         ]
@@ -7795,7 +7795,7 @@
       {
         "vocal_id": 363,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7803,7 +7803,7 @@
       {
         "vocal_id": 589,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "花里实乃里",
@@ -7842,7 +7842,7 @@
       {
         "vocal_id": 364,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7850,7 +7850,7 @@
       {
         "vocal_id": 472,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "桐谷遥",
@@ -7860,7 +7860,7 @@
       {
         "vocal_id": 473,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/8/31",
         "characters": [
           "桐谷遥"
         ]
@@ -7868,7 +7868,7 @@
       {
         "vocal_id": 474,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/8/31",
         "characters": [
           "日野森雫"
         ]
@@ -7904,7 +7904,7 @@
       {
         "vocal_id": 365,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -7912,7 +7912,7 @@
       {
         "vocal_id": 469,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "朝比奈真冬",
           "晓山瑞希"
@@ -7921,7 +7921,7 @@
       {
         "vocal_id": 470,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/12/31",
         "characters": [
           "朝比奈真冬"
         ]
@@ -7929,7 +7929,7 @@
       {
         "vocal_id": 471,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/12/31",
         "characters": [
           "晓山瑞希"
         ]
@@ -7965,7 +7965,7 @@
       {
         "vocal_id": 366,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -7973,7 +7973,7 @@
       {
         "vocal_id": 367,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -7985,7 +7985,7 @@
       {
         "vocal_id": 371,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/8/15",
         "characters": [
           "星乃一歌"
         ]
@@ -7993,7 +7993,7 @@
       {
         "vocal_id": 372,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/8/15",
         "characters": [
           "天马咲希"
         ]
@@ -8001,7 +8001,7 @@
       {
         "vocal_id": 373,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/8/15",
         "characters": [
           "望月穗波"
         ]
@@ -8009,7 +8009,7 @@
       {
         "vocal_id": 374,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/8/15",
         "characters": [
           "日野森志步"
         ]
@@ -8045,7 +8045,7 @@
       {
         "vocal_id": 368,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -8053,7 +8053,7 @@
       {
         "vocal_id": 369,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "花里实乃里",
@@ -8065,7 +8065,7 @@
       {
         "vocal_id": 429,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/30",
         "characters": [
           "桐谷遥"
         ]
@@ -8073,7 +8073,7 @@
       {
         "vocal_id": 430,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/30",
         "characters": [
           "桃井爱莉"
         ]
@@ -8081,7 +8081,7 @@
       {
         "vocal_id": 431,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/30",
         "characters": [
           "日野森雫"
         ]
@@ -8116,7 +8116,7 @@
       {
         "vocal_id": 377,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "初音未来",
@@ -8129,7 +8129,7 @@
       {
         "vocal_id": 378,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "星乃一歌",
           "MEIKO",
@@ -8141,7 +8141,7 @@
       {
         "vocal_id": 389,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/7/21",
         "characters": [
           "星乃一歌"
         ]
@@ -8149,7 +8149,7 @@
       {
         "vocal_id": 390,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/7/21",
         "characters": [
           "日野森志步"
         ]
@@ -8186,7 +8186,7 @@
       {
         "vocal_id": 380,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "GUMI"
@@ -8195,7 +8195,7 @@
       {
         "vocal_id": 554,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "天马司",
@@ -8207,7 +8207,7 @@
       {
         "vocal_id": 555,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/6/20",
         "characters": [
           "天马司",
           "凤笑梦"
@@ -8255,7 +8255,7 @@
       {
         "vocal_id": 381,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "GUMI"
         ]
@@ -8290,7 +8290,7 @@
       {
         "vocal_id": 382,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -8325,7 +8325,7 @@
       {
         "vocal_id": 385,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连"
         ]
@@ -8361,7 +8361,7 @@
       {
         "vocal_id": 386,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "镜音连"
@@ -8370,7 +8370,7 @@
       {
         "vocal_id": 481,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "凤笑梦",
           "初音未来",
@@ -8418,7 +8418,7 @@
       {
         "vocal_id": 393,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -8454,7 +8454,7 @@
       {
         "vocal_id": 403,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -8462,7 +8462,7 @@
       {
         "vocal_id": 462,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "青柳冬弥",
           "巡音流歌",
@@ -8474,7 +8474,7 @@
       {
         "vocal_id": 463,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/2/9",
         "characters": [
           "东云彰人"
         ]
@@ -8482,7 +8482,7 @@
       {
         "vocal_id": 464,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/2/9",
         "characters": [
           "青柳冬弥"
         ]
@@ -8526,7 +8526,7 @@
       {
         "vocal_id": 404,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -8534,7 +8534,7 @@
       {
         "vocal_id": 489,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "朝比奈真冬",
@@ -8589,7 +8589,7 @@
       {
         "vocal_id": 405,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -8597,7 +8597,7 @@
       {
         "vocal_id": 533,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "小豆泽心羽",
           "镜音连",
@@ -8617,7 +8617,7 @@
       {
         "vocal_id": 536,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/2/28",
         "characters": [
           "初音未来"
         ]
@@ -8660,7 +8660,7 @@
       {
         "vocal_id": 406,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -8668,7 +8668,7 @@
       {
         "vocal_id": 449,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马司",
           "神代类"
@@ -8677,7 +8677,7 @@
       {
         "vocal_id": 450,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/12/28",
         "characters": [
           "天马司"
         ]
@@ -8685,7 +8685,7 @@
       {
         "vocal_id": 451,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/12/28",
         "characters": [
           "神代类"
         ]
@@ -8720,7 +8720,7 @@
       {
         "vocal_id": 417,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -8728,7 +8728,7 @@
       {
         "vocal_id": 418,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -8767,7 +8767,7 @@
       {
         "vocal_id": 419,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "镜音连"
@@ -8803,7 +8803,7 @@
       {
         "vocal_id": 420,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -8839,7 +8839,7 @@
       {
         "vocal_id": 421,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -8847,7 +8847,7 @@
       {
         "vocal_id": 422,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "晓山瑞希",
           "MEIKO",
@@ -8859,7 +8859,7 @@
       {
         "vocal_id": 432,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/11/30",
         "characters": [
           "东云绘名"
         ]
@@ -8867,7 +8867,7 @@
       {
         "vocal_id": 433,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/11/30",
         "characters": [
           "晓山瑞希"
         ]
@@ -8875,7 +8875,7 @@
       {
         "vocal_id": 434,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2021/10/31",
         "characters": [
           "初音未来"
         ]
@@ -8920,7 +8920,7 @@
       {
         "vocal_id": 423,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -8928,7 +8928,7 @@
       {
         "vocal_id": 424,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "花里实乃里",
@@ -8940,7 +8940,7 @@
       {
         "vocal_id": 547,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/3/2",
         "characters": [
           "花里实乃里",
           "桐谷遥"
@@ -8949,7 +8949,7 @@
       {
         "vocal_id": 548,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/3/2",
         "characters": [
           "桃井爱莉",
           "日野森雫"
@@ -8995,7 +8995,7 @@
       {
         "vocal_id": 435,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -9003,7 +9003,7 @@
       {
         "vocal_id": 563,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云绘名",
           "镜音铃",
@@ -9015,7 +9015,7 @@
       {
         "vocal_id": 564,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/5/31",
         "characters": [
           "东云绘名"
         ]
@@ -9023,7 +9023,7 @@
       {
         "vocal_id": 565,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/3/28",
         "characters": [
           "初音未来"
         ]
@@ -9066,7 +9066,7 @@
       {
         "vocal_id": 442,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -9101,7 +9101,7 @@
       {
         "vocal_id": 443,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连"
         ]
@@ -9136,7 +9136,7 @@
       {
         "vocal_id": 444,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -9172,7 +9172,7 @@
       {
         "vocal_id": 445,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -9180,7 +9180,7 @@
       {
         "vocal_id": 446,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "花里实乃里",
           "KAITO",
@@ -9192,7 +9192,7 @@
       {
         "vocal_id": 461,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/8/10",
         "characters": [
           "花里实乃里"
         ]
@@ -9229,7 +9229,7 @@
       {
         "vocal_id": 447,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -9237,7 +9237,7 @@
       {
         "vocal_id": 448,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "宵崎奏",
@@ -9247,7 +9247,7 @@
       {
         "vocal_id": 599,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/8/18",
         "characters": [
           "宵崎奏"
         ]
@@ -9255,7 +9255,7 @@
       {
         "vocal_id": 600,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/8/18",
         "characters": [
           "东云绘名"
         ]
@@ -9307,7 +9307,7 @@
       {
         "vocal_id": 454,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "GUMI",
@@ -9317,7 +9317,7 @@
       {
         "vocal_id": 455,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -9328,7 +9328,7 @@
       {
         "vocal_id": 579,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/9/20",
         "characters": [
           "白石杏"
         ]
@@ -9364,7 +9364,7 @@
       {
         "vocal_id": 456,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌"
         ]
@@ -9372,7 +9372,7 @@
       {
         "vocal_id": 457,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "星乃一歌",
           "巡音流歌",
@@ -9427,7 +9427,7 @@
       {
         "vocal_id": 458,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -9463,7 +9463,7 @@
       {
         "vocal_id": 459,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -9471,7 +9471,7 @@
       {
         "vocal_id": 460,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马司",
           "凤笑梦",
@@ -9482,7 +9482,7 @@
       {
         "vocal_id": 634,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/6/13",
         "characters": [
           "草薙宁宁",
           "神代类"
@@ -9527,7 +9527,7 @@
       {
         "vocal_id": 467,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -9535,7 +9535,7 @@
       {
         "vocal_id": 468,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌"
@@ -9544,7 +9544,7 @@
       {
         "vocal_id": 587,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/4/21",
         "characters": [
           "镜音铃",
           "镜音连"
@@ -9553,7 +9553,7 @@
       {
         "vocal_id": 588,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/4/21",
         "characters": [
           "巡音流歌",
           "MEIKO"
@@ -9589,7 +9589,7 @@
       {
         "vocal_id": 475,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -9597,7 +9597,7 @@
       {
         "vocal_id": 476,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "东云彰人",
@@ -9650,7 +9650,7 @@
       {
         "vocal_id": 501,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -9660,7 +9660,7 @@
       {
         "vocal_id": 502,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "天马司",
@@ -9776,7 +9776,7 @@
       {
         "vocal_id": 482,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -9784,7 +9784,7 @@
       {
         "vocal_id": 483,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "宵崎奏",
           "初音未来",
@@ -9796,7 +9796,7 @@
       {
         "vocal_id": 484,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/5/31",
         "characters": [
           "宵崎奏"
         ]
@@ -9804,7 +9804,7 @@
       {
         "vocal_id": 485,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/1/21",
         "characters": [
           "初音未来"
         ]
@@ -9839,7 +9839,7 @@
       {
         "vocal_id": 492,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -9847,7 +9847,7 @@
       {
         "vocal_id": 493,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "朝比奈真冬",
           "晓山瑞希"
@@ -9856,7 +9856,7 @@
       {
         "vocal_id": 494,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/1/31",
         "characters": [
           "朝比奈真冬"
         ]
@@ -9864,7 +9864,7 @@
       {
         "vocal_id": 495,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/1/31",
         "characters": [
           "晓山瑞希"
         ]
@@ -9899,7 +9899,7 @@
       {
         "vocal_id": 496,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃",
           "镜音连"
@@ -9908,7 +9908,7 @@
       {
         "vocal_id": 497,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "小豆泽心羽",
           "白石杏"
@@ -9917,7 +9917,7 @@
       {
         "vocal_id": 498,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/2/4",
         "characters": [
           "小豆泽心羽"
         ]
@@ -9925,7 +9925,7 @@
       {
         "vocal_id": 499,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/2/4",
         "characters": [
           "白石杏"
         ]
@@ -9960,7 +9960,7 @@
       {
         "vocal_id": 500,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -9996,7 +9996,7 @@
       {
         "vocal_id": 509,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃"
@@ -10005,7 +10005,7 @@
       {
         "vocal_id": 510,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "日野森志步",
           "KAITO",
@@ -10017,7 +10017,7 @@
       {
         "vocal_id": 511,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/7/11",
         "characters": [
           "天马咲希"
         ]
@@ -10025,7 +10025,7 @@
       {
         "vocal_id": 512,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/7/11",
         "characters": [
           "望月穗波"
         ]
@@ -10033,7 +10033,7 @@
       {
         "vocal_id": 513,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/7/11",
         "characters": [
           "日野森志步"
         ]
@@ -10085,7 +10085,7 @@
       {
         "vocal_id": 514,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -10093,7 +10093,7 @@
       {
         "vocal_id": 549,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -10103,7 +10103,7 @@
       {
         "vocal_id": 551,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/3/4",
         "characters": [
           "日野森志步"
         ]
@@ -10147,7 +10147,7 @@
       {
         "vocal_id": 515,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音铃"
         ]
@@ -10155,7 +10155,7 @@
       {
         "vocal_id": 516,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "日野森雫",
           "镜音铃",
@@ -10167,7 +10167,7 @@
       {
         "vocal_id": 517,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/5/20",
         "characters": [
           "日野森雫"
         ]
@@ -10202,7 +10202,7 @@
       {
         "vocal_id": 518,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -10210,7 +10210,7 @@
       {
         "vocal_id": 519,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "东云彰人",
@@ -10220,7 +10220,7 @@
       {
         "vocal_id": 520,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/6/10",
         "characters": [
           "青柳冬弥"
         ]
@@ -10228,7 +10228,7 @@
       {
         "vocal_id": 656,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/7/11",
         "characters": [
           "巡音流歌"
         ]
@@ -10236,7 +10236,7 @@
       {
         "vocal_id": 657,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/7/11",
         "characters": [
           "MEIKO"
         ]
@@ -10273,7 +10273,7 @@
       {
         "vocal_id": 521,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -10281,7 +10281,7 @@
       {
         "vocal_id": 522,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "桐谷遥",
           "初音未来",
@@ -10293,7 +10293,7 @@
       {
         "vocal_id": 698,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/8/31",
         "characters": [
           "花里实乃里"
         ]
@@ -10301,7 +10301,7 @@
       {
         "vocal_id": 699,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/8/31",
         "characters": [
           "桐谷遥"
         ]
@@ -10336,7 +10336,7 @@
       {
         "vocal_id": 523,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -10348,7 +10348,7 @@
       {
         "vocal_id": 524,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "草薙宁宁",
           "MEIKO",
@@ -10360,7 +10360,7 @@
       {
         "vocal_id": 636,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/6/28",
         "characters": [
           "凤笑梦"
         ]
@@ -10368,7 +10368,7 @@
       {
         "vocal_id": 637,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/6/28",
         "characters": [
           "草薙宁宁"
         ]
@@ -10405,7 +10405,7 @@
       {
         "vocal_id": 525,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -10413,7 +10413,7 @@
       {
         "vocal_id": 526,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "花里实乃里",
@@ -10539,7 +10539,7 @@
       {
         "vocal_id": 530,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "KAITO"
         ]
@@ -10574,7 +10574,7 @@
       {
         "vocal_id": 532,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌"
         ]
@@ -10610,7 +10610,7 @@
       {
         "vocal_id": 540,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -10618,7 +10618,7 @@
       {
         "vocal_id": 541,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "白石杏",
           "镜音铃",
@@ -10630,7 +10630,7 @@
       {
         "vocal_id": 658,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/7/19",
         "characters": [
           "白石杏"
         ]
@@ -10665,7 +10665,7 @@
       {
         "vocal_id": 542,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -10673,7 +10673,7 @@
       {
         "vocal_id": 543,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "宵崎奏",
@@ -10737,7 +10737,7 @@
       {
         "vocal_id": 544,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -10773,7 +10773,7 @@
       {
         "vocal_id": 545,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "GUMI"
         ]
@@ -10808,7 +10808,7 @@
       {
         "vocal_id": 546,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "GUMI"
@@ -10844,7 +10844,7 @@
       {
         "vocal_id": 552,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "MEIKO"
         ]
@@ -10879,7 +10879,7 @@
       {
         "vocal_id": 553,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "KAITO"
         ]
@@ -10915,7 +10915,7 @@
       {
         "vocal_id": 556,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "KAITO"
@@ -10924,7 +10924,7 @@
       {
         "vocal_id": 557,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马司",
           "KAITO",
@@ -11053,7 +11053,7 @@
       {
         "vocal_id": 560,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -11061,7 +11061,7 @@
       {
         "vocal_id": 561,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -11117,7 +11117,7 @@
       {
         "vocal_id": 562,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -11187,7 +11187,7 @@
       {
         "vocal_id": 569,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "GUMI"
@@ -11233,7 +11233,7 @@
       {
         "vocal_id": 575,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -11241,7 +11241,7 @@
       {
         "vocal_id": 576,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "东云彰人",
@@ -11278,7 +11278,7 @@
       {
         "vocal_id": 580,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "GUMI"
@@ -11287,7 +11287,7 @@
       {
         "vocal_id": 581,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "宵崎奏"
@@ -11324,7 +11324,7 @@
       {
         "vocal_id": 582,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "巡音流歌",
@@ -11334,7 +11334,7 @@
       {
         "vocal_id": 583,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "日野森志步",
@@ -11371,7 +11371,7 @@
       {
         "vocal_id": 584,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃",
@@ -11381,7 +11381,7 @@
       {
         "vocal_id": 585,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "天马咲希",
@@ -11417,7 +11417,7 @@
       {
         "vocal_id": 586,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "镜音连",
           "KAITO",
@@ -11566,7 +11566,7 @@
       {
         "vocal_id": 593,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌"
         ]
@@ -11574,7 +11574,7 @@
       {
         "vocal_id": 594,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "日野森志步",
           "镜音铃",
@@ -11586,7 +11586,7 @@
       {
         "vocal_id": 700,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/9/7",
         "characters": [
           "日野森志步"
         ]
@@ -11629,7 +11629,7 @@
       {
         "vocal_id": 595,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "巡音流歌"
@@ -11638,7 +11638,7 @@
       {
         "vocal_id": 596,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "晓山瑞希",
           "巡音流歌",
@@ -11685,7 +11685,7 @@
       {
         "vocal_id": 598,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -11719,7 +11719,7 @@
       {
         "vocal_id": 601,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "镜音铃"
@@ -11728,7 +11728,7 @@
       {
         "vocal_id": 602,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云彰人",
           "MEIKO",
@@ -11791,7 +11791,7 @@
       {
         "vocal_id": 603,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "IA"
         ]
@@ -11799,7 +11799,7 @@
       {
         "vocal_id": 679,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "巡音流歌",
           "天马司",
@@ -11878,7 +11878,7 @@
       {
         "vocal_id": 606,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -11886,7 +11886,7 @@
       {
         "vocal_id": 607,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -12002,7 +12002,7 @@
       {
         "vocal_id": 611,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -12010,7 +12010,7 @@
       {
         "vocal_id": 612,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -12063,7 +12063,7 @@
       {
         "vocal_id": 613,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -12071,7 +12071,7 @@
       {
         "vocal_id": 628,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "白石杏",
           "初音未来",
@@ -12126,7 +12126,7 @@
       {
         "vocal_id": 614,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "flower"
         ]
@@ -12134,7 +12134,7 @@
       {
         "vocal_id": 615,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "东云彰人",
           "青柳冬弥"
@@ -12171,7 +12171,7 @@
       {
         "vocal_id": 616,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -12179,7 +12179,7 @@
       {
         "vocal_id": 617,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "凤笑梦",
@@ -12189,7 +12189,7 @@
       {
         "vocal_id": 659,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/8/31",
         "characters": [
           "凤笑梦"
         ]
@@ -12272,7 +12272,7 @@
       {
         "vocal_id": 619,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -12280,7 +12280,7 @@
       {
         "vocal_id": 620,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "朝比奈真冬",
           "镜音连",
@@ -12292,7 +12292,7 @@
       {
         "vocal_id": 631,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/9/20",
         "characters": [
           "朝比奈真冬"
         ]
@@ -12300,7 +12300,7 @@
       {
         "vocal_id": 632,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/9/20",
         "characters": [
           "东云绘名"
         ]
@@ -12308,7 +12308,7 @@
       {
         "vocal_id": 633,
         "type": "another_vocal",
-        "released_at": "2009/1/30",
+        "released_at": "2022/9/20",
         "characters": [
           "晓山瑞希"
         ]
@@ -12352,7 +12352,7 @@
       {
         "vocal_id": 621,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "GUMI"
         ]
@@ -12422,7 +12422,7 @@
       {
         "vocal_id": 623,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "MEIKO"
         ]
@@ -12581,7 +12581,7 @@
       {
         "vocal_id": 635,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -12735,7 +12735,7 @@
       {
         "vocal_id": 641,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -12743,7 +12743,7 @@
       {
         "vocal_id": 642,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "天马咲希",
           "初音未来",
@@ -13110,7 +13110,7 @@
       {
         "vocal_id": 660,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -13118,7 +13118,7 @@
       {
         "vocal_id": 661,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "桃井爱莉",
           "巡音流歌",
@@ -13210,7 +13210,7 @@
       {
         "vocal_id": 663,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -13218,7 +13218,7 @@
       {
         "vocal_id": 687,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "小豆泽心羽",
@@ -13514,7 +13514,7 @@
       {
         "vocal_id": 675,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -13522,7 +13522,7 @@
       {
         "vocal_id": 676,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来",
           "东云绘名",
@@ -13567,7 +13567,7 @@
       {
         "vocal_id": 677,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -13602,7 +13602,7 @@
       {
         "vocal_id": 684,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -13912,7 +13912,7 @@
       {
         "vocal_id": 701,
         "type": "virtual_singer",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -13920,7 +13920,7 @@
       {
         "vocal_id": 702,
         "type": "sekai",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "青柳冬弥",
           "KAITO",
@@ -14307,7 +14307,7 @@
       {
         "vocal_id": 718,
         "type": "original_song",
-        "released_at": "2009/1/30",
+        "released_at": "2020/9/30",
         "characters": [
           "初音未来"
         ]
@@ -22778,7 +22778,8 @@
     "isNewlyWrittenMusic": false,
     "releaseDate": "2024-02-29 15:00:00",
     "categories": [
-      "original"
+      "original",
+      "2DMV"
     ],
     "units": [
       "all",

@@ -1,5 +1,23 @@
 [
   {
+    "id": "ori",
+    "date": "2020/9/30",
+    "event_title": "初始卡",
+    "gacha_title": "初始卡",
+    "festival": "",
+    "event_type": "纪念",
+    "gacha_type": "常驻",
+    "type_series_id": null,
+    "rerun1": "",
+    "rerun2": "",
+    "unit": "",
+    "banner": "",
+    "event_attribute": "",
+    "song_id": "",
+    "song_alias": "",
+    "virtual_singer": ""
+  },
+  {
     "id": 0,
     "date": "2020/9/30",
     "event_title": "リリース記念",
@@ -1962,6 +1980,24 @@
     "virtual_singer": ""
   },
   {
+    "id": "a3",
+    "date": "2023/9/30",
+    "event_title": "3th Anniversary",
+    "gacha_title": "3th Anniversary",
+    "festival": "",
+    "event_type": "纪念",
+    "gacha_type": "常驻",
+    "type_series_id": null,
+    "rerun1": "",
+    "rerun2": "",
+    "unit": "",
+    "banner": "",
+    "event_attribute": "",
+    "song_id": "",
+    "song_alias": "",
+    "virtual_singer": ""
+  },
+  {
     "id": 108,
     "date": "2023/9/30",
     "event_title": "ハロー・グッド・デイ！",
@@ -3853,6 +3889,24 @@
   },
   {
     "id": 208,
+    "date": "2026/6/19",
+    "event_title": "",
+    "gacha_title": "",
+    "festival": "",
+    "event_type": "测试",
+    "gacha_type": null,
+    "type_series_id": null,
+    "rerun1": "",
+    "rerun2": "",
+    "unit": "",
+    "banner": "",
+    "event_attribute": "",
+    "song_id": "",
+    "song_alias": "",
+    "virtual_singer": ""
+  },
+  {
+    "id": 209,
     "date": "2026/6/21",
     "event_title": "",
     "gacha_title": "",
@@ -3870,7 +3924,7 @@
     "virtual_singer": ""
   },
   {
-    "id": 209,
+    "id": 210,
     "date": "2026/6/30",
     "event_title": "",
     "gacha_title": "",
@@ -3888,7 +3942,7 @@
     "virtual_singer": ""
   },
   {
-    "id": 210,
+    "id": 211,
     "date": "2026/7/9",
     "event_title": "",
     "gacha_title": "",
@@ -3906,7 +3960,7 @@
     "virtual_singer": ""
   },
   {
-    "id": 211,
+    "id": 212,
     "date": "2026/7/19",
     "event_title": "",
     "gacha_title": "",
@@ -3924,7 +3978,7 @@
     "virtual_singer": ""
   },
   {
-    "id": 212,
+    "id": 213,
     "date": "2026/7/31",
     "event_title": "",
     "gacha_title": "",
@@ -3942,7 +3996,7 @@
     "virtual_singer": ""
   },
   {
-    "id": 213,
+    "id": 214,
     "date": "2026/8/9",
     "event_title": "",
     "gacha_title": "",
@@ -3960,7 +4014,7 @@
     "virtual_singer": ""
   },
   {
-    "id": 214,
+    "id": 215,
     "date": "2026/8/19",
     "event_title": "",
     "gacha_title": "",
@@ -3978,7 +4032,7 @@
     "virtual_singer": ""
   },
   {
-    "id": 215,
+    "id": 216,
     "date": "2026/8/31",
     "event_title": "",
     "gacha_title": "",
@@ -3996,7 +4050,7 @@
     "virtual_singer": ""
   },
   {
-    "id": 216,
+    "id": 217,
     "date": "2026/9/10",
     "event_title": "",
     "gacha_title": "",
@@ -4014,7 +4068,7 @@
     "virtual_singer": ""
   },
   {
-    "id": 217,
+    "id": 218,
     "date": "2026/9/20",
     "event_title": "",
     "gacha_title": "",
@@ -4032,7 +4086,7 @@
     "virtual_singer": ""
   },
   {
-    "id": 218,
+    "id": 219,
     "date": "2026/9/30",
     "event_title": "",
     "gacha_title": "",

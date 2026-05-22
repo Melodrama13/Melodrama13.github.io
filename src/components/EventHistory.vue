@@ -782,7 +782,8 @@
             v-if="row.kind === 'event'"
             :id="'event-' + row.event.id"
             class="event-item"
-          :class="['event-item', getPredictStatus(row.event), { 'is-tooltip-raised': tooltipRaisedEventKey === row.key }]"
+            :class="{ 'is-tooltip-raised': tooltipRaisedEventKey === row.key }"
+            :data-predict-state="getPredictStatus(row.event)"
             @click="openPredictEditor(row.event)"
             :style="[
               isUnitRelated(row.event)
@@ -804,8 +805,6 @@
             <span class="event-id">#{{ row.event.id }}</span>
             <span class="event-date">{{ row.event.date }}</span>
             <span v-if="getBoxTurnInRound(row.event)" class="box-turn-tag">轮{{ getBoxTurnInRound(row.event) }}</span>
-            <span v-if="getPredictStatus(row.event) === 'todo'" class="predict-status-badge is-todo">待预测</span>
-            <span v-if="getPredictStatus(row.event) === 'predicted'" class="predict-status-badge is-done">已预测</span>
             <div v-if="isSpecialFestival(row.event.festival)" class="fest-tag">
               {{ row.event.festival }}
             </div>
@@ -1412,6 +1411,32 @@ const hasSongTooltip = (event) => {
 
 const getDateValue = (dateStr) => parseDateSafe(dateStr)?.getTime() || 0;
 
+const eventDateBySourceKey = computed(() => {
+  const map = {};
+  (props.allEvents || []).forEach((event) => {
+    const key = normalizeEventId(event?.id);
+    const date = parseDateSafe(event?.date);
+    if (!key || !date) return;
+    map[key] = date;
+  });
+  return map;
+});
+
+const getCardSourceDate = (card) => {
+  const cardDate = parseDateSafe(card?.Date);
+  if (cardDate) return cardDate;
+  const eventKey = normalizeEventId(card?.EventID);
+  if (eventKey && eventDateBySourceKey.value[eventKey]) return eventDateBySourceKey.value[eventKey];
+  const gachaKey = normalizeEventId(card?.GachaID);
+  if (gachaKey && eventDateBySourceKey.value[gachaKey]) return eventDateBySourceKey.value[gachaKey];
+  return null;
+};
+
+const getEventIdCutoffDate = (eventId) => {
+  const key = normalizeEventId(eventId);
+  return key ? (eventDateBySourceKey.value[key] || null) : null;
+};
+
 const hexToRgba = (hex, alpha) => {
   const h = String(hex || '').replace('#', '');
   if (h.length !== 6) return `rgba(0,0,0,${alpha})`;
@@ -1429,20 +1454,27 @@ const BIRTHDAY_ORDER = {
 };
 
 const hasNonEmptyText = (value) => String(value || '').trim().length > 0;
-const isEventOfficialRevealedByJson = (event) => {
-  const sourceTitle = String(event?.source_event_title || '').trim();
-  const sourceGacha = String(event?.source_gacha_title || '').trim();
-  return hasNonEmptyText(sourceTitle) && hasNonEmptyText(sourceGacha);
+const getSourceEventTitle = (event) => (
+  Object.prototype.hasOwnProperty.call(event || {}, 'source_event_title')
+    ? String(event?.source_event_title || '').trim()
+    : String(event?.event_title || '').trim()
+);
+const getSourceEventType = (event) => (
+  Object.prototype.hasOwnProperty.call(event || {}, 'source_event_type')
+    ? String(event?.source_event_type || '').trim()
+    : String(event?.event_type || '').trim()
+);
+const isEventTestByJson = (event) => {
+  const type = getSourceEventType(event).toLowerCase();
+  return type === '测试' || type === 'test' || type.includes('测试');
 };
+const isEventOfficialRevealedByJson = (event) => hasNonEmptyText(getSourceEventTitle(event));
 
 const getPredictStatus = (event) => {
+  if (isEventTestByJson(event)) return 'past';
   if (isEventOfficialRevealedByJson(event)) return 'past';
-  const today = new Date();
-  const eventDate = new Date(event.date.replace(/\//g, '-'));
-  
-  if (eventDate <= today) return 'past'; // 历史活动
 
-  // 只看是否存在本地预测补丁，避免 WL 因基础卡自带人选被误判为“已预测”
+  // 只看是否存在本地预测补丁，避免 WL 因基础卡自带人选被误判为本地预测
   if (event.isPredict === true) {
     return 'predicted';
   }
@@ -1463,9 +1495,8 @@ const getCurrentEventId = () => {
 const canOpenPredictEditor = (event) => {
   if (!event) return false;
   if (!isNumericEventId(event?.id)) return false;
-  if (isEventOfficialRevealedByJson(event)) return false;
-  const currentId = getCurrentEventId();
-  return Number(event.id) > Number(currentId);
+  if (isEventTestByJson(event)) return false;
+  return !isEventOfficialRevealedByJson(event);
 };
 
 const isEditorOpen = ref(false);
@@ -2448,21 +2479,31 @@ const isCollabPoolEvent = (event) => {
   const id = normalizeEventId(event?.id).toLowerCase();
   const eventType = String(event?.event_type || '').trim();
   const gachaType = String(event?.gacha_type || '').trim();
-  return /^c\d+$/.test(id) || eventType.includes('联动') || gachaType.includes('联动');
+  return /^c\d+$/.test(id) || eventType.includes('联动') || gachaType.includes('联动') || eventType === '纪念';
 };
 
 const getEventTime = (event) => {
   return getDateValue(event?.date);
 };
 
-const compareEventOrderAsc = (a, b) => {
-  const aNum = isNumericEventId(a?.id);
-  const bNum = isNumericEventId(b?.id);
-  if (aNum && bNum) return Number(a.id) - Number(b.id);
+const eventSameDateOrder = (event) => {
+  const id = normalizeEventId(event?.id);
+  if (!isNumericEventId(id)) return 0;
+  return 1;
+};
 
+const compareEventOrderAsc = (a, b) => {
   const ta = getEventTime(a);
   const tb = getEventTime(b);
   if (ta !== tb) return ta - tb;
+
+  const pa = eventSameDateOrder(a);
+  const pb = eventSameDateOrder(b);
+  if (pa !== pb) return pa - pb;
+
+  const aNum = isNumericEventId(a?.id);
+  const bNum = isNumericEventId(b?.id);
+  if (aNum && bNum) return Number(a.id) - Number(b.id);
   return normalizeEventId(a?.id).localeCompare(normalizeEventId(b?.id));
 };
 
@@ -3041,16 +3082,22 @@ const getPreviewVsFourCountCellStyle = (value) => {
 
 const isCardWithinPreviewLimit = (card, maxId) => {
   const eidRaw = String(card?.EventID || '').trim();
-  if (!eidRaw || eidRaw.toLowerCase() === 'ori') return true;
-  if (!/^\d+$/.test(eidRaw)) return true;
-  return Number(eidRaw) <= maxId;
+  if (!eidRaw) return true;
+  if (isNumericEventId(eidRaw)) return Number(eidRaw) <= Number(maxId);
+  const cutoffDate = getEventIdCutoffDate(maxId);
+  if (!cutoffDate) return true;
+  const sourceDate = getCardSourceDate(card);
+  if (!sourceDate) return true;
+  if (sourceDate.getTime() !== cutoffDate.getTime()) return sourceDate < cutoffDate;
+  return true;
 };
 
-const isPreviewEventRewardCard = (card) => {
+const isPreviewEventRewardCard = (card, options = {}) => {
   const rarity = String(card?.Rarity || '').trim();
   if (!['2', '3'].includes(rarity)) return false;
+  const includeCollab = options?.includeCollab === true || previewIncludeCollabReward.value;
   if (isNumericEventId(card?.EventID)) return true;
-  if (!previewIncludeCollabReward.value) return false;
+  if (!includeCollab) return false;
   return String(card?.Type || '').trim().toLowerCase() === 'collab';
 };
 
@@ -3086,6 +3133,11 @@ const previewStepProgressOrderMap = computed(() => {
         lastThreeStarOrderId: 0,
         lastTwoStarOrderId: 0,
         lastRewardOrderId: 0,
+        lastRewardThreeOrderId: 0,
+        lastRewardTwoOrderId: 0,
+        lastRewardWithCollabOrderId: 0,
+        lastRewardThreeWithCollabOrderId: 0,
+        lastRewardTwoWithCollabOrderId: 0,
         lastLimitedBanOrderId: 0
       };
     }
@@ -3129,7 +3181,23 @@ const previewStepProgressOrderMap = computed(() => {
     }
 
     if (isPreviewEventRewardCard(card)) {
+      if (rarity === '3') {
+        row.lastRewardThreeOrderId = Math.max(Number(row.lastRewardThreeOrderId || 0), progressOrderId);
+      }
+      if (rarity === '2') {
+        row.lastRewardTwoOrderId = Math.max(Number(row.lastRewardTwoOrderId || 0), progressOrderId);
+      }
       row.lastRewardOrderId = Math.max(Number(row.lastRewardOrderId || 0), progressOrderId);
+    }
+
+    if (isPreviewEventRewardCard(card, { includeCollab: true })) {
+      if (rarity === '3') {
+        row.lastRewardThreeWithCollabOrderId = Math.max(Number(row.lastRewardThreeWithCollabOrderId || 0), progressOrderId);
+      }
+      if (rarity === '2') {
+        row.lastRewardTwoWithCollabOrderId = Math.max(Number(row.lastRewardTwoWithCollabOrderId || 0), progressOrderId);
+      }
+      row.lastRewardWithCollabOrderId = Math.max(Number(row.lastRewardWithCollabOrderId || 0), progressOrderId);
     }
 
     if (PREVIEW_LIMITED_TYPES.has(type)) {
@@ -3182,8 +3250,10 @@ const getPreviewStepProgressOrderKey = (name, key) => {
   if (key === 'accuracyCount') return Number(row.lastAccuracyOrderId || 0);
   if (key === 'threeStarCount') return Number(row.lastThreeStarOrderId || 0);
   if (key === 'twoStarCount') return Number(row.lastTwoStarOrderId || 0);
-  if (key === 'rewardThreeCount') return Number(row.lastRewardOrderId || 0);
-  if (key === 'rewardTwoCount') return Number(row.lastRewardOrderId || 0);
+  if (key === 'rewardThreeCount') return Number(row.lastRewardThreeOrderId || 0);
+  if (key === 'rewardTwoCount') return Number(row.lastRewardTwoOrderId || 0);
+  if (key === 'rewardThreeCountWithCollab') return Number(row.lastRewardThreeWithCollabOrderId || 0);
+  if (key === 'rewardTwoCountWithCollab') return Number(row.lastRewardTwoWithCollabOrderId || 0);
   if (key === 'rewardTotalCount') return Number(row.lastRewardOrderId || 0);
   if (key === 'bannerCount') return Number(row.lastBannerOrderId || 0);
   if (key === 'limitedBanCount') return Number(row.lastLimitedBanOrderId || 0);
@@ -3220,6 +3290,8 @@ const previewCharStats = computed(() => {
         threeStarCount: 0,
         rewardTwoCount: 0,
         rewardThreeCount: 0,
+        rewardTwoCountWithCollab: 0,
+        rewardThreeCountWithCollab: 0,
         accuracyCount: 0,
         recoveryCount: 0,
         unitScoreCount: 0,
@@ -3252,6 +3324,10 @@ const previewCharStats = computed(() => {
       if (rarity === '3') stats[name].rewardThreeCount += 1;
       if (rarity === '2') stats[name].rewardTwoCount += 1;
     }
+    if (isPreviewEventRewardCard(card, { includeCollab: true })) {
+      if (rarity === '3') stats[name].rewardThreeCountWithCollab += 1;
+      if (rarity === '2') stats[name].rewardTwoCountWithCollab += 1;
+    }
     if (PREVIEW_LIMITED_TYPES.has(type)) stats[name].limitedCount += 1;
   });
 
@@ -3281,6 +3357,8 @@ const previewCharStats = computed(() => {
         threeStarCount: 0,
         rewardTwoCount: 0,
         rewardThreeCount: 0,
+        rewardTwoCountWithCollab: 0,
+        rewardThreeCountWithCollab: 0,
         accuracyCount: 0,
         recoveryCount: 0,
         unitScoreCount: 0,
@@ -3749,8 +3827,8 @@ const buildPreviewSteps = (key) => {
 
 const getPreviewStepsByKey = (key) => {
   const resolvedKey = (() => {
-    if (key === 'threeStarCount' && previewThreeUseRewardCount.value) return 'rewardThreeCount';
-    if (key === 'twoStarCount' && previewTwoUseRewardCount.value) return 'rewardTwoCount';
+    if (key === 'threeStarCount' && previewThreeUseRewardCount.value) return 'rewardThreeCountWithCollab';
+    if (key === 'twoStarCount' && previewTwoUseRewardCount.value) return 'rewardTwoCountWithCollab';
     return key;
   })();
 
@@ -4178,6 +4256,16 @@ const displayRows = computed(() => {
       if (ao !== bo) return ao - bo;
     }
 
+    if (a.kind === 'event' && b.kind === 'event') {
+      const pa = eventSameDateOrder(a.event);
+      const pb = eventSameDateOrder(b.event);
+      if (pa !== pb) return pa - pb;
+
+      const aNum = isNumericEventId(a.event?.id);
+      const bNum = isNumericEventId(b.event?.id);
+      if (aNum && bNum) return Number(a.event.id) - Number(b.event.id);
+    }
+
     const ak = a.kind === 'event' ? normalizeEventId(a.event?.id) : a.key;
     const bk = b.kind === 'event' ? normalizeEventId(b.event?.id) : b.key;
     return ak.localeCompare(bk);
@@ -4393,11 +4481,16 @@ const getEventCardNames = (event) => {
   return [...names];
 };
 
-const eventContainsCharacter = (event, name) => {
-  const target = String(name || '').trim();
+const eventBannerMatchesCharacter = (event, name) => {
+  const target = normalizeCharName(name);
   if (!target) return true;
-  const banner = String(event?.banner || '').trim();
-  if (banner === target) return true;
+  return normalizeCharName(event?.banner) === target;
+};
+
+const eventContainsCharacter = (event, name) => {
+  const target = normalizeCharName(name);
+  if (!target) return true;
+  if (eventBannerMatchesCharacter(event, target)) return true;
   return getEventCardNames(event).includes(target);
 };
 
@@ -4458,7 +4551,7 @@ const matchEventFilters = (event) => {
 
   if (canUseEventBanFilter.value && f.isBan) {
     const targetChar = f.characters[0];
-    const isBan = String(event?.banner || '').trim() === targetChar;
+    const isBan = eventBannerMatchesCharacter(event, targetChar);
     if (f.isBan === 'yes' && !isBan) return false;
     if (f.isBan === 'no' && isBan) return false;
   }
@@ -4687,8 +4780,8 @@ const getExportRowsInRange = (includeBirthdayRows = true, options = {}) => {
   const rows = Array.from(listEl.querySelectorAll(':scope > .event-item, :scope > .birthday-row, :scope > .preview-row'));
   if (rows.length === 0) return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '当前历史列表为空。' };
 
-  const predicted = rows.filter((node) => node.classList.contains('event-item') && node.classList.contains('predicted'));
-  if (predicted.length === 0) return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '当前数据源没有已预测活动。' };
+  const predicted = rows.filter((node) => node.classList.contains('event-item') && node.dataset.predictState === 'predicted');
+  if (predicted.length === 0) return { rows: [], rowsAllInRange: [], firstEventId: '', lastEventId: '', error: '当前数据源没有可导出的预测活动。' };
 
   const defaultFirstPred = predicted[0];
   const defaultLastPred = predicted[predicted.length - 1];
@@ -4758,7 +4851,6 @@ const getPredictedExportRangeInfo = (includeBirthdayRows = true) => {
 const withTemporaryScreenshotOverrides = (rowsAllInRange, includeBirthdayRows, isMobile, runner) => {
   const hiddenNodes = [];
   const deleteButtons = [];
-  const predictBadges = [];
   const limTags = [];
 
   rowsAllInRange.forEach((node) => {
@@ -4773,11 +4865,6 @@ const withTemporaryScreenshotOverrides = (rowsAllInRange, includeBirthdayRows, i
     node.querySelectorAll('.predict-delete-btn').forEach((btn) => {
       deleteButtons.push({ node: btn, visibility: btn.style.visibility });
       btn.style.visibility = 'hidden';
-    });
-
-    node.querySelectorAll('.predict-status-badge').forEach((badge) => {
-      predictBadges.push({ node: badge, visibility: badge.style.visibility });
-      badge.style.visibility = 'hidden';
     });
 
     if (!isMobile) {
@@ -4841,9 +4928,6 @@ const withTemporaryScreenshotOverrides = (rowsAllInRange, includeBirthdayRows, i
       node.style.display = display;
     });
     deleteButtons.forEach(({ node, visibility }) => {
-      node.style.visibility = visibility;
-    });
-    predictBadges.forEach(({ node, visibility }) => {
       node.style.visibility = visibility;
     });
     limTags.forEach((snapshot) => {
@@ -6868,27 +6952,6 @@ button:not(:disabled):active {
   background: #dc2626;
 }
 
-.predict-status-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 2px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 0.62rem;
-  line-height: 1.2;
-  color: #fff;
-  font-weight: 700;
-}
-
-.predict-status-badge.is-todo {
-  background: #f59e0b;
-}
-
-.predict-status-badge.is-done {
-  background: #10b981;
-}
-
 .box-turn-tag {
   display: inline-flex;
   align-items: center;
@@ -8372,11 +8435,6 @@ button:not(:disabled):active {
     height: 22px;
     line-height: 22px;
     font-size: 14px;
-  }
-
-  .predict-status-badge {
-    font-size: 0.54rem;
-    padding: 1px 5px;
   }
 
   .star-icon {

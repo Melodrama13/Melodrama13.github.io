@@ -160,7 +160,7 @@
               @click="openScreenshotExportConfirm"
               class="io-btn"
               :disabled="isScreenshotExporting"
-              :title="isScreenshotExporting ? '正在截图，请等待' : '导出已预测活动区间PNG（生放送不导出）'"
+              :title="isScreenshotExporting ? '正在截图，请等待' : '导出预测活动区间PNG（生放送不导出）'"
             >
               <span class="btn-with-icon">
                 <img src="/data/icon/camera.png" class="btn-icon" alt="截图" />
@@ -1269,10 +1269,54 @@ const onPredictUserBlur = () => {
 };
 
 const hasValidEventTitle = (value) => String(value || '').trim().length > 0;
-const hasValidGachaName = (value) => String(value || '').trim().length > 0;
 const isJsonEventOfficialRevealed = (event) => {
   if (!event || typeof event !== 'object') return false;
-  return hasValidEventTitle(event.event_title) && hasValidGachaName(event.gacha_title);
+  return hasValidEventTitle(event.event_title);
+};
+
+const isNumericEventIdValue = (value) => {
+  const idNum = Number(value);
+  return Number.isFinite(idNum);
+};
+const getSourceEventTypeText = (event) => (
+  Object.prototype.hasOwnProperty.call(event || {}, 'source_event_type')
+    ? String(event?.source_event_type || '').trim()
+    : String(event?.event_type || '').trim()
+);
+const isJsonTestEvent = (event) => {
+  const type = getSourceEventTypeText(event).toLowerCase();
+  return type === '测试' || type === 'test' || type.includes('测试');
+};
+
+const hasExplicitPredictShiftFlag = (event) => (
+  event?.predict_shift === true
+  || event?.shift_predict === true
+  || event?.inserted_test === true
+  || event?.is_inserted_test === true
+);
+const isInsertedTestEventForPredictShift = (event) => {
+  if (!isJsonTestEvent(event) || !isNumericEventIdValue(event?.id)) return false;
+  if (hasExplicitPredictShiftFlag(event)) return true;
+  return !hasValidEventTitle(event?.event_title);
+};
+const insertedTestEventIds = computed(() => (historyData.value || [])
+  .filter((ev) => isInsertedTestEventForPredictShift(ev))
+  .map((ev) => Number(ev.id))
+  .filter((id) => Number.isFinite(id))
+  .sort((a, b) => a - b));
+const getInsertedTestCountAtOrBefore = (eventId) => {
+  const idNum = Number(eventId);
+  if (!Number.isFinite(idNum)) return 0;
+  return insertedTestEventIds.value.filter((id) => id <= idNum).length;
+};
+const resolveShiftedPredictEventId = (patch) => {
+  const idNum = Number(patch?.id);
+  if (!Number.isFinite(idNum)) return null;
+  const savedShiftCount = Number.isFinite(Number(patch?.predict_shift_count))
+    ? Number(patch.predict_shift_count)
+    : 0;
+  const currentShiftCount = getInsertedTestCountAtOrBefore(idNum);
+  return idNum + Math.max(0, currentShiftCount - savedShiftCount);
 };
 
 const getCurrentOfficialEventId = () => {
@@ -1281,6 +1325,7 @@ const getCurrentOfficialEventId = () => {
     .filter((ev) => {
       const idNum = Number(ev?.id);
       if (!Number.isFinite(idNum)) return false;
+      if (isJsonTestEvent(ev)) return false;
       if (!hasValidEventTitle(ev?.event_title)) return false;
       const d = new Date(String(ev?.date || '').replace(/\//g, '-'));
       if (Number.isNaN(d.getTime())) return false;
@@ -1295,6 +1340,7 @@ const getCurrentJsonRevealedEventId = () => {
     .filter((ev) => {
       const idNum = Number(ev?.id);
       if (!Number.isFinite(idNum)) return false;
+      if (isJsonTestEvent(ev)) return false;
       return isJsonEventOfficialRevealed(ev);
     })
     .map((ev) => Number(ev.id));
@@ -1310,8 +1356,8 @@ const getCurrentPredictLockEventId = () => {
 const getPredictableEventIdRange = () => {
   const lockId = getCurrentPredictLockEventId();
   const ids = (historyData.value || [])
+    .filter((ev) => isNumericEventIdValue(ev?.id) && !isJsonTestEvent(ev) && !isJsonEventOfficialRevealed(ev))
     .map((ev) => Number(ev?.id))
-    .filter((id) => Number.isFinite(id) && id > lockId)
     .sort((a, b) => a - b);
 
   if (!ids.length) {
@@ -1332,6 +1378,48 @@ const getSourceEventById = (eventId) => {
   return (historyData.value || []).find((ev) => Number(ev?.id) === idNum) || null;
 };
 
+const retargetPredictMemberCards = (cards, eventId) => {
+  if (!Array.isArray(cards)) return cards;
+  return cards.map((card, index) => {
+    if (!card || typeof card !== 'object') return card;
+    const next = {
+      ...card,
+      EventID: Number(eventId)
+    };
+    const cardId = String(card.CardID || '').trim();
+    if (cardId.startsWith('PRED-')) {
+      next.CardID = `PRED-${Number(eventId)}-${index}`;
+    }
+    return next;
+  });
+};
+
+const retargetPredictPatch = (patch, targetEvent) => {
+  const targetId = Number(targetEvent?.id);
+  if (!Number.isFinite(targetId)) return null;
+  return {
+    ...(patch || {}),
+    id: targetId,
+    predict_shift_count: getInsertedTestCountAtOrBefore(targetId),
+    memberCards: retargetPredictMemberCards(patch?.memberCards, targetId)
+  };
+};
+
+const resolvePredictPatchForCurrentSchedule = (patch) => {
+  if (!patch || typeof patch !== 'object') return null;
+  const targetId = resolveShiftedPredictEventId(patch);
+  const sourceEvent = getSourceEventById(targetId);
+  if (!sourceEvent) return null;
+  if (isJsonTestEvent(sourceEvent) || isJsonEventOfficialRevealed(sourceEvent)) return null;
+  const patchWithKey = retargetPredictPatch(patch, sourceEvent);
+  if (!patchWithKey) return null;
+  return {
+    patch: patchWithKey,
+    sourceEvent,
+    key: String(Number(sourceEvent.id))
+  };
+};
+
 const normalizeWorldLinkPatch = (patch) => {
   if (!patch || typeof patch !== 'object') return patch;
   const sourceEvent = getSourceEventById(patch.id);
@@ -1347,29 +1435,33 @@ const normalizeWorldLinkPatch = (patch) => {
   };
 };
 
-const filterOutdatedPredictiveEvents = (list) => {
-  const currentOfficialId = getCurrentPredictLockEventId();
-  if (!Number.isFinite(currentOfficialId) || currentOfficialId < 0) return [...(list || [])];
+const sanitizeScheduledPredictiveEvents = (list) => {
+  const byKey = new Map();
+  (list || []).forEach((ev) => {
+    const resolved = resolvePredictPatchForCurrentSchedule(ev);
+    if (!resolved) return;
+    byKey.set(resolved.key, normalizeWorldLinkPatch(resolved.patch));
+  });
+  return [...byKey.values()];
+};
+
+const filterActivePredictiveEvents = (list) => {
   return (list || []).filter((ev) => {
-    const idNum = Number(ev?.id);
-    if (!Number.isFinite(idNum)) return false;
-    // 当期及以前的 patch 一律视为过期冲突并清理。
-    return idNum > currentOfficialId;
+    const sourceEvent = getSourceEventById(ev?.id);
+    if (!sourceEvent) return false;
+    if (isJsonTestEvent(sourceEvent)) return false;
+    return !isJsonEventOfficialRevealed(sourceEvent);
   });
 };
 
-const sanitizePredictiveEvents = (list) => {
-  return (list || []).map((ev) => normalizeWorldLinkPatch(ev));
-};
-
 const reconcilePredictiveEvents = (list) => {
-  const normalized = sanitizePredictiveEvents(list);
-  const filtered = filterOutdatedPredictiveEvents(normalized);
+  const normalized = sanitizeScheduledPredictiveEvents(list);
+  const filtered = filterActivePredictiveEvents(normalized);
   return filtered;
 };
 
 const buildPredictExportPayload = (list) => ({
-  version: 1,
+  version: 2,
   exportedAt: new Date().toISOString(),
   source: 'pjsk-planner',
   owner: normalizeUserName(predictUserName.value),
@@ -1985,9 +2077,9 @@ const mergeWorldLinkCards = (baseCardsForEvent, predictCardsForEvent) => {
 const totalEventData = computed(() => {
   // 1. 遍历所有的历史活动（包括你填好的 218 以前的坑）
   return historyData.value.map(jsonEvent => {
-    // 2. 看看预测数组里有没有对这个 ID 的“填坑记录”
+    // 2. 预测补丁默认按当前实际 ID 精确合并；插入型测试活动只在 reconcile 阶段重定向一次。
     const patch = effectivePredictiveEvents.value.find(p => Number(p.id) === Number(jsonEvent.id));
-    const forceOfficial = isJsonEventOfficialRevealed(jsonEvent);
+    const forceOfficial = isJsonEventOfficialRevealed(jsonEvent) || isJsonTestEvent(jsonEvent);
     const effectivePatch = forceOfficial ? null : patch;
     
     // 3. 如果有补丁，合并它；如果没有，用原件
@@ -2043,7 +2135,7 @@ const getNextSeriesId = () => {
   return allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
 };
 
-const getBaseBannerName = (name) => String(name || '').trim().split(' ')[0] || '';
+const getBaseBannerName = (name) => String(name || '').trim().split(/\s+/)[0] || '';
 
 const getNextTypeSeriesId = ({ eventId, eventType, bannerName }) => {
   const baseBanner = getBaseBannerName(bannerName);
@@ -2089,16 +2181,26 @@ const CHAR_ORDER = {
   "初音未来": 21, "镜音铃": 22, "镜音连": 23, "巡音流歌": 24, "MEIKO": 25, "KAITO": 26
 };
 
+const VS_NAME_SET = new Set(["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"]);
+const isVsName = (name) => VS_NAME_SET.has(getBaseBannerName(name));
+const buildBannerNameWithUnit = (name, unit) => {
+  const baseName = getBaseBannerName(name);
+  const unitSuffix = String(unit || '').trim().toLowerCase();
+  if (!baseName) return '';
+  if (isVsName(baseName) && unitSuffix && unitSuffix !== 'vs') return `${baseName} ${unitSuffix}`;
+  return baseName;
+};
+
 const getCharOrder = (name) => {
-  const baseName = String(name || '').split(' ')[0];
+  const baseName = getBaseBannerName(name);
   return CHAR_ORDER[baseName] || 0;
 };
 
 function sortPredictedCardsForDisplay(cards, bannerName) {
   if (!Array.isArray(cards) || cards.length === 0) return [];
 
-  const baseBanner = String(bannerName || '').split(' ')[0];
-  const bannerIndex = cards.findIndex((c) => String(c.Name || '').split(' ')[0] === baseBanner);
+  const baseBanner = getBaseBannerName(bannerName);
+  const bannerIndex = cards.findIndex((c) => getBaseBannerName(c.Name) === baseBanner);
   const hasBanner = bannerIndex > -1;
   const bannerCard = hasBanner ? cards[bannerIndex] : null;
   const rest = cards.filter((_, idx) => !hasBanner || idx !== bannerIndex);
@@ -2139,9 +2241,9 @@ const isTeamWorldLink = (eventType, typeSeriesId) => {
 // App.vue 约第 135 行 savePredictEvent 替换为：
 provide('savePredictEvent', (payload) => {
   const { eventId, eventType, gachaType, predictAttr, bannerName: payloadBannerName, selectedChars, event_title } = payload;
-  const currentOfficialId = getCurrentPredictLockEventId();
-  if (Number(eventId) <= currentOfficialId) {
-    console.warn(`[predict] ignore save for event ${eventId}, current official id is ${currentOfficialId}`);
+  const sourceEvent = historyData.value.find(e => Number(e.id) === Number(eventId));
+  if (!sourceEvent || isJsonTestEvent(sourceEvent) || isJsonEventOfficialRevealed(sourceEvent)) {
+    console.warn(`[predict] ignore save for event ${eventId}, not editable by source JSON`);
     return;
   }
   
@@ -2155,13 +2257,14 @@ provide('savePredictEvent', (payload) => {
 
   const bannerCandidates = safeSelectedChars
     .filter((char) => isNonFesFourStar(char))
-    .map((char) => String(char?.name || '').trim())
+    .map((char) => getBaseBannerName(char?.name))
     .filter(Boolean);
 
+  const payloadBannerBaseName = getBaseBannerName(payloadBannerName);
   const resolvedBannerName = eventType === 'World Link'
     ? ''
-    : (bannerCandidates.includes(String(payloadBannerName || '').trim())
-      ? String(payloadBannerName || '').trim()
+    : (bannerCandidates.includes(payloadBannerBaseName)
+      ? payloadBannerBaseName
       : (bannerCandidates[0] || ''));
 
   if (eventType !== 'World Link' && !resolvedBannerName) {
@@ -2169,7 +2272,6 @@ provide('savePredictEvent', (payload) => {
     return;
   }
 
-  const sourceEvent = historyData.value.find(e => Number(e.id) === Number(eventId));
   const nextTypeSeriesId = eventType === 'World Link'
     ? (sourceEvent?.type_series_id ?? null)
     : getNextTypeSeriesId({ eventId, eventType, bannerName: resolvedBannerName });
@@ -2179,7 +2281,7 @@ provide('savePredictEvent', (payload) => {
   const generatedCardsRaw = safeSelectedChars.map((char, index) => {
     const rarity = char.rarity || "4";
     const isBfes = char.skillType === 'bfes_up' && rarity === '4';
-    const isVsName = ["初音未来", "镜音铃", "镜音连", "巡音流歌", "MEIKO", "KAITO"].includes(char.name);
+    const isVsCard = isVsName(char.name);
 
     let cardType = 'perm';
     if (isBfes) {
@@ -2199,9 +2301,9 @@ provide('savePredictEvent', (payload) => {
       Skill: isBfes ? 'bfes_up' : (char.skillType || "-"),
       Type: cardType,
       // 重点：使用 PredictEditor 传过来的 Affiliation (已包含 VS 的单位逻辑)
-      Affiliation: (isBfes && isVsName) ? 'vs' : (char.Affiliation || ""),
+      Affiliation: (isBfes && isVsCard) ? 'vs' : (char.Affiliation || ""),
       // Ban主作为 Banner
-      SeriesID: eventType === 'World Link' ? null : (String(char?.name || '').trim() === resolvedBannerName ? nextSid : null)
+      SeriesID: eventType === 'World Link' ? null : (getBaseBannerName(char?.name) === resolvedBannerName ? nextSid : null)
     };
   });
 
@@ -2213,12 +2315,14 @@ provide('savePredictEvent', (payload) => {
   const sourceUnit = String(sourceEvent?.unit || '').trim().toLowerCase();
   const finalUnit = predictedUnit || sourceUnit;
   const worldLinkUnit = teamWorldLink ? finalUnit : '';
+  const bannerCard = generatedCardsRaw.find((card) => getBaseBannerName(card?.Name) === resolvedBannerName && card?.SeriesID === nextSid);
   const finalBanner = eventType === 'World Link'
     ? ''
-    : resolvedBannerName;
+    : buildBannerNameWithUnit(resolvedBannerName, bannerCard?.Affiliation);
 
   const newPredictEvent = {
     id: Number(eventId),
+    predict_shift_count: getInsertedTestCountAtOrBefore(eventId),
     event_title: event_title,
     event_type: eventType,
     gacha_type: gachaType === 'limited' ? '普通限定' : (gachaType === 'ue' ? 'UE限定' : '常驻'),
@@ -2231,7 +2335,7 @@ provide('savePredictEvent', (payload) => {
   };
 
   // 更新逻辑
-  const index = predictiveEvents.value.findIndex(e => e.id === newPredictEvent.id);
+  const index = predictiveEvents.value.findIndex(e => Number(resolveShiftedPredictEventId(e)) === newPredictEvent.id);
   const updatedList = [...predictiveEvents.value]; 
   
   if (index > -1) {
@@ -2248,7 +2352,7 @@ provide('savePredictEvent', (payload) => {
 
 // 删除预测活动
 provide('deletePredictEvent', (id) => {
-  predictiveEvents.value = predictiveEvents.value.filter(e => e.id !== id);
+  predictiveEvents.value = predictiveEvents.value.filter(e => Number(resolveShiftedPredictEventId(e)) !== Number(id));
 });
 
 const handleGlobalPointerDown = (event) => {
