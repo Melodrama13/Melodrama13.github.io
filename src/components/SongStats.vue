@@ -128,7 +128,7 @@
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-vs-song-stats') }}</h2>
-                  <label class="song-duo-image-toggle">
+                  <label class="song-duo-image-toggle is-image-toggle">
                     <input :checked="vsSongImageMode" type="checkbox" @change="onVsSongImageModeChange" />
                     <span>曲绘显示</span>
                   </label>
@@ -225,7 +225,9 @@
                             :key="`vs-song-jacket-${row.name}-${song.songId}-${song.eventId}`"
                             class="song-image-jacket-tile song-vs-event-image-jacket-tile"
                             :title="song.songName || '-'"
-                            @click="showSongImageTitle($event, song.songName || '-')"
+                            @mouseenter="showSongImageTitle($event, song.songName || '-', { songId: song.songId })"
+                            @mouseleave="clearSongImageTitleToast"
+                            @click="showSongImageTitle($event, song.songName || '-', { songId: song.songId })"
                           >
                             <div :class="['song-jacket-media', 'song-duo-song-jacket-item', { 'is-3d-frame': song.has3d }]">
                               <img
@@ -331,7 +333,7 @@
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-oc-book-stats') }}</h2>
-                  <label class="song-duo-image-toggle">
+                  <label class="song-duo-image-toggle is-image-toggle">
                     <input :checked="ocBookImageMode" type="checkbox" @change="onOcBookImageModeChange" />
                     <span>曲绘显示</span>
                   </label>
@@ -410,7 +412,9 @@
                           :key="`oc-book-image-${member.name}-${song.songId}-${song.eventId}`"
                           class="song-oc-event-image-item"
                           :title="song.songName || '-'"
-                          @click="showSongImageTitle($event, song.songName || '-')"
+                          @mouseenter="showSongImageTitle($event, song.songName || '-', { songId: song.songId })"
+                          @mouseleave="clearSongImageTitleToast"
+                          @click="showSongImageTitle($event, song.songName || '-', { songId: song.songId })"
                         >
                           <div :class="['song-jacket-media', 'song-duo-song-jacket-item', 'song-oc-event-jacket', { 'is-3d-frame': song.has3d }]">
                             <img
@@ -476,7 +480,7 @@
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-another-vocal') }}</h2>
-                  <label class="song-duo-image-toggle">
+                  <label class="song-duo-image-toggle is-image-toggle">
                     <input :checked="anotherImageMode" type="checkbox" @change="onAnotherImageModeChange" />
                     <span>曲绘显示</span>
                   </label>
@@ -523,7 +527,9 @@
                         :key="`anvo-song-jacket-${row.name}-${song.id}-${song.vocalId}`"
                         class="song-image-jacket-tile song-anvo-jacket-tile"
                         :title="song.title || '-'"
-                        @click="showSongImageTitle($event, song.title || '-')"
+                        @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
+                        @mouseleave="clearSongImageTitleToast"
+                        @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                       >
                         <div class="song-jacket-media song-duo-song-jacket-item">
                           <img
@@ -586,7 +592,7 @@
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-duo-stats') }}</h2>
-                  <label class="song-duo-image-toggle">
+                  <label class="song-duo-image-toggle is-image-toggle">
                     <input :checked="duoImageMode" type="checkbox" @change="onDuoImageModeChange" />
                     <span>曲绘显示</span>
                   </label>
@@ -637,7 +643,9 @@
                             :key="`duo-song-jacket-${card.key}-${song.id}`"
                             class="song-image-jacket-tile song-duo-jacket-tile"
                             :title="song.title || '-'"
-                            @click="showSongImageTitle($event, song.title || '-')"
+                            @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
+                            @mouseleave="clearSongImageTitleToast"
+                            @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
                               <img
@@ -728,9 +736,13 @@
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-3dmv-stats') }}</h2>
-                  <label class="song-duo-image-toggle">
+                  <label class="song-duo-image-toggle is-image-toggle">
                     <input :checked="threeDmvImageMode" type="checkbox" @change="onThreeDmvImageModeChange" />
                     <span>曲绘显示</span>
+                  </label>
+                  <label class="song-duo-image-toggle">
+                    <input :checked="threeDmvCoverOnly" type="checkbox" @change="onThreeDmvCoverOnlyChange" />
+                    <span>仅翻唱</span>
                   </label>
                 </div>
                 <button class="pjsk-ui-btn-pill card-export-btn song-export-btn" :disabled="isExportingPng" @click="exportSongPanelPng('panel-3dmv-stats', getSongSectionTitle('panel-3dmv-stats'))">PNG</button>
@@ -821,7 +833,9 @@
                             :key="`3dmv-image-small-${unitCard.unit}-${song.id}`"
                             class="song-image-jacket-tile song-3dmv-jacket-tile"
                             :title="song.title || '-'"
-                            @click="showSongImageTitle($event, song.title || '-')"
+                            @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
+                            @mouseleave="clearSongImageTitleToast"
+                            @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
                               <img
@@ -858,7 +872,9 @@
                             :key="`3dmv-image-full-${unitCard.unit}-${song.id}`"
                             class="song-image-jacket-tile song-3dmv-jacket-tile"
                             :title="song.title || '-'"
-                            @click="showSongImageTitle($event, song.title || '-')"
+                            @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
+                            @mouseleave="clearSongImageTitleToast"
+                            @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
                               <img
@@ -896,9 +912,13 @@
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ getSongSectionTitle('panel-2dmv-stats') }}</h2>
-                  <label class="song-duo-image-toggle">
+                  <label class="song-duo-image-toggle is-image-toggle">
                     <input :checked="twoDmvImageMode" type="checkbox" @change="onTwoDmvImageModeChange" />
                     <span>曲绘显示</span>
+                  </label>
+                  <label class="song-duo-image-toggle">
+                    <input :checked="twoDmvCoverOnly" type="checkbox" @change="onTwoDmvCoverOnlyChange" />
+                    <span>仅翻唱</span>
                   </label>
                 </div>
                 <button class="pjsk-ui-btn-pill card-export-btn song-export-btn" :disabled="isExportingPng" @click="exportSongPanelPng('panel-2dmv-stats', getSongSectionTitle('panel-2dmv-stats'))">PNG</button>
@@ -989,7 +1009,9 @@
                             :key="`2dmv-image-small-${unitCard.unit}-${song.id}`"
                             class="song-image-jacket-tile song-3dmv-jacket-tile"
                             :title="song.title || '-'"
-                            @click="showSongImageTitle($event, song.title || '-')"
+                            @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
+                            @mouseleave="clearSongImageTitleToast"
+                            @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
                               <img
@@ -1026,7 +1048,9 @@
                             :key="`2dmv-image-full-${unitCard.unit}-${song.id}`"
                             class="song-image-jacket-tile song-3dmv-jacket-tile"
                             :title="song.title || '-'"
-                            @click="showSongImageTitle($event, song.title || '-')"
+                            @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
+                            @mouseleave="clearSongImageTitleToast"
+                            @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
                               <img
@@ -1057,6 +1081,65 @@
                     </div>
                   </template>
                 </article>
+              </div>
+            </article>
+
+            <article id="panel-april-fool-stats" class="stats-section card-panel" data-scroll-anchor="panel-april-fool-stats">
+              <div class="section-head section-head-sub">
+                <div class="section-head-left">
+                  <h2>{{ getSongSectionTitle('panel-april-fool-stats') }}</h2>
+                </div>
+                <button class="pjsk-ui-btn-pill card-export-btn song-export-btn" :disabled="isExportingPng" @click="exportSongPanelPng('panel-april-fool-stats', getSongSectionTitle('panel-april-fool-stats'))">PNG</button>
+              </div>
+
+              <div class="song-april-year-grid">
+                <article
+                  v-for="yearCard in aprilFoolSongStatsByYear"
+                  :key="`april-fool-year-${yearCard.year}`"
+                  class="song-april-year-card"
+                >
+                  <div class="song-april-year-head">
+                    <span class="song-april-year-title">{{ yearCard.year }}</span>
+                  </div>
+                  <ul class="song-april-song-list">
+                    <li
+                      v-for="song in yearCard.songs"
+                      :key="`april-fool-song-${yearCard.year}-${song.id}`"
+                      class="song-april-song-row"
+                    >
+                      <div
+                        class="song-jacket-media song-april-song-jacket"
+                        @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
+                        @mouseleave="clearSongImageTitleToast"
+                        @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
+                      >
+                        <img
+                          v-if="song.jacketUrl"
+                          :src="song.jacketUrl"
+                          :alt="`${song.title || '歌曲'} 封面`"
+                          class="song-jacket-img media-load-shimmer"
+                          loading="lazy"
+                          decoding="async"
+                          @load="onSongJacketLoad"
+                          @error="onSongJacketError"
+                        />
+                        <span class="song-jacket-fallback">-</span>
+                      </div>
+                      <div class="song-april-vocal-icons">
+                        <img
+                          v-for="icon in song.vocalIcons"
+                          :key="`april-fool-icon-${yearCard.year}-${song.id}-${icon.name}`"
+                          :src="icon.icon"
+                          :alt="icon.name"
+                          :title="icon.name"
+                          class="song-oc-event-vs-icon song-april-vocal-icon"
+                          :style="{ borderColor: icon.borderColor }"
+                        />
+                      </div>
+                    </li>
+                  </ul>
+                </article>
+                <div v-if="aprilFoolSongStatsByYear.length === 0" class="song-empty">暂无愚人节歌曲数据</div>
               </div>
             </article>
           </div>
@@ -1150,7 +1233,12 @@
                 <tr v-for="song in pagedSongs" :key="`song-${song.id}-${song.title}`">
                   <td>{{ song.id }}</td>
                   <td class="song-jacket-cell">
-                    <div class="song-jacket-media" @click="showSongImageTitle($event, song.title || '-')">
+                    <div
+                      class="song-jacket-media"
+                      @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id, compact: true })"
+                      @mouseleave="clearSongImageTitleToast"
+                      @click="showSongImageTitle($event, song.title || '-', { songId: song.id, compact: true })"
+                    >
                       <img
                         v-if="song.jacketUrl"
                         :src="song.jacketUrl"
@@ -1242,13 +1330,70 @@
           </section>
         </section>
 
-        <div
-          v-if="songImageTitleToast"
-          class="song-image-title-toast"
-          :style="{ left: `${songImageTitleToast.left}px`, top: `${songImageTitleToast.top}px` }"
-        >
-          {{ songImageTitleToast.text }}
-        </div>
+        <Transition name="song-image-title-toast-fade">
+          <div
+            v-if="songImageTitleToast"
+            class="song-image-title-toast"
+            :style="{ left: `${songImageTitleToast.left}px`, top: `${songImageTitleToast.top}px` }"
+          >
+            <template v-if="songImageTitleToast.compact">
+              <span class="song-toast-compact-id">#{{ songImageTitleToast.idText }}</span>
+              <span class="song-toast-compact-title">{{ songImageTitleToast.title }}</span>
+            </template>
+            <template v-else>
+              <div class="song-toast-head">
+                <span class="song-toast-id">#{{ songImageTitleToast.idText }}</span>
+                <span class="song-toast-title">{{ songImageTitleToast.title }}</span>
+              </div>
+              <div class="song-toast-diff-wrap">
+                <span
+                  v-for="diff in songImageTitleToast.difficulties"
+                  :key="`toast-diff-${diff.key}`"
+                  :class="['song-diff-badge', `is-${diff.key}`, { 'is-empty': diff.empty }]"
+                >
+                  {{ diff.empty ? '' : diff.text }}
+                </span>
+              </div>
+              <div v-if="songImageTitleToast.mvTags.length || songImageTitleToast.groupTags.length" class="song-toast-tag-meta">
+                <div v-if="songImageTitleToast.mvTags.length" class="song-toast-tag-row">
+                  <span class="song-toast-tag-label">MV</span>
+                  <div class="song-mv-wrap song-toast-mv-wrap">
+                    <span
+                      v-for="mv in songImageTitleToast.mvTags"
+                      :key="`toast-mv-${mv.key}`"
+                      :class="['song-mv-chip', mv.tone]"
+                    >
+                      {{ mv.label }}
+                    </span>
+                  </div>
+                </div>
+                <div v-if="songImageTitleToast.groupTags.length" class="song-toast-tag-row">
+                  <span class="song-toast-tag-label">团体</span>
+                  <div class="song-group-wrap song-toast-group-wrap">
+                    <template v-for="group in songImageTitleToast.groupTags" :key="`toast-group-${group.key}`">
+                      <img
+                        v-if="group.kind === 'logo'"
+                        :src="group.icon"
+                        :alt="group.label"
+                        :title="group.label"
+                        class="song-group-logo song-toast-group-logo"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <span v-else :class="['song-group-pill', { 'is-other': group.kind === 'other' }]">{{ group.label }}</span>
+                    </template>
+                  </div>
+                </div>
+              </div>
+              <div class="song-toast-meta">
+                <div v-if="songImageTitleToast.releaseDate"><span>日期</span><b>{{ songImageTitleToast.releaseDate }}</b></div>
+                <div v-if="songImageTitleToast.composer"><span>作曲</span><b>{{ songImageTitleToast.composer }}</b></div>
+                <div v-if="songImageTitleToast.lyricist"><span>作词</span><b>{{ songImageTitleToast.lyricist }}</b></div>
+                <div v-if="songImageTitleToast.arranger"><span>编曲</span><b>{{ songImageTitleToast.arranger }}</b></div>
+              </div>
+            </template>
+          </div>
+        </Transition>
       </div>
     </div>
 
@@ -1319,6 +1464,8 @@ const duoNameCompactMap = ref({});
 const duoImageMode = ref(false);
 const threeDmvImageMode = ref(false);
 const twoDmvImageMode = ref(false);
+const threeDmvCoverOnly = ref(false);
+const twoDmvCoverOnly = ref(false);
 const duoNameRefMap = new Map();
 const duoPairGridRefMap = new Map();
 const duoPairGridColumnMap = ref({});
@@ -1499,6 +1646,7 @@ const SONG_SECTION_TITLE_MAP = Object.freeze({
   'panel-duo-stats': '双人歌曲统计',
   'panel-3dmv-stats': '3DMV统计',
   'panel-2dmv-stats': '2DMV统计',
+  'panel-april-fool-stats': '愚人节歌曲统计',
   'panel-song-search': '乐曲检索'
 });
 
@@ -1701,6 +1849,11 @@ const navGroups = computed(() => {
       id: 'panel-2dmv-stats',
       title: getSongSectionTitle('panel-2dmv-stats'),
       children: [...twoDmvUnitNavChildren.value]
+    },
+    {
+      id: 'panel-april-fool-stats',
+      title: getSongSectionTitle('panel-april-fool-stats'),
+      children: []
     },
     {
       id: 'panel-song-search',
@@ -2266,6 +2419,7 @@ const onThreeDmvImageModeChange = (event) => {
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
     threeDmvImageMode.value = checked;
+    twoDmvImageMode.value = checked;
   }, anchorEl);
 };
 
@@ -2274,6 +2428,25 @@ const onTwoDmvImageModeChange = (event) => {
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
     twoDmvImageMode.value = checked;
+    threeDmvImageMode.value = checked;
+  }, anchorEl);
+};
+
+const onThreeDmvCoverOnlyChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    threeDmvCoverOnly.value = checked;
+    twoDmvCoverOnly.value = checked;
+  }, anchorEl);
+};
+
+const onTwoDmvCoverOnlyChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    twoDmvCoverOnly.value = checked;
+    threeDmvCoverOnly.value = checked;
   }, anchorEl);
 };
 
@@ -2445,6 +2618,7 @@ const bindSectionObserver = async () => {
 onMounted(() => {
   updateMobileNavState();
   window.addEventListener('resize', handleWindowResize);
+  document.addEventListener('pointerdown', handleDocumentPointerDownForSongToast, true);
   bindViewportScrollTracking();
   const localRoot = songStatsRootRef.value;
   const statsMain = localRoot instanceof HTMLElement ? localRoot.querySelector('.stats-main') : null;
@@ -2478,6 +2652,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleWindowResize);
+  document.removeEventListener('pointerdown', handleDocumentPointerDownForSongToast, true);
   if (statsMainInteractionHost instanceof HTMLElement) {
     statsMainInteractionHost.removeEventListener('pointerdown', rememberInteractiveAnchorFromEvent, true);
     statsMainInteractionHost.removeEventListener('keydown', rememberInteractiveAnchorFromEvent, true);
@@ -2693,6 +2868,7 @@ const normalizeSongRow = (row) => {
     arranger,
     releaseDate,
     releaseDateText: formatSongShortDate(releaseDate),
+    isNewlyWrittenMusic: row?.isNewlyWrittenMusic === true,
     searchTitle: normalizeSearchText(title),
     searchComposer: normalizeSearchText(composer),
     searchLyricist: normalizeSearchText(lyricist),
@@ -2773,6 +2949,12 @@ const normalizeCharacterName = (rawName) => {
   if (!full) return '';
   if (characterByName.value.has(full)) return full;
 
+  const affiliationMatch = full.match(/^(.+?)[\s_-]+(ln|mmj|vbs|ws|nc|vs)$/i);
+  if (affiliationMatch) {
+    const baseWithSuffix = affiliationMatch[1].trim();
+    if (baseWithSuffix && characterByName.value.has(baseWithSuffix)) return baseWithSuffix;
+  }
+
   const base = full.split(/\s+/)[0] || '';
   if (base && characterByName.value.has(base)) return base;
   return '';
@@ -2783,6 +2965,36 @@ const getCharacterAvatarSrc = (rawName) => {
   const meta = characterByName.value.get(normalized);
   const key = String(meta?.abbr || '').trim();
   return key ? `/chibi_s/${key}.webp` : '';
+};
+
+const getAprilFoolCharacterIcon = (rawName) => {
+  const full = String(rawName || '').trim();
+  const affiliationMatch = full.match(/^(.+?)[\s_-]+(ln|mmj|vbs|ws|nc)$/i);
+  if (affiliationMatch) {
+    const baseName = affiliationMatch[1].trim();
+    const unit = affiliationMatch[2].trim().toLowerCase();
+    const normalized = normalizeCharacterName(baseName);
+    const meta = characterByName.value.get(normalized);
+    if (meta?.unit === 'vs') {
+      const key = String(meta?.abbr || '').trim().toLowerCase();
+      if (key) {
+        return {
+          name: full,
+          icon: `/chibi_s/${key}_${unit}.webp`,
+          borderColor: unitColorMap.value[unit] || BASE_UNIT_COLOR_MAP[unit] || '#cbd5e1'
+        };
+      }
+    }
+  }
+
+  const normalized = normalizeCharacterName(full);
+  const meta = characterByName.value.get(normalized);
+  const unit = meta?.unit || 'vs';
+  return {
+    name: full,
+    icon: getCharacterAvatarSrc(full),
+    borderColor: unitColorMap.value[unit] || BASE_UNIT_COLOR_MAP[unit] || '#cbd5e1'
+  };
 };
 
 const getCharacterColor = (rawName) => {
@@ -3654,11 +3866,11 @@ const buildThreeDmvVocalMatch = (song, unitKey) => {
   return candidates[0] || null;
 };
 
-const buildDetailMvStatsByUnit = ({ hasMv, makeAnchorId, forceFullUnit = '' }) => {
+const buildDetailMvStatsByUnit = ({ hasMv, makeAnchorId, forceFullUnit = '', coverOnly = false }) => {
   return OC_UNIT_OPTIONS.map((unitOption) => {
     const unitKey = unitOption.key;
     const songs = songsForStats.value
-      .filter((song) => isCoreUniqueSongForUnit(song, unitKey) && hasMv(song))
+      .filter((song) => isCoreUniqueSongForUnit(song, unitKey) && hasMv(song) && (!coverOnly || song.isNewlyWrittenMusic === false))
       .map((song) => {
         const vocalMatch = buildThreeDmvVocalMatch(song, unitKey);
         if (!vocalMatch) return null;
@@ -3717,13 +3929,66 @@ const buildDetailMvStatsByUnit = ({ hasMv, makeAnchorId, forceFullUnit = '' }) =
 const threeDmvStatsByUnit = computed(() => buildDetailMvStatsByUnit({
   hasMv: hasSong3DMVCategory,
   makeAnchorId: makeThreeDmvUnitNavAnchorId,
-  forceFullUnit: 'ln'
+  forceFullUnit: 'ln',
+  coverOnly: threeDmvCoverOnly.value
 }));
 
 const twoDmvStatsByUnit = computed(() => buildDetailMvStatsByUnit({
   hasMv: hasSong2DMVCategory,
-  makeAnchorId: makeTwoDmvUnitNavAnchorId
+  makeAnchorId: makeTwoDmvUnitNavAnchorId,
+  coverOnly: twoDmvCoverOnly.value
 }));
+
+const parseAprilFoolYear = (typeRaw) => {
+  const match = normalizeCategoryKey(typeRaw).match(/^april_fool_(\d{4})$/);
+  return match ? match[1] : '';
+};
+
+const aprilFoolSongStatsByYear = computed(() => {
+  const yearMap = new Map();
+
+  songsForStats.value.forEach((song) => {
+    song.vocals.forEach((vocal) => {
+      const year = parseAprilFoolYear(vocal?.type);
+      if (!year) return;
+      if (!yearMap.has(year)) {
+        yearMap.set(year, new Map());
+      }
+
+      const songKey = `${song.id}-${song.title || ''}`;
+      const songMap = yearMap.get(year);
+      if (!songMap.has(songKey)) {
+        songMap.set(songKey, {
+          id: song.id,
+          title: song.title || '-',
+          jacketUrl: song.jacketUrl || '',
+          vocalIcons: new Map()
+        });
+      }
+
+      const row = songMap.get(songKey);
+      asArray(vocal?.characters).forEach((rawName) => {
+        const icon = getAprilFoolCharacterIcon(rawName);
+        if (!icon.icon) return;
+        if (!row.vocalIcons.has(icon.name)) {
+          row.vocalIcons.set(icon.name, icon);
+        }
+      });
+    });
+  });
+
+  return Array.from(yearMap.entries())
+    .sort(([yearA], [yearB]) => Number(yearA) - Number(yearB))
+    .map(([year, songMap]) => {
+      const songs = Array.from(songMap.values())
+        .map((song) => ({
+          ...song,
+          vocalIcons: Array.from(song.vocalIcons.values())
+        }))
+        .sort((a, b) => normalizeSongId(a.id) - normalizeSongId(b.id));
+      return { year, songs };
+    });
+});
 
 const isDuoCardExpanded = (key) => duoCardExpandedMap.value[key] !== false;
 
@@ -3840,6 +4105,22 @@ const isSongDifficultyMissing = (song, key) => {
   return raw === null || raw === undefined || raw === '';
 };
 
+const buildSongDifficultyToastItems = (song) => {
+  return SONG_DIFFICULTY_ORDER.map((diff) => ({
+    key: diff.key,
+    text: getSongDifficultyText(song, diff.key),
+    empty: diff.key === 'append' && isSongDifficultyMissing(song, diff.key)
+  }));
+};
+
+const formatSongToastDate = (raw) => {
+  const text = String(raw || '').trim();
+  if (!text) return '';
+  const dateMatch = text.match(/^\d{2,4}[/-]\d{1,2}[/-]\d{1,2}/);
+  if (dateMatch) return dateMatch[0];
+  return text.split(/[T\s]+/)[0] || text;
+};
+
 const totalSongPages = computed(() => {
   return Math.max(1, Math.ceil(filteredSongs.value.length / songPageSize.value));
 });
@@ -3888,42 +4169,110 @@ const onSongJacketLoad = (event) => {
   }
 };
 
-const showSongImageTitle = (event, rawTitle) => {
-  const nextTitle = String(rawTitle || '').trim() || '-';
+const closeSongImageTitleToast = () => {
+  songImageTitleToast.value = null;
+  if (songImageTitleToastTimer) {
+    clearTimeout(songImageTitleToastTimer);
+    songImageTitleToastTimer = 0;
+  }
+};
+
+const clearSongImageTitleToast = (event = null) => {
+  if (event?.type === 'mouseleave' && songImageTitleToast.value?.pinned) return;
+  closeSongImageTitleToast();
+};
+
+const handleDocumentPointerDownForSongToast = (event) => {
+  if (!songImageTitleToast.value) return;
+  const target = event?.target;
+  if (target instanceof HTMLElement && target.closest('.song-jacket-media')) return;
+  closeSongImageTitleToast();
+};
+
+const showSongImageTitle = (event, rawTitle, options = {}) => {
+  const songId = toFiniteSongId(options?.songId);
+  const song = songId === null ? null : songsById.value.get(songId);
+  const nextTitle = String(song?.title || rawTitle || '').trim() || '-';
+  const idText = songId === null ? String(song?.id || '-').trim() || '-' : String(songId);
+  const compact = options?.compact === true;
+  const isHoverOpen = event?.type === 'mouseenter';
+  const isClickOpen = event?.type === 'click';
+  const toastKey = `${compact ? 'compact' : 'full'}::${songId === null ? '' : songId}::${nextTitle}`;
+  if (isHoverOpen && songImageTitleToast.value?.pinned) return;
+  if (isClickOpen && songImageTitleToast.value?.pinned && songImageTitleToast.value?.key === toastKey) {
+    closeSongImageTitleToast();
+    return;
+  }
   const targetEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
-  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
-  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 720;
-  const estimatedWidth = Math.min(320, Math.max(140, Math.ceil(nextTitle.length * 14)));
-  const estimatedHeight = 34;
+  const statsMain = songStatsRootRef.value instanceof HTMLElement
+    ? songStatsRootRef.value.querySelector('.stats-main')
+    : null;
+  const statsRect = statsMain instanceof HTMLElement ? statsMain.getBoundingClientRect() : null;
+  const host = typeof document !== 'undefined' ? getScrollContainer() : null;
+  const hostRect = host instanceof HTMLElement ? host.getBoundingClientRect() : null;
+  const viewportWidth = hostRect?.width || (typeof window !== 'undefined' ? window.innerWidth : 1280);
+  const viewportHeight = hostRect?.height || (typeof window !== 'undefined' ? window.innerHeight : 720);
+  const estimatedWidth = compact
+    ? Math.min(360, Math.max(180, Math.ceil(nextTitle.length * 12) + 58))
+    : Math.min(360, Math.max(260, Math.ceil(nextTitle.length * 9) + 72));
+  const estimatedHeight = compact ? 34 : 230;
 
   let left = Math.max(8, Math.floor((viewportWidth - estimatedWidth) / 2));
   let top = Math.max(8, viewportHeight - estimatedHeight - 20);
 
-  if (targetEl) {
+  if (targetEl && statsRect) {
     const rect = targetEl.getBoundingClientRect();
-    const preferRightLeft = rect.right + 10;
-    const preferLeftLeft = rect.left - estimatedWidth - 10;
-    left = preferRightLeft + estimatedWidth <= viewportWidth - 8
+    const visibleLeft = Math.max(8, (hostRect ? hostRect.left : 0) - statsRect.left + 8);
+    const visibleRight = Math.min(statsRect.width - 8, visibleLeft + viewportWidth - 16);
+    const visibleTop = Math.max((hostRect ? hostRect.top : 0) - statsRect.top + 8, 58 - statsRect.top);
+    const visibleBottom = visibleTop + viewportHeight - 16;
+    const targetLeft = rect.left - statsRect.left;
+    const targetRight = rect.right - statsRect.left;
+    const targetTop = rect.top - statsRect.top;
+    const targetBottom = rect.bottom - statsRect.top;
+    const preferRightLeft = targetRight + 10;
+    const preferLeftLeft = targetLeft - estimatedWidth - 10;
+    left = preferRightLeft + estimatedWidth <= visibleRight
       ? preferRightLeft
-      : Math.max(8, preferLeftLeft);
-    top = rect.top + rect.height / 2 - estimatedHeight / 2;
+      : Math.max(visibleLeft, preferLeftLeft);
+    top = targetTop + rect.height / 2 - estimatedHeight / 2;
+    if (top < visibleTop) top = targetBottom + 10;
+    if (top + estimatedHeight > visibleBottom && targetTop - estimatedHeight - 10 >= visibleTop) {
+      top = targetTop - estimatedHeight - 10;
+    }
+    left = Math.max(visibleLeft, Math.min(visibleRight - estimatedWidth, left));
+    top = Math.max(visibleTop, Math.min(visibleBottom - estimatedHeight, top));
+  } else {
+    left = Math.max(8, Math.min(viewportWidth - estimatedWidth - 8, left));
+    top = Math.max(8, Math.min(viewportHeight - estimatedHeight - 8, top));
   }
 
-  left = Math.max(8, Math.min(viewportWidth - estimatedWidth - 8, left));
-  top = Math.max(8, Math.min(viewportHeight - estimatedHeight - 8, top));
-
   songImageTitleToast.value = {
-    text: nextTitle,
+    key: toastKey,
+    pinned: isClickOpen,
+    compact,
+    idText,
+    title: nextTitle,
+    difficulties: song ? buildSongDifficultyToastItems(song) : [],
+    mvTags: Array.isArray(song?.mvTags) ? song.mvTags : [],
+    groupTags: Array.isArray(song?.groupTags) ? song.groupTags : [],
+    releaseDate: formatSongToastDate(song?.releaseDate),
+    composer: String(song?.composer || '').trim(),
+    lyricist: String(song?.lyricist || '').trim(),
+    arranger: String(song?.arranger || '').trim(),
     left: Math.round(left),
     top: Math.round(top)
   };
   if (songImageTitleToastTimer) {
     clearTimeout(songImageTitleToastTimer);
-  }
-  songImageTitleToastTimer = setTimeout(() => {
-    songImageTitleToast.value = null;
     songImageTitleToastTimer = 0;
-  }, 1600);
+  }
+  if (!isHoverOpen && !isClickOpen) {
+    songImageTitleToastTimer = setTimeout(() => {
+      songImageTitleToast.value = null;
+      songImageTitleToastTimer = 0;
+    }, compact ? 1600 : 2800);
+  }
 };
 
 const waitNextPaint = () => new Promise((resolve) => {
@@ -5938,6 +6287,7 @@ watch(totalSongPages, (nextTotal) => {
 
 .stats-main {
   min-width: 0;
+  position: relative;
 }
 
 .stats-main-head {
@@ -7619,6 +7969,88 @@ watch(totalSongPages, (nextTotal) => {
   left: auto;
 }
 
+.song-april-year-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 10px;
+}
+
+.song-april-year-card {
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 10px;
+  padding: 9px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.28)),
+    linear-gradient(135deg, rgba(125, 211, 252, 0.18), rgba(244, 114, 182, 0.14) 52%, rgba(167, 243, 208, 0.16));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 8px 20px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  min-width: 0;
+}
+
+.song-april-year-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.song-april-year-title {
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.song-april-year-count {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  font-size: 0.9rem;
+}
+
+.song-april-song-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.song-april-song-row {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 30px;
+  min-width: 0;
+}
+
+.song-april-song-jacket {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  border-radius: 7px;
+}
+
+.song-april-vocal-icons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-width: 0;
+  overflow: visible;
+}
+
+.song-april-vocal-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
 .song-toolbar {
   display: flex;
   gap: 10px;
@@ -7834,9 +8266,10 @@ watch(totalSongPages, (nextTotal) => {
   transition: filter 0.2s ease, transform 0.2s ease;
 }
 
+.song-image-jacket-tile:active .song-jacket-media,
 .song-jacket-media:active {
-  filter: brightness(0.88);
-  transform: scale(0.98);
+  filter: brightness(0.9);
+  transform: scale(0.97);
 }
 
 .song-jacket-media.is-3d-frame {
@@ -8079,23 +8512,147 @@ watch(totalSongPages, (nextTotal) => {
 }
 
 .song-image-title-toast {
-  position: fixed;
-  max-width: min(82vw, 320px);
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(51, 65, 85, 0.3);
-  background: rgba(255, 255, 255, 0.96);
+  position: absolute;
+  width: max-content;
+  max-width: min(86vw, 360px);
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  background: rgba(255, 255, 255, 0.97);
   color: #0f172a;
   font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1.25;
-  text-align: center;
+  line-height: 1.35;
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.18);
-  z-index: 1200;
+  z-index: 4600;
   pointer-events: none;
+  overflow: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.song-image-title-toast-fade-enter-active,
+.song-image-title-toast-fade-leave-active {
+  transform-origin: top center;
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1.12);
+}
+
+.song-image-title-toast-fade-enter-from,
+.song-image-title-toast-fade-leave-to {
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+}
+
+.song-toast-head,
+.song-image-title-toast > .song-toast-compact-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.song-toast-id,
+.song-toast-compact-id {
+  flex: 0 0 auto;
+  color: #2563eb;
+  font-size: 0.76rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.song-toast-title,
+.song-toast-compact-title {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.song-toast-compact-title {
+  margin-left: 7px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.song-toast-diff-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.song-toast-diff-wrap .song-diff-badge {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  max-width: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  flex: 0 0 24px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  font-size: 0.64rem;
+  line-height: 1;
+}
+
+.song-toast-tag-meta {
+  display: grid;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.song-toast-tag-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+}
+
+.song-toast-tag-label {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.song-toast-mv-wrap,
+.song-toast-group-wrap {
+  gap: 5px;
+}
+
+.song-toast-mv-wrap .song-mv-chip {
+  padding: 2px 7px;
+  font-size: 0.68rem;
+}
+
+.song-toast-group-logo {
+  width: 22px;
+  height: 22px;
+}
+
+.song-toast-meta {
+  display: grid;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.song-toast-meta div {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 7px;
+  align-items: start;
+}
+
+.song-toast-meta span {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.song-toast-meta b {
+  color: #111827;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.38;
+  word-break: break-word;
 }
 
 .song-page-size-field {
@@ -8401,12 +8958,12 @@ watch(totalSongPages, (nextTotal) => {
     font-size: 0.7rem;
   }
 
-  .song-duo-image-toggle > span {
+  .song-duo-image-toggle.is-image-toggle > span {
     font-size: 0;
     line-height: 1;
   }
 
-  .song-duo-image-toggle > span::after {
+  .song-duo-image-toggle.is-image-toggle > span::after {
     content: '曲绘';
     font-size: 0.7rem;
   }

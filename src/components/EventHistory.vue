@@ -803,7 +803,8 @@
           </button>
           <div class="event-basic">
             <span class="event-id">#{{ row.event.id }}</span>
-            <span class="event-date">{{ row.event.date }}</span>
+            <span class="event-date">{{ formatEventDatePadded(row.event.start_date) }}</span>
+            <span v-if="row.event.end_date" class="event-end-date">{{ formatEventDatePadded(row.event.end_date) }}</span>
             <span v-if="getBoxTurnInRound(row.event)" class="box-turn-tag">轮{{ getBoxTurnInRound(row.event) }}</span>
             <div v-if="isSpecialFestival(row.event.festival)" class="fest-tag">
               {{ row.event.festival }}
@@ -958,11 +959,12 @@
                 class="song-tooltip"
                 :class="{ 'is-open': isSongTooltipOpen(row.key) }"
                 v-if="hasSongTooltip(row.event)"
-                @mouseenter="setTooltipRaisedEvent(row.key)"
+                :style="getSongTooltipStyle(row.key)"
+                @mouseenter="handleSongTooltipEnter(row.key, $event)"
                 @mouseleave="clearTooltipRaisedEvent(row.key)"
-                @focusin="setTooltipRaisedEvent(row.key)"
+                @focusin="handleSongTooltipEnter(row.key, $event)"
                 @focusout="clearTooltipRaisedEvent(row.key)"
-                @click.stop="toggleSongTooltip(row.key)"
+                @click.stop="toggleSongTooltip(row.key, $event)"
               >
                 <span class="info-icon" aria-hidden="true">🎵</span>
                 <div class="tooltip-content">
@@ -1105,8 +1107,11 @@ const previewDataRows = ref([]);
 const tooltipRaisedEventKey = ref(null);
 const openedCardTooltipKey = ref('');
 const openedSongTooltipEventKey = ref('');
+const pinnedCardTooltipKey = ref('');
+const pinnedSongTooltipEventKey = ref('');
 const openedBirthdayInfoKey = ref('');
 const cardTooltipOffsetMap = ref({});
+const songTooltipOffsetMap = ref({});
 
 const makeCardTooltipKey = (eventKey, card, slotKey = '') => {
   const eventPart = String(eventKey || '').trim();
@@ -1126,8 +1131,11 @@ const hasOpenTooltipForEventKey = (eventKey) => {
 const closeInlineTooltips = () => {
   openedCardTooltipKey.value = '';
   openedSongTooltipEventKey.value = '';
+  pinnedCardTooltipKey.value = '';
+  pinnedSongTooltipEventKey.value = '';
   tooltipRaisedEventKey.value = null;
   cardTooltipOffsetMap.value = {};
+  songTooltipOffsetMap.value = {};
 };
 
 const setCardTooltipOffset = (tooltipKey, offsetX = 0, offsetY = 0) => {
@@ -1153,6 +1161,17 @@ const getCardTooltipStyle = (eventKey, card, slotKey = '') => {
   return cardTooltipOffsetMap.value[key] || null;
 };
 
+const getTooltipViewportEdges = () => {
+  const container = historyContainer.value;
+  const containerRect = container instanceof HTMLElement ? container.getBoundingClientRect() : null;
+  return {
+    left: 8,
+    right: window.innerWidth - 8,
+    top: Math.max(58, containerRect ? containerRect.top + 8 : 8),
+    bottom: Math.min(window.innerHeight - 8, containerRect ? containerRect.bottom - 8 : window.innerHeight - 8)
+  };
+};
+
 const adjustCardTooltipViewport = (eventKey, card, slotKey = '', hostEl = null) => {
   const tooltipKey = makeCardTooltipKey(eventKey, card, slotKey);
   const host = hostEl instanceof HTMLElement ? hostEl : null;
@@ -1163,31 +1182,114 @@ const adjustCardTooltipViewport = (eventKey, card, slotKey = '', hostEl = null) 
 
   clearCardTooltipOffset(tooltipKey);
   const rect = tooltipEl.getBoundingClientRect();
-  const edge = 8;
+  const edges = getTooltipViewportEdges();
   let shiftX = 0;
   let shiftY = 0;
 
-  if (rect.left < edge) {
-    shiftX += edge - rect.left;
+  if (rect.left < edges.left) {
+    shiftX += edges.left - rect.left;
   }
-  if (rect.right > window.innerWidth - edge) {
-    shiftX -= rect.right - (window.innerWidth - edge);
+  if (rect.right > edges.right) {
+    shiftX -= rect.right - edges.right;
   }
-  if (rect.top < edge) {
-    shiftY += edge - rect.top;
+  if (rect.top < edges.top) {
+    shiftY += edges.top - rect.top;
   }
-  if (rect.bottom > window.innerHeight - edge) {
-    shiftY -= rect.bottom - (window.innerHeight - edge);
+  if (rect.bottom > edges.bottom) {
+    shiftY -= rect.bottom - edges.bottom;
   }
 
   setCardTooltipOffset(tooltipKey, shiftX, shiftY);
 };
 
+const adjustCardTooltipViewportAfterOpen = async (eventKey, card, slotKey = '', hostEl = null) => {
+  await nextTick();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  adjustCardTooltipViewport(eventKey, card, slotKey, hostEl);
+};
+
 const handleCardTooltipEnter = (eventKey, card, slotKey = '', event) => {
+  if (pinnedCardTooltipKey.value || pinnedSongTooltipEventKey.value) return;
+  const key = makeCardTooltipKey(eventKey, card, slotKey);
   setTooltipRaisedEvent(eventKey);
+  openedCardTooltipKey.value = key;
+  openedSongTooltipEventKey.value = '';
   const host = event?.currentTarget;
   if (!(host instanceof HTMLElement)) return;
-  adjustCardTooltipViewport(eventKey, card, slotKey, host);
+  void adjustCardTooltipViewportAfterOpen(eventKey, card, slotKey, host);
+};
+
+const setSongTooltipOffset = (eventKey, offsetX = 0, offsetY = 0) => {
+  const key = String(eventKey || '').trim();
+  if (!key) return;
+  songTooltipOffsetMap.value = {
+    ...songTooltipOffsetMap.value,
+    [key]: {
+      '--song-tooltip-shift-x': `${Math.round(offsetX)}px`,
+      '--song-tooltip-shift-y': `${Math.round(offsetY)}px`
+    }
+  };
+};
+
+const clearSongTooltipOffset = (eventKey) => {
+  const key = String(eventKey || '').trim();
+  if (!key || !songTooltipOffsetMap.value[key]) return;
+  const next = { ...songTooltipOffsetMap.value };
+  delete next[key];
+  songTooltipOffsetMap.value = next;
+};
+
+const getSongTooltipStyle = (eventKey) => {
+  const key = String(eventKey || '').trim();
+  return songTooltipOffsetMap.value[key] || null;
+};
+
+const adjustSongTooltipViewport = (eventKey, hostEl = null) => {
+  const key = String(eventKey || '').trim();
+  const host = hostEl instanceof HTMLElement ? hostEl : null;
+  if (!key || !host) return;
+
+  const tooltipEl = host.querySelector('.tooltip-content');
+  if (!(tooltipEl instanceof HTMLElement)) return;
+
+  clearSongTooltipOffset(key);
+  const rect = tooltipEl.getBoundingClientRect();
+  const edges = getTooltipViewportEdges();
+  let shiftX = 0;
+  let shiftY = 0;
+
+  if (rect.left < edges.left) {
+    shiftX += edges.left - rect.left;
+  }
+  if (rect.right > edges.right) {
+    shiftX -= rect.right - edges.right;
+  }
+  if (rect.top < edges.top) {
+    shiftY += edges.top - rect.top;
+  }
+  if (rect.bottom > edges.bottom) {
+    shiftY -= rect.bottom - edges.bottom;
+  }
+
+  setSongTooltipOffset(key, shiftX, shiftY);
+};
+
+const adjustSongTooltipViewportAfterOpen = async (eventKey, hostEl = null) => {
+  await nextTick();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  adjustSongTooltipViewport(eventKey, hostEl);
+};
+
+const handleSongTooltipEnter = (eventKey, event) => {
+  if (pinnedCardTooltipKey.value || pinnedSongTooltipEventKey.value) return;
+  const key = String(eventKey || '').trim();
+  if (!key) return;
+  setTooltipRaisedEvent(eventKey);
+  openedSongTooltipEventKey.value = key;
+  openedCardTooltipKey.value = '';
+  const host = event?.currentTarget;
+  if (!(host instanceof HTMLElement)) return;
+  void adjustSongTooltipViewportAfterOpen(eventKey, host);
 };
 
 const makeBirthdayInfoKey = (row) => String(row?.key || row?.id || '').trim();
@@ -1225,8 +1327,18 @@ const setTooltipRaisedEvent = (eventKey) => {
 };
 
 const clearTooltipRaisedEvent = (eventKey) => {
+  const key = String(eventKey || '').trim();
+  if (openedCardTooltipKey.value.startsWith(`${key}::`) && openedCardTooltipKey.value !== pinnedCardTooltipKey.value) {
+    clearCardTooltipOffset(openedCardTooltipKey.value);
+    openedCardTooltipKey.value = '';
+  }
+  if (openedSongTooltipEventKey.value === key && openedSongTooltipEventKey.value !== pinnedSongTooltipEventKey.value) {
+    openedSongTooltipEventKey.value = '';
+    clearSongTooltipOffset(key);
+  }
   if (tooltipRaisedEventKey.value === eventKey && !hasOpenTooltipForEventKey(eventKey)) {
     tooltipRaisedEventKey.value = null;
+    clearSongTooltipOffset(eventKey);
   }
 };
 
@@ -1234,8 +1346,9 @@ const toggleCardTooltip = (eventKey, card, slotKey = '', event = null) => {
   const key = makeCardTooltipKey(eventKey, card, slotKey);
   const host = event?.currentTarget;
 
-  if (openedCardTooltipKey.value === key) {
+  if (pinnedCardTooltipKey.value === key) {
     openedCardTooltipKey.value = '';
+    pinnedCardTooltipKey.value = '';
     clearCardTooltipOffset(key);
     if (openedSongTooltipEventKey.value !== String(eventKey || '').trim()) {
       clearTooltipRaisedEvent(eventKey);
@@ -1247,27 +1360,37 @@ const toggleCardTooltip = (eventKey, card, slotKey = '', event = null) => {
     cardTooltipOffsetMap.value = {};
   }
 
-  if (host instanceof HTMLElement) {
-    adjustCardTooltipViewport(eventKey, card, slotKey, host);
-  }
-
   openedCardTooltipKey.value = key;
   openedSongTooltipEventKey.value = '';
+  clearSongTooltipOffset(eventKey);
+  pinnedCardTooltipKey.value = key;
+  pinnedSongTooltipEventKey.value = '';
   setTooltipRaisedEvent(eventKey);
+  if (host instanceof HTMLElement) {
+    void adjustCardTooltipViewportAfterOpen(eventKey, card, slotKey, host);
+  }
 };
 
 const isCardTooltipOpen = (eventKey, card, slotKey = '') => openedCardTooltipKey.value === makeCardTooltipKey(eventKey, card, slotKey);
 
-const toggleSongTooltip = (eventKey) => {
+const toggleSongTooltip = (eventKey, event = null) => {
   const key = String(eventKey || '').trim();
   if (!key) return;
-  if (openedSongTooltipEventKey.value === key) {
+  if (pinnedSongTooltipEventKey.value === key) {
     openedSongTooltipEventKey.value = '';
+    pinnedSongTooltipEventKey.value = '';
+    clearSongTooltipOffset(key);
     clearTooltipRaisedEvent(key);
     return;
   }
   openedSongTooltipEventKey.value = key;
   openedCardTooltipKey.value = '';
+  if (pinnedCardTooltipKey.value) clearCardTooltipOffset(pinnedCardTooltipKey.value);
+  pinnedSongTooltipEventKey.value = key;
+  pinnedCardTooltipKey.value = '';
+  if (event?.currentTarget instanceof HTMLElement) {
+    void adjustSongTooltipViewportAfterOpen(key, event.currentTarget);
+  }
   setTooltipRaisedEvent(key);
 };
 
@@ -1293,6 +1416,14 @@ const parseDateSafe = (dateStr) => {
   const d = new Date(String(dateStr || '').replace(/\//g, '-'));
   const t = d.getTime();
   return Number.isFinite(t) ? d : null;
+};
+
+const formatEventDatePadded = (dateStr) => {
+  const text = String(dateStr || '').trim();
+  const match = text.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+  if (!match) return text;
+  const [, year, month, day] = match;
+  return `${year}/${month.padStart(2, '0')}/${day.padStart(2, '0')}`;
 };
 
 const toFiniteSongId = (value) => {
@@ -1415,7 +1546,7 @@ const eventDateBySourceKey = computed(() => {
   const map = {};
   (props.allEvents || []).forEach((event) => {
     const key = normalizeEventId(event?.id);
-    const date = parseDateSafe(event?.date);
+    const date = parseDateSafe(event?.start_date);
     if (!key || !date) return;
     map[key] = date;
   });
@@ -1485,7 +1616,7 @@ const getCurrentEventId = () => {
   const today = new Date();
   const candidates = (props.allEvents || []).filter(ev => {
     if (!isNumericEventId(ev?.id)) return false;
-    const evDate = new Date(ev.date.replace(/\//g, '-'));
+    const evDate = new Date(ev.start_date.replace(/\//g, '-'));
     return evDate <= today;
   });
   if (candidates.length === 0) return -1;
@@ -2483,7 +2614,7 @@ const isCollabPoolEvent = (event) => {
 };
 
 const getEventTime = (event) => {
-  return getDateValue(event?.date);
+  return getDateValue(event?.start_date);
 };
 
 const eventSameDateOrder = (event) => {
@@ -2792,7 +2923,7 @@ const previewVsLastFourMap = computed(() => {
     const eid = String(event?.id || '').trim();
     if (!/^\d+$/.test(eid)) return;
     if (Number(eid) > maxId) return;
-    eventDateById[eid] = getDateValue(event?.date);
+    eventDateById[eid] = getDateValue(event?.start_date);
   });
 
   (props.allCards || []).forEach((card) => {
@@ -2820,7 +2951,7 @@ const previewReferenceDateValue = computed(() => {
   const targetId = Number(previewMaxEventId.value);
   if (!Number.isFinite(targetId) || targetId <= 0) return Date.now();
   const target = (props.allEvents || []).find((event) => Number(event?.id) === targetId);
-  const t = getDateValue(target?.date);
+  const t = getDateValue(target?.start_date);
   return t > 0 ? t : Date.now();
 });
 
@@ -4183,7 +4314,7 @@ const previewRowsWithAnchor = computed(() => {
   return previewRows.value.map((row) => {
     const rowTime = getDateValue(row.date);
     const anchorEvent = limited.find((event) => {
-      const t = getDateValue(event?.date);
+      const t = getDateValue(event?.start_date);
       if (!t || !rowTime) return false;
       return t >= rowTime;
     }) || null;
@@ -4242,8 +4373,8 @@ const displayRows = computed(() => {
   const merged = birthdays.length > 0 ? [...events, ...birthdays] : [...events];
 
   merged.sort((a, b) => {
-    const ta = a.kind === 'event' ? getDateValue(a.event?.date) : getDateValue(a.date);
-    const tb = b.kind === 'event' ? getDateValue(b.event?.date) : getDateValue(b.date);
+    const ta = a.kind === 'event' ? getDateValue(a.event?.start_date) : getDateValue(a.date);
+    const tb = b.kind === 'event' ? getDateValue(b.event?.start_date) : getDateValue(b.date);
     if (ta !== tb) return sortDesc.value ? tb - ta : ta - tb;
 
     const pa = rowTypePriority(a);
@@ -5381,7 +5512,7 @@ const scrollTo = (target) => {
     const candidates = (props.allEvents || []).filter(ev => {
       if (!isNumericEventId(ev?.id)) return false;
       // 兼容日期格式处理
-      const evDate = new Date(ev.date.replace(/\//g, '-'));
+      const evDate = new Date(ev.start_date.replace(/\//g, '-'));
       return evDate <= today;
     });
 
@@ -7297,9 +7428,10 @@ button:not(:disabled):active {
 
 
 /* 1. 基础信息：日期下方居中显示节日 */
-.event-basic { width: 60px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
-.event-id { font-weight: bold; color: #777; font-size: 1.1rem; }
-.event-date { font-size: 0.75rem; color: #999; }
+.event-basic { width: 60px; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.event-id { font-weight: bold; color: #777; font-size: 1.1rem; line-height: 1.12; }
+.event-date,
+.event-end-date { font-size: 0.75rem; color: #999; line-height: 1.12; }
 .fest-tag { background: #ff4d4f; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
 
 /* 2. Banner */
@@ -7613,7 +7745,7 @@ button:not(:disabled):active {
   z-index: 20000;
   font-size: 0.8rem;
   opacity: 0;
-  transform: translateY(6px);
+  transform: translate(var(--song-tooltip-shift-x, 0px), calc(6px + var(--song-tooltip-shift-y, 0px)));
   transition: opacity 0.22s ease, transform 0.22s ease;
   pointer-events: auto;
   white-space: normal;
@@ -7623,21 +7755,7 @@ button:not(:disabled):active {
 .song-tooltip.is-open .tooltip-content {
   visibility: visible;
   opacity: 1;
-  transform: translateY(0);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .avatar-container:hover .card-detail-tooltip {
-    visibility: visible;
-    opacity: 1;
-    transform: translate(calc(-50% + var(--card-tooltip-shift-x, 0px)), var(--card-tooltip-shift-y, 0px));
-  }
-
-  .song-tooltip:hover .tooltip-content {
-    visibility: visible;
-    opacity: 1;
-    transform: translateY(0);
-  }
+  transform: translate(var(--song-tooltip-shift-x, 0px), var(--song-tooltip-shift-y, 0px));
 }
 
 .song-tooltip-hero {
@@ -8251,15 +8369,17 @@ button:not(:disabled):active {
   .event-basic {
     grid-area: basic;
     width: auto;
-    gap: 2px;
+    gap: 1px;
   }
 
   .event-id {
     font-size: 0.82rem;
+    line-height: 1.05;
   }
 
-  .event-date {
-    font-size: 0.58rem;
+  .event-date,
+  .event-end-date {
+    font-size: 0.52rem;
     line-height: 1.1;
   }
 
@@ -8464,8 +8584,8 @@ button:not(:disabled):active {
   .event-item {
     grid-template-columns: 40px 46px minmax(0, 1fr) auto;
     column-gap: 6px;
-    row-gap: 6px;
-    padding: 8px;
+    row-gap: 5px;
+    padding: 7px 8px;
   }
 
   .preview-row {

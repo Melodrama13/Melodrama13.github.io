@@ -1327,7 +1327,7 @@ const getCurrentOfficialEventId = () => {
       if (!Number.isFinite(idNum)) return false;
       if (isJsonTestEvent(ev)) return false;
       if (!hasValidEventTitle(ev?.event_title)) return false;
-      const d = new Date(String(ev?.date || '').replace(/\//g, '-'));
+      const d = new Date(String(ev?.start_date || '').replace(/\//g, '-'));
       if (Number.isNaN(d.getTime())) return false;
       return d <= today;
     })

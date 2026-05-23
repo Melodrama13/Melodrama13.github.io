@@ -3447,7 +3447,7 @@
       {
         "vocal_id": 570,
         "type": "april_fool_2022",
-        "released_at": "2020/9/30",
+        "released_at": "2022/4/1",
         "characters": [
           "初音未来",
           "星乃一歌",
@@ -5716,7 +5716,7 @@
       },
       {
         "vocal_id": 1474,
-        "type": "april_fool_2022",
+        "type": "april_fool_2024",
         "released_at": "2024/4/1",
         "characters": [
           "KAITO",
@@ -5853,7 +5853,7 @@
       },
       {
         "vocal_id": 1470,
-        "type": "april_fool_2022",
+        "type": "april_fool_2024",
         "released_at": "2024/4/1",
         "characters": [
           "MEIKO",
@@ -8215,10 +8215,10 @@
       },
       {
         "vocal_id": 1596,
-        "type": "april_fool_2022",
+        "type": "april_fool_2025",
         "released_at": "2025/4/1",
         "characters": [
-          "初音未来",
+          "初音未来_ws",
           "花里实乃里",
           "东云彰人",
           "天马司",
@@ -10464,10 +10464,10 @@
       },
       {
         "vocal_id": 1790,
-        "type": "april_fool_2022",
+        "type": "april_fool_2026",
         "released_at": "2026/4/1",
         "characters": [
-          "镜音连",
+          "镜音连_nc",
           "宵崎奏",
           "朝比奈真冬",
           "东云绘名",
@@ -10698,7 +10698,7 @@
       },
       {
         "vocal_id": 1472,
-        "type": "april_fool_2022",
+        "type": "april_fool_2024",
         "released_at": "2024/4/1",
         "characters": [
           "巡音流歌",
@@ -12196,7 +12196,7 @@
       },
       {
         "vocal_id": 1473,
-        "type": "april_fool_2022",
+        "type": "april_fool_2024",
         "released_at": "2024/4/1",
         "characters": [
           "镜音铃",
@@ -12659,10 +12659,10 @@
       },
       {
         "vocal_id": 1600,
-        "type": "april_fool_2022",
+        "type": "april_fool_2025",
         "released_at": "2025/4/1",
         "characters": [
-          "KAITO",
+          "KAITO_ln",
           "望月穗波",
           "桃井爱莉",
           "青柳冬弥"
@@ -13795,10 +13795,10 @@
       },
       {
         "vocal_id": 1599,
-        "type": "april_fool_2022",
+        "type": "april_fool_2025",
         "released_at": "2025/4/1",
         "characters": [
-          "镜音铃",
+          "镜音铃_nc",
           "星乃一歌",
           "神代类",
           "宵崎奏"
@@ -15844,7 +15844,7 @@
       },
       {
         "vocal_id": 1471,
-        "type": "april_fool_2022",
+        "type": "april_fool_2024",
         "released_at": "2024/4/1",
         "characters": [
           "初音未来",
@@ -17465,7 +17465,7 @@
       },
       {
         "vocal_id": 1469,
-        "type": "april_fool_2022",
+        "type": "april_fool_2024",
         "released_at": "2024/4/1",
         "characters": [
           "镜音连",
@@ -17857,10 +17857,10 @@
       },
       {
         "vocal_id": 1598,
-        "type": "april_fool_2022",
+        "type": "april_fool_2025",
         "released_at": "2025/4/1",
         "characters": [
-          "巡音流歌",
+          "巡音流歌_mmj",
           "天马咲希",
           "桐谷遥",
           "凤笑梦"
@@ -19784,10 +19784,10 @@
       },
       {
         "vocal_id": 1601,
-        "type": "april_fool_2022",
+        "type": "april_fool_2025",
         "released_at": "2025/4/1",
         "characters": [
-          "镜音连",
+          "镜音连_nc",
           "日野森志步",
           "小豆泽心羽",
           "草薙宁宁",
@@ -20180,10 +20180,10 @@
       },
       {
         "vocal_id": 1787,
-        "type": "april_fool_2022",
+        "type": "april_fool_2026",
         "released_at": "2026/4/1",
         "characters": [
-          "MEIKO",
+          "MEIKO_mmj",
           "花里实乃里",
           "桐谷遥",
           "桃井爱莉",
@@ -21197,11 +21197,11 @@
       },
       {
         "vocal_id": 1786,
-        "type": "april_fool_2022",
+        "type": "april_fool_2026",
         "released_at": "2026/4/1",
         "characters": [
-          "初音未来",
-          "巡音流歌",
+          "初音未来_ln",
+          "巡音流歌_ln",
           "星乃一歌",
           "天马咲希",
           "望月穗波",
@@ -21434,10 +21434,10 @@
       },
       {
         "vocal_id": 1597,
-        "type": "april_fool_2022",
+        "type": "april_fool_2025",
         "released_at": "2025/4/1",
         "characters": [
-          "MEIKO",
+          "MEIKO_vbs",
           "日野森雫",
           "白石杏",
           "晓山瑞希"
@@ -22082,10 +22082,10 @@
       },
       {
         "vocal_id": 1789,
-        "type": "april_fool_2022",
+        "type": "april_fool_2026",
         "released_at": "2026/4/1",
         "characters": [
-          "镜音铃",
+          "镜音铃_ws",
           "天马司",
           "凤笑梦",
           "草薙宁宁",
@@ -28650,10 +28650,10 @@
       },
       {
         "vocal_id": 1788,
-        "type": "april_fool_2022",
+        "type": "april_fool_2026",
         "released_at": "2026/4/1",
         "characters": [
-          "KAITO",
+          "KAITO_vbs",
           "小豆泽心羽",
           "白石杏",
           "东云彰人",

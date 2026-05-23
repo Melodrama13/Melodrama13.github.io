@@ -5633,7 +5633,7 @@ const eventDateBySourceKey = computed(() => {
   const map = {};
   (props.allEvents || []).forEach((ev) => {
     const key = normalizeSourceKey(ev?.id);
-    const date = parseDateSafe(ev?.date);
+    const date = parseDateSafe(ev?.start_date);
     if (!key || !date) return;
     map[key] = date;
   });
@@ -5906,7 +5906,7 @@ const autoCurrentId = computed(() => {
     .filter((ev) => {
       if (ev?.isPredict) return false;
       if (!isNumericEventId(ev?.id)) return false;
-      const evDate = parseDateSafe(ev?.date);
+      const evDate = parseDateSafe(ev?.start_date);
       if (!evDate) return false;
       return evDate <= today;
     })
@@ -6037,7 +6037,7 @@ const referenceDateObj = computed(() => {
   if (maxEid === Number(autoCurrentId.value)) return fallback;
 
   const refEvent = allEventsById.value[maxEid];
-  const refDate = parseDateSafe(refEvent?.date);
+  const refDate = parseDateSafe(refEvent?.start_date);
   return refDate || fallback;
 });
 
@@ -6082,7 +6082,7 @@ const validPeriodEvents = computed(() => {
     })
     .map((ev) => ({
       id: Number(ev.id),
-      dateObj: parseDateSafe(ev.date)
+      dateObj: parseDateSafe(ev.start_date)
     }))
     .filter((ev) => ev.dateObj)
     .sort((a, b) => a.id - b.id);
@@ -6095,8 +6095,8 @@ const countPeriodsBetweenExclusive = (startEvent, endEvent) => {
     return validPeriodEventIds.value.filter((id) => id > startId && id < endId).length;
   }
 
-  const startDate = parseDateSafe(startEvent?.date);
-  const endDate = parseDateSafe(endEvent?.date);
+  const startDate = parseDateSafe(startEvent?.start_date || startEvent?.date);
+  const endDate = parseDateSafe(endEvent?.start_date || endEvent?.date);
   if (!startDate || !endDate) return 0;
   return validPeriodEvents.value.filter((ev) => ev.dateObj > startDate && ev.dateObj < endDate).length;
 };
@@ -6108,7 +6108,7 @@ const countPeriodsSince = (eventRef) => {
     return validPeriodEventIds.value.filter((id) => id > eventId && id <= maxEid).length;
   }
 
-  const startDate = parseDateSafe(eventRef?.date);
+  const startDate = parseDateSafe(eventRef?.start_date || eventRef?.date);
   if (!startDate) return 0;
   return validPeriodEvents.value.filter((ev) => ev.dateObj > startDate).length;
 };
@@ -6255,7 +6255,7 @@ const buildLineupEventRef = (card) => {
   }
   const eventRef = {
     id: Number(ev.id),
-    date: ev.date,
+    date: ev.start_date,
     typeSeriesId: ev.type_series_id,
     eventType: String(ev.event_type || '').trim(),
     banner: String(ev.banner || '').trim(),
@@ -6353,7 +6353,7 @@ const evalLineupMembers = (cards) => {
 };
 
 const getEventRefRecencyScore = (eventRef) => {
-  const dateText = String(eventRef?.date || '').trim();
+  const dateText = String(eventRef?.start_date || '').trim();
   const dateObj = parseDateSafe(dateText);
   if (dateObj) return dateObj.getTime();
 
@@ -7865,7 +7865,7 @@ const getAttrSummaryAttrRowStyle = (attr) => {
 
 const charEventBuckets = computed(() => {
   const maxEid = safeMaxEventId.value;
-  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.start_date);
   const buckets = {};
 
   (props.allCards || []).forEach((card) => {
@@ -7896,7 +7896,7 @@ const charEventBuckets = computed(() => {
     if (!buckets[name].eventMeta[sourceKey]) {
       buckets[name].eventMeta[sourceKey] = {
         id: eventIdOrKey,
-        date: String(ev?.date || card?.Date || ''),
+        date: String(ev?.start_date || card?.Date || ''),
         title: String(ev?.event_title || '').trim() || `ID ${sourceKey}`,
         typeSeriesId: ev?.type_series_id,
         eventType: String(ev?.event_type || '').trim(),
@@ -8035,7 +8035,7 @@ const getVsUnitRecordLabel = (nameWithUnit) => {
 
 const vsUnitLastFourRecords = computed(() => {
   const maxEid = safeMaxEventId.value;
-  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.start_date);
   const latestByKey = {};
 
   (props.allCards || []).forEach((card) => {
@@ -8054,7 +8054,7 @@ const vsUnitLastFourRecords = computed(() => {
 
     const isNum = isNumericEventId(sourceKey);
     const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
-    const eventDateStr = String(ev?.date || card?.Date || '').trim();
+    const eventDateStr = String(ev?.start_date || card?.Date || '').trim();
     const eventDate = parseDateSafe(eventDateStr);
     if (!eventDate) return;
     if (!isNum && maxEventDate && eventDate > maxEventDate) return;
@@ -8068,7 +8068,7 @@ const vsUnitLastFourRecords = computed(() => {
       eventRef: ev
         ? {
             id: Number(ev.id),
-            date: ev.date,
+            date: ev.start_date,
             typeSeriesId: ev.type_series_id,
             eventType: String(ev.event_type || '').trim(),
             banner: String(ev.banner || '').trim(),
@@ -8089,7 +8089,7 @@ const vsUnitLastFourRecords = computed(() => {
       date: eventDateStr,
       dateValue: eventDate.getTime(),
       days: daysBetween(eventDateStr, referenceDateStr.value),
-      periods: ev ? countPeriodsSince({ id: Number(ev.id), date: ev.date }) : 0
+      periods: ev ? countPeriodsSince({ id: Number(ev.id), date: ev.start_date }) : 0
     };
 
     if (!prev || nextRecord.dateValue > prev.dateValue) {
@@ -8168,7 +8168,7 @@ const vsUnitLastFourCompactUnitRows = computed(() => {
 
 const vsUnitScoreAttrRows = computed(() => {
   const maxEid = safeMaxEventId.value;
-  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.start_date);
   const rowMap = Object.fromEntries(
     VS_NAMES.map((name) => [
       name,
@@ -8195,7 +8195,7 @@ const vsUnitScoreAttrRows = computed(() => {
     if (!sourceKey) return;
     const isNum = isNumericEventId(sourceKey);
     const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
-    const eventDate = parseDateSafe(String(ev?.date || card?.Date || '').trim());
+    const eventDate = parseDateSafe(String(ev?.start_date || card?.Date || '').trim());
     if (!eventDate) return;
     if (!isNum && maxEventDate && eventDate > maxEventDate) return;
 
@@ -8209,7 +8209,7 @@ const vsUnitScoreAttrRows = computed(() => {
 
 const vsUnitScoreAttrByUnitRows = computed(() => {
   const maxEid = safeMaxEventId.value;
-  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.start_date);
   const rowMap = Object.fromEntries(
     VS_UNIT_SORT_ORDER.map((unit) => [
       unit,
@@ -8237,7 +8237,7 @@ const vsUnitScoreAttrByUnitRows = computed(() => {
     if (!sourceKey) return;
     const isNum = isNumericEventId(sourceKey);
     const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
-    const eventDate = parseDateSafe(String(ev?.date || card?.Date || '').trim());
+    const eventDate = parseDateSafe(String(ev?.start_date || card?.Date || '').trim());
     if (!eventDate) return;
     if (!isNum && maxEventDate && eventDate > maxEventDate) return;
 
@@ -8270,7 +8270,7 @@ const vsUnitScoreAttrByUnitRows = computed(() => {
 
 const vsUnitFourCountDetailRecords = computed(() => {
   const maxEid = safeMaxEventId.value;
-  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.start_date);
   const rowMap = Object.fromEntries(
     VS_UNIT_ROW_KEYS.map((key) => {
       const { baseName } = parseVsUnitKey(key);
@@ -8303,7 +8303,7 @@ const vsUnitFourCountDetailRecords = computed(() => {
     if (!sourceKey) return;
     const isNum = isNumericEventId(sourceKey);
     const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
-    const eventDate = parseDateSafe(String(ev?.date || card?.Date || '').trim());
+    const eventDate = parseDateSafe(String(ev?.start_date || card?.Date || '').trim());
     if (!eventDate) return;
     if (!isNum && maxEventDate && eventDate > maxEventDate) return;
 
@@ -8401,7 +8401,7 @@ const vsUnitFourCountDisplayRecords = computed(() => {
 
 const vsOriginalStatRows = computed(() => {
   const maxEid = safeMaxEventId.value;
-  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.start_date);
   const rowMap = Object.fromEntries(
     VS_ORIGINAL_STAT_TYPES.map((type) => [
       type,
@@ -8428,7 +8428,7 @@ const vsOriginalStatRows = computed(() => {
     if (!sourceKey) return;
     const isNum = isNumericEventId(sourceKey);
     const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
-    const eventDate = parseDateSafe(String(ev?.date || card?.Date || '').trim());
+    const eventDate = parseDateSafe(String(ev?.start_date || card?.Date || '').trim());
     if (!eventDate) return;
     if (!isNum && maxEventDate && eventDate > maxEventDate) return;
 
@@ -8755,7 +8755,7 @@ const lastLimitedRecords = computed(() => {
 
 const buildRelatedRecordCardInfoMap = (matcher) => {
   const maxEid = safeMaxEventId.value;
-  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.start_date);
   const result = {};
 
   (props.allCards || []).forEach((card) => {
@@ -8841,7 +8841,7 @@ const getRelatedLimitedRecordCardInfo = (name, eventRef) => {
 
 const vsUnitLastFourCardInfoMap = computed(() => {
   const maxEid = safeMaxEventId.value;
-  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.date);
+  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.start_date);
   const result = {};
 
   (props.allCards || []).forEach((card) => {
@@ -9149,7 +9149,7 @@ const banIntervalRecords = computed(() => {
     bucket[name].push({
       id: eid,
       sourceKey: String(eid),
-      date: String(ev?.date || ''),
+      date: String(ev?.start_date || ''),
       typeSeriesId: ev?.type_series_id,
       eventType
     });
