@@ -1005,6 +1005,11 @@ const switchPredictSource = (sourceId) => {
   if (!next) return;
   syncCurrentPredictsToActiveSource();
   activePredictSourceId.value = next.id;
+  if ((historyData.value || []).length) {
+    const canonical = sanitizeCanonicalPredictiveEvents(next.predictiveEvents);
+    next.predictiveEvents = clonePredictList(canonical);
+    next.updatedAt = new Date().toISOString();
+  }
   predictiveEvents.value = clonePredictList(next.predictiveEvents);
   setCleanedPatchNoticeCount(0);
   persistPredictSources();
@@ -1285,8 +1290,13 @@ const getSourceEventTypeText = (event) => (
 );
 const isJsonTestEvent = (event) => {
   const type = getSourceEventTypeText(event).toLowerCase();
-  return type === '测试' || type === 'test' || type.includes('测试');
+  return type === '\u6d4b\u8bd5' || type === 'test' || type.includes('\u6d4b\u8bd5');
 };
+const isJsonWorldLinkFinalEvent = (event) => {
+  const type = getSourceEventTypeText(event).toLowerCase().replace(/\s+/g, '');
+  return type.includes('\u7ec8\u7ae0') && (type.includes('wl') || type.includes('worldlink'));
+};
+const isPredictDisabledJsonEvent = (event) => isJsonTestEvent(event) || isJsonWorldLinkFinalEvent(event);
 
 const hasExplicitPredictShiftFlag = (event) => (
   event?.predict_shift === true
@@ -1304,19 +1314,71 @@ const insertedTestEventIds = computed(() => (historyData.value || [])
   .map((ev) => Number(ev.id))
   .filter((id) => Number.isFinite(id))
   .sort((a, b) => a - b));
+
+const getNormalScheduleEvents = () => (historyData.value || [])
+  .filter((ev) => isNumericEventIdValue(ev?.id) && !isJsonTestEvent(ev))
+  .map((ev) => ({ ...ev, id: Number(ev.id) }))
+  .filter((ev) => Number.isFinite(ev.id))
+  .sort((a, b) => a.id - b.id);
+
+const getNormalScheduleIndexByEventId = (eventId) => {
+  const idNum = Number(eventId);
+  if (!Number.isFinite(idNum)) return null;
+  const index = getNormalScheduleEvents().findIndex((ev) => Number(ev.id) === idNum);
+  return index >= 0 ? index : null;
+};
+
+const getNormalScheduleEventByIndex = (indexRaw) => {
+  const index = Number(indexRaw);
+  if (!Number.isInteger(index) || index < 0) return null;
+  return getNormalScheduleEvents()[index] || null;
+};
+
 const getInsertedTestCountAtOrBefore = (eventId) => {
   const idNum = Number(eventId);
   if (!Number.isFinite(idNum)) return 0;
   return insertedTestEventIds.value.filter((id) => id <= idNum).length;
 };
-const resolveShiftedPredictEventId = (patch) => {
+
+const getStoredIntegerField = (obj, field) => {
+  if (!Object.prototype.hasOwnProperty.call(obj || {}, field)) return null;
+  const raw = obj?.[field];
+  if (raw === null || raw === '') return null;
+  const value = Number(raw);
+  return Number.isInteger(value) ? value : null;
+};
+
+// v3 anchor: index in the numeric, non-test event schedule. All test events
+// keep their official ids, but never consume a normal prediction slot.
+const resolvePredictEventIdByScheduleIndex = (patch) => {
+  const scheduleIndex = getStoredIntegerField(patch, 'predict_schedule_index');
+  if (scheduleIndex === null) return null;
+  const event = getNormalScheduleEventByIndex(scheduleIndex);
+  return event ? Number(event.id) : null;
+};
+
+// Legacy v2 fallback for old backups saved before predict_schedule_index.
+// It intentionally only understands explicitly inserted/blank test rows,
+// matching the old export semantics so historical confirmed tests do not
+// introduce a new migration offset.
+const resolveLegacyShiftedPredictEventId = (patch) => {
   const idNum = Number(patch?.id);
   if (!Number.isFinite(idNum)) return null;
   const savedShiftCount = Number.isFinite(Number(patch?.predict_shift_count))
     ? Number(patch.predict_shift_count)
     : 0;
   const currentShiftCount = getInsertedTestCountAtOrBefore(idNum);
-  return idNum + Math.max(0, currentShiftCount - savedShiftCount);
+  return idNum + (currentShiftCount - savedShiftCount);
+};
+
+const resolvePredictEventIdForCurrentSchedule = (patch) => {
+  return resolvePredictEventIdByScheduleIndex(patch)
+    ?? resolveLegacyShiftedPredictEventId(patch);
+};
+
+const resolveDirectPredictEventId = (patch) => {
+  const idNum = Number(patch?.id);
+  return Number.isFinite(idNum) ? idNum : null;
 };
 
 const getCurrentOfficialEventId = () => {
@@ -1356,7 +1418,7 @@ const getCurrentPredictLockEventId = () => {
 const getPredictableEventIdRange = () => {
   const lockId = getCurrentPredictLockEventId();
   const ids = (historyData.value || [])
-    .filter((ev) => isNumericEventIdValue(ev?.id) && !isJsonTestEvent(ev) && !isJsonEventOfficialRevealed(ev))
+    .filter((ev) => isNumericEventIdValue(ev?.id) && !isPredictDisabledJsonEvent(ev) && !isJsonEventOfficialRevealed(ev))
     .map((ev) => Number(ev?.id))
     .sort((a, b) => a - b);
 
@@ -1397,9 +1459,12 @@ const retargetPredictMemberCards = (cards, eventId) => {
 const retargetPredictPatch = (patch, targetEvent) => {
   const targetId = Number(targetEvent?.id);
   if (!Number.isFinite(targetId)) return null;
+  const scheduleIndex = getNormalScheduleIndexByEventId(targetId);
   return {
     ...(patch || {}),
     id: targetId,
+    predict_schema_version: 3,
+    ...(Number.isInteger(scheduleIndex) ? { predict_schedule_index: scheduleIndex } : {}),
     predict_shift_count: getInsertedTestCountAtOrBefore(targetId),
     memberCards: retargetPredictMemberCards(patch?.memberCards, targetId)
   };
@@ -1407,17 +1472,36 @@ const retargetPredictPatch = (patch, targetEvent) => {
 
 const resolvePredictPatchForCurrentSchedule = (patch) => {
   if (!patch || typeof patch !== 'object') return null;
-  const targetId = resolveShiftedPredictEventId(patch);
-  const sourceEvent = getSourceEventById(targetId);
-  if (!sourceEvent) return null;
-  if (isJsonTestEvent(sourceEvent) || isJsonEventOfficialRevealed(sourceEvent)) return null;
-  const patchWithKey = retargetPredictPatch(patch, sourceEvent);
-  if (!patchWithKey) return null;
-  return {
-    patch: patchWithKey,
-    sourceEvent,
-    key: String(Number(sourceEvent.id))
+
+  const useTarget = (targetId) => {
+    const sourceEvent = getSourceEventById(targetId);
+    if (!sourceEvent) return null;
+    if (isPredictDisabledJsonEvent(sourceEvent) || isJsonEventOfficialRevealed(sourceEvent)) return null;
+    const patchWithKey = retargetPredictPatch(patch, sourceEvent);
+    if (!patchWithKey) return null;
+    return {
+      patch: patchWithKey,
+      sourceEvent,
+      key: String(Number(sourceEvent.id))
+    };
   };
+
+  const scheduleTargetId = resolvePredictEventIdByScheduleIndex(patch);
+  if (scheduleTargetId !== null) return useTarget(scheduleTargetId);
+
+  const legacyTargetId = resolveLegacyShiftedPredictEventId(patch);
+  const legacySourceEvent = getSourceEventById(legacyTargetId);
+  const legacyResolved = useTarget(legacyTargetId);
+  if (legacyResolved) return legacyResolved;
+
+  // Old v2 backups can be exported while a temporary test is blank, then
+  // re-imported after that test becomes official/revealed. In that case the
+  // legacy shift target lands on the test row, while the original id is still
+  // the intended normal-event slot.
+  if (legacySourceEvent && !isJsonTestEvent(legacySourceEvent)) return null;
+  const directTargetId = resolveDirectPredictEventId(patch);
+  if (directTargetId === legacyTargetId) return null;
+  return useTarget(directTargetId);
 };
 
 const normalizeWorldLinkPatch = (patch) => {
@@ -1445,11 +1529,27 @@ const sanitizeScheduledPredictiveEvents = (list) => {
   return [...byKey.values()];
 };
 
+const getOpenPredictableEventIds = () => (historyData.value || [])
+  .filter((ev) => isNumericEventIdValue(ev?.id) && !isPredictDisabledJsonEvent(ev) && !isJsonEventOfficialRevealed(ev))
+  .map((ev) => Number(ev.id))
+  .filter((id) => Number.isFinite(id))
+  .sort((a, b) => a - b);
+
+const sanitizeCanonicalPredictiveEvents = (list) => {
+  const byKey = new Map();
+  (list || []).forEach((ev) => {
+    const resolved = resolvePredictPatchForCurrentSchedule(ev);
+    if (!resolved) return;
+    byKey.set(resolved.key, retargetPredictPatch(ev, resolved.sourceEvent) || ev);
+  });
+  return [...byKey.values()];
+};
+
 const filterActivePredictiveEvents = (list) => {
   return (list || []).filter((ev) => {
     const sourceEvent = getSourceEventById(ev?.id);
     if (!sourceEvent) return false;
-    if (isJsonTestEvent(sourceEvent)) return false;
+    if (isPredictDisabledJsonEvent(sourceEvent)) return false;
     return !isJsonEventOfficialRevealed(sourceEvent);
   });
 };
@@ -1461,7 +1561,7 @@ const reconcilePredictiveEvents = (list) => {
 };
 
 const buildPredictExportPayload = (list) => ({
-  version: 2,
+  version: 3,
   exportedAt: new Date().toISOString(),
   source: 'pjsk-planner',
   owner: normalizeUserName(predictUserName.value),
@@ -1873,9 +1973,9 @@ const applyImportedPredicts = (importedRawList, fileName = '') => {
     id: Number(item?.id)
   })).filter((item) => Number.isFinite(item.id));
 
-  const reconciled = reconcilePredictiveEvents(normalizedImported);
-  const cleaned = Math.max(0, normalizedImported.length - reconciled.length);
-  if (reconciled.length === 0) {
+  const canonical = sanitizeCanonicalPredictiveEvents(normalizedImported);
+  const cleaned = Math.max(0, normalizedImported.length - canonical.length);
+  if (canonical.length === 0) {
     alert('导入结果没有有效预测（可能已被自动清理为过期/冲突，或原文件本就为空），不会创建数据源。');
     return;
   }
@@ -1885,12 +1985,12 @@ const applyImportedPredicts = (importedRawList, fileName = '') => {
   const source = createPredictSource({
     kind: 'import',
     ownerName: owner,
-    predictiveList: reconciled,
+    predictiveList: canonical,
     switchTo: true
   });
   if (!source) return;
   setCleanedPatchNoticeCount(cleaned, 4200);
-  alert(`导入完成：已创建数据源「${source.name}」，有效预测 ${reconciled.length} 条，清理 ${cleaned} 条。`);
+  alert(`导入完成：已创建数据源「${source.name}」，有效预测 ${canonical.length} 条，清理 ${cleaned} 条。`);
 };
 
 const importPredictsFromFile = async (file) => {
@@ -2022,11 +2122,27 @@ onMounted(async () => {
     baseCards.value = await resCards.json();
     songsData.value = await resSongs.json();
     charactersData.value = await resCharacters.json();
-    const beforeCount = predictiveEvents.value.length;
-    const reconciled = reconcilePredictiveEvents(predictiveEvents.value);
-    predictiveEvents.value = reconciled;
-    syncCurrentPredictsToActiveSource();
-    setCleanedPatchNoticeCount(Math.max(0, beforeCount - reconciled.length), 4200);
+    let activeCleanedCount = 0;
+    predictSources.value = (predictSources.value || []).map((source) => {
+      const beforeList = Array.isArray(source?.predictiveEvents) ? source.predictiveEvents : [];
+      const canonical = sanitizeCanonicalPredictiveEvents(beforeList);
+      if (source.id === activePredictSourceId.value) {
+        activeCleanedCount = Math.max(0, beforeList.length - canonical.length);
+      }
+      return {
+        ...source,
+        predictiveEvents: clonePredictList(canonical)
+      };
+    });
+    const activeSourceAfterMigration = activePredictSource.value || predictSources.value[0] || null;
+    if (activeSourceAfterMigration) {
+      activePredictSourceId.value = activeSourceAfterMigration.id;
+      predictiveEvents.value = clonePredictList(activeSourceAfterMigration.predictiveEvents);
+    } else {
+      predictiveEvents.value = [];
+    }
+    persistPredictSources();
+    setCleanedPatchNoticeCount(activeCleanedCount, 4200);
     
     console.log("数据加载成功:", historyData.value.length, "条活动,", baseCards.value.length, "张卡片");
   } catch (e) {
@@ -2079,7 +2195,7 @@ const totalEventData = computed(() => {
   return historyData.value.map(jsonEvent => {
     // 2. 预测补丁默认按当前实际 ID 精确合并；插入型测试活动只在 reconcile 阶段重定向一次。
     const patch = effectivePredictiveEvents.value.find(p => Number(p.id) === Number(jsonEvent.id));
-    const forceOfficial = isJsonEventOfficialRevealed(jsonEvent) || isJsonTestEvent(jsonEvent);
+    const forceOfficial = isJsonEventOfficialRevealed(jsonEvent) || isPredictDisabledJsonEvent(jsonEvent);
     const effectivePatch = forceOfficial ? null : patch;
     
     // 3. 如果有补丁，合并它；如果没有，用原件
@@ -2242,7 +2358,7 @@ const isTeamWorldLink = (eventType, typeSeriesId) => {
 provide('savePredictEvent', (payload) => {
   const { eventId, eventType, gachaType, predictAttr, bannerName: payloadBannerName, selectedChars, event_title } = payload;
   const sourceEvent = historyData.value.find(e => Number(e.id) === Number(eventId));
-  if (!sourceEvent || isJsonTestEvent(sourceEvent) || isJsonEventOfficialRevealed(sourceEvent)) {
+  if (!sourceEvent || isPredictDisabledJsonEvent(sourceEvent) || isJsonEventOfficialRevealed(sourceEvent)) {
     console.warn(`[predict] ignore save for event ${eventId}, not editable by source JSON`);
     return;
   }
@@ -2322,6 +2438,8 @@ provide('savePredictEvent', (payload) => {
 
   const newPredictEvent = {
     id: Number(eventId),
+    predict_schema_version: 3,
+    predict_schedule_index: getNormalScheduleIndexByEventId(eventId),
     predict_shift_count: getInsertedTestCountAtOrBefore(eventId),
     event_title: event_title,
     event_type: eventType,
@@ -2335,7 +2453,7 @@ provide('savePredictEvent', (payload) => {
   };
 
   // 更新逻辑
-  const index = predictiveEvents.value.findIndex(e => Number(resolveShiftedPredictEventId(e)) === newPredictEvent.id);
+  const index = predictiveEvents.value.findIndex(e => Number(resolvePredictEventIdForCurrentSchedule(e)) === newPredictEvent.id);
   const updatedList = [...predictiveEvents.value]; 
   
   if (index > -1) {
@@ -2345,14 +2463,14 @@ provide('savePredictEvent', (payload) => {
   }
   
   const beforeCount = updatedList.length;
-  const reconciled = reconcilePredictiveEvents(updatedList);
-  predictiveEvents.value = reconciled;
-  setCleanedPatchNoticeCount(Math.max(0, beforeCount - reconciled.length), 4200);
+  const canonical = sanitizeCanonicalPredictiveEvents(updatedList);
+  predictiveEvents.value = canonical;
+  setCleanedPatchNoticeCount(Math.max(0, beforeCount - canonical.length), 4200);
 });
 
 // 删除预测活动
 provide('deletePredictEvent', (id) => {
-  predictiveEvents.value = predictiveEvents.value.filter(e => Number(resolveShiftedPredictEventId(e)) !== Number(id));
+  predictiveEvents.value = predictiveEvents.value.filter(e => Number(resolvePredictEventIdForCurrentSchedule(e)) !== Number(id));
 });
 
 const handleGlobalPointerDown = (event) => {

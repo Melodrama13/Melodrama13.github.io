@@ -224,7 +224,6 @@
                             v-for="song in group.songs"
                             :key="`vs-song-jacket-${row.name}-${song.songId}-${song.eventId}`"
                             class="song-image-jacket-tile song-vs-event-image-jacket-tile"
-                            :title="song.songName || '-'"
                             @mouseenter="showSongImageTitle($event, song.songName || '-', { songId: song.songId })"
                             @mouseleave="clearSongImageTitleToast"
                             @click="showSongImageTitle($event, song.songName || '-', { songId: song.songId })"
@@ -411,7 +410,6 @@
                           v-for="song in member.songs"
                           :key="`oc-book-image-${member.name}-${song.songId}-${song.eventId}`"
                           class="song-oc-event-image-item"
-                          :title="song.songName || '-'"
                           @mouseenter="showSongImageTitle($event, song.songName || '-', { songId: song.songId })"
                           @mouseleave="clearSongImageTitleToast"
                           @click="showSongImageTitle($event, song.songName || '-', { songId: song.songId })"
@@ -526,7 +524,6 @@
                         v-for="song in row.songs"
                         :key="`anvo-song-jacket-${row.name}-${song.id}-${song.vocalId}`"
                         class="song-image-jacket-tile song-anvo-jacket-tile"
-                        :title="song.title || '-'"
                         @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                         @mouseleave="clearSongImageTitleToast"
                         @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
@@ -642,7 +639,6 @@
                             v-for="song in card.songs"
                             :key="`duo-song-jacket-${card.key}-${song.id}`"
                             class="song-image-jacket-tile song-duo-jacket-tile"
-                            :title="song.title || '-'"
                             @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                             @mouseleave="clearSongImageTitleToast"
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
@@ -832,7 +828,6 @@
                             v-for="song in unitCard.smallSongs"
                             :key="`3dmv-image-small-${unitCard.unit}-${song.id}`"
                             class="song-image-jacket-tile song-3dmv-jacket-tile"
-                            :title="song.title || '-'"
                             @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                             @mouseleave="clearSongImageTitleToast"
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
@@ -871,7 +866,6 @@
                             v-for="song in unitCard.fullSongs"
                             :key="`3dmv-image-full-${unitCard.unit}-${song.id}`"
                             class="song-image-jacket-tile song-3dmv-jacket-tile"
-                            :title="song.title || '-'"
                             @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                             @mouseleave="clearSongImageTitleToast"
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
@@ -1008,7 +1002,6 @@
                             v-for="song in unitCard.smallSongs"
                             :key="`2dmv-image-small-${unitCard.unit}-${song.id}`"
                             class="song-image-jacket-tile song-3dmv-jacket-tile"
-                            :title="song.title || '-'"
                             @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                             @mouseleave="clearSongImageTitleToast"
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
@@ -1047,7 +1040,6 @@
                             v-for="song in unitCard.fullSongs"
                             :key="`2dmv-image-full-${unitCard.unit}-${song.id}`"
                             class="song-image-jacket-tile song-3dmv-jacket-tile"
-                            :title="song.title || '-'"
                             @mouseenter="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                             @mouseleave="clearSongImageTitleToast"
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
@@ -1501,6 +1493,7 @@ const activeNavId = ref('panel-oc-stats');
 const isMobileNav = ref(false);
 const isNavTopLayout = ref(false);
 const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280);
+const viewportHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 720);
 const anvoFillContentWidth = ref(0);
 const navTopLayoutPrev = ref(null);
 const mobileNavExpandedGroups = ref({});
@@ -2361,37 +2354,41 @@ const updateAnvoFillContentWidth = () => {
     anvoFillContentWidth.value = 0;
     return;
   }
-  const grids = Array.from(document.querySelectorAll('#panel-another-vocal .song-anvo-card .song-image-jacket-grid'))
-    .filter((el) => el instanceof HTMLElement);
-  const widths = grids
-    .map((el) => Math.floor(el.clientWidth || el.getBoundingClientRect().width || 0))
-    .filter((width) => width > 0);
-  anvoFillContentWidth.value = widths.length ? Math.max(180, Math.min(...widths) - 2) : 0;
+  const grid = document.querySelector('#panel-another-vocal .song-role-card-grid');
+  if (!(grid instanceof HTMLElement)) {
+    anvoFillContentWidth.value = 0;
+    return;
+  }
+  const width = Math.floor(grid.clientWidth || grid.getBoundingClientRect().width || 0);
+  anvoFillContentWidth.value = width > 0 ? Math.max(180, width - 2) : 0;
 };
 
 const anvoFillMetrics = computed(() => {
-  const count = Math.max(1, anvoMaxSongCount.value);
+  const maxSongCount = Math.max(1, anvoMaxSongCount.value);
+  const columnCount = Math.max(1, anotherVocalCards.value.length);
   const measuredContentWidth = Number(anvoFillContentWidth.value || 0);
   const available = Math.max(320, viewportWidth.value - 218);
-  const headWidth = 48;
-  const contentWidth = Math.max(180, available - headWidth);
-  const fitWidth = measuredContentWidth > 0 ? measuredContentWidth : contentWidth;
-  const baseGap = count >= 36 ? 2 : (count >= 24 ? 3 : (count >= 18 ? 4 : 6));
-  const sizeRaw = (fitWidth - baseGap * Math.max(0, count - 1)) / count;
-  const useTightFit = sizeRaw < 12;
-  const size = useTightFit
-    ? Math.max(1, fitWidth / count)
-    : Math.max(12, Math.min(96, sizeRaw));
-  const leftover = Math.max(0, fitWidth - size * count);
-  const gap = count > 1 && !useTightFit ? Math.max(0, Math.min(12, leftover / (count - 1))) : 0;
-  return { size, gap };
+  const fitWidth = measuredContentWidth > 0 ? measuredContentWidth : available;
+  const columnGap = columnCount >= 24 ? 1 : 2;
+  const gapTotal = columnGap * Math.max(0, columnCount - 1);
+  const columnWidth = Math.max(1, (fitWidth - gapTotal) / columnCount);
+  const columnPadding = columnCount >= 24 ? 2 : 3;
+  const rowGap = maxSongCount >= 30 ? 0 : 1;
+  const size = Math.max(10, Math.min(82, columnWidth - columnPadding * 2));
+  const dateHeight = Math.max(7, Math.min(10, size * 0.22));
+  return { size, gap: rowGap, columnGap, columnPadding, dateHeight, columnWidth, columnCount };
 });
 
 const songStatsRootStyle = computed(() => {
   if (!isAnvoFillModeActive.value) return {};
   return {
     '--song-anvo-fill-jacket-size': `${anvoFillMetrics.value.size.toFixed(2)}px`,
-    '--song-anvo-fill-gap': `${anvoFillMetrics.value.gap.toFixed(2)}px`
+    '--song-anvo-fill-gap': `${anvoFillMetrics.value.gap.toFixed(2)}px`,
+    '--song-anvo-fill-column-gap': `${anvoFillMetrics.value.columnGap.toFixed(2)}px`,
+    '--song-anvo-fill-column-padding': `${anvoFillMetrics.value.columnPadding.toFixed(2)}px`,
+    '--song-anvo-fill-date-height': `${anvoFillMetrics.value.dateHeight.toFixed(2)}px`,
+    '--song-anvo-fill-column-width': `${anvoFillMetrics.value.columnWidth.toFixed(2)}px`,
+    '--song-anvo-fill-column-count': `${anvoFillMetrics.value.columnCount}`
   };
 });
 
@@ -2469,6 +2466,7 @@ const setNavCollapsed = (nextCollapsed, preserveCenter = true) => {
 const updateMobileNavState = () => {
   if (typeof window === 'undefined') return;
   viewportWidth.value = window.innerWidth;
+  viewportHeight.value = window.innerHeight;
   const isTopLayout = window.innerWidth <= 900;
   const prev = navTopLayoutPrev.value;
   const nextCollapsed = prev === null
@@ -6042,7 +6040,7 @@ watch(isAnvoFillModeActive, async (active) => {
   updateAnvoFillContentWidth();
 });
 
-watch([anotherVocalCards, viewportWidth], () => {
+watch([anotherVocalCards, viewportWidth, viewportHeight], () => {
   nextTick(() => {
     updateAnvoFillContentWidth();
   });
@@ -7058,37 +7056,71 @@ watch(totalSongPages, (nextTotal) => {
 @media (min-width: 1201px) {
   .pjsk-song-stats.is-anvo-fill-mode #panel-another-vocal .song-role-card-grid,
   #panel-another-vocal.song-export-clone-root.is-anvo-fill-export .song-role-card-grid {
-    grid-template-columns: 1fr;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(var(--song-anvo-fill-column-count, 26), minmax(0, 1fr));
+    justify-content: start;
+    align-items: stretch;
+    gap: 0 var(--song-anvo-fill-column-gap, 0px);
+    width: 100%;
   }
 
   .pjsk-song-stats.is-anvo-fill-mode .song-anvo-card.is-image-mode,
   #panel-another-vocal.song-export-clone-root.is-anvo-fill-export .song-anvo-card.is-image-mode {
-    padding: 5px 7px;
+    grid-column: auto;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: 100%;
+    padding: 2px var(--song-anvo-fill-column-padding, 2px);
+    border-radius: 5px;
+    border-width: 1px;
+    overflow: hidden;
   }
 
   .pjsk-song-stats.is-anvo-fill-mode .song-anvo-image-layout,
   #panel-another-vocal.song-export-clone-root.is-anvo-fill-export .song-anvo-image-layout {
-    grid-template-columns: 44px minmax(0, 1fr);
-    gap: 5px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
   }
 
   .pjsk-song-stats.is-anvo-fill-mode .song-anvo-image-head,
   #panel-another-vocal.song-export-clone-root.is-anvo-fill-export .song-anvo-image-head {
-    min-width: 44px;
+    min-width: 0;
+    width: 100%;
+    gap: 2px;
+    padding-top: 0;
+  }
+
+  .pjsk-song-stats.is-anvo-fill-mode .song-anvo-image-head .song-image-main-avatar,
+  #panel-another-vocal.song-export-clone-root.is-anvo-fill-export .song-anvo-image-head .song-image-main-avatar {
+    width: min(28px, max(16px, var(--song-anvo-fill-jacket-size, 24px)));
+    height: min(28px, max(16px, var(--song-anvo-fill-jacket-size, 24px)));
+    min-width: min(28px, max(16px, var(--song-anvo-fill-jacket-size, 24px)));
+    min-height: min(28px, max(16px, var(--song-anvo-fill-jacket-size, 24px)));
+    flex-basis: auto;
+  }
+
+  .pjsk-song-stats.is-anvo-fill-mode .song-anvo-image-head .song-image-count,
+  #panel-another-vocal.song-export-clone-root.is-anvo-fill-export .song-anvo-image-head .song-image-count {
+    font-size: clamp(0.48rem, calc(var(--song-anvo-fill-jacket-size, 24px) / 2.4), 0.9rem);
+    line-height: 1;
   }
 
   .pjsk-song-stats.is-anvo-fill-mode .song-anvo-card .song-image-jacket-grid,
   #panel-another-vocal.song-export-clone-root.is-anvo-fill-export .song-anvo-card .song-image-jacket-grid {
     display: flex;
+    flex-direction: column;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    align-items: flex-start;
+    align-items: center;
     gap: var(--song-anvo-fill-gap, 6px);
-    row-gap: 0;
-    column-gap: var(--song-anvo-fill-gap, 6px);
+    row-gap: var(--song-anvo-fill-gap, 2px);
+    column-gap: 0;
     overflow: visible;
+    width: 100%;
   }
 
   .pjsk-song-stats.is-anvo-fill-mode .song-anvo-jacket-tile,
@@ -7108,7 +7140,13 @@ watch(totalSongPages, (nextTotal) => {
 
   .pjsk-song-stats.is-anvo-fill-mode .song-anvo-jacket-tile .song-image-date-caption,
   #panel-another-vocal.song-export-clone-root.is-anvo-fill-export .song-anvo-jacket-tile .song-image-date-caption {
-    font-size: clamp(0.42rem, calc(var(--song-anvo-fill-jacket-size, 68px) / 5.2), 0.62rem);
+    height: var(--song-anvo-fill-date-height, 10px);
+    min-height: var(--song-anvo-fill-date-height, 10px);
+    font-size: clamp(0.34rem, calc(var(--song-anvo-fill-date-height, 10px) * 0.82), 0.62rem);
+    line-height: 1;
+    margin-top: 1px;
+    overflow: hidden;
+    white-space: nowrap;
   }
 }
 

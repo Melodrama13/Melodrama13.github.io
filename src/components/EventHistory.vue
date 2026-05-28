@@ -1597,12 +1597,17 @@ const getSourceEventType = (event) => (
 );
 const isEventTestByJson = (event) => {
   const type = getSourceEventType(event).toLowerCase();
-  return type === '测试' || type === 'test' || type.includes('测试');
+  return type === '\u6d4b\u8bd5' || type === 'test' || type.includes('\u6d4b\u8bd5');
 };
+const isEventWorldLinkFinalByJson = (event) => {
+  const type = getSourceEventType(event).toLowerCase().replace(/\s+/g, '');
+  return type.includes('\u7ec8\u7ae0') && (type.includes('wl') || type.includes('worldlink'));
+};
+const isEventPredictDisabledByJson = (event) => isEventTestByJson(event) || isEventWorldLinkFinalByJson(event);
 const isEventOfficialRevealedByJson = (event) => hasNonEmptyText(getSourceEventTitle(event));
 
 const getPredictStatus = (event) => {
-  if (isEventTestByJson(event)) return 'past';
+  if (isEventPredictDisabledByJson(event)) return 'past';
   if (isEventOfficialRevealedByJson(event)) return 'past';
 
   // 只看是否存在本地预测补丁，避免 WL 因基础卡自带人选被误判为本地预测
@@ -1626,7 +1631,7 @@ const getCurrentEventId = () => {
 const canOpenPredictEditor = (event) => {
   if (!event) return false;
   if (!isNumericEventId(event?.id)) return false;
-  if (isEventTestByJson(event)) return false;
+  if (isEventPredictDisabledByJson(event)) return false;
   return !isEventOfficialRevealedByJson(event);
 };
 
