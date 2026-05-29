@@ -4582,6 +4582,9 @@ const syncSingleCardFillStylesWithSource = (sourceRoot, cloneRoot) => {
       if (!(sourceEl instanceof HTMLElement) || !(cloneEl instanceof HTMLElement)) continue;
       const computed = window.getComputedStyle(sourceEl);
       const bgImage = String(computed.backgroundImage || '').trim();
+      const bgRepeat = String(computed.backgroundRepeat || '').trim();
+      const bgPosition = String(computed.backgroundPosition || '').trim();
+      const bgSize = String(computed.backgroundSize || '').trim();
       const resolvedFill = resolveSingleCardFillFromSource(sourceEl);
 
       if (resolvedFill) {
@@ -4589,6 +4592,9 @@ const syncSingleCardFillStylesWithSource = (sourceRoot, cloneRoot) => {
       }
       if (bgImage && bgImage !== 'none') {
         cloneEl.style.setProperty('background-image', bgImage, 'important');
+        if (bgRepeat) cloneEl.style.setProperty('background-repeat', bgRepeat, 'important');
+        if (bgPosition) cloneEl.style.setProperty('background-position', bgPosition, 'important');
+        if (bgSize) cloneEl.style.setProperty('background-size', bgSize, 'important');
       }
     }
   });
@@ -4680,9 +4686,7 @@ const syncLineupCardModeRowLayout = () => {
   const rootEl = cardStatsRootRef.value;
   if (!(rootEl instanceof HTMLElement)) return;
   const viewportWidth = Number(window?.innerWidth || 0);
-  // Keep pad behavior close to desktop: rely on native grid stretch and avoid JS-forced row heights.
-  // Only keep force-sync for very small screens where card cell width oscillation is more visible.
-  const shouldForce = viewportWidth > 0 && viewportWidth <= 760;
+  const shouldForce = viewportWidth > 0 && viewportWidth <= 1200;
   const rows = rootEl.querySelectorAll('.lineup-plan-row');
   rows.forEach((row) => {
     if (!(row instanceof HTMLElement)) return;
@@ -4879,6 +4883,8 @@ const prepareExportClone = async (targetEl) => {
   if (targetEl.classList.contains('lineup-card') || targetEl.classList.contains('support-card') || targetEl.classList.contains('attr-summary-card')) {
     const explicitFill = resolveSingleCardFillFromSource(targetEl);
     if (explicitFill) {
+      clone.classList.add('export-single-card-fill-root');
+      clone.style.setProperty('--export-single-card-fill', explicitFill);
       clone.style.setProperty('background-color', explicitFill, 'important');
     }
   }
@@ -4923,6 +4929,38 @@ const prepareExportClone = async (targetEl) => {
     .export-clone-root * {
       box-shadow: none !important;
       text-shadow: none !important;
+    }
+    .export-clone-root.export-single-card-fill-root {
+      isolation: isolate !important;
+      position: relative !important;
+      overflow: hidden !important;
+      background: var(--export-single-card-fill, #ffffff) !important;
+      background-image: none !important;
+    }
+    .export-clone-root.export-single-card-fill-root::before {
+      content: "" !important;
+      position: absolute !important;
+      inset: 0 !important;
+      border-radius: inherit !important;
+      background: var(--export-single-card-fill, #ffffff) !important;
+      z-index: 0 !important;
+      pointer-events: none !important;
+    }
+    .export-clone-root.export-single-card-fill-root::after {
+      content: "" !important;
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      bottom: 0 !important;
+      width: 3px !important;
+      border-radius: inherit !important;
+      background: var(--unit-card-accent-color, #94a3b8) !important;
+      z-index: 0 !important;
+      pointer-events: none !important;
+    }
+    .export-clone-root.export-single-card-fill-root > * {
+      position: relative !important;
+      z-index: 1 !important;
     }
     .export-clone-root input[type="checkbox"] {
       appearance: none !important;
@@ -5083,10 +5121,7 @@ const hideExportControlsForLiveCapture = (rootEl) => {
 
 const shouldCaptureLiveElementForExport = (targetEl, options = {}) => {
   if (options?.captureLiveElement === true) return true;
-  if (!(targetEl instanceof HTMLElement)) return false;
-  return targetEl.classList.contains('lineup-card')
-    || targetEl.classList.contains('support-card')
-    || targetEl.classList.contains('attr-summary-card');
+  return false;
 };
 
 const forceSingleCardFillForLiveCapture = (targetEl) => {

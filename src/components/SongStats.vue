@@ -179,7 +179,6 @@
                             class="song-mini-icon-btn-img"
                           />
                         </button>
-                        <button class="pjsk-ui-btn-pill card-export-btn song-export-btn song-mini-png-btn" :disabled="isExportingPng" @click="exportVirtualSingerCardPng(row)">PNG</button>
                       </div>
                       <div class="song-vs-event-unit-counts song-vs-event-unit-counts-image">
                         <div class="song-vs-event-unit-stack song-vs-event-unit-stack-total">
@@ -271,7 +270,6 @@
                             class="song-mini-icon-btn-img"
                           />
                         </button>
-                        <button class="pjsk-ui-btn-pill card-export-btn song-export-btn song-mini-png-btn" :disabled="isExportingPng" @click="exportVirtualSingerCardPng(row)">PNG</button>
                       </div>
                     </div>
 
@@ -377,7 +375,6 @@
                           class="song-mini-icon-btn-img"
                         />
                       </button>
-                      <button class="pjsk-ui-btn-pill card-export-btn song-export-btn song-mini-png-btn" :disabled="isExportingPng" @click="exportOcBookUnitCardPng(unitGroup)">PNG</button>
                     </div>
                   </div>
 
@@ -2348,6 +2345,25 @@ const anvoMaxSongCount = computed(() => {
   return anotherVocalCards.value.reduce((max, row) => Math.max(max, Array.isArray(row?.songs) ? row.songs.length : 0), 0);
 });
 
+const getAnvoFillMetricsForWidth = (width) => {
+  const maxSongCount = Math.max(1, anvoMaxSongCount.value);
+  const columnCount = Math.max(1, anotherVocalCards.value.length);
+  const fitWidth = Math.max(320, Number(width) || 0);
+  const columnGap = columnCount >= 24 ? 1 : 2;
+  const gapTotal = columnGap * Math.max(0, columnCount - 1);
+  const columnWidth = Math.max(1, (fitWidth - gapTotal) / columnCount);
+  const columnPadding = columnCount >= 24 ? 2 : 3;
+  const rowGap = maxSongCount >= 30 ? 0 : 1;
+  const size = Math.max(10, Math.min(82, columnWidth - columnPadding * 2));
+  const dateHeight = Math.max(7, Math.min(10, size * 0.22));
+  return { size, gap: rowGap, columnGap, columnPadding, dateHeight, columnWidth, columnCount };
+};
+
+const getAnvoFillExportWidth = () => {
+  const columnCount = Math.max(1, anotherVocalCards.value.length);
+  return Math.max(1280, Math.min(1920, Math.ceil(columnCount * 56)));
+};
+
 const updateAnvoFillContentWidth = () => {
   if (typeof document === 'undefined') return;
   if (!isAnvoFillModeActive.value) {
@@ -2364,19 +2380,10 @@ const updateAnvoFillContentWidth = () => {
 };
 
 const anvoFillMetrics = computed(() => {
-  const maxSongCount = Math.max(1, anvoMaxSongCount.value);
-  const columnCount = Math.max(1, anotherVocalCards.value.length);
   const measuredContentWidth = Number(anvoFillContentWidth.value || 0);
   const available = Math.max(320, viewportWidth.value - 218);
   const fitWidth = measuredContentWidth > 0 ? measuredContentWidth : available;
-  const columnGap = columnCount >= 24 ? 1 : 2;
-  const gapTotal = columnGap * Math.max(0, columnCount - 1);
-  const columnWidth = Math.max(1, (fitWidth - gapTotal) / columnCount);
-  const columnPadding = columnCount >= 24 ? 2 : 3;
-  const rowGap = maxSongCount >= 30 ? 0 : 1;
-  const size = Math.max(10, Math.min(82, columnWidth - columnPadding * 2));
-  const dateHeight = Math.max(7, Math.min(10, size * 0.22));
-  return { size, gap: rowGap, columnGap, columnPadding, dateHeight, columnWidth, columnCount };
+  return getAnvoFillMetricsForWidth(fitWidth);
 });
 
 const songStatsRootStyle = computed(() => {
@@ -4368,6 +4375,260 @@ const triggerDownloadPng = async (canvas, fileName) => {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 };
 
+const canvasExportImageCache = new Map();
+
+const loadImageForCanvasExport = (src, timeoutMs = 8000) => {
+  const url = String(src || '').trim();
+  if (!url) return Promise.resolve(null);
+  if (canvasExportImageCache.has(url)) return canvasExportImageCache.get(url);
+
+  const task = new Promise((resolve) => {
+    const img = new Image();
+    let timer = 0;
+    let done = false;
+    const finish = (value) => {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      img.onload = null;
+      img.onerror = null;
+      resolve(value);
+    };
+    img.onload = () => finish(img);
+    img.onerror = () => finish(null);
+    try {
+      img.decoding = 'async';
+      img.loading = 'eager';
+    } catch (_) {
+      // Ignore unsupported image hints.
+    }
+    timer = window.setTimeout(() => finish(null), timeoutMs);
+    img.src = url;
+  });
+  canvasExportImageCache.set(url, task);
+  return task;
+};
+
+const drawCanvasRoundRectPath = (ctx, x, y, width, height, radius) => {
+  const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+};
+
+const drawCanvasRoundedImage = (ctx, img, x, y, size, radius) => {
+  if (!img) {
+    drawCanvasRoundRectPath(ctx, x, y, size, size, radius);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fill();
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('-', x + size / 2, y + size / 2);
+    return;
+  }
+
+  const iw = img.naturalWidth || img.width || size;
+  const ih = img.naturalHeight || img.height || size;
+  const scale = Math.max(size / iw, size / ih);
+  const sw = size / scale;
+  const sh = size / scale;
+  const sx = Math.max(0, (iw - sw) / 2);
+  const sy = Math.max(0, (ih - sh) / 2);
+  ctx.save();
+  drawCanvasRoundRectPath(ctx, x, y, size, size, radius);
+  ctx.clip();
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, size, size);
+  ctx.restore();
+};
+
+const drawCanvasCircleImage = (ctx, img, cx, cy, radius) => {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  if (img) {
+    ctx.drawImage(img, cx - radius, cy - radius, radius * 2, radius * 2);
+  } else {
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  }
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.18)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+};
+
+const exportAnvoFillCanvasPng = async (title, options = {}) => {
+  const cards = anotherVocalCards.value || [];
+  if (!cards.length) {
+    setScreenshotModalState({
+      state: 'failed',
+      title: '截图失败',
+      message: '没有可导出的 Anvo 数据。'
+    });
+    return;
+  }
+
+  const cancelContext = createExportCancelContext();
+  const exportLabel = String(options?.taskLabel || title || 'Anvo');
+  const startedAt = performance.now();
+  const width = getAnvoFillExportWidth();
+  const metrics = getAnvoFillMetricsForWidth(width);
+  const maxSongCount = Math.max(1, anvoMaxSongCount.value);
+  const outerPad = 12;
+  const titleHeight = 34;
+  const cardTopPad = 4;
+  const headHeight = Math.max(38, Math.min(48, metrics.size + 12));
+  const rowHeight = metrics.size + metrics.dateHeight + metrics.gap + 2;
+  const gridHeight = cardTopPad + headHeight + maxSongCount * rowHeight + 4;
+  const height = outerPad * 2 + titleHeight + gridHeight;
+  const pixelScale = 2;
+
+  setScreenshotModalState({
+    state: 'capturing',
+    title: '截图中',
+    message: `正在绘制 ${exportLabel} 铺满导出画布...`,
+    cancelTask: cancelContext.cancel
+  });
+
+  try {
+    const imageUrls = new Set();
+    cards.forEach((card) => {
+      if (card?.avatar) imageUrls.add(card.avatar);
+      (card?.songs || []).forEach((song) => {
+        if (song?.jacketUrl) imageUrls.add(song.jacketUrl);
+      });
+    });
+
+    const imageMap = new Map();
+    const entries = [...imageUrls];
+    let loadedCount = 0;
+    await Promise.allSettled(entries.map(async (src) => {
+      if (cancelContext.isCancelled()) throw new Error('export-cancelled');
+      const img = await loadImageForCanvasExport(src, 10000);
+      imageMap.set(src, img);
+      loadedCount += 1;
+      if (loadedCount % 60 === 0) {
+        setScreenshotModalState({
+          state: 'capturing',
+          title: '截图中',
+          message: `正在载入 Anvo 曲绘资源 ${loadedCount}/${entries.length}`,
+          cancelTask: cancelContext.cancel
+        });
+      }
+    }));
+
+    if (cancelContext.isCancelled()) throw new Error('export-cancelled');
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(width * pixelScale);
+    canvas.height = Math.ceil(height * pixelScale);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('canvas context unavailable');
+    ctx.scale(pixelScale, pixelScale);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '800 20px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(title || 'Anvo', outerPad, outerPad + titleHeight / 2);
+
+    const gridX = outerPad;
+    const gridY = outerPad + titleHeight;
+    const gridWidth = width - outerPad * 2;
+    const gap = metrics.columnGap;
+    const columnWidth = (gridWidth - gap * Math.max(0, cards.length - 1)) / cards.length;
+    const jacketSize = Math.max(10, Math.min(metrics.size, columnWidth - metrics.columnPadding * 2));
+
+    cards.forEach((card, index) => {
+      const x = gridX + index * (columnWidth + gap);
+      const y = gridY;
+      drawCanvasRoundRectPath(ctx, x, y, columnWidth, gridHeight, 5);
+      ctx.fillStyle = card?.tint || '#ffffff';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.16)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      const centerX = x + columnWidth / 2;
+      const avatarSize = Math.max(16, Math.min(28, jacketSize));
+      drawCanvasCircleImage(ctx, imageMap.get(card?.avatar) || null, centerX, y + cardTopPad + avatarSize / 2, avatarSize / 2);
+
+      ctx.fillStyle = '#475569';
+      ctx.font = `800 ${Math.max(10, Math.min(16, jacketSize / 2.2))}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(card?.count ?? 0), centerX, y + cardTopPad + avatarSize + 12);
+
+      let rowY = y + cardTopPad + headHeight;
+      (card?.songs || []).forEach((song) => {
+        const imgX = x + (columnWidth - jacketSize) / 2;
+        drawCanvasRoundedImage(ctx, imageMap.get(song?.jacketUrl) || null, imgX, rowY, jacketSize, Math.min(6, jacketSize / 5));
+        if (song?.releasedAtText) {
+          ctx.fillStyle = '#334155';
+          ctx.font = `700 ${Math.max(7, Math.min(10, metrics.dateHeight * 0.9))}px system-ui, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillText(String(song.releasedAtText), centerX, rowY + jacketSize + 1, columnWidth - 2);
+        }
+        rowY += rowHeight;
+      });
+    });
+
+    setScreenshotModalState({
+      state: 'exporting',
+      title: '导出图片',
+      message: '正在生成 PNG 文件...',
+      cancelTask: cancelContext.cancel
+    });
+
+    const ts = typeof formatExportTimestamp === 'function' ? formatExportTimestamp() : Date.now();
+    const safeTitle = typeof sanitizeExportFileName === 'function' ? sanitizeExportFileName(`${title || 'Anvo'}_${ts}`) : `${title || 'Anvo'}_${ts}`;
+    await triggerDownloadPng(canvas, safeTitle);
+
+    setScreenshotModalState({
+      state: 'success',
+      title: '导出成功',
+      message: `【${exportLabel}】已导出 PNG（耗时 ${Math.max(0, Math.round(performance.now() - startedAt))}ms）`,
+      cancelTask: null,
+      autoCloseMs: 1400
+    });
+  } catch (error) {
+    if (isExportCancelledError(error)) {
+      setScreenshotModalState({ state: 'idle', title: '', message: '', cancelTask: null });
+      return;
+    }
+    const detail = getCaptureErrorText(error);
+    setScreenshotModalState({
+      state: 'failed',
+      title: '截图失败',
+      message: 'Anvo 铺满导出发生错误：' + detail.text,
+      retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
+      cancelTask: null
+    });
+  } finally {
+    if (screenshotModalCancelTask.value === cancelContext.cancel) {
+      screenshotModalCancelTask.value = null;
+    }
+  }
+};
+
 const getCaptureDeviceTier = () => {
   const width = Number(window?.innerWidth || 0);
   const height = Number(window?.innerHeight || 0);
@@ -4770,6 +5031,15 @@ const sanitizeSongCloneForExport = (cloneRoot) => {
     node.style.backgroundImage = 'none';
   });
 
+  // Compact mobile toggles render "曲绘" through ::after; html-to-image may
+  // clone both the real text and pseudo text, so export uses one real label.
+  cloneRoot.querySelectorAll('.song-duo-image-toggle.is-image-toggle > span').forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    const compact = typeof window !== 'undefined' && window.innerWidth <= 900;
+    node.textContent = compact ? '曲绘' : '曲绘显示';
+    node.classList.add('song-export-no-pseudo-label');
+  });
+
   // Prevent tainted canvas by skipping off-origin images in export clone.
   cloneRoot.querySelectorAll('img').forEach((imgEl) => {
     const src = String(imgEl?.getAttribute('src') || imgEl?.currentSrc || '').trim();
@@ -5033,42 +5303,6 @@ const hideTransientMediaForCapture = (rootEl) => {
   return hidden;
 };
 
-const recoverCardImagesForTileCapture = async (cardEl, deviceTier = 'phone') => {
-  if (!(cardEl instanceof HTMLElement)) return;
-  const images = Array.from(cardEl.querySelectorAll('img')).filter((imgEl) => imgEl instanceof HTMLImageElement);
-  if (!images.length) return;
-
-  const failedSrcList = [];
-  images.forEach((imgEl) => {
-    imgEl.setAttribute('loading', 'eager');
-    imgEl.setAttribute('decoding', 'sync');
-    if ('fetchPriority' in imgEl) {
-      imgEl.fetchPriority = 'high';
-    }
-    const src = String(imgEl.currentSrc || imgEl.getAttribute('src') || '').trim();
-    if (imgEl.dataset.failed === '1' && src) {
-      imgEl.style.display = '';
-      imgEl.removeAttribute('data-failed');
-      failedSrcList.push(src);
-    }
-  });
-
-  if (failedSrcList.length) {
-    const uniq = [...new Set(failedSrcList)];
-    await Promise.allSettled(uniq.map((src) => preloadSingleImageUrlForCapture(src, 12000)));
-  }
-
-  await waitForRenderableAssets(cardEl, {
-    maxWaitMs: deviceTier === 'phone' ? 3200 : 2600,
-    maxImages: 480
-  });
-  await preloadImageUrlsForCapture(cardEl, {
-    maxImages: 480,
-    concurrency: deviceTier === 'desktop' ? 6 : 4,
-    timeoutMs: deviceTier === 'phone' ? 10000 : 8000
-  });
-};
-
 const buildCapturePixelRatioPlan = (deviceTier) => {
   const target = 2;
   const ladder = deviceTier === 'desktop'
@@ -5184,6 +5418,15 @@ const prepareSongExportClone = async (targetEl) => {
       border: solid #ffffff;
       border-width: 0 2px 2px 0;
       transform: rotate(45deg);
+    }
+    .song-export-clone-root .song-export-no-pseudo-label {
+      font-size: 0.7rem !important;
+      line-height: 1 !important;
+    }
+    .song-export-clone-root .song-export-no-pseudo-label::before,
+    .song-export-clone-root .song-export-no-pseudo-label::after {
+      content: none !important;
+      display: none !important;
     }
   `;
   clone.insertBefore(stabilizeStyle, clone.firstChild);
@@ -5617,211 +5860,6 @@ const expandOcBookUnitsForExport = (targetUnit = '') => {
   ocBookUnitExpandedMap.value = next;
 };
 
-const exportAnvoPanelByCardsPng = async (targetEl, title, options = {}) => {
-  const previousIdle = await waitPendingSongCaptureRenderTask(1200);
-  if (!previousIdle) {
-    forceReleaseSongCaptureRenderTask();
-  }
-  const exportLabel = String(options?.taskLabel || title || 'Anvo统计');
-  const deviceTier = getCaptureDeviceTier();
-  const cancelContext = createExportCancelContext();
-  const exportStartAt = performance.now();
-  const formatElapsed = () => `${Math.max(0, Math.round(performance.now() - exportStartAt))}ms`;
-
-  const cards = Array.from(targetEl.querySelectorAll('.song-anvo-card')).filter((el) => el instanceof HTMLElement);
-  if (!cards.length) {
-    throw new Error('anvo-cards-not-found');
-  }
-
-  setScreenshotModalState({
-    state: 'capturing',
-    title: '截图中',
-    message: '[初始化] 正在准备分块捕获 ' + exportLabel,
-    cancelTask: cancelContext.cancel
-  });
-
-  let lastRenderError = null;
-  let lastAttemptMeta = null;
-
-  try {
-    await waitForRenderableAssets(targetEl, {
-      maxWaitMs: deviceTier === 'phone' ? 4200 : 3600,
-      maxImages: 1800
-    });
-    await preloadImageUrlsForCapture(targetEl, {
-      maxImages: 1500,
-      concurrency: deviceTier === 'desktop' ? 12 : 6,
-      timeoutMs: deviceTier === 'phone' ? 9000 : 7000
-    });
-
-    const rects = cards.map((card) => card.getBoundingClientRect());
-    const minLeft = Math.min(...rects.map((rect) => rect.left));
-    const minTop = Math.min(...rects.map((rect) => rect.top));
-    const maxRight = Math.max(...rects.map((rect) => rect.right));
-    const maxBottom = Math.max(...rects.map((rect) => rect.bottom));
-    const width = Math.max(1, Math.ceil(maxRight - minLeft));
-    const height = Math.max(1, Math.ceil(maxBottom - minTop));
-
-    const pixelRatioPlan = buildCapturePixelRatioPlan(deviceTier);
-
-    let finalCanvas = null;
-
-    for (let attemptIdx = 0; attemptIdx < pixelRatioPlan.length; attemptIdx += 1) {
-      const pixelRatio = pixelRatioPlan[attemptIdx];
-      const canvasWidth = Math.max(1, Math.round(width * pixelRatio));
-      const canvasHeight = Math.max(1, Math.round(height * pixelRatio));
-      lastAttemptMeta = {
-        pixelRatio,
-        canvasWidth,
-        canvasHeight,
-        width,
-        height,
-        attempt: attemptIdx + 1,
-        attempts: pixelRatioPlan.length
-      };
-
-      const outCanvas = document.createElement('canvas');
-      outCanvas.width = canvasWidth;
-      outCanvas.height = canvasHeight;
-      const ctx = outCanvas.getContext('2d');
-      if (!ctx) {
-        throw new Error('canvas-context-2d-unavailable');
-      }
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-      try {
-        for (let cardIdx = 0; cardIdx < cards.length; cardIdx += 1) {
-          const cardEl = cards[cardIdx];
-          if (!(cardEl instanceof HTMLElement)) continue;
-
-          setScreenshotModalState({
-            state: 'capturing',
-            title: '截图中',
-            message: `[分块渲染] ${exportLabel}（块 ${cardIdx + 1}/${cards.length}，像素比 x${pixelRatio.toFixed(2)}，尝试 ${attemptIdx + 1}/${pixelRatioPlan.length}）`,
-            cancelTask: cancelContext.cancel
-          });
-
-          let restoreVars = () => {};
-          let restoreControls = () => {};
-          try {
-            restoreVars = freezeCssVariablesForCapture(cardEl);
-            restoreControls = hideExportControlsForLiveCapture(cardEl);
-
-            await recoverCardImagesForTileCapture(cardEl, deviceTier);
-
-            const cardWidth = Math.max(1, Math.ceil(cardEl.scrollWidth || cardEl.clientWidth || cardEl.getBoundingClientRect().width || 0));
-            const cardHeight = Math.max(1, Math.ceil(cardEl.scrollHeight || cardEl.clientHeight || cardEl.getBoundingClientRect().height || 0));
-            const cardCanvasWidth = Math.max(1, Math.round(cardWidth * pixelRatio));
-            const cardCanvasHeight = Math.max(1, Math.round(cardHeight * pixelRatio));
-            const renderTimeoutMs = Math.min(
-              38000,
-              Math.max(10000, Math.round(computeRenderTimeoutMs({
-                deviceTier,
-                heavyMediaCount: countHeavyMediaNodes(cardEl),
-                width: cardWidth,
-                height: cardHeight,
-                scale: pixelRatio
-              }) * 1.25))
-            );
-
-            const renderTask = trackSongCaptureRenderTask(toCanvas(cardEl, {
-              backgroundColor: '#ffffff',
-              width: cardWidth,
-              height: cardHeight,
-              canvasWidth: cardCanvasWidth,
-              canvasHeight: cardCanvasHeight,
-              pixelRatio: 1,
-              skipFonts: false,
-              cacheBust: true,
-              skipAutoScale: true,
-              imagePlaceholder: CAPTURE_IMAGE_PLACEHOLDER
-            }));
-
-            const tileCanvas = await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
-            const rect = rects[cardIdx];
-            const dx = Math.max(0, Math.round((rect.left - minLeft) * pixelRatio));
-            const dy = Math.max(0, Math.round((rect.top - minTop) * pixelRatio));
-            ctx.drawImage(tileCanvas, dx, dy);
-          } finally {
-            restoreVars();
-            restoreControls();
-          }
-        }
-
-        finalCanvas = outCanvas;
-        break;
-      } catch (renderError) {
-        lastRenderError = renderError;
-        if (isExportCancelledError(renderError)) {
-          throw renderError;
-        }
-      }
-    }
-
-    if (!finalCanvas) {
-      throw lastRenderError || new Error('anvo-tile-capture-null');
-    }
-
-    setScreenshotModalState({
-      state: 'exporting',
-      title: '导出图片',
-      message: '[编码中] 正在生成 PNG 文件...',
-      cancelTask: cancelContext.cancel
-    });
-
-    const ts = typeof formatExportTimestamp === 'function' ? formatExportTimestamp() : Date.now();
-    const safeTitle = typeof sanitizeExportFileName === 'function' ? sanitizeExportFileName(`${title}_${ts}`) : `${title}_${ts}`;
-
-    if (typeof triggerDownloadPng === 'function') {
-      await triggerDownloadPng(finalCanvas, safeTitle);
-    } else {
-      finalCanvas.toBlob(blob => {
-        if(!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = safeTitle + '.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      });
-    }
-
-    setScreenshotModalState({
-      state: 'success',
-      title: '导出成功',
-      message: `【${exportLabel}】已导出 PNG（耗时 ${formatElapsed()}）`,
-      cancelTask: null,
-      autoCloseMs: 1400
-    });
-  } catch (error) {
-    if (isExportCancelledError(error)) {
-      setScreenshotModalState({
-        state: 'idle',
-        title: '',
-        message: '',
-        cancelTask: null
-      });
-      return;
-    }
-    const detail = getCaptureErrorText(error);
-    const rawErrorText = String(error?.message || error || '').trim() || '[empty]';
-    setScreenshotModalState({
-      state: 'failed',
-      title: '截图失败',
-      message: '[失败] 导出发生错误: ' + detail.text + ` | 模式:tile-live | 尺寸:${lastAttemptMeta?.width || '-'}x${lastAttemptMeta?.height || '-'} | 画布:${lastAttemptMeta?.canvasWidth || '-'}x${lastAttemptMeta?.canvasHeight || '-'} | 像素比:x${Number(lastAttemptMeta?.pixelRatio || 1).toFixed(2)} | 原始:${rawErrorText}`,
-      retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
-      cancelTask: null
-    });
-  } finally {
-    if (screenshotModalCancelTask.value === cancelContext.cancel) {
-      screenshotModalCancelTask.value = null;
-    }
-  }
-};
-
 const exportSongPanelPng = async (panelId, title) => {
   if (isExportingPng.value) return;
   const targetEl = document.getElementById(panelId);
@@ -5853,11 +5891,11 @@ const exportSongPanelPng = async (panelId, title) => {
 
     await nextTick();
     await waitNextPaint();
-    const useAnvoTileMode = panelId === 'panel-another-vocal'
+    const useAnvoFillCanvasMode = panelId === 'panel-another-vocal'
       && !!anotherImageMode.value
-      && Number(window?.innerWidth || 0) < 1200;
-    if (useAnvoTileMode) {
-      await exportAnvoPanelByCardsPng(targetEl, title, {
+      && (Number(window?.innerWidth || 0) < 1200 || isAnvoFillModeActive.value);
+    if (useAnvoFillCanvasMode) {
+      await exportAnvoFillCanvasPng(title, {
         taskLabel: title,
         retryTask: () => exportSongPanelPng(panelId, title)
       });
@@ -5873,69 +5911,6 @@ const exportSongPanelPng = async (panelId, title) => {
     anotherCardModeMap.value = prevAnotherModes;
     duoCardExpandedMap.value = prevDuoExpanded;
     vsSongCardModeMap.value = prevVsSongModes;
-    ocBookUnitExpandedMap.value = prevOcBookExpanded;
-    await nextTick();
-    isExportingPng.value = false;
-  }
-};
-
-const exportVirtualSingerCardPng = async (row) => {
-  if (isExportingPng.value) return;
-  const targetEl = vsSongCardRefMap.get(row?.name);
-  if (!targetEl) {
-    setScreenshotModalState({
-      state: 'failed',
-      title: '截图失败',
-      message: '未找到可导出的角色卡片。'
-    });
-    return;
-  }
-
-  const prevVsSongModes = snapshotVsSongCardModes();
-  isExportingPng.value = true;
-  try {
-    expandVsSongCardsForExport(row?.name || '');
-    await nextTick();
-    await waitNextPaint();
-    await exportElementPng(targetEl, `虚拟歌手参与书下_${row?.name || '角色'}`, {
-      taskLabel: `虚拟歌手参与书下_${row?.name || '角色'}`,
-      retryTask: () => exportVirtualSingerCardPng(row)
-    });
-  } catch (error) {
-    console.error('导出虚拟歌手参与歌曲 PNG 失败', error);
-  } finally {
-    vsSongCardModeMap.value = prevVsSongModes;
-    await nextTick();
-    isExportingPng.value = false;
-  }
-};
-
-const exportOcBookUnitCardPng = async (unitGroup) => {
-  if (isExportingPng.value) return;
-  const unitKey = String(unitGroup?.unit || '');
-  const targetEl = ocBookUnitCardRefMap.get(unitKey);
-  if (!targetEl) {
-    setScreenshotModalState({
-      state: 'failed',
-      title: '截图失败',
-      message: '未找到可导出的团体卡片。'
-    });
-    return;
-  }
-
-  const prevOcBookExpanded = snapshotOcBookExpandedMap();
-  isExportingPng.value = true;
-  try {
-    expandOcBookUnitsForExport(unitKey);
-    await nextTick();
-    await waitNextPaint();
-    await exportElementPng(targetEl, `OC书下_${unitGroup?.label || unitKey || '团体'}`, {
-      taskLabel: `OC书下_${unitGroup?.label || unitKey || '团体'}`,
-      retryTask: () => exportOcBookUnitCardPng(unitGroup)
-    });
-  } catch (error) {
-    console.error('导出 OC 书下团体 PNG 失败', error);
-  } finally {
     ocBookUnitExpandedMap.value = prevOcBookExpanded;
     await nextTick();
     isExportingPng.value = false;
@@ -8942,12 +8917,6 @@ watch(totalSongPages, (nextTotal) => {
   .card-export-btn {
     font-size: 0.64rem;
     padding: 3px 6px;
-  }
-
-  .song-mini-png-btn {
-    font-size: 0.58rem;
-    padding: 3px 5px;
-    white-space: nowrap;
   }
 
   .song-insight-table th,
