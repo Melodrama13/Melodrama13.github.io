@@ -861,6 +861,7 @@ const baseCards = ref([]); // 新增：存储基础卡片库
 const songsData = ref([]);
 const charactersData = ref([]);
 const predictiveEvents = ref([]); // 用户填写的预测数据
+const draftPredictiveEvent = ref(null);
 const cleanedPatchNoticeCount = ref(0);
 const predictSources = ref([]);
 const activePredictSourceId = ref('');
@@ -2051,7 +2052,16 @@ const onImportDrop = async (event) => {
   }
 };
 
-const effectivePredictiveEvents = computed(() => reconcilePredictiveEvents(predictiveEvents.value));
+const effectivePredictiveEvents = computed(() => {
+  const saved = reconcilePredictiveEvents(predictiveEvents.value);
+  const draft = draftPredictiveEvent.value;
+  if (!draft || !Number.isFinite(Number(draft?.id))) return saved;
+  const draftId = Number(draft.id);
+  return reconcilePredictiveEvents([
+    ...saved.filter((item) => Number(item?.id) !== draftId),
+    draft
+  ]);
+});
 
 onMounted(async () => {
   try {
@@ -2355,6 +2365,110 @@ const isTeamWorldLink = (eventType, typeSeriesId) => {
 };
 
 // App.vue 约第 135 行 savePredictEvent 替换为：
+const buildPredictEventPatchFromPayload = (payload, options = {}) => {
+  if (!payload || typeof payload !== 'object') return null;
+  const { eventId, eventType, gachaType, predictAttr, bannerName: payloadBannerName, selectedChars, event_title } = payload;
+  const sourceEvent = historyData.value.find(e => Number(e.id) === Number(eventId));
+  if (!sourceEvent || isPredictDisabledJsonEvent(sourceEvent) || isJsonEventOfficialRevealed(sourceEvent)) {
+    if (options?.warn !== false) {
+      console.warn(`[predict] ignore save for event ${eventId}, not editable by source JSON`);
+    }
+    return null;
+  }
+
+  const nextSid = getNextSeriesId();
+  const safeSelectedChars = Array.isArray(selectedChars) ? selectedChars : [];
+  const isNonFesFourStar = (char) => {
+    const rarity = String(char?.rarity || '').trim();
+    const skill = String(char?.skillType || '').trim().toLowerCase();
+    return rarity === '4' && !skill.includes('fes');
+  };
+
+  const bannerCandidates = safeSelectedChars
+    .filter((char) => isNonFesFourStar(char))
+    .map((char) => getBaseBannerName(char?.name))
+    .filter(Boolean);
+
+  const payloadBannerBaseName = getBaseBannerName(payloadBannerName);
+  const resolvedBannerName = eventType === 'World Link'
+    ? ''
+    : (bannerCandidates.includes(payloadBannerBaseName)
+      ? payloadBannerBaseName
+      : (bannerCandidates[0] || ''));
+
+  if (eventType !== 'World Link' && !resolvedBannerName) {
+    if (options?.alertOnInvalid) {
+      alert('保存失败：Ban主必须是队伍中的 4星非 FES 成员。');
+    }
+    return null;
+  }
+
+  const nextTypeSeriesId = eventType === 'World Link'
+    ? (sourceEvent?.type_series_id ?? null)
+    : getNextTypeSeriesId({ eventId, eventType, bannerName: resolvedBannerName });
+  const teamWorldLink = isTeamWorldLink(eventType, nextTypeSeriesId ?? sourceEvent?.type_series_id);
+
+  const generatedCardsRaw = safeSelectedChars.map((char, index) => {
+    const rarity = char.rarity || "4";
+    const isBfes = char.skillType === 'bfes_up' && rarity === '4';
+    const isVsCard = isVsName(char.name);
+
+    let cardType = 'perm';
+    if (isBfes) {
+      cardType = 'bfes';
+    } else if (gachaType === 'limited' && rarity === '4') {
+      cardType = 'limited';
+    } else if (gachaType === 'ue' && rarity === '4') {
+      cardType = 'ue';
+    }
+
+    return {
+      CardID: `PRED-${eventId}-${index}`,
+      Name: char.name,
+      Rarity: rarity,
+      EventID: eventId,
+      Attribute: normalizeAttr(char.attr) || '-',
+      Skill: isBfes ? 'bfes_up' : (char.skillType || "-"),
+      Type: cardType,
+      Affiliation: (isBfes && isVsCard) ? 'vs' : (char.Affiliation || ""),
+      SeriesID: eventType === 'World Link' ? null : (getBaseBannerName(char?.name) === resolvedBannerName ? nextSid : null)
+    };
+  });
+
+  const generatedCards = eventType === 'World Link'
+    ? generatedCardsRaw
+    : sortPredictedCardsForDisplay(generatedCardsRaw, resolvedBannerName);
+
+  const predictedUnit = String(generatedCards?.[0]?.Affiliation || '').trim().toLowerCase();
+  const sourceUnit = String(sourceEvent?.unit || '').trim().toLowerCase();
+  const finalUnit = predictedUnit || sourceUnit;
+  const worldLinkUnit = teamWorldLink ? finalUnit : '';
+  const bannerCard = generatedCardsRaw.find((card) => getBaseBannerName(card?.Name) === resolvedBannerName && card?.SeriesID === nextSid);
+  const finalBanner = eventType === 'World Link'
+    ? ''
+    : buildBannerNameWithUnit(resolvedBannerName, bannerCard?.Affiliation);
+
+  return {
+    id: Number(eventId),
+    predict_schema_version: 3,
+    predict_schedule_index: getNormalScheduleIndexByEventId(eventId),
+    predict_shift_count: getInsertedTestCountAtOrBefore(eventId),
+    event_title: event_title,
+    event_type: eventType,
+    gacha_type: gachaType === 'limited' ? '普通限定' : (gachaType === 'ue' ? 'UE限定' : '常驻'),
+    type_series_id: nextTypeSeriesId,
+    event_attribute: normalizeAttr(predictAttr),
+    memberCards: generatedCards,
+    banner: finalBanner,
+    unit: eventType === 'World Link' ? worldLinkUnit : finalUnit,
+    isPredict: true
+  };
+};
+
+provide('updateDraftPredictEvent', (payload) => {
+  draftPredictiveEvent.value = buildPredictEventPatchFromPayload(payload, { warn: false, alertOnInvalid: false });
+});
+
 provide('savePredictEvent', (payload) => {
   const { eventId, eventType, gachaType, predictAttr, bannerName: payloadBannerName, selectedChars, event_title } = payload;
   const sourceEvent = historyData.value.find(e => Number(e.id) === Number(eventId));

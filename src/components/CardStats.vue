@@ -4885,7 +4885,8 @@ const prepareExportClone = async (targetEl) => {
     if (explicitFill) {
       clone.classList.add('export-single-card-fill-root');
       clone.style.setProperty('--export-single-card-fill', explicitFill);
-      clone.style.setProperty('background-color', explicitFill, 'important');
+      clone.style.removeProperty('background-color');
+      clone.style.removeProperty('background-image');
     }
   }
   if (sourceRadiusVar) {
@@ -4934,7 +4935,7 @@ const prepareExportClone = async (targetEl) => {
       isolation: isolate !important;
       position: relative !important;
       overflow: hidden !important;
-      background: var(--export-single-card-fill, #ffffff) !important;
+      background: transparent !important;
       background-image: none !important;
     }
     .export-clone-root.export-single-card-fill-root::before {
@@ -5124,78 +5125,6 @@ const shouldCaptureLiveElementForExport = (targetEl, options = {}) => {
   return false;
 };
 
-const forceSingleCardFillForLiveCapture = (targetEl) => {
-  if (!(targetEl instanceof HTMLElement)) {
-    return () => {};
-  }
-  const isSingleCard = targetEl.classList.contains('lineup-card')
-    || targetEl.classList.contains('support-card')
-    || targetEl.classList.contains('attr-summary-card');
-  if (!isSingleCard) {
-    return () => {};
-  }
-
-  const selectors = [
-    '.lineup-card',
-    '.support-card',
-    '.attr-summary-card',
-    '.lineup-member-cell',
-    '.support-member-cell',
-    '.related-last-card-thumb',
-    '.interval-card-thumb'
-  ];
-
-  const collectNodesIncludingRoot = (rootEl, selector) => {
-    const nodes = [];
-    if (rootEl.matches(selector)) {
-      nodes.push(rootEl);
-    }
-    nodes.push(...Array.from(rootEl.querySelectorAll(selector)));
-    return nodes;
-  };
-
-  const touched = [];
-  selectors.forEach((selector) => {
-    const nodes = collectNodesIncludingRoot(targetEl, selector);
-    nodes.forEach((node) => {
-      if (!(node instanceof HTMLElement)) return;
-      touched.push({
-        node,
-        backgroundColor: node.style.getPropertyValue('background-color'),
-        backgroundColorPriority: node.style.getPropertyPriority('background-color'),
-        backgroundImage: node.style.getPropertyValue('background-image'),
-        backgroundImagePriority: node.style.getPropertyPriority('background-image')
-      });
-
-      const fill = resolveSingleCardFillFromSource(node);
-      if (fill) {
-        node.style.setProperty('background-color', fill, 'important');
-      }
-      const computed = window.getComputedStyle(node);
-      const bgImage = String(computed.backgroundImage || '').trim();
-      if (bgImage && bgImage !== 'none') {
-        node.style.setProperty('background-image', bgImage, 'important');
-      }
-    });
-  });
-
-  return () => {
-    touched.forEach((entry) => {
-      if (!(entry?.node instanceof HTMLElement)) return;
-      if (entry.backgroundColor) {
-        entry.node.style.setProperty('background-color', entry.backgroundColor, entry.backgroundColorPriority || '');
-      } else {
-        entry.node.style.removeProperty('background-color');
-      }
-      if (entry.backgroundImage) {
-        entry.node.style.setProperty('background-image', entry.backgroundImage, entry.backgroundImagePriority || '');
-      } else {
-        entry.node.style.removeProperty('background-image');
-      }
-    });
-  };
-};
-
 const runExportElementPng = async (id, title, options = {}) => {
   const previousIdle = await waitPendingCardCaptureRenderTask(1200);
   if (!previousIdle) {
@@ -5222,7 +5151,6 @@ const runExportElementPng = async (id, title, options = {}) => {
   let cloneEl = null;
   let restoreFrozenCssVars = () => {};
   let restoreHiddenLiveControls = () => {};
-  let restoreSingleCardFill = () => {};
   try {
     const sourceImages = Array.from(targetEl.querySelectorAll('img'));
     sourceImages.forEach((imgEl) => {
@@ -5262,7 +5190,6 @@ const runExportElementPng = async (id, title, options = {}) => {
     if (captureLiveElement) {
       restoreFrozenCssVars = freezeCssVariablesForCapture(renderEl);
       restoreHiddenLiveControls = hideExportControlsForLiveCapture(renderEl);
-      restoreSingleCardFill = forceSingleCardFillForLiveCapture(renderEl);
     }
 
     const cloneImages = Array.from(renderEl.querySelectorAll('img'));
@@ -5424,7 +5351,6 @@ const runExportElementPng = async (id, title, options = {}) => {
   } finally {
     restoreFrozenCssVars();
     restoreHiddenLiveControls();
-    restoreSingleCardFill();
     if (screenshotModalCancelTask.value === cancelContext.cancel) {
       screenshotModalCancelTask.value = null;
     }

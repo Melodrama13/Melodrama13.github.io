@@ -2154,6 +2154,12 @@ const openPredictEditor = (event) => {
   currentEditingSelectionNames.value = Array.isArray(event?.memberCards)
     ? [...new Set(event.memberCards.map((card) => normalizeCharName(card?.Name)).filter((name) => !!CHAR_MAP.value[name]))]
     : [];
+  currentEditingSelectionCards.value = Array.isArray(event?.memberCards)
+    ? event.memberCards.map((card) => ({
+      name: normalizeCharName(card?.Name),
+      rarity: String(card?.Rarity || '').trim()
+    })).filter((card) => card.name && !!CHAR_MAP.value[card.name])
+    : [];
   emit('sync-preview-event-id', Number(event.id));
   preserveAnchorWhileLayoutChanges(event.id, () => {
     isEditorOpen.value = true;
@@ -2165,6 +2171,7 @@ const handleCloseEditor = () => {
   if (!anchorId) {
     isEditorOpen.value = false;
     currentEditingSelectionNames.value = [];
+    currentEditingSelectionCards.value = [];
     return;
   }
 
@@ -2172,6 +2179,7 @@ const handleCloseEditor = () => {
     isEditorOpen.value = false;
   });
   currentEditingSelectionNames.value = [];
+  currentEditingSelectionCards.value = [];
   emit('sync-preview-event-id', null);
 };
 
@@ -2258,6 +2266,7 @@ const selectedPreviewAttrChars = ref([]);
 const selectedPreviewDailyLineupChars = ref([]);
 const selectedPreviewCharAttrChars = ref([]);
 const currentEditingSelectionNames = ref([]);
+const currentEditingSelectionCards = ref([]);
 const previewIncludeCollabReward = ref(false);
 const previewThreeUseRewardCount = ref(true);
 const previewTwoUseRewardCount = ref(true);
@@ -2363,6 +2372,20 @@ const getCurrentLineupCharNames = () => {
 const getCurrentLineupFourStarCharNames = () => {
   const names = [];
   const seen = new Set();
+  const liveCards = Array.isArray(currentEditingSelectionCards.value)
+    ? currentEditingSelectionCards.value
+    : [];
+  if (liveCards.length > 0) {
+    liveCards.forEach((card) => {
+      if (String(card?.rarity || '').trim() !== '4') return;
+      const name = normalizeCharName(card?.name);
+      if (!name || !CHAR_MAP.value[name] || seen.has(name)) return;
+      seen.add(name);
+      names.push(name);
+    });
+    return names;
+  }
+
   const cards = Array.isArray(currentEditingEvent.value?.memberCards)
     ? currentEditingEvent.value.memberCards
     : [];
@@ -2439,10 +2462,21 @@ const appendPreviewCharAttrCharsFromCurrentLineup = () => {
 };
 
 const handlePredictSelectionChange = (names) => {
-  const list = Array.isArray(names)
-    ? names.map((name) => normalizeCharName(name)).filter((name) => !!CHAR_MAP.value[name])
+  const rawList = Array.isArray(names) ? names : [];
+  const cards = rawList
+    .map((item) => {
+      const rawName = typeof item === 'object' && item !== null ? item.name : item;
+      return {
+        name: normalizeCharName(rawName),
+        rarity: typeof item === 'object' && item !== null ? String(item?.rarity || '').trim() : ''
+      };
+    })
+    .filter((card) => card.name && !!CHAR_MAP.value[card.name]);
+  const list = cards.length
+    ? cards.map((card) => card.name)
     : [];
   currentEditingSelectionNames.value = [...new Set(list)];
+  currentEditingSelectionCards.value = cards;
 };
 
 const setSelectedPreviewFestival = (festival) => {
@@ -4538,7 +4572,12 @@ const toggleEventFilterArray = (key, value) => {
   const current = [...(eventFilterCriteria.value[key] || [])];
   const idx = current.indexOf(value);
   if (idx >= 0) current.splice(idx, 1);
-  else current.push(value);
+  else {
+    current.push(value);
+    if ((key === 'eventTypes' || key === 'gachaTypes') && value === 'collab') {
+      hideCollabPools.value = false;
+    }
+  }
   eventFilterCriteria.value[key] = current;
   if (key === 'eventTypes' && eventFilterCriteria.value.eventTypes.includes('mix')) {
     eventFilterCriteria.value.units = [];
@@ -4707,8 +4746,16 @@ const matchEventFilters = (event) => {
   }
 
   if (f.units.length > 0) {
-    const unit = String(event?.unit || '').trim().toLowerCase();
-    if (!f.units.includes(unit)) return false;
+    const selectedUnits = f.units.map((unit) => String(unit || '').trim().toLowerCase()).filter(Boolean);
+    const eventType = String(event?.event_type || '').trim();
+    const eventUnit = String(event?.unit || '').trim().toLowerCase();
+    const isWorldLink = eventType === 'World Link' || eventType.toLowerCase() === 'wl';
+    const matchesVsUnit = selectedUnits.includes('vs')
+      && ((isWorldLink && eventUnit === 'vs') || isVirtualSinger(normalizeCharName(event?.banner)));
+    const matchesOcUnit = eventUnit !== 'vs'
+      && selectedUnits.includes(eventUnit)
+      && (eventType === '箱活' || isWorldLink);
+    if (!matchesVsUnit && !matchesOcUnit) return false;
   }
 
   if (f.gachaTypes.length > 0 && !f.gachaTypes.some((g) => matchEventGachaFilter(event, g))) return false;

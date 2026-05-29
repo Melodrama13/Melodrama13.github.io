@@ -152,6 +152,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['close', 'selection-change']);
 const savePredictEvent = inject('savePredictEvent');
+const updateDraftPredictEvent = inject('updateDraftPredictEvent', null);
 
 const ATTRS = ['Pure','Cool','Cute','Happy','Mysterious'];
 const ATTR_LABELS = {
@@ -822,13 +823,22 @@ watch(
 );
 
 watch(
-  () => [props.isOpen, form.selectedChars.map((c) => c.name).join('|')],
+  () => [
+    props.isOpen,
+    form.selectedChars.map((c) => [
+      c.name,
+      c.attr,
+      c.rarity,
+      c.selectedUnit,
+      c.skillType
+    ].join(':')).join('|')
+  ],
   ([open]) => {
     if (!open) {
       emit('selection-change', []);
       return;
     }
-    emit('selection-change', form.selectedChars.map((c) => c.name));
+    emit('selection-change', form.selectedChars.map((c) => ({ ...c })));
   },
   { immediate: true }
 );
@@ -877,6 +887,77 @@ const applyGlobalAttr = () => {
   applyAllRules();
 };
 
+const buildDraftPredictPayload = () => {
+  if (!props.isOpen || !props.event) return null;
+  const finalBannerName = String(activeBannerName.value || '').trim();
+  if (!isWorldLinkMode.value && !finalBannerName) return null;
+
+  const processedChars = form.selectedChars.map(char => {
+    let finalUnit = char.selectedUnit;
+    let finalSkill = char.skillType;
+
+    if (isVsFesSkillMode(char) && finalSkill !== ACTIVE_FES_SKILL_KEY) {
+      finalSkill = 'unit_score';
+    }
+
+    if (form.eventType === '绠辨椿' && VS_NAMES.includes(char.name)) {
+      const bannerUnit = getBannerUnit();
+      if (bannerUnit) {
+        finalUnit = bannerUnit;
+      }
+    }
+
+    if (isBfesVsUnitLocked(char)) {
+      finalUnit = 'vs';
+    }
+
+    return { ...char, skillType: finalSkill, Affiliation: finalUnit };
+  });
+
+  return {
+    eventId: props.event.id,
+    eventType: form.eventType,
+    gachaType: form.gachaType,
+    predictAttr: form.predictAttr,
+    bannerName: finalBannerName,
+    selectedChars: processedChars,
+    event_title: `[棰勬祴] ${form.eventType}`
+  };
+};
+
+const emitDraftPredictEvent = () => {
+  const payload = buildDraftPredictPayload();
+  if (typeof updateDraftPredictEvent === 'function') {
+    updateDraftPredictEvent(payload);
+  }
+};
+
+watch(
+  () => [
+    props.isOpen,
+    props.event?.id,
+    form.eventType,
+    form.gachaType,
+    form.predictAttr,
+    form.bannerName,
+    form.selectedChars.map((c) => [
+      c.name,
+      c.attr,
+      c.rarity,
+      c.selectedUnit,
+      c.skillType
+    ].join(':')).join('|')
+  ],
+  () => {
+    emitDraftPredictEvent();
+  },
+  { immediate: true }
+);
+
+onBeforeUnmount(() => {
+  if (typeof updateDraftPredictEvent === 'function') updateDraftPredictEvent(null);
+});
+
 const submit = () => {
   const finalBannerName = String(activeBannerName.value || '').trim();
   if (!isWorldLinkMode.value && !finalBannerName) {
@@ -907,6 +988,7 @@ const submit = () => {
     return { ...char, skillType: finalSkill, Affiliation: finalUnit };
   });
 
+  if (typeof updateDraftPredictEvent === 'function') updateDraftPredictEvent(null);
   savePredictEvent({
     eventId: props.event.id,
     eventType: form.eventType,
