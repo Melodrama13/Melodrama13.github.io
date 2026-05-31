@@ -13317,7 +13317,8 @@
       "normal": 12,
       "hard": 18,
       "expert": 26,
-      "master": 31
+      "master": 31,
+      "append": 32
     },
     "vocals": [
       {
@@ -25332,6 +25333,22 @@
           "望月穗波",
           "日野森志步"
         ]
+      },
+      {
+        "vocal_id": 1826,
+        "type": "another_vocal",
+        "released_at": "2026/5/31",
+        "characters": [
+          "星乃一歌"
+        ]
+      },
+      {
+        "vocal_id": 1827,
+        "type": "another_vocal",
+        "released_at": "2026/5/31",
+        "characters": [
+          "天马咲希"
+        ]
       }
     ]
   },
@@ -30210,6 +30227,14 @@
         "characters": [
           "花里实乃里"
         ]
+      },
+      {
+        "vocal_id": 1828,
+        "type": "another_vocal",
+        "released_at": "2026/5/31",
+        "characters": [
+          "KAITO"
+        ]
       }
     ]
   },
@@ -32831,6 +32856,52 @@
     ]
   },
   {
+    "id": 705,
+    "title": "ラズベリー＊モンスター",
+    "pronunciation": "らずべりーもんすたー",
+    "composer": "Gom",
+    "lyricist": "Gom, shito",
+    "arranger": "HoneyWorks",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-06-05 15:00:00",
+    "categories": [
+      "3DMV"
+    ],
+    "units": [
+      "all",
+      "ln"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 19,
+      "expert": 25,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1262,
+        "type": "original_song",
+        "released_at": "2026/6/5",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 1830,
+        "type": "sekai",
+        "released_at": "2026/6/5",
+        "characters": [
+          "初音未来",
+          "星乃一歌",
+          "天马咲希",
+          "望月穗波",
+          "日野森志步"
+        ]
+      }
+    ]
+  },
+  {
     "id": 707,
     "title": "さいたま2000",
     "pronunciation": "さいたまにせん",
@@ -33622,6 +33693,50 @@
     ]
   },
   {
+    "id": 734,
+    "title": "プロポーズ",
+    "pronunciation": "ぷろぽーず",
+    "composer": "内緒のピアス",
+    "lyricist": "内緒のピアス",
+    "arranger": "内緒のピアス",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-06-01 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "nc"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 12,
+      "hard": 17,
+      "expert": 24,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1291,
+        "type": "original_song",
+        "released_at": "2026/6/1",
+        "characters": [
+          "可不"
+        ]
+      },
+      {
+        "vocal_id": 1829,
+        "type": "sekai",
+        "released_at": "2026/6/1",
+        "characters": [
+          "巡音流歌",
+          "朝比奈真冬",
+          "晓山瑞希"
+        ]
+      }
+    ]
+  },
+  {
     "id": 735,
     "title": "傀儡のうつつ",
     "pronunciation": "くぐつのうつつ",
@@ -33798,6 +33913,14 @@
       "append": 30
     },
     "vocals": [
+      {
+        "vocal_id": 1297,
+        "type": "original_song",
+        "released_at": "2026/5/31",
+        "characters": [
+          "初音未来"
+        ]
+      },
       {
         "vocal_id": 1805,
         "type": "sekai",
