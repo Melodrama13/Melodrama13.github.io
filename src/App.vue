@@ -91,6 +91,14 @@
               @focus="onPredictUserFocus"
               @blur="onPredictUserBlur"
             />
+            <button
+              class="source-special-entry-btn"
+              type="button"
+              title="打开特殊预测生成器"
+              @click.stop="openSpecialPredictGenerator"
+            >
+              ？
+            </button>
           </div>
           <div class="source-menu-title">切换数据源</div>
           <div class="source-list">
@@ -340,11 +348,14 @@
         <component 
           ref="tabComponentRef"
           :is="tabs[currentTab]" 
-          :all-events="totalEventData" 
+          :all-events="currentTab === 'specialPredict' ? historyData : totalEventData" 
           :all-cards="totalCardsData"
           :all-songs="songsData"
           :all-characters="charactersData"
           :all-base-cards="baseCards"
+          :predict-sources="predictSources"
+          :active-predict-source-id="activePredictSourceId"
+          :predict-user-name="predictUserName"
           :stats-preview-data="statsPreviewData"
           :preview-sync-event-id="previewSyncEventId"
           :jump-event-id="historyJumpEventId"
@@ -372,14 +383,33 @@ import { ref, computed, provide, onMounted, onBeforeUnmount, watch, nextTick } f
 import CardStats from './components/CardStats.vue';
 import EventHistory from './components/EventHistory.vue';
 import SongStats from './components/SongStats.vue';
+import SpecialPredictGenerator from './components/SpecialPredictGenerator.vue';
 
 // --- 界面切换逻辑 (恢复原样) ---
-const currentTab = ref('history');
 const tabs = {
   stats: CardStats,
   history: EventHistory,
-  songs: SongStats
+  songs: SongStats,
+  specialPredict: SpecialPredictGenerator
 };
+const APP_CURRENT_TAB_KEY = 'pjsk_planner_current_tab_v1';
+const getInitialTab = () => {
+  try {
+    const saved = String(localStorage.getItem(APP_CURRENT_TAB_KEY) || '').trim();
+    if (Object.prototype.hasOwnProperty.call(tabs, saved)) return saved;
+  } catch {
+    // Ignore storage failures and fall back to the original default page.
+  }
+  return 'history';
+};
+const persistCurrentTab = (tab) => {
+  try {
+    localStorage.setItem(APP_CURRENT_TAB_KEY, tab);
+  } catch {
+    // localStorage may be unavailable in restrictive browsing modes.
+  }
+};
+const currentTab = ref(getInitialTab());
 const historyJumpEventId = ref(null);
 const historyJumpSeq = ref(0);
 const statsPreviewData = ref(null);
@@ -793,6 +823,7 @@ const scrollContentToTop = () => {
 };
 
 const setCurrentTab = (tab) => {
+  if (!Object.prototype.hasOwnProperty.call(tabs, tab)) return;
   if (tab === currentTab.value) return;
   saveActiveTabCenterRatio();
   if (currentTab.value === 'stats') {
@@ -801,6 +832,12 @@ const setCurrentTab = (tab) => {
     saveSongsScroll();
   }
   currentTab.value = tab;
+  persistCurrentTab(tab);
+};
+
+const openSpecialPredictGenerator = () => {
+  sourceMenuOpen.value = false;
+  setCurrentTab('specialPredict');
 };
 
 const handleStatsJumpToEvent = async (eventId) => {
@@ -3243,6 +3280,28 @@ button.active {
 .source-menu-username-input:focus {
   border-color: #14b8a6;
   box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.15);
+}
+
+.source-special-entry-btn {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid #14b8a6;
+  background: #ecfeff;
+  color: #0f766e;
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.source-special-entry-btn:hover {
+  background: #ccfbf1;
 }
 
 .source-list {
