@@ -97,7 +97,7 @@
               title="打开特殊预测生成器"
               @click.stop="openSpecialPredictGenerator"
             >
-              ？
+              <span>？</span>
             </button>
           </div>
           <div class="source-menu-title">切换数据源</div>
@@ -3302,6 +3302,11 @@ button.active {
 
 .source-special-entry-btn:hover {
   background: #ccfbf1;
+}
+
+.source-special-entry-btn span {
+  display: inline-block;
+  transform: translateX(0.6px);
 }
 
 .source-list {

@@ -31134,6 +31134,22 @@
           "桐谷遥",
           "桃井爱莉"
         ]
+      },
+      {
+        "vocal_id": 1831,
+        "type": "another_vocal",
+        "released_at": "2026/6/8",
+        "characters": [
+          "日野森雫"
+        ]
+      },
+      {
+        "vocal_id": 1832,
+        "type": "another_vocal",
+        "released_at": "2026/6/8",
+        "characters": [
+          "MEIKO"
+        ]
       }
     ]
   },
@@ -32770,6 +32786,14 @@
           "星乃一歌",
           "望月穗波"
         ]
+      },
+      {
+        "vocal_id": 1833,
+        "type": "another_vocal",
+        "released_at": "2026/6/8",
+        "characters": [
+          "望月穗波"
+        ]
       }
     ]
   },
@@ -32897,6 +32921,52 @@
           "天马咲希",
           "望月穗波",
           "日野森志步"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 706,
+    "title": "永遠甚だしい",
+    "pronunciation": "えいえんはなはだしい",
+    "composer": "獅子志司",
+    "lyricist": "獅子志司",
+    "arranger": "獅子志司",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-06-12 15:00:00",
+    "categories": [
+      "3DMV"
+    ],
+    "units": [
+      "all",
+      "vbs"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 12,
+      "hard": 17,
+      "expert": 25,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1263,
+        "type": "original_song",
+        "released_at": "2026/6/12",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 1834,
+        "type": "sekai",
+        "released_at": "2026/6/12",
+        "characters": [
+          "巡音流歌",
+          "小豆泽心羽",
+          "白石杏",
+          "东云彰人",
+          "青柳冬弥"
         ]
       }
     ]
@@ -33693,6 +33763,41 @@
     ]
   },
   {
+    "id": 733,
+    "title": "いますぐ輪廻",
+    "pronunciation": "いますぐりんね",
+    "composer": "なきそ",
+    "lyricist": "なきそ",
+    "arranger": "なきそ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-06-08 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 12,
+      "hard": 17,
+      "expert": 25,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1290,
+        "type": "original_song",
+        "released_at": "2026/6/8",
+        "characters": [
+          "初音未来"
+        ]
+      }
+    ]
+  },
+  {
     "id": 734,
     "title": "プロポーズ",
     "pronunciation": "ぷろぽーず",
@@ -33983,6 +34088,77 @@
           "天马司",
           "镜音铃",
           "镜音连"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 755,
+    "title": "初音狂奏曲第01番「彗惺」",
+    "pronunciation": "はつねきょうそうきょくだいいちばんすいせい",
+    "composer": "よみぃ",
+    "lyricist": "湊貴大(流星P)",
+    "arranger": "よみぃ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-06-09 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 14,
+      "hard": 21,
+      "expert": 31,
+      "master": 34,
+      "append": 37
+    },
+    "vocals": [
+      {
+        "vocal_id": 1312,
+        "type": "original_song",
+        "released_at": "2026/6/9",
+        "characters": [
+          "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 757,
+    "title": "ひかりのあつめかた",
+    "pronunciation": "ひかりのあつめかた",
+    "composer": "まかろり",
+    "lyricist": "まかろり",
+    "arranger": "まかろり",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-06-15 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 13,
+      "hard": 17,
+      "expert": 24,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1314,
+        "type": "original_song",
+        "released_at": "2026/6/15",
+        "characters": [
+          "初音未来"
         ]
       }
     ]
