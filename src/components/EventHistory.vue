@@ -860,8 +860,7 @@
                   <img :src="`/chars/${getCharAbbr(card.Name)}.png`" class="member-avatar" />
                   <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/${card.Attribute.toLowerCase()}.png`" class="card-attr-icon" />
                   <img v-if="isVirtualSinger(card.Name)" :src="`/elements/${card.Affiliation.toLowerCase()}.png`" class="sub-unit-logo" />
-                  <div v-if="['limited', 'collab_t'].includes(card.Type?.toLowerCase())" class="lim-tag">期间限定</div>  
-                  <div v-if="['wl1', 'wl2', 'wl3'].includes(card.Type?.toLowerCase())" class="lim-tag">WL限定</div>
+                  <div v-if="getMemberRibbonLabel(card)" class="lim-tag"><span class="lim-tag-text">{{ getMemberRibbonLabel(card) }}</span></div>
                   <div class="stars-overlay">
                     <img v-for="n in parseInt(card.Rarity)" :key="n" :src="card.Rarity == 4 ? '/elements/rstar.png' : '/elements/ystar.png'" class="star-icon" />
                   </div>
@@ -914,6 +913,7 @@
                   <img :src="`/chars/${getCharAbbr(card.Name)}.png`" class="member-avatar" />
                   <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/${card.Attribute.toLowerCase()}.png`" class="card-attr-icon" />
                   <img v-if="isVirtualSinger(card.Name)" :src="`/elements/${card.Affiliation.toLowerCase()}.png`" class="sub-unit-logo" />
+                  <div v-if="getMemberRibbonLabel(card)" class="lim-tag"><span class="lim-tag-text">{{ getMemberRibbonLabel(card) }}</span></div>
                   <div class="stars-overlay">
                     <img v-for="n in parseInt(card.Rarity)" :key="n" :src="'/elements/rstar.png'" class="star-icon" />
                   </div>
@@ -5031,140 +5031,153 @@ const getPredictedExportRangeInfo = (includeBirthdayRows = true) => {
   return { ok: true, firstEventId, lastEventId, message: '' };
 };
 
-const withTemporaryScreenshotOverrides = (rowsAllInRange, includeBirthdayRows, isMobile, runner) => {
-  const hiddenNodes = [];
-  const deleteButtons = [];
-  const limTags = [];
-
-  rowsAllInRange.forEach((node) => {
-    const isPreview = node.classList.contains('preview-row');
-    const isBirthday = node.classList.contains('birthday-row');
-    if (isPreview || (!includeBirthdayRows && isBirthday)) {
-      hiddenNodes.push({ node, display: node.style.display });
-      node.style.display = 'none';
-      return;
-    }
-
-    node.querySelectorAll('.predict-delete-btn').forEach((btn) => {
-      deleteButtons.push({ node: btn, visibility: btn.style.visibility });
-      btn.style.visibility = 'hidden';
-    });
-
-    if (!isMobile) {
-      node.querySelectorAll('.lim-tag').forEach((tag) => {
-      limTags.push({
-        node: tag,
-        clipPath: tag.style.clipPath,
-        webkitClipPath: tag.style.webkitClipPath,
-        mask: tag.style.mask,
-        webkitMask: tag.style.webkitMask,
-        transform: tag.style.transform,
-        borderRadius: tag.style.borderRadius,
-        width: tag.style.width,
-        height: tag.style.height,
-        lineHeight: tag.style.lineHeight,
-        fontSize: tag.style.fontSize,
-        padding: tag.style.padding,
-        display: tag.style.display,
-        alignItems: tag.style.alignItems,
-        justifyContent: tag.style.justifyContent,
-        html: tag.innerHTML,
-        text: tag.style.textAlign,
-        whiteSpace: tag.style.whiteSpace,
-        position: tag.style.position,
-        top: tag.style.top,
-        right: tag.style.right,
-        left: tag.style.left,
-        zIndex: tag.style.zIndex
-      });
-
-      // 导出时统一成移动端的圆角标签样式，避免 PC 端切角在截图引擎上失真。
-      const rawText = String(tag.textContent || '').trim() || '期间限定';
-      tag.innerHTML = rawText;
-      tag.style.setProperty('clip-path', 'none', 'important');
-      tag.style.setProperty('-webkit-clip-path', 'none', 'important');
-      tag.style.setProperty('mask', 'none', 'important');
-      tag.style.setProperty('-webkit-mask', 'none', 'important');
-      tag.style.display = 'inline-flex';
-      tag.style.alignItems = 'center';
-      tag.style.justifyContent = 'center';
-      tag.style.borderRadius = '6px';
-      tag.style.width = 'auto';
-      tag.style.height = 'auto';
-      tag.style.lineHeight = '1.1';
-      tag.style.padding = '1px 6px';
-      tag.style.fontSize = '9px';
-      tag.style.whiteSpace = 'nowrap';
-      tag.style.textAlign = 'center';
-      tag.style.position = 'absolute';
-      tag.style.top = '-3px';
-      tag.style.left = 'calc(50% - 8px)';
-      tag.style.right = 'auto';
-      tag.style.transform = 'translateX(-50%)';
-      tag.style.zIndex = '9';
-      });
-    }
+const waitHistoryNextPaint = () => new Promise((resolve) => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(resolve);
   });
+});
 
-  const restore = () => {
-    hiddenNodes.forEach(({ node, display }) => {
-      node.style.display = display;
-    });
-    deleteButtons.forEach(({ node, visibility }) => {
-      node.style.visibility = visibility;
-    });
-    limTags.forEach((snapshot) => {
-      const { node, clipPath, webkitClipPath, mask, webkitMask } = snapshot;
-      node.style.clipPath = clipPath;
-      node.style.webkitClipPath = webkitClipPath;
-      node.style.mask = mask;
-      node.style.webkitMask = webkitMask;
-      node.style.transform = snapshot.transform;
-      node.style.borderRadius = snapshot.borderRadius;
-      node.style.width = snapshot.width;
-      node.style.height = snapshot.height;
-      node.style.lineHeight = snapshot.lineHeight;
-      node.style.fontSize = snapshot.fontSize;
-      node.style.padding = snapshot.padding;
-      node.style.display = snapshot.display;
-      node.style.alignItems = snapshot.alignItems;
-      node.style.justifyContent = snapshot.justifyContent;
-      node.style.textAlign = snapshot.text;
-      node.style.whiteSpace = snapshot.whiteSpace;
-      node.style.position = snapshot.position;
-      node.style.top = snapshot.top;
-      node.style.right = snapshot.right;
-      node.style.left = snapshot.left;
-      node.style.zIndex = snapshot.zIndex;
-      node.innerHTML = snapshot.html;
-    });
-  };
-
-  return Promise.resolve()
-    .then(runner)
-    .finally(restore);
+const copyHistoryCssCustomProperties = (sourceEl, targetEl) => {
+  if (!(sourceEl instanceof HTMLElement) || !(targetEl instanceof HTMLElement)) return;
+  const style = window.getComputedStyle(sourceEl);
+  for (let idx = 0; idx < style.length; idx += 1) {
+    const prop = style[idx];
+    if (!String(prop || '').startsWith('--')) continue;
+    const value = String(style.getPropertyValue(prop) || '').trim();
+    if (value) targetEl.style.setProperty(prop, value);
+  }
 };
 
-const getCaptureBoundsFromRows = (listEl, rows) => {
-  if (!listEl || !Array.isArray(rows) || rows.length === 0) {
-    return { top: 0, height: 1, width: Math.max(320, Number(listEl?.clientWidth || 0)) };
+const waitHistoryImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
+  if (!(imgEl instanceof HTMLImageElement) || imgEl.complete) {
+    resolve();
+    return;
   }
+  let done = false;
+  let timer = 0;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    imgEl.removeEventListener('load', finish);
+    imgEl.removeEventListener('error', finish);
+    if (timer) clearTimeout(timer);
+    resolve();
+  };
+  imgEl.addEventListener('load', finish, { once: true });
+  imgEl.addEventListener('error', finish, { once: true });
+  timer = window.setTimeout(finish, timeoutMs);
+});
 
-  const visibleRows = rows.filter((node) => {
-    const style = window.getComputedStyle(node);
-    return style.display !== 'none' && style.visibility !== 'hidden';
+const waitForHistoryExportAssets = async (rootEl, options = {}) => {
+  if (!(rootEl instanceof HTMLElement)) return;
+  const maxWaitMs = Number(options?.maxWaitMs || 0) > 0 ? Number(options.maxWaitMs) : 2600;
+  const maxImages = Number(options?.maxImages || 0) > 0 ? Number(options.maxImages) : 360;
+  const fontReady = (document?.fonts?.ready && typeof document.fonts.ready.then === 'function')
+    ? document.fonts.ready.catch(() => undefined)
+    : Promise.resolve();
+  const images = Array.from(rootEl.querySelectorAll('img')).slice(0, maxImages);
+  images.forEach((imgEl) => {
+    if (!(imgEl instanceof HTMLImageElement)) return;
+    const currentSrc = String(imgEl.currentSrc || imgEl.getAttribute('src') || '').trim();
+    imgEl.setAttribute('loading', 'eager');
+    imgEl.setAttribute('decoding', 'sync');
+    if ('fetchPriority' in imgEl) {
+      imgEl.fetchPriority = 'high';
+    }
+    if (currentSrc) {
+      imgEl.setAttribute('src', currentSrc);
+    }
   });
-  const targetRows = visibleRows.length > 0 ? visibleRows : rows;
 
-  const firstRect = targetRows[0].getBoundingClientRect();
-  const lastRect = targetRows[targetRows.length - 1].getBoundingClientRect();
+  await Promise.race([
+    Promise.allSettled([
+      fontReady,
+      Promise.allSettled(images.map((imgEl) => waitHistoryImageReady(imgEl, Math.min(2400, maxWaitMs))))
+    ]),
+    new Promise((resolve) => window.setTimeout(resolve, maxWaitMs))
+  ]);
+};
+
+const sanitizeHistoryExportClone = (cloneRoot) => {
+  if (!(cloneRoot instanceof HTMLElement)) return;
+  cloneRoot.querySelectorAll('.predict-delete-btn, .card-detail-tooltip, .tooltip-content, .birthday-info-popover').forEach((node) => {
+    node.remove();
+  });
+  cloneRoot.querySelectorAll('.is-active, .is-open, .is-tooltip-raised').forEach((node) => {
+    node.classList.remove('is-active', 'is-open', 'is-tooltip-raised');
+  });
+  cloneRoot.querySelectorAll('.media-load-shimmer').forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    node.style.animation = 'none';
+    node.style.backgroundImage = 'none';
+  });
+};
+
+const prepareHistoryExportClone = async (listEl, rows) => {
+  if (!(listEl instanceof HTMLElement) || !Array.isArray(rows) || rows.length === 0) return null;
+
   const listRect = listEl.getBoundingClientRect();
-  const top = Math.max(0, Math.floor(firstRect.top - listRect.top - 1));
-  const bottom = Math.max(top + 1, Math.ceil(lastRect.bottom - listRect.top + 1));
+  const cloneWidth = Math.max(320, Math.ceil(listEl.clientWidth || listRect.width || 320));
+  const sourceWrapper = historyWrapperRef.value instanceof HTMLElement
+    ? historyWrapperRef.value
+    : listEl.closest('.event-history-wrapper');
+
+  const host = document.createElement('div');
+  host.className = 'history-export-clone-host';
+  host.style.position = 'fixed';
+  host.style.left = '-30000px';
+  host.style.top = '0';
+  host.style.width = `${cloneWidth}px`;
+  host.style.height = 'auto';
+  host.style.overflow = 'visible';
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = '-1';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = sourceWrapper instanceof HTMLElement
+    ? sourceWrapper.className
+    : 'event-history-wrapper';
+  copyHistoryCssCustomProperties(sourceWrapper, wrapper);
+
+  const shell = document.createElement('div');
+  shell.className = 'event-history history-export-shell';
+  shell.style.width = `${cloneWidth}px`;
+  shell.style.padding = '0';
+  shell.style.margin = '0';
+  shell.style.overflow = 'visible';
+
+  const cloneList = listEl.cloneNode(false);
+  cloneList.classList.add('history-export-list');
+  cloneList.style.width = `${cloneWidth}px`;
+  cloneList.style.marginTop = '0';
+  cloneList.style.overflow = 'visible';
+  cloneList.style.pointerEvents = 'none';
+  copyHistoryCssCustomProperties(listEl, cloneList);
+
+  rows.forEach((row) => {
+    const clonedRow = row.cloneNode(true);
+    sanitizeHistoryExportClone(clonedRow);
+    cloneList.appendChild(clonedRow);
+  });
+
+  shell.appendChild(cloneList);
+  wrapper.appendChild(shell);
+  host.appendChild(wrapper);
+  document.body.appendChild(host);
+
+  await waitHistoryNextPaint();
+  await waitForHistoryExportAssets(cloneList, {
+    maxWaitMs: getHistoryCaptureDeviceTier() === 'phone' ? 3600 : 2800,
+    maxImages: Math.max(120, Math.min(900, cloneList.querySelectorAll('img').length + 80))
+  });
+  await waitHistoryNextPaint();
+
+  const rect = cloneList.getBoundingClientRect();
   return {
-    top,
-    height: Math.max(1, bottom - top),
-    width: Math.max(320, Math.ceil(listEl.clientWidth || listRect.width || 320))
+    host,
+    target: cloneList,
+    width: Math.max(1, Math.ceil(cloneList.scrollWidth || cloneList.clientWidth || rect.width || cloneWidth)),
+    height: Math.max(1, Math.ceil(cloneList.scrollHeight || cloneList.clientHeight || rect.height || 1))
   };
 };
 
@@ -5214,13 +5227,39 @@ const computeHistoryCaptureTimeoutMs = ({ deviceTier, width, height, scale }) =>
 };
 
 const buildHistoryScaleCandidates = ({ bounds, deviceTier, deviceScale, useExperimentalHQ }) => {
-  void bounds;
-  void deviceTier;
   void deviceScale;
-  const baseScale = useExperimentalHQ ? 2.2 : 2.0;
-  const ladder = useExperimentalHQ
-    ? [baseScale, 2.0, 1.8, 1.6, 1.35, 1.2]
-    : [baseScale, 1.8, 1.6, 1.35, 1.2];
+  const width = Math.max(1, Number(bounds?.width || 1));
+  const height = Math.max(1, Number(bounds?.height || 1));
+  const baseMegaPixels = (width * height) / 1000000;
+  let ladder;
+  if (deviceTier === 'phone') {
+    if (baseMegaPixels > 12) {
+      ladder = [1.05, 1];
+    } else if (baseMegaPixels > 8) {
+      ladder = [1.15, 1];
+    } else if (baseMegaPixels > 5) {
+      ladder = [1.3, 1.12, 1];
+    } else if (baseMegaPixels > 3) {
+      ladder = [1.5, 1.3, 1.12, 1];
+    } else {
+      ladder = [1.75, 1.5, 1.25, 1];
+    }
+  } else if (deviceTier === 'tablet') {
+    if (baseMegaPixels > 14) {
+      ladder = [1.15, 1];
+    } else if (baseMegaPixels > 8) {
+      ladder = [1.35, 1.15, 1];
+    } else if (baseMegaPixels > 5) {
+      ladder = [1.6, 1.35, 1.15, 1];
+    } else {
+      ladder = [1.85, 1.6, 1.35, 1.1];
+    }
+  } else {
+    const baseScale = useExperimentalHQ ? 2.2 : 2.0;
+    ladder = useExperimentalHQ
+      ? [baseScale, 2.0, 1.75, 1.5, 1.25, 1]
+      : [baseScale, 1.75, 1.5, 1.25, 1];
+  }
   const seen = new Set();
   return ladder
     .map((value) => Math.max(1, Number(value.toFixed(2))))
@@ -5237,7 +5276,7 @@ const exportPredictedRangePng = async (options = {}) => {
   const onStatus = typeof options?.onStatus === 'function' ? options.onStatus : null;
   const cancelPromise = options?.cancelPromise || null;
   const isCancelled = typeof options?.isCancelled === 'function' ? options.isCancelled : (() => false);
-  const { rows, rowsAllInRange, error } = getExportRowsInRange(includeBirthdayRows, {
+  const { rows, error } = getExportRowsInRange(includeBirthdayRows, {
     rangeStartId: options?.rangeStartId,
     rangeEndId: options?.rangeEndId
   });
@@ -5246,14 +5285,23 @@ const exportPredictedRangePng = async (options = {}) => {
   const listEl = listRef.value;
   if (!listEl) return { ok: false, message: '历史列表尚未渲染完成。' };
 
+  let exportClone = null;
   try {
     const deviceTier = getHistoryCaptureDeviceTier();
-    const isMobile = deviceTier !== 'desktop';
-    const canvas = await withTemporaryScreenshotOverrides(rowsAllInRange, includeBirthdayRows, isMobile, async () => {
-      await nextTick();
-      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    await nextTick();
+    await waitHistoryNextPaint();
+    exportClone = await prepareHistoryExportClone(listEl, rows);
+    if (!exportClone?.target) {
+      return { ok: false, message: '导出截图准备失败。' };
+    }
 
-      const bounds = getCaptureBoundsFromRows(listEl, rows);
+    const canvas = await (async () => {
+      const renderTarget = exportClone.target;
+      const bounds = {
+        top: 0,
+        width: exportClone.width,
+        height: exportClone.height
+      };
       const deviceScale = Number(window.devicePixelRatio || 1);
       const useExperimentalHQ = !!options?.experimentalHQ;
       const scales = buildHistoryScaleCandidates({
@@ -5301,14 +5349,12 @@ const exportPredictedRangePng = async (options = {}) => {
             height: bounds.height,
             scale
           });
-          return await withCaptureTimeout(html2canvas(listEl, {
+          return await withCaptureTimeout(html2canvas(renderTarget, {
             backgroundColor: '#f4f7f6',
             scale,
             useCORS: true,
             logging: false,
             imageTimeout: 12000,
-            x: 0,
-            y: bounds.top,
             width: bounds.width,
             height: bounds.height,
             scrollX: 0,
@@ -5320,7 +5366,7 @@ const exportPredictedRangePng = async (options = {}) => {
       }
 
       throw lastErr || new Error('capture failed');
-    });
+    })();
 
     const now = new Date();
     const y = now.getFullYear();
@@ -5361,6 +5407,10 @@ const exportPredictedRangePng = async (options = {}) => {
       message: '导出失败，可能是渲染问题，再试一次没准行，这次你一定要成功。'
     });
     return { ok: false, message: '导出失败，可能是渲染问题，再试一次没准行，这次你一定要成功。' };
+  } finally {
+    if (exportClone?.host instanceof HTMLElement) {
+      exportClone.host.remove();
+    }
   }
 };
 
@@ -5882,6 +5932,15 @@ const getNormalCards = (cards) => {
 };
   const getFesCards = (cards) => cards.filter(c => isFesCardType(c?.Type));
   const getFesType = (cards) => cards.find(c => isFesCardType(c?.Type))?.Type?.toLowerCase() || 'cfes';
+
+const getMemberRibbonLabel = (card) => {
+  const type = String(card?.Type || '').trim().toLowerCase();
+  if (type === 'limited') return '期间限定';
+  if (type === 'collab' || type === 'collab_t') return '联动限定';
+  if (isFesCardType(type)) return 'FES限定';
+  if (['wl1', 'wl2', 'wl3'].includes(type)) return 'WL限定';
+  return '';
+};
 
 const getTypeTagStyle = (ev) => {
   if (isUnitRelated(ev)) return { backgroundColor: getUnitColor(ev.unit) };
@@ -6926,13 +6985,42 @@ button:not(:disabled):active {
 .history-list { display: flex; flex-direction: column; gap: 12px; padding-bottom: 16px; 
   margin-top: 20px;
   position: relative;
+  container-type: inline-size;
 }
 
 .event-item {
+  --event-row-pad-x: clamp(14px, 1.7cqw, 20px);
+  --event-row-pad-y: clamp(9px, 1.02cqw, 12px);
+  --event-basic-width: clamp(48px, 5.1cqw, 60px);
+  --event-id-font-size: clamp(0.9rem, 1.49cqw, 1.1rem);
+  --event-date-font-size: clamp(0.64rem, 1.02cqw, 0.75rem);
+  --event-small-tag-font-size: clamp(0.58rem, 0.95cqw, 0.7rem);
+  --event-banner-width: clamp(64px, 6.8cqw, 80px);
+  --event-banner-margin: clamp(7px, 0.85cqw, 10px);
+  --event-banner-avatar-size: clamp(52px, 5.42cqw, 64px);
+  --event-unit-logo-size: clamp(55px, 5.76cqw, 68px);
+  --event-main-width: clamp(130px, 13.56cqw, 160px);
+  --event-main-pad-x: clamp(3px, 0.42cqw, 5px);
+  --event-title-font-size: clamp(0.86rem, 1.36cqw, 1rem);
+  --event-type-gap: clamp(5px, 0.68cqw, 8px);
+  --event-type-font-size: clamp(0.62rem, 0.95cqw, 0.7rem);
+  --event-type-pad-x: clamp(6px, 0.68cqw, 8px);
+  --event-series-font-size: clamp(0.78rem, 1.12cqw, 1rem);
+  --event-members-pad-x: clamp(10px, 1.27cqw, 15px);
+  --event-members-gap: clamp(8px, 0.85cqw, 10px);
+  --event-vs-width: clamp(92px, 9.83cqw, 116px);
+  --event-vs-avatar-size: clamp(36px, 3.81cqw, 45px);
+  --event-vs-gap: clamp(5px, 0.68cqw, 8px);
+  --event-info-icon-size: clamp(20px, 2.03cqw, 24px);
+  --event-song-pill-width: clamp(42px, 4.41cqw, 52px);
+  --event-song-pill-height: clamp(22px, 2.2cqw, 26px);
+  --event-song-pill-font-size: clamp(13px, 1.4cqw, 16.5px);
+  --event-song-grid-gap: clamp(7px, 0.85cqw, 10px);
+  --event-attr-inline-size: clamp(26px, 2.71cqw, 32px);
   scroll-margin-top: 80px; /* 对应 .sticky-filter 的高度 */
   position: relative; /* 必须为 relative 以便伪元素定位 */
   z-index: 1;
-  display: flex; align-items: center; padding: 12px 20px; border-radius: var(--eh-radius-card);
+  display: flex; align-items: center; padding: var(--event-row-pad-y) var(--event-row-pad-x); border-radius: var(--eh-radius-card);
   background: var(--bg-color); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   transition: all 0.2s; border-left: 6px solid transparent;
   box-sizing: border-box;
@@ -7142,7 +7230,7 @@ button:not(:disabled):active {
   margin-top: 2px;
   padding: 1px 6px;
   border-radius: 999px;
-  font-size: 0.62rem;
+  font-size: var(--event-small-tag-font-size);
   line-height: 1.2;
   color: #fff;
   background: #2563eb;
@@ -7480,18 +7568,18 @@ button:not(:disabled):active {
 
 
 /* 1. 基础信息：日期下方居中显示节日 */
-.event-basic { width: 60px; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
-.event-id { font-weight: bold; color: #777; font-size: 1.1rem; line-height: 1.12; }
+.event-basic { width: var(--event-basic-width); display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.event-id { font-weight: bold; color: #777; font-size: var(--event-id-font-size); line-height: 1.12; }
 .event-date,
-.event-end-date { font-size: 0.75rem; color: #999; line-height: 1.12; }
-.fest-tag { background: #ff4d4f; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+.event-end-date { font-size: var(--event-date-font-size); color: #999; line-height: 1.12; }
+.fest-tag { background: #ff4d4f; color: white; font-size: var(--event-small-tag-font-size); padding: 2px 6px; border-radius: 4px; font-weight: bold; }
 
 /* 2. Banner */
-.banner-section { width: 80px; text-align: center; margin: 0 10px; }
+.banner-section { width: var(--event-banner-width); text-align: center; margin: 0 var(--event-banner-margin); }
 .avatar-wrapper { position: relative; display: inline-block; }
-.banner-avatar { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.banner-avatar { width: var(--event-banner-avatar-size); height: var(--event-banner-avatar-size); border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 .banner-tag { position: absolute; bottom: 2px; right: -6px; color: white; font-size: 9px; padding: 1px 4px; border-radius: 4px; font-weight: bold; border: 1px solid white; }
-.unit-logo-banner { width: 68px; height: 68px; object-fit: contain; }
+.unit-logo-banner { width: var(--event-unit-logo-size); height: var(--event-unit-logo-size); object-fit: contain; }
 
 .editor-series-chip {
   margin-top: 6px;
@@ -7516,23 +7604,80 @@ button:not(:disabled):active {
 }
 
 /* 3. 标题 */
-.event-main-content { width: 160px; padding: 0 5px; }
-.event-title { font-weight: bold; font-size: 1rem; color: #333; line-height: 1.3; }
-.type-indicator { margin-top: 5px; display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: nowrap; }
-.type-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; color: white; white-space: nowrap; flex: 0 0 auto; }
-.series-text { white-space: nowrap; overflow: visible; text-overflow: clip; min-width: 0; flex: 1 1 auto; }
+.event-main-content { width: var(--event-main-width); min-width: 0; padding: 0 var(--event-main-pad-x); }
+.event-title { font-weight: bold; font-size: var(--event-title-font-size); color: #333; line-height: 1.3; }
+.type-indicator { margin-top: 5px; display: flex; align-items: center; gap: var(--event-type-gap); min-width: 0; flex-wrap: nowrap; }
+.type-tag { font-size: var(--event-type-font-size); padding: 2px var(--event-type-pad-x); border-radius: 10px; color: white; white-space: nowrap; flex: 0 0 auto; }
+.series-text {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: var(--event-series-font-size);
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
 
 /* 4. 角色卡片展示逻辑 */
-.event-members { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 0 15px; border-left: 1px solid transparent; }
+.event-members {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--event-members-gap);
+  padding: 0 var(--event-members-pad-x);
+  border-left: 1px solid transparent;
+  container-type: inline-size;
+}
 .event-history-wrapper.with-editor .event-members { border-left-color: #d6dde8; }
-.member-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.member-row {
+  --member-avatar-min: 52px;
+  --member-avatar-max: 80px;
+  --member-avatar-size: clamp(var(--member-avatar-min), 14.9cqw, var(--member-avatar-max));
+  --member-grid-gap: clamp(10px, 2.1cqw, 14px);
+  --member-border-size: clamp(2px, 0.56cqw, 3px);
+  --member-attr-size: clamp(16px, 4.8cqw, 22px);
+  --member-unit-size: clamp(18px, 5.8cqw, 28px);
+  --member-star-size: clamp(8px, 2.35cqw, 11px);
+  --member-lim-font-size: clamp(6px, 1.55cqw, 8px);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--member-avatar-size), var(--member-avatar-size)));
+  justify-content: start;
+  justify-items: center;
+  align-items: start;
+  column-gap: var(--member-grid-gap);
+  row-gap: calc(var(--member-grid-gap) * 1.15);
+}
 .fes-row { padding-top: 8px; border-top: 1px dashed #eee; }
-.fes-type-icon { height: 70px; margin-right: 5px; }
-.card-attr-icon { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; z-index: 3; }
+.fes-type-icon {
+  grid-column: span 2;
+  justify-self: stretch;
+  align-self: center;
+  width: 100%;
+  height: calc(var(--member-avatar-size) * 0.88);
+  max-height: 70px;
+  margin-right: 0;
+  object-fit: contain;
+}
+.member-card-box {
+  width: var(--member-avatar-size);
+  justify-self: center;
+}
+.card-attr-icon {
+  position: absolute;
+  top: calc(var(--member-avatar-size) * -0.06);
+  right: calc(var(--member-avatar-size) * -0.06);
+  width: var(--member-attr-size);
+  height: var(--member-attr-size);
+  z-index: 3;
+}
 
 .avatar-container { 
-  position: relative; width: 80px; height: 80px; 
-  border-radius: 50%; border: 3px solid #eee; padding: 1px;
+  position: relative;
+  width: var(--member-avatar-size);
+  height: var(--member-avatar-size);
+  border-radius: 50%;
+  border: var(--member-border-size) solid #eee;
+  padding: 1px;
   cursor: pointer;
   transition: filter 0.18s ease, transform 0.18s ease;
 }
@@ -7543,40 +7688,73 @@ button:not(:disabled):active {
 }
 .member-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .sub-unit-logo {
-  position: absolute; bottom: -6px; right: -10px;
-  width: 28px; height: 28px; 
+  position: absolute;
+  bottom: calc(var(--member-avatar-size) * -0.08);
+  right: calc(var(--member-avatar-size) * -0.12);
+  width: var(--member-unit-size);
+  height: var(--member-unit-size);
+  z-index: 4;
 }
-/* 期间限定标签 - 伪切角方案 */
-.lim-tag { 
+
+
+/* 角色卡片详情悬浮 */
+.lim-tag {
   position: absolute; 
-  top: 4px; 
-  right: -6px; 
-  
-  background: #ff4d4f; 
-  color: white; 
-  font-size: 8px; 
-  font-weight: bold;
-  
-  /* 增加高度和宽度，确保旋转后能覆盖右上角弧度 */
-  width: 100%;
-  height: 16px; 
-  line-height: 18px;
-  text-align: center;
-  
-  /* 关键 1：旋转并定位 */
-  /* 通过 rotate 旋转，通过 translate 向上向右微调 */
-  transform: rotate(45deg) translate(13px, -8px);
-  
-  /* 回退到手工形状：显示稳定，导出逻辑也更一致。 */
-  clip-path: polygon(21% 28%, 78% 30%, 93% 90%, 5.5% 80%); 
-  
+  inset: calc(-1 * var(--member-border-size));
+  top: calc(-1 * var(--member-border-size));
+  right: calc(-1 * var(--member-border-size));
+  bottom: calc(-1 * var(--member-border-size));
+  left: calc(-1 * var(--member-border-size));
+  width: auto;
+  height: auto;
+  line-height: normal;
+  padding: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: transparent;
+  color: #fff;
+  transform: none;
+  clip-path: none;
+  text-align: initial;
   z-index: 2;
   white-space: nowrap;
   pointer-events: none;
 }
 
+.lim-tag::before {
+  content: '';
+  position: absolute;
+  top: 16%;
+  right: -21%;
+  width: 100%;
+  height: 15%;
+  transform: rotate(45deg);
+  transform-origin: center;
+  background: linear-gradient(90deg, #ff7a7a 0%, #ff4d4f 58%, #d9363e 100%);
+  box-shadow: 0 1px 4px rgba(128, 24, 24, 0.24);
+}
 
-/* 角色卡片详情悬浮 */
+.lim-tag-text {
+  position: absolute;
+  top: 19%;
+  right: -25%;
+  width: 100%;
+  height: 15%;
+  transform: rotate(45deg);
+  transform-origin: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: var(--member-lim-font-size);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(120, 18, 18, 0.36);
+}
+
 .card-detail-tooltip {
   --card-tooltip-thumb-size: 64px;
   --card-tooltip-thumb-gap: 2px;
@@ -7708,13 +7886,13 @@ button:not(:disabled):active {
 }
 
 .stars-overlay {
-  position: absolute; bottom: -1px; left: -2px; display: flex; gap: 0px;
+  position: absolute; bottom: -1px; left: -2px; display: flex; gap: 0px; z-index: 3;
 }
-.star-icon { width: 11px; height: 11px; }
+.star-icon { width: var(--member-star-size); height: var(--member-star-size); }
 
 /* 5. VS & 音乐 */
 .vs-section {
-  width: 116px;
+  width: var(--event-vs-width);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -7725,10 +7903,10 @@ button:not(:disabled):active {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--event-vs-gap);
 }
 .vs-list { display: flex; gap: 2px; justify-content: flex-end; }
-.vs-avatar { width: 45px; height: 45px; border-radius: 50%; border: 1px solid #ddd; }
+.vs-avatar { width: var(--event-vs-avatar-size); height: var(--event-vs-avatar-size); border-radius: 50%; border: 1px solid #ddd; }
 .song-tooltip {
   cursor: pointer;
   position: relative;
@@ -7736,8 +7914,8 @@ button:not(:disabled):active {
   align-items: center;
 }
 .song-tooltip .info-icon {
-  width: 24px;
-  height: 24px;
+  width: var(--event-info-icon-size);
+  height: var(--event-info-icon-size);
   border-radius: 999px;
   border: 1px solid rgba(15, 23, 42, 0.18);
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(226, 232, 240, 0.9));
@@ -7753,18 +7931,18 @@ button:not(:disabled):active {
   width: auto;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--event-song-grid-gap);
 }
 .song-mv-pill {
-  width: 52px;
-  height: 26px;
+  width: var(--event-song-pill-width);
+  height: var(--event-song-pill-height);
   padding: 0;
   border-radius: 999px;
   border: 1px solid transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 16.5px;
+  font-size: var(--event-song-pill-font-size);
   font-weight: 500;
   line-height: 1;
   isolation: isolate;
@@ -7885,11 +8063,11 @@ button:not(:disabled):active {
 }
 
 .attr-icon-inline {
-  width: 32px;
-  height: 32px;
+  width: var(--event-attr-inline-size);
+  height: var(--event-attr-inline-size);
 }
 
-.attr-icon { width: 35px; height: 35px; }
+.attr-icon { width: clamp(28px, 2.97cqw, 35px); height: clamp(28px, 2.97cqw, 35px); }
 
 @media (max-width: 900px) {
   .event-history-wrapper {
@@ -8186,14 +8364,9 @@ button:not(:disabled):active {
     font-size: 0.67rem;
   }
 
-  .fes-row {
-    justify-content: center;
-    gap: 12px;
-  }
-
   .fes-type-icon {
-    height: 54px;
-    margin-right: 6px;
+    max-height: 54px;
+    margin-right: 0;
     align-self: center;
   }
 }
@@ -8245,10 +8418,6 @@ button:not(:disabled):active {
     height: 19px;
     padding: 0 5px;
     font-size: 0.66rem;
-  }
-
-  .event-history {
-    --member-avatar-size: clamp(62px, 10.2vw, 54px);
   }
 
   .event-history {
@@ -8553,16 +8722,20 @@ button:not(:disabled):active {
   }
 
   .member-row {
-    gap: 10px;
+    --member-avatar-min: 44px;
+    --member-avatar-max: 62px;
+    --member-avatar-size: clamp(var(--member-avatar-min), 14.65cqw, var(--member-avatar-max));
+    --member-grid-gap: clamp(7px, 2.4cqw, 14px);
+    --member-border-size: 2px;
+    --member-attr-size: clamp(13px, 4.8cqw, 18px);
+    --member-unit-size: clamp(14px, 5.8cqw, 20px);
+    --member-star-size: clamp(7px, 2.35cqw, 10px);
+    --member-lim-font-size: clamp(5.5px, 1.55cqw, 6px);
+    grid-template-columns: repeat(6, var(--member-avatar-size));
+    justify-content: space-between;
+    column-gap: var(--member-grid-gap);
+    row-gap: calc(var(--member-grid-gap) * 1.15);
     align-items: flex-start;
-  }
-
-  .member-row:not(.fes-row) {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 6px;
-    justify-items: center;
-    align-items: start;
   }
 
   .fes-row {
@@ -8570,26 +8743,27 @@ button:not(:disabled):active {
   }
 
   .fes-type-icon {
-    height: 44px;
-    margin-right: 2px;
+    height: calc(var(--member-avatar-size) * 0.88);
+    max-height: 44px;
+    margin-right: 0;
   }
 
   .avatar-container {
     width: var(--member-avatar-size);
     height: var(--member-avatar-size);
-    border-width: 2px;
+    border-width: var(--member-border-size);
   }
 
   .card-attr-icon {
-    width: clamp(13px, calc(var(--member-avatar-size) * 0.32), 18px);
-    height: clamp(13px, calc(var(--member-avatar-size) * 0.32), 18px);
-    top: -3px;
-    right: -3px;
+    width: clamp(13px, calc(var(--member-avatar-size) * 0.30), 18px);
+    height: clamp(13px, calc(var(--member-avatar-size) * 0.30), 18px);
+    top: -4px;
+    right: -4px;
   }
 
   .sub-unit-logo {
-    width: clamp(14px, calc(var(--member-avatar-size) * 0.38), 20px);
-    height: clamp(14px, calc(var(--member-avatar-size) * 0.38), 20px);
+    width: clamp(14px, calc(var(--member-avatar-size) * 0.35), 20px);
+    height: clamp(14px, calc(var(--member-avatar-size) * 0.35), 20px);
     right: -5px;
     bottom: -4px;
   }
@@ -8613,31 +8787,29 @@ button:not(:disabled):active {
     width: clamp(7px, calc(var(--member-avatar-size) * 0.17), 10px);
     height: clamp(7px, calc(var(--member-avatar-size) * 0.17), 10px);
   }
-
-  .lim-tag {
-    top: -2px;
-    right: 14px;
-    width: auto;
-    height: auto;
-    line-height: 1.1;
-    padding: 1px 4px;
-    font-size: 6px;
-    border-radius: 8px;
-    transform: none;
-    clip-path: none;
-  }
 }
 
 @media (max-width: 520px) {
-  .event-history {
-    --member-avatar-size: clamp(52px, 10.8vw, 48px);
-  }
-
   .event-item {
     grid-template-columns: 40px 46px minmax(0, 1fr) auto;
     column-gap: 6px;
     row-gap: 5px;
     padding: 7px 8px;
+  }
+
+  .member-row {
+    --member-avatar-min: 42px;
+    --member-avatar-max: 56px;
+    --member-avatar-size: clamp(var(--member-avatar-min), 14.55cqw, var(--member-avatar-max));
+    --member-grid-gap: clamp(7px, 2.4cqw, 12px);
+    --member-attr-size: clamp(13px, 4.8cqw, 18px);
+    --member-unit-size: clamp(14px, 5.8cqw, 20px);
+    --member-star-size: clamp(7px, 2.35cqw, 10px);
+    --member-lim-font-size: clamp(5px, 1.55cqw, 6px);
+  }
+
+  .fes-type-icon {
+    max-height: 42px;
   }
 
   .preview-row {
@@ -8687,13 +8859,6 @@ button:not(:disabled):active {
   .series-text {
     font-size: 0.62rem;
   }
-
-  .lim-tag {
-    right: 12px;
-    font-size: 5px;
-    padding: 1px 3px;
-  }
-
   .predict-delete-btn {
     right: 30px;
     width: 20px;
