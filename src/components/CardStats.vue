@@ -2588,7 +2588,8 @@ const CHAR_SINGLE_MAP = reactive({});
 const CHAR_COLORS = reactive({});
 const CHAR_UNIT_MAP = reactive({});
 const CHAR_ORDER = reactive({});
-const VS_NAMES = reactive([]);
+const DEFAULT_VS_NAMES = ['初音未来', '镜音铃', '镜音连', '巡音流歌', 'MEIKO', 'KAITO'];
+const VS_NAMES = reactive([...DEFAULT_VS_NAMES]);
 const VS_ALIAS_MAP = reactive({});
 const UNIT_COLORS = reactive({ ...BASE_UNIT_COLORS });
 
@@ -2612,7 +2613,7 @@ const applyCharacterMetaSource = (characters) => {
     replaceObject(CHAR_ORDER, {});
     replaceObject(UNIT_COLORS, BASE_UNIT_COLORS);
     replaceObject(VS_ALIAS_MAP, {});
-    replaceArray(VS_NAMES, []);
+    replaceArray(VS_NAMES, DEFAULT_VS_NAMES);
     return;
   }
 
@@ -2682,7 +2683,7 @@ const applyCharacterMetaSource = (characters) => {
     replaceObject(CHAR_ORDER, {});
     replaceObject(UNIT_COLORS, BASE_UNIT_COLORS);
     replaceObject(VS_ALIAS_MAP, {});
-    replaceArray(VS_NAMES, []);
+    replaceArray(VS_NAMES, DEFAULT_VS_NAMES);
     return;
   }
 
@@ -3008,6 +3009,7 @@ const onVsUnitLastFourCompactChange = (event) => {
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
     vsUnitLastFourCompact.value = checked;
+    vsUnitFourCountCompact.value = checked;
   }, anchorEl);
 };
 
@@ -3015,6 +3017,7 @@ const onVsUnitFourCountCompactChange = (event) => {
   const checked = !!event?.target?.checked;
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
+    vsUnitLastFourCompact.value = checked;
     vsUnitFourCountCompact.value = checked;
   }, anchorEl);
 };
@@ -6904,6 +6907,7 @@ const onVsUnitLastFourShowCardImagesChange = (event) => {
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
     vsUnitLastFourShowCardImages.value = checked;
+    vsUnitFourCountShowCardImages.value = checked;
   }, anchorEl);
 };
 
@@ -6911,6 +6915,7 @@ const onVsUnitFourCountShowCardImagesChange = (event) => {
   const checked = !!event?.target?.checked;
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
+    vsUnitLastFourShowCardImages.value = checked;
     vsUnitFourCountShowCardImages.value = checked;
   }, anchorEl);
 };
@@ -7878,9 +7883,9 @@ const getVsOriginalStatType = (card, sourceKey) => {
   return '其他';
 };
 
-const VS_UNIT_ROW_KEYS = VS_NAMES.flatMap((vsName) =>
+const VS_UNIT_ROW_KEYS = computed(() => VS_NAMES.flatMap((vsName) =>
   VS_UNIT_SORT_ORDER.map((unit) => buildVsUnitKey(vsName, unit))
-);
+));
 
 const getVsUnitRecordLabel = (nameWithUnit) => {
   const [baseName, unitRaw] = String(nameWithUnit || '').trim().split(/\s+/);
@@ -7953,7 +7958,7 @@ const vsUnitLastFourRecords = computed(() => {
     }
   });
 
-  return VS_UNIT_ROW_KEYS.map((key) => {
+  return VS_UNIT_ROW_KEYS.value.map((key) => {
     const hit = latestByKey[key];
     if (hit) return hit;
     return {
@@ -7977,7 +7982,7 @@ const vsUnitLastFourRecordsSorted = computed(() => {
       const av = a.dateValue || 0;
       const bv = b.dateValue || 0;
       if (bv !== av) return bv - av;
-      return VS_UNIT_ROW_KEYS.indexOf(a.key) - VS_UNIT_ROW_KEYS.indexOf(b.key);
+      return VS_UNIT_ROW_KEYS.value.indexOf(a.key) - VS_UNIT_ROW_KEYS.value.indexOf(b.key);
     });
   }
   if (vsUnitLastFourSort.value === 'date-asc') {
@@ -7988,7 +7993,7 @@ const vsUnitLastFourRecordsSorted = computed(() => {
       const av = a.dateValue || 0;
       const bv = b.dateValue || 0;
       if (av !== bv) return av - bv;
-      return VS_UNIT_ROW_KEYS.indexOf(a.key) - VS_UNIT_ROW_KEYS.indexOf(b.key);
+      return VS_UNIT_ROW_KEYS.value.indexOf(a.key) - VS_UNIT_ROW_KEYS.value.indexOf(b.key);
     });
   }
   return rows;
@@ -8073,7 +8078,7 @@ const vsUnitFourCountDetailRecords = computed(() => {
   const maxEid = safeMaxEventId.value;
   const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.start_date);
   const rowMap = Object.fromEntries(
-    VS_UNIT_ROW_KEYS.map((key) => {
+    VS_UNIT_ROW_KEYS.value.map((key) => {
       const { baseName } = parseVsUnitKey(key);
       return [
         key,
@@ -8121,7 +8126,7 @@ const vsUnitFourCountDetailRecords = computed(() => {
     });
   });
 
-  return VS_UNIT_ROW_KEYS.map((key) => {
+  return VS_UNIT_ROW_KEYS.value.map((key) => {
     const row = rowMap[key];
     row.cards.sort((a, b) => {
       const aid = Number(a?.cardId || 0);
@@ -8186,7 +8191,7 @@ const vsUnitFourCountDisplayRecords = computed(() => {
       const av = Number(a?.count || 0);
       const bv = Number(b?.count || 0);
       if (bv !== av) return bv - av;
-      return VS_UNIT_ROW_KEYS.indexOf(a.key) - VS_UNIT_ROW_KEYS.indexOf(b.key);
+      return VS_UNIT_ROW_KEYS.value.indexOf(a.key) - VS_UNIT_ROW_KEYS.value.indexOf(b.key);
     });
   }
   if (vsUnitFourCountSort.value === 'count-asc') {
@@ -8194,7 +8199,7 @@ const vsUnitFourCountDisplayRecords = computed(() => {
       const av = Number(a?.count || 0);
       const bv = Number(b?.count || 0);
       if (av !== bv) return av - bv;
-      return VS_UNIT_ROW_KEYS.indexOf(a.key) - VS_UNIT_ROW_KEYS.indexOf(b.key);
+      return VS_UNIT_ROW_KEYS.value.indexOf(a.key) - VS_UNIT_ROW_KEYS.value.indexOf(b.key);
     });
   }
   return rows;
