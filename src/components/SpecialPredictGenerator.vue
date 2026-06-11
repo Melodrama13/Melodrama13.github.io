@@ -345,12 +345,8 @@ const rangeStartDraft = ref('');
 const rangeEndDraft = ref('');
 const showUnpredictedRows = ref(true);
 const monthColorName = ref('');
-const coverText = ref('プロセカ\n活动预测\n');
 const coverBgUrl = ref('');
 const coverBgFileName = ref('');
-const coverTextColor = ref('#ffffff');
-const coverTextSize = ref(28);
-const coverTextAlign = ref('left');
 const creditText = ref('');
 const creditManuallyEdited = ref(false);
 const backgroundColorName = ref('');
@@ -507,15 +503,6 @@ const creditUserName = computed(() => String(props.predictUserName || '').trim()
 
 const defaultCreditText = computed(() => `\u9884\u6d4b\uff1a${creditUserName.value}`);
 
-const eventById = computed(() => {
-  const map = new Map();
-  (Array.isArray(props.allEvents) ? props.allEvents : []).forEach((event) => {
-    const key = normalizeId(event?.id);
-    if (key) map.set(key, event);
-  });
-  return map;
-});
-
 const baseCardsByEventId = computed(() => {
   const map = new Map();
   (Array.isArray(props.allBaseCards) ? props.allBaseCards : []).forEach((card) => {
@@ -576,12 +563,6 @@ const canvasStyle = computed(() => ({
 const canvasStageStyle = computed(() => ({
   width: previewCanvasWidth.value ? `${Math.ceil(previewCanvasWidth.value * previewScale.value)}px` : undefined,
   height: previewCanvasHeight.value ? `${Math.ceil(previewCanvasHeight.value * previewScale.value)}px` : undefined
-}));
-
-const coverTextStyle = computed(() => ({
-  color: coverTextColor.value || '#ffffff',
-  fontSize: `${Math.min(48, Math.max(16, Number(coverTextSize.value) || 28))}px`,
-  textAlign: ['left', 'center', 'right'].includes(coverTextAlign.value) ? coverTextAlign.value : 'left'
 }));
 
 const selectedCoverTextBlock = computed(() => (

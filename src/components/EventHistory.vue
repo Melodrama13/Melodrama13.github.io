@@ -1095,7 +1095,6 @@ const props = defineProps({
   jumpEventSeq: { type: Number, default: 0 }
 });
 const emit = defineEmits(['sync-preview-event-id']);
-const savePredictEvent = inject('savePredictEvent');
 const deletePredictEvent = inject('deletePredictEvent');
 
 const normalizeEventId = (value) => String(value ?? '').trim();
@@ -2280,17 +2279,6 @@ const previewFestivalFesToggles = ref({
   '周年': false
 });
 
-const compareFestivalPreviewName = (a, b) => {
-  const aName = String(a || '').trim();
-  const bName = String(b || '').trim();
-  const aBase = aName.split(' ')[0] || aName;
-  const bBase = bName.split(' ')[0] || bName;
-  const ao = getPreviewCharOrder(aBase);
-  const bo = getPreviewCharOrder(bBase);
-  if (ao !== bo) return ao - bo;
-  return aName.localeCompare(bName, 'zh-Hans-CN');
-};
-
 const previewSelectableChars = computed(() => {
   return Object.keys(CHAR_MAP.value).sort((a, b) => getPreviewCharOrder(a) - getPreviewCharOrder(b));
 });
@@ -2484,16 +2472,6 @@ const setSelectedPreviewFestival = (festival) => {
   selectedPreviewFestival.value = festival;
 };
 
-const setPreviewLimitedBanEventTypeFilter = (targetType, checked) => {
-  if (checked) {
-    previewLimitedBanEventTypeFilter.value = targetType;
-    return;
-  }
-  if (previewLimitedBanEventTypeFilter.value === targetType) {
-    previewLimitedBanEventTypeFilter.value = 'all';
-  }
-};
-
 const cyclePreviewLimitedBanEventTypeFilter = () => {
   const current = previewLimitedBanEventTypeFilter.value;
   if (current === 'all') {
@@ -2505,16 +2483,6 @@ const cyclePreviewLimitedBanEventTypeFilter = () => {
     return;
   }
   previewLimitedBanEventTypeFilter.value = 'all';
-};
-
-const setPreviewBannerEventTypeFilter = (targetType, checked) => {
-  if (checked) {
-    previewBannerEventTypeFilter.value = targetType;
-    return;
-  }
-  if (previewBannerEventTypeFilter.value === targetType) {
-    previewBannerEventTypeFilter.value = 'all';
-  }
 };
 
 const cyclePreviewBannerEventTypeFilter = () => {
@@ -2793,7 +2761,6 @@ const previewFestivalContext = computed(() => {
   return { festival: fest };
 });
 
-const isFestivalPreviewAvailable = computed(() => true);
 const activePreviewFestivalName = computed(() => previewFestivalContext.value?.festival || '');
 
 const previewFestivalRowsLocal = computed(() => {
@@ -5611,39 +5578,31 @@ const scrollTo = (target) => {
     container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   } else if (target === 'current') {
     const today = new Date();
-    const candidates = (props.allEvents || []).filter(ev => {
+    let candidates = (props.allEvents || []).filter(ev => {
       if (!isNumericEventId(ev?.id)) return false;
       // 兼容日期格式处理
       const evDate = new Date(ev.start_date.replace(/\//g, '-'));
       return evDate <= today;
     });
 
+    candidates = displayRows.value
+      .filter((row) => row.kind === 'event')
+      .map((row) => row.event)
+      .filter((ev) => {
+        if (!isNumericEventId(ev?.id)) return false;
+        const evDate = new Date(String(ev.start_date || '').replace(/\//g, '-'));
+        return Number.isFinite(evDate.getTime()) && evDate <= today;
+      });
+
     if (candidates.length > 0) {
-      const currentEvent = candidates.reduce((prev, curr) => (prev.id > curr.id ? prev : curr));
+      const currentEvent = candidates.reduce((prev, curr) => {
+        const prevTime = getDateValue(prev?.start_date);
+        const currTime = getDateValue(curr?.start_date);
+        if (prevTime !== currTime) return currTime > prevTime ? curr : prev;
+        return Number(curr.id) > Number(prev.id) ? curr : prev;
+      });
       
-      const el = findEventElementInContainer(currentEvent.id);
-      if (el) {
-        // --- 核心修复逻辑开始 ---
-        
-        // 1. 获取筛选栏的高度，确保定位后不会被它遮住
-        // 如果你的筛选栏 class 是 .filter-bar，动态获取它的高度
-        const filterBar = container.querySelector('.filter-bar');
-        const offset = filterBar ? filterBar.offsetHeight + 10 : 80; // 默认预留80px
-
-        // 2. 计算目标元素相对于容器顶部的距离
-        // 使用 container.scrollTo 而不是 el.scrollIntoView 
-        // 这样可以防止整个网页（外层）跟着一起跳动
-        const targetTop = el.offsetTop - offset;
-
-        container.scrollTo({
-          top: targetTop,
-          behavior: 'smooth'
-        });
-        
-        // --- 核心修复逻辑结束 ---
-
-        setActiveEventItem(currentEvent.id);
-      }
+      _internalScrollTo(currentEvent.id, 'smooth');
     }
   }
 };

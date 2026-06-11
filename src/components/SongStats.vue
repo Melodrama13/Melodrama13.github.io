@@ -2155,24 +2155,6 @@ const handleWindowResize = () => {
   });
 };
 
-const withPreservedScrollCenter = async (applyChange) => {
-  const snapshot = snapshotViewportAnchor();
-  applyChange();
-  await nextTick();
-  restoreViewportAnchor(snapshot);
-  rememberViewportAnchor();
-  scheduleNavSync();
-};
-
-const withLockedViewportAnchor = async (applyChange) => {
-  const snapshot = snapshotViewportAnchor();
-  applyChange();
-  await nextTick();
-  restoreViewportAnchor(snapshot);
-  rememberViewportAnchor();
-  scheduleNavSync();
-};
-
 const clampHostScrollTop = (host, top) => {
   if (!(host instanceof HTMLElement)) return 0;
   const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
@@ -2499,17 +2481,6 @@ const updateMobileNavState = () => {
   }
   applyState();
   recalcSongTableOverflow();
-};
-
-const scrollSectionIntoHost = (id, behavior = 'smooth') => {
-  const el = document.getElementById(id);
-  if (!el) return false;
-  const host = getScrollContainer();
-  const hostRect = host.getBoundingClientRect();
-  const targetRect = el.getBoundingClientRect();
-  const nextTop = host.scrollTop + (targetRect.top - hostRect.top) - 8;
-  host.scrollTo({ top: Math.max(0, nextTop), behavior });
-  return true;
 };
 
 const scrollToSection = (id, options = {}) => {
@@ -3151,23 +3122,6 @@ const getSongTagImageColor = (ev) => {
   return getSongTagColor(ev);
 };
 
-const characterColorByAbbr = computed(() => {
-  const map = new Map();
-  characters.value.forEach((char) => {
-    const abbr = String(char?.abbr || '').trim().toLowerCase();
-    if (!abbr) return;
-    map.set(abbr, char?.color || '#334155');
-  });
-  return map;
-});
-
-const getTagColorByTag = (tagRaw) => {
-  const raw = String(tagRaw || '').trim().toLowerCase();
-  const matched = raw.match(/^[a-z]+/);
-  const abbr = matched ? matched[0] : '';
-  return characterColorByAbbr.value.get(abbr) || '#334155';
-};
-
 const buildVsIconsFromNames = (vsNames) => {
   return asArray(vsNames)
     .map((name) => {
@@ -3669,8 +3623,6 @@ const anotherVocalCards = computed(() => {
 });
 
 const getAnotherCardMode = (name) => anotherCardModeMap.value[name] || 'fixed';
-
-const isAnotherCardCollapsed = (name) => getAnotherCardMode(name) === 'collapsed';
 
 const anotherGlobalToggleLabel = computed(() => {
   const cards = anotherVocalCards.value;
@@ -4640,22 +4592,6 @@ const getCaptureDeviceTier = () => {
   return 'desktop';
 };
 
-const buildSongExportScaleCandidates = (preferredScale, isMobileScreen) => {
-  const baseScale = Number.isFinite(preferredScale) && preferredScale > 0 ? preferredScale : 1;
-  const ladder = isMobileScreen
-    ? [baseScale, Math.min(baseScale, 1.3), 1.1, 1]
-    : [baseScale, Math.min(baseScale, 1.9), 1.45, 1.2, 1];
-  const seen = new Set();
-  return ladder
-    .map((value) => Math.max(1, Number(value.toFixed(2))))
-    .filter((value) => {
-      const key = String(value);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-};
-
 const countHeavyMediaNodes = (rootEl) => {
   if (!(rootEl instanceof HTMLElement)) return 0;
   const mediaNodes = rootEl.querySelectorAll('img');
@@ -4672,43 +4608,6 @@ const countHeavyMediaNodes = (rootEl) => {
   return heavy;
 };
 
-const buildSongAdaptiveScaleCandidates = (preferredScale, deviceTier, heavyMediaCount) => {
-  const isMobileScreen = deviceTier !== 'desktop';
-  const base = buildSongExportScaleCandidates(preferredScale, isMobileScreen);
-  if (heavyMediaCount < 18) return base;
-
-  const seen = new Set();
-  const targeted = (deviceTier === 'phone' || deviceTier === 'tablet'
-    ? [Math.max(1.7, Math.min(base[0] || 2, 2.0)), 1.55, 1.38, 1.2]
-    : [Math.max(1.95, base[0] || 2), Math.max(1.8, Math.min(base[0] || 2, 2.2)), 1.65, 1.35]
-  )
-    .map((value) => Math.max(1, Number(value.toFixed(2))))
-    .filter((value) => {
-      const key = String(value);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
-  return targeted.length ? targeted : base;
-};
-
-const buildSongCaptureProfile = ({ deviceTier, heavyMediaCount }) => {
-  const preferredScale = 2.0;
-  const scales = buildSongAdaptiveScaleCandidates(preferredScale, deviceTier, heavyMediaCount);
-  const baseScale = Number(scales[0] || preferredScale || 1);
-  return {
-    preferredScale,
-    scales,
-    baseScale
-  };
-};
-
-const buildSongCaptureMessage = (exportLabel, baseScale) => {
-  const scale = Number(baseScale || 1);
-  return `正在导出「${exportLabel}」... 基础清晰度 x${scale.toFixed(2)}`;
-};
-
 const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, scale }) => {
   const totalMegaPixels = (Math.max(1, width) * Math.max(1, height) * Math.max(1, scale) * Math.max(1, scale)) / 1000000;
   const heavyBoost = heavyMediaCount >= 18 ? 1200 : 0;
@@ -4719,203 +4618,6 @@ const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, sc
   if (totalMegaPixels <= 32) return 10800 + heavyBoost;
   const tierCap = deviceTier === 'phone' ? 14000 : (deviceTier === 'tablet' ? 15500 : 14500);
   return tierCap + heavyBoost;
-};
-
-const getRenderDiagnosticPlan = (attemptIndex) => {
-  if (attemptIndex <= 0) {
-    return { key: 'normal', label: '标准渲染' };
-  }
-  if (attemptIndex === 1) {
-    return { key: 'style-sanitize', label: '禁用动画/滤镜' };
-  }
-  if (attemptIndex === 2) {
-    return { key: 'flatten-decor', label: '扁平化装饰层（阴影/渐变/伪元素）' };
-  }
-  if (attemptIndex === 3) {
-    return { key: 'hide-unready-images', label: '隐藏未就绪图片' };
-  }
-  if (attemptIndex === 4) {
-    return { key: 'style-no-image', label: '禁用动画/滤镜 + 隐藏全部图片' };
-  }
-  return { key: 'text-probe', label: '纯文本探针（移除非文本节点）' };
-};
-
-const nextCaptureMarkerId = () => `capture-${Date.now()}-${Math.floor(Math.random() * 1e8)}`;
-
-const buildCaptureCloneGlobalCss = (planKey) => {
-  const cssParts = [
-    '.song-screenshot-modal-mask, .screenshot-export-modal-mask, .floating-menu-btn, .stats-nav, .nav-collapse-fab { display: none !important; }'
-  ];
-  if (planKey !== 'normal') {
-    cssParts.push('* { animation: none !important; transition: none !important; }');
-    cssParts.push('* { filter: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; mix-blend-mode: normal !important; }');
-    cssParts.push('* { position: static !important; top: auto !important; left: auto !important; }');
-  }
-  if (planKey === 'flatten-decor' || planKey === 'style-no-image' || planKey === 'text-probe') {
-    cssParts.push('* { box-shadow: none !important; text-shadow: none !important; background-image: none !important; clip-path: none !important; mask-image: none !important; -webkit-mask-image: none !important; }');
-    cssParts.push('*::before, *::after { content: none !important; animation: none !important; transition: none !important; box-shadow: none !important; text-shadow: none !important; background-image: none !important; }');
-  }
-  if (planKey === 'style-no-image' || planKey === 'text-probe') {
-    cssParts.push('img, svg, video, canvas, picture, source { display: none !important; }');
-  }
-  return cssParts.join('\n');
-};
-
-const applyCaptureProbeInClonedDoc = (clonedDoc, captureId, planKey) => {
-  if (!(clonedDoc instanceof Document)) return;
-  const styleEl = clonedDoc.createElement('style');
-  styleEl.setAttribute('data-export-diag-global', '1');
-  styleEl.textContent = buildCaptureCloneGlobalCss(planKey);
-  clonedDoc.head.appendChild(styleEl);
-
-  const cloneTarget = clonedDoc.querySelector(`[data-export-capture-id="${captureId}"]`);
-  if (!(cloneTarget instanceof HTMLElement)) return;
-  if (planKey !== 'text-probe') return;
-
-  cloneTarget.querySelectorAll('img, svg, video, canvas, iframe, picture, source').forEach((node) => node.remove());
-  cloneTarget.querySelectorAll('*').forEach((node) => {
-    if (!(node instanceof HTMLElement)) return;
-    if (node.children.length > 0) return;
-    const text = String(node.textContent || '').trim();
-    if (text) return;
-    node.remove();
-  });
-};
-
-const applyRenderDiagnosticMitigation = (rootEl, planKey) => {
-  if (!(rootEl instanceof HTMLElement)) {
-    return {
-      styleSanitized: 0,
-      hiddenImages: 0,
-      flattenedDecor: 0,
-      pseudoDisabled: false
-    };
-  }
-  const result = {
-    styleSanitized: 0,
-    hiddenImages: 0,
-    flattenedDecor: 0,
-    pseudoDisabled: false
-  };
-  const needSanitizeStyle = planKey === 'style-sanitize' || planKey === 'style-no-image';
-  const hideAllImages = planKey === 'style-no-image';
-  const hideUnreadyImages = planKey === 'hide-unready-images' || hideAllImages;
-  const flattenDecor = planKey === 'flatten-decor' || planKey === 'style-no-image';
-
-  if (needSanitizeStyle) {
-    rootEl.querySelectorAll('*').forEach((node) => {
-      if (!(node instanceof HTMLElement)) return;
-      const computed = window.getComputedStyle(node);
-      let touched = false;
-      if (computed.animationName && computed.animationName !== 'none') {
-        node.style.animation = 'none';
-        touched = true;
-      }
-      if (computed.transitionProperty && computed.transitionProperty !== 'all 0s ease 0s' && computed.transitionDuration !== '0s') {
-        node.style.transition = 'none';
-        touched = true;
-      }
-      if (computed.filter && computed.filter !== 'none') {
-        node.style.filter = 'none';
-        touched = true;
-      }
-      if (computed.backdropFilter && computed.backdropFilter !== 'none') {
-        node.style.backdropFilter = 'none';
-        touched = true;
-      }
-      if (computed.mixBlendMode && computed.mixBlendMode !== 'normal') {
-        node.style.mixBlendMode = 'normal';
-        touched = true;
-      }
-      if (computed.position === 'sticky') {
-        node.style.position = 'static';
-        node.style.top = 'auto';
-        node.style.left = 'auto';
-        touched = true;
-      }
-      if (touched) {
-        result.styleSanitized += 1;
-      }
-    });
-  }
-
-  if (flattenDecor) {
-    if (!rootEl.querySelector('style[data-export-diag="pseudo-off"]')) {
-      const pseudoStyle = document.createElement('style');
-      pseudoStyle.setAttribute('data-export-diag', 'pseudo-off');
-      pseudoStyle.textContent = '*::before,*::after{content:none !important;animation:none !important;transition:none !important;box-shadow:none !important;text-shadow:none !important;}';
-      rootEl.appendChild(pseudoStyle);
-      result.pseudoDisabled = true;
-    }
-    rootEl.querySelectorAll('*').forEach((node) => {
-      if (!(node instanceof HTMLElement)) return;
-      const computed = window.getComputedStyle(node);
-      let touched = false;
-      if (computed.boxShadow && computed.boxShadow !== 'none') {
-        node.style.boxShadow = 'none';
-        touched = true;
-      }
-      if (computed.textShadow && computed.textShadow !== 'none') {
-        node.style.textShadow = 'none';
-        touched = true;
-      }
-      if (computed.backgroundImage && computed.backgroundImage !== 'none') {
-        node.style.backgroundImage = 'none';
-        touched = true;
-      }
-      if (computed.clipPath && computed.clipPath !== 'none') {
-        node.style.clipPath = 'none';
-        touched = true;
-      }
-      if (computed.webkitMaskImage && computed.webkitMaskImage !== 'none') {
-        node.style.webkitMaskImage = 'none';
-        touched = true;
-      }
-      if (computed.maskImage && computed.maskImage !== 'none') {
-        node.style.maskImage = 'none';
-        touched = true;
-      }
-      if (computed.overflow === 'clip') {
-        node.style.overflow = 'visible';
-        touched = true;
-      }
-      if (touched) {
-        result.flattenedDecor += 1;
-      }
-    });
-  }
-
-  if (hideUnreadyImages) {
-    rootEl.querySelectorAll('img').forEach((imgEl) => {
-      if (!(imgEl instanceof HTMLImageElement)) return;
-      const ready = imgEl.complete && imgEl.naturalWidth > 0;
-      if (!hideAllImages && ready) return;
-      imgEl.dataset.failed = '1';
-      imgEl.style.display = 'none';
-      result.hiddenImages += 1;
-    });
-  }
-
-  return result;
-};
-
-const getRenderStallSignals = (rootEl) => {
-  if (!(rootEl instanceof HTMLElement)) return '无可用诊断节点';
-  let animated = 0;
-  let filtered = 0;
-  let sticky = 0;
-  rootEl.querySelectorAll('*').forEach((node) => {
-    if (!(node instanceof HTMLElement)) return;
-    const computed = window.getComputedStyle(node);
-    if (computed.animationName && computed.animationName !== 'none') animated += 1;
-    if ((computed.filter && computed.filter !== 'none') || (computed.backdropFilter && computed.backdropFilter !== 'none') || (computed.mixBlendMode && computed.mixBlendMode !== 'normal')) {
-      filtered += 1;
-    }
-    if (computed.position === 'sticky') sticky += 1;
-  });
-  const images = Array.from(rootEl.querySelectorAll('img'));
-  const unreadyImages = images.filter((imgEl) => !(imgEl instanceof HTMLImageElement) || !(imgEl.complete && imgEl.naturalWidth > 0)).length;
-  return `动画节点 ${animated}，滤镜/混合节点 ${filtered}，sticky 节点 ${sticky}，未就绪图片 ${unreadyImages}/${images.length}`;
 };
 
 const waitForSingleImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
@@ -5135,7 +4837,6 @@ const createExportCancelContext = () => {
 
 const isExportCancelledError = (error) => String(error?.message || '').includes('export-cancelled');
 const isRenderTimeoutError = (error) => /render-timeout-\d+/.test(String(error?.message || ''));
-const isGithubPagesHost = () => /github\.io$/i.test(String(window?.location?.hostname || ''));
 
 const copyCssCustomProperties = (sourceStyle, targetEl) => {
   if (!(sourceStyle instanceof CSSStyleDeclaration) || !(targetEl instanceof HTMLElement)) return;
@@ -5500,24 +5201,6 @@ const getCaptureErrorText = (error) => {
     return { text: '未知错误（无错误消息）', retryable: true };
   }
   return { text: `异常：${message}`, retryable: true };
-};
-
-const summarizeCaptureReasons = (reasons, max = 3) => {
-  if (!Array.isArray(reasons) || reasons.length === 0) return '';
-  const sliced = reasons.slice(0, max);
-  const base = sliced.join('；');
-  if (reasons.length > max) {
-    return `${base}；其余 ${reasons.length - max} 次省略`;
-  }
-  return base;
-};
-
-const getSongExportFailedMessage = (reasons = []) => {
-  const summary = summarizeCaptureReasons(reasons, 4);
-  if (summary) {
-    return `降级重试后仍失败。失败链路：${summary}`;
-  }
-  return '降级重试后仍失败。可能是渲染问题，再试一次没准行，这次你一定要成功。';
 };
 
 const freezeCssVariablesForCapture = (targetEl) => {

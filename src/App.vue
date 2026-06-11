@@ -420,7 +420,6 @@ const tabComponentRef = ref(null);
 const contentAreaRef = ref(null);
 const statsScrollTop = ref(0);
 const songsScrollTop = ref(0);
-const tabCenterRatioMap = ref({});
 const showBackToTopBtn = ref(false);
 const predictImportInputRef = ref(null);
 const isImportDragOver = ref(false);
@@ -472,11 +471,8 @@ const releaseLogSkipChecked = ref(false);
 const hasAutoShownReleaseLogThisVisit = ref(false);
 let cleanupNoticeTimer = null;
 let screenshotExportModalAutoCloseTimer = null;
-let tabReflowObserver = null;
-let tabReflowRaf = 0;
 let appVersionCheckTimer = null;
 
-const TAB_REFLOW_TRACK_KEYS = new Set(['stats']);
 const APP_VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const APP_RELEASE_LOG_SKIP_KEY = 'pjsk_skip_release_log_build_id_v1';
 const APP_UPDATE_DEBUG_REMOTE_KEY = 'pjsk_debug_remote_build_id_v1';
@@ -745,80 +741,12 @@ const saveSongsScroll = () => {
   songsScrollTop.value = contentAreaRef.value.scrollTop || 0;
 };
 
-const saveActiveTabCenterRatio = () => {
-  if (!TAB_REFLOW_TRACK_KEYS.has(currentTab.value)) return;
-  const el = contentAreaRef.value;
-  if (!el) return;
-  const ratio = (el.scrollTop + el.clientHeight / 2) / Math.max(1, el.scrollHeight);
-  tabCenterRatioMap.value = {
-    ...tabCenterRatioMap.value,
-    [currentTab.value]: Math.max(0, Math.min(1, ratio))
-  };
-};
-
-const restoreActiveTabCenterRatio = () => {
-  if (!TAB_REFLOW_TRACK_KEYS.has(currentTab.value)) return;
-  const el = contentAreaRef.value;
-  if (!el) return;
-  const ratio = Number(tabCenterRatioMap.value[currentTab.value]);
-  if (!Number.isFinite(ratio)) return;
-  const targetTop = ratio * el.scrollHeight - el.clientHeight / 2;
-  const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
-  const nextTop = Math.max(0, Math.min(maxTop, targetTop));
-  el.scrollTop = nextTop;
-  if (currentTab.value === 'stats') {
-    statsScrollTop.value = nextTop;
-  } else if (currentTab.value === 'songs') {
-    songsScrollTop.value = nextTop;
-  }
-};
-
-const scheduleRestoreActiveTabCenterRatio = () => {
-  if (tabReflowRaf) {
-    cancelAnimationFrame(tabReflowRaf);
-  }
-  tabReflowRaf = requestAnimationFrame(() => {
-    tabReflowRaf = 0;
-    restoreActiveTabCenterRatio();
-  });
-};
-
-const bindActiveTabReflowObserver = async () => {
-  if (tabReflowObserver) {
-    tabReflowObserver.disconnect();
-    tabReflowObserver = null;
-  }
-  if (!TAB_REFLOW_TRACK_KEYS.has(currentTab.value)) return;
-  if (typeof ResizeObserver === 'undefined') return;
-
-  await nextTick();
-  const host = contentAreaRef.value;
-  if (!host) return;
-  const root = host.querySelector('.pjsk-stats, .pjsk-song-stats');
-  if (!root) return;
-
-  tabReflowObserver = new ResizeObserver(() => {
-    scheduleRestoreActiveTabCenterRatio();
-  });
-
-  const targets = [
-    root,
-    root.querySelector('.stats-main'),
-    root.querySelector('.stats-grid')
-  ].filter(Boolean);
-
-  Array.from(new Set(targets)).forEach((target) => {
-    tabReflowObserver.observe(target);
-  });
-};
-
 const handleContentScroll = () => {
   if (contentAreaRef.value) {
     showBackToTopBtn.value = contentAreaRef.value.scrollTop > 260;
   }
   saveStatsScroll();
   saveSongsScroll();
-  saveActiveTabCenterRatio();
 };
 
 const scrollContentToTop = () => {
@@ -829,7 +757,6 @@ const scrollContentToTop = () => {
 const setCurrentTab = (tab) => {
   if (!Object.prototype.hasOwnProperty.call(tabs, tab)) return;
   if (tab === currentTab.value) return;
-  saveActiveTabCenterRatio();
   if (currentTab.value === 'stats') {
     saveStatsScroll();
   } else if (currentTab.value === 'songs') {
@@ -871,15 +798,7 @@ watch(currentTab, async (nextTab, prevTab) => {
       contentAreaRef.value.scrollTop = songsScrollTop.value;
     }
   }
-  saveActiveTabCenterRatio();
-  await bindActiveTabReflowObserver();
 });
-
-const handleStatsSongsViewportResize = () => {
-  if (!TAB_REFLOW_TRACK_KEYS.has(currentTab.value)) return;
-  saveActiveTabCenterRatio();
-  scheduleRestoreActiveTabCenterRatio();
-};
 
 watch(() => tabComponentRef.value, async () => {
   if (currentTab.value !== 'stats') return;
@@ -2649,12 +2568,7 @@ onMounted(() => {
   document.addEventListener('pointerdown', handleGlobalPointerDown);
   window.addEventListener('resize', updateCompactTopNav);
   window.addEventListener('resize', updateSourceMenuPosition);
-  window.addEventListener('resize', handleStatsSongsViewportResize);
   window.addEventListener('scroll', updateSourceMenuPosition, true);
-  nextTick(() => {
-    saveActiveTabCenterRatio();
-    bindActiveTabReflowObserver();
-  });
 });
 
 onBeforeUnmount(() => {
@@ -2665,20 +2579,11 @@ onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleGlobalPointerDown);
   window.removeEventListener('resize', updateCompactTopNav);
   window.removeEventListener('resize', updateSourceMenuPosition);
-  window.removeEventListener('resize', handleStatsSongsViewportResize);
   window.removeEventListener('scroll', updateSourceMenuPosition, true);
   if (typeof screenshotExportModalCancelTask.value === 'function') {
     screenshotExportModalCancelTask.value();
   }
   screenshotExportModalCancelTask.value = null;
-  if (tabReflowObserver) {
-    tabReflowObserver.disconnect();
-    tabReflowObserver = null;
-  }
-  if (tabReflowRaf) {
-    cancelAnimationFrame(tabReflowRaf);
-    tabReflowRaf = 0;
-  }
   if (cleanupNoticeTimer) {
     clearTimeout(cleanupNoticeTimer);
     cleanupNoticeTimer = null;
