@@ -2280,6 +2280,100 @@
           </div>
         </div>
 
+        <div id="panel-nuigurumi" data-scroll-anchor="panel-nuigurumi" class="stats-section card-panel nuigurumi-panel">
+          <div class="section-head">
+            <div class="section-head-left">
+              <h2>烤森娃娃</h2>
+              <label v-if="showDesktopNameControls" class="festival-hide-name-toggle stats-checkbox export-hide">
+                <input v-model="nuigurumiHideCharNames" type="checkbox" />
+                隐藏角色名
+              </label>
+              <label class="fes-card-mode-toggle stats-checkbox export-hide">
+                <input v-model="nuigurumiShowCardImages" type="checkbox" />
+                <span>显示卡面</span>
+              </label>
+            </div>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-nuigurumi', '烤森娃娃')">PNG</button>
+          </div>
+          <div class="nuigurumi-table-wrap">
+            <table class="record-table nuigurumi-table" :class="{ 'is-card-mode': nuigurumiShowCardImages }">
+              <thead>
+                <tr>
+                  <th class="nuigurumi-mobile-meta-head">信息</th>
+                  <th class="nuigurumi-round-head">轮次</th>
+                  <th class="nuigurumi-date-head">年月</th>
+                  <th class="nuigurumi-type-head">类型</th>
+                  <th>当期人选</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in nuigurumiRows"
+                  :key="`nuigurumi-${row.round}-${row.roundIndex}-${row.date}-${row.type}-${row.label || 'row'}`"
+                  :class="{
+                    'nuigurumi-round-start': row.roundIndex === 1,
+                    'nuigurumi-round-end': row.isRoundEnd,
+                    'nuigurumi-candidate-row': row.isCandidate
+                  }"
+                >
+                  <td class="nuigurumi-mobile-meta-cell">
+                    <span class="nuigurumi-mobile-meta-line nuigurumi-mobile-date">{{ getNuigurumiMobileDateLabel(row) }}</span>
+                    <span class="nuigurumi-mobile-meta-line nuigurumi-mobile-type">{{ getNuigurumiMobileTypeLabel(row.type) }}</span>
+                  </td>
+                  <td class="nuigurumi-round-cell">
+                    <span class="nuigurumi-round-badge">R{{ row.round }}</span>
+                  </td>
+                  <td class="nuigurumi-date-cell">{{ getNuigurumiDateCellLabel(row) }}</td>
+                  <td class="nuigurumi-type-cell">
+                    <span class="nuigurumi-type-chip" :class="`is-${row.type}`">{{ getNuigurumiTypeLabel(row.type) }}</span>
+                  </td>
+                  <td class="nuigurumi-members-cell">
+                    <div v-if="!nuigurumiShowCardImages" class="nuigurumi-avatar-strip">
+                      <div
+                        v-for="member in row.members"
+                        :key="`nuigurumi-avatar-${row.date}-${member.abbr}`"
+                        class="nuigurumi-avatar-item"
+                        :title="member.name"
+                      >
+                        <img
+                          :src="`/chibi_s/${member.iconKey}.webp`"
+                          class="nuigurumi-avatar"
+                          :alt="member.name"
+                          :style="{ borderColor: getCharColor(member.name) }"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                        <span v-if="showNuigurumiCharNames" class="nuigurumi-avatar-label">{{ getNuigurumiMemberLabel(member) }}</span>
+                      </div>
+                    </div>
+                    <div v-else class="fes-card-strip nuigurumi-card-strip">
+                      <div
+                        v-for="member in row.members"
+                        :key="`nuigurumi-card-${row.date}-${member.abbr}`"
+                        class="fes-card-thumb nuigurumi-card-thumb"
+                        :title="member.cardId ? `${member.name} #${member.cardId}` : member.name"
+                      >
+                        <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                        <img
+                          v-if="member.cardImageSrc"
+                          :src="member.cardImageSrc"
+                          :alt="`${member.name} 卡面`"
+                          class="fes-card-thumb-img media-load-shimmer"
+                          loading="lazy"
+                          decoding="async"
+                          @load="onMediaImageLoad"
+                          @error="onMediaImageError"
+                        />
+                        <span v-if="!member.cardImageSrc" class="nuigurumi-card-missing">{{ member.abbr.toUpperCase() }}</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -2323,12 +2417,14 @@ import { toCanvas } from 'html-to-image';
 const props = defineProps({
   allEvents: { type: Array, default: () => [] },
   allCards: { type: Array, default: () => [] },
+  allBaseCards: { type: Array, default: () => [] },
   allSongs: { type: Array, default: () => [] },
   allCharacters: { type: Array, default: () => [] },
+  nuigurumiData: { type: Array, default: () => [] },
   jumpEventId: { type: [Number, String], default: null },
   previewSyncEventId: { type: [Number, String], default: null }
 });
-const emit = defineEmits(['jump-to-event', 'stats-preview-update']);
+const emit = defineEmits(['jump-to-event', 'stats-preview-update', 'stats-top-state-change']);
 
 // 2. 新增：用户自定义的截止 ID 状态
 const manualEventId = ref(null);
@@ -2347,6 +2443,8 @@ const vsUnitFourCountCompact = ref(true);
 const vsUnitFourCountShowCardImages = ref(false);
 const vsUnitScoreShowCardImages = ref(false);
 const vsOriginalStatShowCardImages = ref(false);
+const nuigurumiShowCardImages = ref(false);
+const nuigurumiHideCharNames = ref(true);
 const includeCollabRewardCards = ref(false);
 const useRewardCountForThreeStar = ref(true);
 const useRewardCountForTwoStar = ref(true);
@@ -2418,6 +2516,7 @@ let lineupCardLayoutSyncRaf = 0;
 let lineupCardLayoutSyncTimer = 0;
 let lineupCardLayoutResizeObserver = null;
 let lineupCardLayoutMutationObserver = null;
+let topBarStateChangeRaf = 0;
 const mobileNavExpandedGroups = ref({});
 
 //const getCharAbbr = (name) => CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
@@ -2484,14 +2583,14 @@ const unitLogoMap = {
   nc: '/elements/nc.png',
   vs: '/elements/vs.png'
 };
-const CHAR_MAP = {};
-const CHAR_SINGLE_MAP = {};
-const CHAR_COLORS = {};
-const CHAR_UNIT_MAP = {};
-const CHAR_ORDER = {};
-const VS_NAMES = [];
-const VS_ALIAS_MAP = {};
-const UNIT_COLORS = { ...BASE_UNIT_COLORS };
+const CHAR_MAP = reactive({});
+const CHAR_SINGLE_MAP = reactive({});
+const CHAR_COLORS = reactive({});
+const CHAR_UNIT_MAP = reactive({});
+const CHAR_ORDER = reactive({});
+const VS_NAMES = reactive([]);
+const VS_ALIAS_MAP = reactive({});
+const UNIT_COLORS = reactive({ ...BASE_UNIT_COLORS });
 
 const replaceObject = (target, next) => {
   Object.keys(target).forEach((key) => {
@@ -3108,15 +3207,7 @@ const getNonBanEventMark = (ev) => {
   return ev.isFesCard ? `${base}(fes)` : base;
 };
 
-const formatRangeLabel = (gap) => (gap ? `${gap.startMark}→${gap.endMark}` : '-');
 const formatGapValue = (gap) => (gap ? `${gap.days}天 | ${gap.periods}期` : '-');
-
-const formatBanRangeLabel = (gap) => {
-  if (!gap) return '-';
-  const left = `${getTypeSeriesText(gap.startTypeSeriesId) || '?'}${getEventTypeShort(gap.startEventType)}`;
-  const right = `${getTypeSeriesText(gap.endTypeSeriesId) || '?'}${getEventTypeShort(gap.endEventType)}`;
-  return `${left}→${right}`;
-};
 
 const RELATED_RECORD_ITEMS = [
   { id: 'rel-last-four', title: '上一次四星' },
@@ -3333,6 +3424,11 @@ const navGroups = computed(() => {
       id: 'panel-vs-matrix',
       title: '虚拟歌手矩阵',
       children: []
+    },
+    {
+      id: 'panel-nuigurumi',
+      title: '烤森娃娃',
+      children: []
     }
   ];
 });
@@ -3446,10 +3542,20 @@ const scheduleNavSync = () => {
   });
 };
 
-const SCROLL_SNAPSHOT_ANCHOR_SELECTOR = '.stats-main [data-scroll-anchor]';
+const SCROLL_SNAPSHOT_ANCHOR_SELECTOR = '[data-scroll-anchor]';
+
+const getStatsMainElement = () => {
+  const localRoot = cardStatsRootRef.value;
+  const localStatsMain = localRoot instanceof HTMLElement
+    ? localRoot.querySelector('.stats-main')
+    : null;
+  if (localStatsMain instanceof HTMLElement) return localStatsMain;
+  const fallbackStatsMain = document.querySelector('.pjsk-stats .stats-main');
+  return fallbackStatsMain instanceof HTMLElement ? fallbackStatsMain : null;
+};
 
 const getAnchorNodesInStatsMain = () => {
-  const statsMain = document.querySelector('.stats-main');
+  const statsMain = getStatsMainElement();
   if (!(statsMain instanceof HTMLElement)) return [];
   return Array.from(statsMain.querySelectorAll(SCROLL_SNAPSHOT_ANCHOR_SELECTOR))
     .filter((el) => el instanceof HTMLElement && String(el.id || '').trim());
@@ -3458,7 +3564,7 @@ const getAnchorNodesInStatsMain = () => {
 const findAnchorElementByKey = (key) => {
   const wanted = String(key || '').trim();
   if (!wanted) return null;
-  const statsMain = document.querySelector('.stats-main');
+  const statsMain = getStatsMainElement();
   if (!(statsMain instanceof HTMLElement)) return null;
   const escaped = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
     ? CSS.escape(wanted)
@@ -3563,19 +3669,6 @@ const restoreViewportAnchor = (snapshot) => {
   }
 
   host.scrollTop = clampTop(snapshot.scrollTop);
-};
-
-const withPreservedScrollCenter = async (applyChange, options = {}) => {
-  const snapshot = snapshotViewportAnchor(options);
-  viewportPreserveLock += 1;
-  try {
-    applyChange();
-    await nextTick();
-    restoreViewportAnchor(snapshot);
-  } finally {
-    viewportPreserveLock = Math.max(0, viewportPreserveLock - 1);
-    scheduleNavSync();
-  }
 };
 
 const clampHostScrollTop = (host, top) => {
@@ -3794,7 +3887,7 @@ const updateMobileNavState = () => {
 
 const scrollToSection = (id, options = {}) => {
   const collapseOnMobile = options?.collapseOnMobile !== false;
-  const el = document.getElementById(id);
+  const el = findAnchorElementByKey(id) || document.getElementById(id);
   if (!el) return;
   activeNavId.value = id;
   const host = getScrollContainer();
@@ -3962,22 +4055,6 @@ const copyCssCustomProperties = (sourceStyle, targetEl) => {
   }
 };
 
-const buildExportScaleCandidates = (preferredScale, isMobileScreen) => {
-  const baseScale = Number.isFinite(preferredScale) && preferredScale > 0 ? preferredScale : 1;
-  const ladder = isMobileScreen
-    ? [baseScale, Math.min(baseScale, 1.4), 1.15, 1]
-    : [baseScale, Math.min(baseScale, 1.8), 1.45, 1.2, 1];
-  const seen = new Set();
-  return ladder
-    .map((value) => Math.max(1, Number(value.toFixed(2))))
-    .filter((value) => {
-      const key = String(value);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-};
-
 const countHeavyMediaNodes = (rootEl) => {
   if (!(rootEl instanceof HTMLElement)) return 0;
   const mediaNodes = rootEl.querySelectorAll('img');
@@ -3994,43 +4071,6 @@ const countHeavyMediaNodes = (rootEl) => {
   return heavy;
 };
 
-const buildAdaptiveScaleCandidates = (preferredScale, deviceTier, heavyMediaCount) => {
-  const isMobileScreen = deviceTier !== 'desktop';
-  const base = buildExportScaleCandidates(preferredScale, isMobileScreen);
-  if (heavyMediaCount < 18) return base;
-
-  const seen = new Set();
-  const targeted = (deviceTier === 'phone' || deviceTier === 'tablet'
-    ? [Math.max(1.75, Math.min(base[0] || 2, 2.05)), 1.65, 1.45, 1.25]
-    : [Math.max(1.95, base[0] || 2), Math.max(1.8, Math.min(base[0] || 2, 2.2)), 1.65, 1.35]
-  )
-    .map((value) => Math.max(1, Number(value.toFixed(2))))
-    .filter((value) => {
-      const key = String(value);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
-  return targeted.length ? targeted : base;
-};
-
-const buildCardCaptureProfile = ({ deviceTier, heavyMediaCount }) => {
-  const preferredScale = 2.0;
-  const scales = buildAdaptiveScaleCandidates(preferredScale, deviceTier, heavyMediaCount);
-  const baseScale = Number(scales[0] || preferredScale || 1);
-  return {
-    preferredScale,
-    scales,
-    baseScale
-  };
-};
-
-const buildCardCaptureMessage = (exportTitle, baseScale) => {
-  const scale = Number(baseScale || 1);
-  return `正在导出「${exportTitle}」... 基础清晰度 x${scale.toFixed(2)}`;
-};
-
 const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, scale }) => {
   const totalMegaPixels = (Math.max(1, width) * Math.max(1, height) * Math.max(1, scale) * Math.max(1, scale)) / 1000000;
   const heavyBoost = heavyMediaCount >= 18 ? 1200 : 0;
@@ -4041,158 +4081,6 @@ const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, sc
   if (totalMegaPixels <= 32) return 10800 + heavyBoost;
   const tierCap = deviceTier === 'phone' ? 14000 : (deviceTier === 'tablet' ? 15500 : 14500);
   return tierCap + heavyBoost;
-};
-
-const getRenderDiagnosticPlan = (attemptIndex) => {
-  if (attemptIndex <= 0) {
-    return { key: 'normal', label: '标准渲染' };
-  }
-  if (attemptIndex === 1) {
-    return { key: 'style-sanitize', label: '禁用动画/滤镜' };
-  }
-  if (attemptIndex === 2) {
-    return { key: 'flatten-decor', label: '扁平化装饰层（阴影/渐变/伪元素）' };
-  }
-  if (attemptIndex === 3) {
-    return { key: 'hide-unready-images', label: '隐藏未就绪图片' };
-  }
-  return { key: 'style-no-image', label: '禁用动画/滤镜 + 隐藏全部图片' };
-};
-
-const applyRenderDiagnosticMitigation = (rootEl, planKey) => {
-  if (!(rootEl instanceof HTMLElement)) {
-    return {
-      styleSanitized: 0,
-      hiddenImages: 0,
-      flattenedDecor: 0,
-      pseudoDisabled: false
-    };
-  }
-  const result = {
-    styleSanitized: 0,
-    hiddenImages: 0,
-    flattenedDecor: 0,
-    pseudoDisabled: false
-  };
-  const needSanitizeStyle = planKey === 'style-sanitize' || planKey === 'style-no-image';
-  const hideAllImages = planKey === 'style-no-image';
-  const hideUnreadyImages = planKey === 'hide-unready-images' || hideAllImages;
-  const flattenDecor = planKey === 'flatten-decor' || planKey === 'style-no-image';
-
-  if (needSanitizeStyle) {
-    rootEl.querySelectorAll('*').forEach((node) => {
-      if (!(node instanceof HTMLElement)) return;
-      const computed = window.getComputedStyle(node);
-      let touched = false;
-      if (computed.animationName && computed.animationName !== 'none') {
-        node.style.animation = 'none';
-        touched = true;
-      }
-      if (computed.transitionProperty && computed.transitionProperty !== 'all 0s ease 0s' && computed.transitionDuration !== '0s') {
-        node.style.transition = 'none';
-        touched = true;
-      }
-      if (computed.filter && computed.filter !== 'none') {
-        node.style.filter = 'none';
-        touched = true;
-      }
-      if (computed.backdropFilter && computed.backdropFilter !== 'none') {
-        node.style.backdropFilter = 'none';
-        touched = true;
-      }
-      if (computed.mixBlendMode && computed.mixBlendMode !== 'normal') {
-        node.style.mixBlendMode = 'normal';
-        touched = true;
-      }
-      if (computed.position === 'sticky') {
-        node.style.position = 'static';
-        node.style.top = 'auto';
-        node.style.left = 'auto';
-        touched = true;
-      }
-      if (touched) {
-        result.styleSanitized += 1;
-      }
-    });
-  }
-
-  if (flattenDecor) {
-    if (!rootEl.querySelector('style[data-export-diag="pseudo-off"]')) {
-      const pseudoStyle = document.createElement('style');
-      pseudoStyle.setAttribute('data-export-diag', 'pseudo-off');
-      pseudoStyle.textContent = '*::before,*::after{content:none !important;animation:none !important;transition:none !important;box-shadow:none !important;text-shadow:none !important;}';
-      rootEl.appendChild(pseudoStyle);
-      result.pseudoDisabled = true;
-    }
-    rootEl.querySelectorAll('*').forEach((node) => {
-      if (!(node instanceof HTMLElement)) return;
-      const computed = window.getComputedStyle(node);
-      let touched = false;
-      if (computed.boxShadow && computed.boxShadow !== 'none') {
-        node.style.boxShadow = 'none';
-        touched = true;
-      }
-      if (computed.textShadow && computed.textShadow !== 'none') {
-        node.style.textShadow = 'none';
-        touched = true;
-      }
-      if (computed.backgroundImage && computed.backgroundImage !== 'none') {
-        node.style.backgroundImage = 'none';
-        touched = true;
-      }
-      if (computed.clipPath && computed.clipPath !== 'none') {
-        node.style.clipPath = 'none';
-        touched = true;
-      }
-      if (computed.webkitMaskImage && computed.webkitMaskImage !== 'none') {
-        node.style.webkitMaskImage = 'none';
-        touched = true;
-      }
-      if (computed.maskImage && computed.maskImage !== 'none') {
-        node.style.maskImage = 'none';
-        touched = true;
-      }
-      if (computed.overflow === 'clip') {
-        node.style.overflow = 'visible';
-        touched = true;
-      }
-      if (touched) {
-        result.flattenedDecor += 1;
-      }
-    });
-  }
-
-  if (hideUnreadyImages) {
-    rootEl.querySelectorAll('img').forEach((imgEl) => {
-      if (!(imgEl instanceof HTMLImageElement)) return;
-      const ready = imgEl.complete && imgEl.naturalWidth > 0;
-      if (!hideAllImages && ready) return;
-      imgEl.dataset.failed = '1';
-      imgEl.style.display = 'none';
-      result.hiddenImages += 1;
-    });
-  }
-
-  return result;
-};
-
-const getRenderStallSignals = (rootEl) => {
-  if (!(rootEl instanceof HTMLElement)) return '无可用诊断节点';
-  let animated = 0;
-  let filtered = 0;
-  let sticky = 0;
-  rootEl.querySelectorAll('*').forEach((node) => {
-    if (!(node instanceof HTMLElement)) return;
-    const computed = window.getComputedStyle(node);
-    if (computed.animationName && computed.animationName !== 'none') animated += 1;
-    if ((computed.filter && computed.filter !== 'none') || (computed.backdropFilter && computed.backdropFilter !== 'none') || (computed.mixBlendMode && computed.mixBlendMode !== 'normal')) {
-      filtered += 1;
-    }
-    if (computed.position === 'sticky') sticky += 1;
-  });
-  const images = Array.from(rootEl.querySelectorAll('img'));
-  const unreadyImages = images.filter((imgEl) => !(imgEl instanceof HTMLImageElement) || !(imgEl.complete && imgEl.naturalWidth > 0)).length;
-  return `动画节点 ${animated}，滤镜/混合节点 ${filtered}，sticky 节点 ${sticky}，未就绪图片 ${unreadyImages}/${images.length}`;
 };
 
 const waitForSingleImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
@@ -4360,7 +4248,6 @@ const createExportCancelContext = () => {
 
 const isExportCancelledError = (error) => String(error?.message || '').includes('export-cancelled');
 const isRenderTimeoutError = (error) => /render-timeout-\d+/.test(String(error?.message || ''));
-const isGithubPagesHost = () => /github\.io$/i.test(String(window?.location?.hostname || ''));
 
 const getTableColumnWidths = (tableEl) => {
   if (!(tableEl instanceof HTMLTableElement)) return [];
@@ -4821,24 +4708,6 @@ const getCaptureErrorText = (error) => {
     return { text: '未知错误（无错误消息）', retryable: true };
   }
   return { text: `异常：${message}`, retryable: true };
-};
-
-const summarizeCaptureReasons = (reasons, max = 3) => {
-  if (!Array.isArray(reasons) || reasons.length === 0) return '';
-  const sliced = reasons.slice(0, max);
-  const base = sliced.join('；');
-  if (reasons.length > max) {
-    return `${base}；其余 ${reasons.length - max} 次省略`;
-  }
-  return base;
-};
-
-const getExportFailedMessage = (reasons = []) => {
-  const summary = summarizeCaptureReasons(reasons, 4);
-  if (summary) {
-    return `降级重试后仍失败。失败链路：${summary}`;
-  }
-  return '降级重试后仍失败。可能是渲染问题，再试一次没准行，这次你一定要成功。';
 };
 
 const prepareExportClone = async (targetEl) => {
@@ -5502,6 +5371,7 @@ onMounted(() => {
   updateMobileNavState();
   window.addEventListener('resize', updateMobileNavState);
   bindViewportScrollTracking();
+  scheduleTopBarStateChange();
   const localRoot = cardStatsRootRef.value;
   const statsMain = localRoot instanceof HTMLElement ? localRoot.querySelector('.stats-main') : null;
   if (statsMain instanceof HTMLElement) {
@@ -5515,10 +5385,15 @@ onMounted(() => {
     bindRelatedJumpChipObservers();
     bindLineupCardModeLayoutObserver();
     triggerLineupCardModeRowLayoutSyncBurst();
+    scheduleTopBarStateChange();
   });
 });
 
 onBeforeUnmount(() => {
+  if (topBarStateChangeRaf) {
+    cancelAnimationFrame(topBarStateChangeRaf);
+    topBarStateChangeRaf = 0;
+  }
   window.removeEventListener('resize', updateMobileNavState);
   if (typeof screenshotModalCancelTask.value === 'function') {
     screenshotModalCancelTask.value();
@@ -5931,6 +5806,14 @@ const getTopBarState = () => ({
   isNavTopLayout: !!isNavTopLayout.value
 });
 
+const scheduleTopBarStateChange = () => {
+  if (topBarStateChangeRaf) return;
+  topBarStateChangeRaf = requestAnimationFrame(() => {
+    topBarStateChangeRaf = 0;
+    emit('stats-top-state-change');
+  });
+};
+
 const setTopBarDisplayEventIdDraft = (rawVal) => {
   displayEventIdDraft.value = String(rawVal ?? '');
   const n = toFiniteEventId(displayEventIdDraft.value);
@@ -5967,11 +5850,23 @@ const toggleTopBarNavCollapsed = () => {
 
 watch(displayEventId, () => {
   updateDisplayEventIdDraft();
+  scheduleTopBarStateChange();
 }, { immediate: true });
 
 watch(navCollapsed, () => {
   triggerLineupCardModeRowLayoutSyncBurst();
+  scheduleTopBarStateChange();
 });
+
+watch([autoCurrentId, isNavTopLayout, displayEventIdDraft], () => {
+  scheduleTopBarStateChange();
+});
+
+watch(() => props.allEvents, async () => {
+  updateDisplayEventIdDraft();
+  await nextTick();
+  scheduleTopBarStateChange();
+}, { deep: false });
 
 const safeMaxEventId = computed(() => {
   const n = toFiniteEventId(displayEventId.value);
@@ -8099,20 +7994,6 @@ const vsUnitLastFourRecordsSorted = computed(() => {
   return rows;
 });
 
-const vsUnitLastFourCompactRows = computed(() => {
-  const rowMap = Object.fromEntries(
-    VS_NAMES.map((name) => [name, { name, daysByUnit: Object.fromEntries(VS_UNIT_SORT_ORDER.map((u) => [u, 0])) }])
-  );
-
-  vsUnitLastFourRecords.value.forEach((item) => {
-    const { baseName, unit } = parseVsUnitKey(item.key);
-    if (!rowMap[baseName] || !VS_UNIT_SORT_ORDER.includes(unit)) return;
-    rowMap[baseName].daysByUnit[unit] = Number(item.days || 0);
-  });
-
-  return VS_NAMES.map((name) => rowMap[name]);
-});
-
 const vsUnitLastFourCompactUnitRows = computed(() => {
   const rowMap = Object.fromEntries(
     VS_UNIT_SORT_ORDER.map((unit) => [unit, { unit, daysByVs: Object.fromEntries(VS_NAMES.map((name) => [name, 0])) }])
@@ -8125,47 +8006,6 @@ const vsUnitLastFourCompactUnitRows = computed(() => {
   });
 
   return VS_UNIT_SORT_ORDER.map((unit) => rowMap[unit]);
-});
-
-const vsUnitScoreAttrRows = computed(() => {
-  const maxEid = safeMaxEventId.value;
-  const maxEventDate = parseDateSafe(eventsById.value[maxEid]?.start_date);
-  const rowMap = Object.fromEntries(
-    VS_NAMES.map((name) => [
-      name,
-      {
-        name,
-        attrsByUnit: Object.fromEntries(VS_UNIT_SORT_ORDER.map((u) => [u, []]))
-      }
-    ])
-  );
-
-  (props.allCards || []).forEach((card) => {
-    if (!isCardWithinLimit(card, maxEid)) return;
-    const skill = String(card?.Skill || '').trim().toLowerCase();
-    if (skill !== 'unit_score') return;
-
-    const fullName = String(card?.Name || '').trim();
-    const baseName = fullName.split(/\s+/)[0] || fullName;
-    if (!VS_NAMES.includes(baseName)) return;
-
-    const unit = String(card?.Affiliation || '').trim().toLowerCase();
-    if (!VS_UNIT_SORT_ORDER.includes(unit)) return;
-
-    const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
-    if (!sourceKey) return;
-    const isNum = isNumericEventId(sourceKey);
-    const ev = isNum ? eventsById.value[Number(sourceKey)] : null;
-    const eventDate = parseDateSafe(String(ev?.start_date || card?.Date || '').trim());
-    if (!eventDate) return;
-    if (!isNum && maxEventDate && eventDate > maxEventDate) return;
-
-    const attr = normalizeAttr(card?.Attribute);
-    if (!ATTRS.includes(attr)) return;
-    rowMap[baseName].attrsByUnit[unit].push(attr);
-  });
-
-  return VS_NAMES.map((name) => rowMap[name]);
 });
 
 const vsUnitScoreAttrByUnitRows = computed(() => {
@@ -8599,6 +8439,343 @@ const getLineupSlotCardImageSrc = (slot) => {
   if (!Number.isFinite(idNum) || idNum <= 0) return '';
   return buildCardImageSrc(idNum, baseName, { rarity: '4' });
 };
+
+const nuigurumiCharacterByAbbr = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const abbr = String(char?.en_abbr || '').trim().toLowerCase();
+    if (!abbr) return;
+    const name = String(char?.zh_name || char?.ja_name || '').trim();
+    map[abbr] = {
+      abbr,
+      name,
+      singleMark: String(char?.single_mark || '').trim(),
+      unit: String(char?.unit || '').trim().toLowerCase(),
+      order: Number(char?.id || 999)
+    };
+  });
+  return map;
+});
+
+const nuigurumiAbbrByCardName = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const abbr = String(char?.en_abbr || '').trim().toLowerCase();
+    if (!abbr) return;
+    [
+      char?.zh_name,
+      char?.ja_name,
+      `${String(char?.first_name || '').trim()}${String(char?.given_name || '').trim()}`
+    ].forEach((name) => {
+      const key = String(name || '').trim();
+      if (key) map[key] = abbr;
+    });
+  });
+  return map;
+});
+
+const getNuigurumiCardAbbr = (card) => {
+  const baseName = getCardBaseName(card?.Name);
+  return nuigurumiAbbrByCardName.value[baseName] || '';
+};
+
+const getNuigurumiCardSortTime = (card) => {
+  const d = parseDateSafe(card?.Date);
+  return d ? d.getTime() : 0;
+};
+
+const nuigurumiCardPools = computed(() => {
+  const pools = {};
+  const now = new Date();
+  const sourceCards = Array.isArray(props.allBaseCards) && props.allBaseCards.length
+    ? props.allBaseCards
+    : [];
+  sourceCards.forEach((card) => {
+    const cardId = Number(card?.CardID);
+    if (!Number.isFinite(cardId) || cardId <= 0) return;
+    const cardDate = parseDateSafe(card?.Date);
+    if (!cardDate || cardDate > now) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+    const type = String(card?.Type || '').trim().toLowerCase();
+    if (!type) return;
+    const abbr = getNuigurumiCardAbbr(card);
+    if (!abbr) return;
+    const key = `${type}::${abbr}`;
+    if (!pools[key]) pools[key] = [];
+    pools[key].push(card);
+  });
+
+  Object.keys(pools).forEach((key) => {
+    pools[key].sort((a, b) => {
+      const byDate = getNuigurumiCardSortTime(a) - getNuigurumiCardSortTime(b);
+      if (byDate !== 0) return byDate;
+      const aid = Number(a?.CardID || 0);
+      const bid = Number(b?.CardID || 0);
+      if (aid !== bid) return aid - bid;
+      return String(a?.Name || '').localeCompare(String(b?.Name || ''), 'zh-Hans-CN');
+    });
+  });
+
+  return pools;
+});
+
+const getNuigurumiTypeLabel = (type) => {
+  const normalized = String(type || '').trim().toLowerCase();
+  if (normalized === 'cfes') return 'CFES';
+  if (normalized === 'bfes') return 'BFES';
+  if (normalized === 'limited') return '期间限定';
+  return normalized || '-';
+};
+
+const getNuigurumiMobileTypeLabel = (type) => {
+  const normalized = String(type || '').trim().toLowerCase();
+  if (normalized === 'limited') return '普限';
+  if (normalized === 'cfes') return 'CFES';
+  if (normalized === 'bfes') return 'BFES';
+  return normalized || '-';
+};
+
+const getNuigurumiCompactLabel = (label) => {
+  const raw = String(label || '').trim();
+  if (raw === '本轮备选') return '备选';
+  if (raw === '下一轮备选') return '下轮';
+  return raw;
+};
+
+const getNuigurumiCandidateLabel = (row, mode = 'desktop') => {
+  const kind = String(row?.candidateKind || '').trim();
+  if (kind === 'current') return '备选';
+  if (kind === 'next') return mode === 'mobile' ? '下轮' : '下轮';
+  return getNuigurumiCompactLabel(row?.label);
+};
+
+const getNuigurumiCompactDate = (dateText) => {
+  const [yearRaw, monthRaw] = String(dateText || '').split('/');
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return String(dateText || '').trim() || '-';
+  return `${String(year).slice(-2)}/${month}`;
+};
+
+const getNuigurumiMobileDateLabel = (row) => {
+  const label = getNuigurumiCandidateLabel(row, 'mobile');
+  if (label) return label;
+  return getNuigurumiCompactDate(row?.date);
+};
+
+const getNuigurumiDateCellLabel = (row) => {
+  const label = getNuigurumiCandidateLabel(row, 'desktop');
+  if (label) return label;
+  return row?.date || '-';
+};
+
+const getNuigurumiMemberLabel = (member) => {
+  if (useSingleNameMark.value && member?.singleMark) return member.singleMark;
+  return String(member?.abbr || '').toUpperCase();
+};
+
+const showNuigurumiCharNames = computed(() => !isNavTopLayout.value && !nuigurumiHideCharNames.value);
+
+const getNuigurumiMonthOrder = (dateText) => {
+  const [yearRaw, monthRaw] = String(dateText || '').split('/');
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return 0;
+  return year * 12 + month;
+};
+
+const nuigurumiAllCharacterAbbrs = computed(() => (
+  Object.values(nuigurumiCharacterByAbbr.value || {})
+    .sort((a, b) => {
+      const ao = Number(a?.order || 999);
+      const bo = Number(b?.order || 999);
+      if (ao !== bo) return ao - bo;
+      return String(a?.abbr || '').localeCompare(String(b?.abbr || ''));
+    })
+    .map((item) => item.abbr)
+));
+
+const NUIGURUMI_OC_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
+const NUIGURUMI_UNIT_ORDER = [...NUIGURUMI_OC_UNITS, 'vs'];
+
+const getNuigurumiAbbrUnit = (abbr) => {
+  const normalized = String(abbr || '').trim().toLowerCase();
+  return String(nuigurumiCharacterByAbbr.value[normalized]?.unit || '').trim().toLowerCase() || 'vs';
+};
+
+const createNuigurumiUnitQueues = (abbrs) => {
+  const queues = Object.fromEntries(NUIGURUMI_UNIT_ORDER.map((unit) => [unit, []]));
+  (abbrs || []).forEach((abbr) => {
+    const normalized = String(abbr || '').trim().toLowerCase();
+    if (!normalized) return;
+    const unit = NUIGURUMI_UNIT_ORDER.includes(getNuigurumiAbbrUnit(normalized))
+      ? getNuigurumiAbbrUnit(normalized)
+      : 'vs';
+    queues[unit].push(normalized);
+  });
+  return queues;
+};
+
+const hasNuigurumiQueuedMember = (queues) => (
+  Object.values(queues || {}).some((items) => Array.isArray(items) && items.length > 0)
+);
+
+const getNuigurumiVsCountForMonth = (month) => {
+  const monthNum = Number(month);
+  if (!Number.isFinite(monthNum)) return 1;
+  return monthNum % 2 === 0 ? 1 : 2;
+};
+
+const addNuigurumiMonth = (dateText, offset) => {
+  const [yearRaw, monthRaw] = String(dateText || '').split('/');
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  if (!Number.isFinite(year) || !Number.isFinite(month)) {
+    return { date: '', year: 0, month: 0 };
+  }
+  const zeroBased = year * 12 + (month - 1) + Number(offset || 0);
+  const nextYear = Math.floor(zeroBased / 12);
+  const nextMonth = (zeroBased % 12) + 1;
+  return {
+    date: `${nextYear}/${nextMonth}`,
+    year: nextYear,
+    month: nextMonth
+  };
+};
+
+const takeNuigurumiCandidateAbbrs = (queues, month) => {
+  const picked = [];
+  NUIGURUMI_OC_UNITS.forEach((unit) => {
+    const next = queues?.[unit]?.shift();
+    if (next) picked.push(next);
+  });
+  const vsCount = getNuigurumiVsCountForMonth(month);
+  for (let i = 0; i < vsCount; i += 1) {
+    const next = queues?.vs?.shift();
+    if (next) picked.push(next);
+  }
+  return picked;
+};
+
+const buildNuigurumiMember = (abbr, type, occurrenceIndex) => {
+  const normalizedAbbr = String(abbr || '').trim().toLowerCase();
+  const normalizedType = String(type || '').trim().toLowerCase();
+  const meta = nuigurumiCharacterByAbbr.value[normalizedAbbr] || {};
+  const name = meta.name || normalizedAbbr.toUpperCase();
+  const card = nuigurumiCardPools.value[`${normalizedType}::${normalizedAbbr}`]?.[occurrenceIndex] || null;
+  const cardId = Number(card?.CardID || 0);
+  const attr = normalizeAttr(card?.Attribute);
+  return {
+    abbr: normalizedAbbr,
+    name,
+    singleMark: meta.singleMark || '',
+    iconKey: normalizedAbbr.toUpperCase(),
+    cardId: Number.isFinite(cardId) && cardId > 0 ? cardId : '',
+    cardAttr: ATTRS.includes(attr) ? attr : '',
+    cardImageSrc: card ? buildCardImageSrc(card?.CardID, name, { rarity: '4' }) : ''
+  };
+};
+
+const nuigurumiRows = computed(() => {
+  const occurrences = {};
+  const sourceRows = [...(props.nuigurumiData || [])]
+    .filter((row) => String(row?.Date || '').trim() && Array.isArray(row?.Character))
+    .sort((a, b) => getNuigurumiMonthOrder(a?.Date) - getNuigurumiMonthOrder(b?.Date));
+
+  const rows = sourceRows.map((row, index) => {
+    const date = String(row?.Date || '').trim();
+    const type = String(row?.Type || '').trim().toLowerCase();
+    const round = Math.floor(index / 4) + 1;
+    const roundIndex = (index % 4) + 1;
+    const isRoundEnd = roundIndex === 4;
+    const members = row.Character
+      .map((abbrRaw) => String(abbrRaw || '').trim().toLowerCase())
+      .filter(Boolean)
+      .map((abbr) => {
+        const occurrenceKey = `${type}::${abbr}`;
+        const occurrenceIndex = Number(occurrences[occurrenceKey] || 0);
+        occurrences[occurrenceKey] = occurrenceIndex + 1;
+        return buildNuigurumiMember(abbr, type, occurrenceIndex);
+      });
+
+      return {
+        date,
+        type,
+        round,
+        roundIndex,
+        isRoundEnd,
+        members
+      };
+    });
+
+  if (!rows.length) return rows;
+
+  const allAbbrs = nuigurumiAllCharacterAbbrs.value;
+  const lastRow = rows[rows.length - 1];
+  const currentRound = Number(lastRow?.round || 1);
+  const currentType = String(lastRow?.type || 'limited').trim().toLowerCase() || 'limited';
+  const currentRoundUsed = new Set(
+    rows
+      .filter((row) => Number(row?.round || 0) === currentRound)
+      .flatMap((row) => (row.members || []).map((member) => member.abbr))
+  );
+  const currentMissing = allAbbrs.filter((abbr) => !currentRoundUsed.has(abbr));
+  let candidateMonthOffset = 1;
+  const appendCandidateRows = ({ abbrs, round, type, label, candidateKind, maxRows = 4, consumeOccurrences = true }) => {
+    const queues = createNuigurumiUnitQueues(abbrs);
+    let localIndex = 0;
+    while (hasNuigurumiQueuedMember(queues) && localIndex < maxRows) {
+      const monthInfo = addNuigurumiMonth(lastRow?.date, candidateMonthOffset);
+      candidateMonthOffset += 1;
+      const picked = takeNuigurumiCandidateAbbrs(queues, monthInfo.month);
+      if (!picked.length) continue;
+      const members = picked.map((abbr) => {
+        const key = `${type}::${abbr}`;
+        const occurrenceIndex = Number(occurrences[key] || 0);
+        if (consumeOccurrences) {
+          occurrences[key] = occurrenceIndex + 1;
+        }
+        return buildNuigurumiMember(abbr, type, occurrenceIndex);
+      });
+      rows.push({
+        date: monthInfo.date,
+        type,
+        round,
+        roundIndex: 5 + localIndex,
+        isRoundEnd: !hasNuigurumiQueuedMember(queues),
+        isCandidate: true,
+        label,
+        candidateKind,
+        members
+      });
+      localIndex += 1;
+    }
+  };
+
+  if (currentMissing.length) {
+    appendCandidateRows({
+      abbrs: currentMissing,
+      round: currentRound,
+      type: currentType,
+      label: '本轮备选',
+      candidateKind: 'current',
+      maxRows: 4,
+      consumeOccurrences: true
+    });
+  }
+
+  appendCandidateRows({
+    abbrs: allAbbrs,
+    round: currentRound + 1,
+    type: currentType || 'limited',
+    label: '下一轮备选',
+    candidateKind: 'next',
+    maxRows: 4,
+    consumeOccurrences: false
+  });
+
+  return rows;
+});
 
 const markMediaImageSettled = (event) => {
   const target = event?.target;
@@ -9460,6 +9637,10 @@ defineExpose({
 
 .stats-main-head {
   margin-bottom: 6px;
+}
+
+.stats-main > .stats-section + .stats-section {
+  margin-top: 18px;
 }
 
 .section-head,
@@ -11434,6 +11615,332 @@ td.record-char {
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
   z-index: 3;
+}
+
+.nuigurumi-table-wrap {
+  overflow-x: auto;
+}
+
+.nuigurumi-table {
+  width: 100%;
+  min-width: 700px;
+  table-layout: fixed;
+}
+
+.nuigurumi-mobile-meta-head,
+.nuigurumi-mobile-meta-cell {
+  display: none;
+}
+
+.nuigurumi-round-head,
+.nuigurumi-round-cell {
+  width: 64px;
+  text-align: center;
+}
+
+.nuigurumi-date-head,
+.nuigurumi-date-cell {
+  width: 92px;
+  text-align: center;
+}
+
+.nuigurumi-type-head,
+.nuigurumi-type-cell {
+  width: 108px;
+  text-align: center;
+}
+
+.nuigurumi-table td {
+  vertical-align: middle;
+}
+
+.nuigurumi-table.is-card-mode tbody td {
+  min-height: 76px;
+}
+
+.nuigurumi-table tbody tr.nuigurumi-round-start > td {
+  border-top: 4px solid rgba(15, 23, 42, 0.28);
+}
+
+.nuigurumi-table tbody tr.nuigurumi-round-end > td {
+  border-bottom: 4px solid rgba(15, 23, 42, 0.28);
+}
+
+.nuigurumi-table tbody tr.nuigurumi-candidate-row > td {
+  background: #f8fafc;
+}
+
+.nuigurumi-table tbody tr > td.nuigurumi-round-cell {
+  border-left: 3px solid rgba(15, 23, 42, 0.2);
+}
+
+.nuigurumi-table tbody tr > td:last-child {
+  border-right: 3px solid rgba(15, 23, 42, 0.2);
+}
+
+.nuigurumi-round-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 24px;
+  border-radius: var(--stats-radius-btn);
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+.nuigurumi-date-cell {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.nuigurumi-type-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--stats-radius-btn);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+.nuigurumi-type-chip.is-cfes {
+  background: #fde68a;
+  color: #78350f;
+}
+
+.nuigurumi-type-chip.is-limited {
+  background: #bae6fd;
+  color: #075985;
+}
+
+.nuigurumi-mobile-meta-line {
+  display: block;
+  line-height: 1.12;
+  white-space: nowrap;
+}
+
+.nuigurumi-mobile-round {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #334155;
+}
+
+.nuigurumi-mobile-date {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.nuigurumi-mobile-type {
+  margin-top: 4px;
+  color: #075985;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.nuigurumi-members-cell {
+  text-align: left;
+}
+
+.nuigurumi-avatar-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.nuigurumi-avatar-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 54px;
+}
+
+.nuigurumi-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  background: #ffffff;
+  object-fit: cover;
+}
+
+.nuigurumi-avatar-label {
+  max-width: 54px;
+  min-height: 14px;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nuigurumi-card-strip {
+  min-height: 64px;
+  gap: 6px;
+  align-items: center;
+}
+
+.nuigurumi-card-thumb {
+  --fes-card-frame-size: 64px;
+}
+
+.nuigurumi-card-missing {
+  position: absolute;
+  inset: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  z-index: 2;
+}
+
+@media (max-width: 760px) {
+  .nuigurumi-table-wrap {
+    overflow-x: visible;
+  }
+
+  .nuigurumi-table {
+    min-width: 0;
+  }
+
+  .nuigurumi-mobile-meta-head,
+  .nuigurumi-mobile-meta-cell {
+    display: table-cell;
+    width: 46px;
+    min-width: 46px;
+    max-width: 46px;
+    text-align: center;
+  }
+
+  .nuigurumi-table th:nth-child(2),
+  .nuigurumi-table td:nth-child(2),
+  .nuigurumi-table th:nth-child(3),
+  .nuigurumi-table td:nth-child(3),
+  .nuigurumi-table th:nth-child(4),
+  .nuigurumi-table td:nth-child(4) {
+    display: none;
+  }
+
+  .nuigurumi-table th,
+  .nuigurumi-table td {
+    padding: 4px 2px;
+  }
+
+  .nuigurumi-table.is-card-mode tbody td {
+    min-height: 0;
+  }
+
+  .nuigurumi-members-cell {
+    padding-left: 1px;
+    padding-right: 1px;
+  }
+
+  .nuigurumi-mobile-meta-line {
+    line-height: 1.05;
+  }
+
+  .nuigurumi-mobile-date {
+    margin-top: 0;
+    font-size: 0.74rem;
+  }
+
+  .nuigurumi-mobile-type {
+    margin-top: 2px;
+    font-size: 0.62rem;
+  }
+
+  .nuigurumi-table tbody tr > td.nuigurumi-mobile-meta-cell {
+    border-left: 3px solid rgba(15, 23, 42, 0.2);
+  }
+
+  .nuigurumi-table tbody tr > td.nuigurumi-members-cell {
+    border-right: 3px solid rgba(15, 23, 42, 0.2);
+  }
+
+  .nuigurumi-round-badge {
+    min-width: 30px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+
+  .nuigurumi-date-cell {
+    font-size: 0.78rem;
+  }
+
+  .nuigurumi-type-chip {
+    min-width: 0;
+    height: 22px;
+    padding: 0 6px;
+    font-size: 0.68rem;
+  }
+
+  .nuigurumi-avatar-strip {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    align-items: center;
+    justify-items: center;
+  }
+
+  .nuigurumi-avatar-item {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .nuigurumi-avatar {
+    width: clamp(30px, 8.8vw, 40px);
+    height: clamp(30px, 8.8vw, 40px);
+  }
+
+  .nuigurumi-avatar-label {
+    display: none;
+  }
+
+  .nuigurumi-card-strip {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    align-items: center;
+    justify-items: center;
+    min-height: 0;
+  }
+
+  .nuigurumi-card-thumb {
+    --fes-card-frame-size: clamp(30px, 8.8vw, 44px);
+  }
+
+  .nuigurumi-card-missing {
+    inset: 6px;
+    font-size: 0.62rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .nuigurumi-mobile-meta-head,
+  .nuigurumi-mobile-meta-cell {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+  }
 }
 
 .fes-total-attr-wrap-cell {

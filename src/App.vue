@@ -352,6 +352,7 @@
           :all-cards="totalCardsData"
           :all-songs="songsData"
           :all-characters="charactersData"
+          :nuigurumi-data="nuigurumiData"
           :all-base-cards="baseCards"
           :predict-sources="predictSources"
           :active-predict-source-id="activePredictSourceId"
@@ -362,6 +363,7 @@
           :jump-event-seq="historyJumpSeq"
           @jump-to-event="handleStatsJumpToEvent"
           @stats-preview-update="handleStatsPreviewUpdate"
+          @stats-top-state-change="scheduleStatsTopControlStateSync"
           @sync-preview-event-id="handlePreviewSyncEventId"
         />
       </keep-alive>
@@ -418,7 +420,7 @@ const tabComponentRef = ref(null);
 const contentAreaRef = ref(null);
 const statsScrollTop = ref(0);
 const songsScrollTop = ref(0);
-const tabCenterRatioMap = ref({ stats: 0.5, songs: 0.5 });
+const tabCenterRatioMap = ref({});
 const showBackToTopBtn = ref(false);
 const predictImportInputRef = ref(null);
 const isImportDragOver = ref(false);
@@ -456,6 +458,7 @@ const isEditingStatsTopDisplayEventId = ref(false);
 const statsTopNavCollapsed = ref(true);
 const statsTopNavAvailable = ref(false);
 const statsTopAutoCurrentId = ref('');
+let statsTopControlSyncRaf = 0;
 const currentAppBuildId = String(__APP_BUILD_ID__ || '').trim();
 const currentAppReleaseNotes = Array.isArray(__APP_RELEASE_NOTES__) ? __APP_RELEASE_NOTES__ : [];
 const remoteAppBuildId = ref('');
@@ -681,6 +684,17 @@ const syncStatsTopControlState = () => {
   statsTopAutoCurrentId.value = String(state.autoCurrentId ?? '');
 };
 
+const scheduleStatsTopControlStateSync = () => {
+  if (statsTopControlSyncRaf) {
+    cancelAnimationFrame(statsTopControlSyncRaf);
+  }
+  statsTopControlSyncRaf = requestAnimationFrame(async () => {
+    statsTopControlSyncRaf = 0;
+    await nextTick();
+    syncStatsTopControlState();
+  });
+};
+
 const onStatsTopDisplayIdFocus = () => {
   isEditingStatsTopDisplayEventId.value = true;
 };
@@ -715,14 +729,6 @@ const resetStatsTopDisplayEventId = () => {
   const instance = getStatsTabInstance();
   if (instance && typeof instance.resetTopBarDisplayEventId === 'function') {
     instance.resetTopBarDisplayEventId();
-  }
-  syncStatsTopControlState();
-};
-
-const toggleStatsTopNavMenu = () => {
-  const instance = getStatsTabInstance();
-  if (instance && typeof instance.toggleTopBarNavCollapsed === 'function') {
-    instance.toggleTopBarNavCollapsed();
   }
   syncStatsTopControlState();
 };
@@ -797,8 +803,6 @@ const bindActiveTabReflowObserver = async () => {
 
   const targets = [
     root,
-    root.querySelector('.stats-nav'),
-    root.querySelector('.stats-layout'),
     root.querySelector('.stats-main'),
     root.querySelector('.stats-grid')
   ].filter(Boolean);
@@ -880,7 +884,7 @@ const handleStatsSongsViewportResize = () => {
 watch(() => tabComponentRef.value, async () => {
   if (currentTab.value !== 'stats') return;
   await nextTick();
-  syncStatsTopControlState();
+  scheduleStatsTopControlStateSync();
 });
 
 watch(showStatsTopControlInNav, async (show) => {
@@ -889,7 +893,7 @@ watch(showStatsTopControlInNav, async (show) => {
     return;
   }
   await nextTick();
-  syncStatsTopControlState();
+  scheduleStatsTopControlStateSync();
 });
 
 // --- 数据管理逻辑 (新增预测支持) ---
@@ -897,6 +901,7 @@ const historyData = ref([]);      // 既定的历史 JSON 数据
 const baseCards = ref([]); // 新增：存储基础卡片库
 const songsData = ref([]);
 const charactersData = ref([]);
+const nuigurumiData = ref([]);
 const predictiveEvents = ref([]); // 用户填写的预测数据
 const draftPredictiveEvent = ref(null);
 const cleanedPatchNoticeCount = ref(0);
@@ -1263,7 +1268,7 @@ const updateCompactTopNav = () => {
   if (typeof window === 'undefined') return;
   isCompactTopNav.value = window.innerWidth <= 900;
   isStatsTopNavCompact.value = window.innerWidth <= 900;
-  syncStatsTopControlState();
+  scheduleStatsTopControlStateSync();
 };
 
 const updateSourceMenuPosition = () => {
@@ -1566,12 +1571,6 @@ const sanitizeScheduledPredictiveEvents = (list) => {
   });
   return [...byKey.values()];
 };
-
-const getOpenPredictableEventIds = () => (historyData.value || [])
-  .filter((ev) => isNumericEventIdValue(ev?.id) && !isPredictDisabledJsonEvent(ev) && !isJsonEventOfficialRevealed(ev))
-  .map((ev) => Number(ev.id))
-  .filter((id) => Number.isFinite(id))
-  .sort((a, b) => a - b);
 
 const sanitizeCanonicalPredictiveEvents = (list) => {
   const byKey = new Map();
@@ -2158,17 +2157,20 @@ onMounted(async () => {
     persistPredictSources();
 
     // 同时请求活动、卡片、歌曲与角色数据
-    const [resEvents, resCards, resSongs, resCharacters] = await Promise.all([
+    const [resEvents, resCards, resSongs, resCharacters, resNuigurumi] = await Promise.all([
       fetch('/data/pjsk_events.json'),
       fetch('/data/pjsk_cards.json'),
       fetch('/data/pjsk_songs.json'),
-      fetch('/data/pjsk_characters.json')
+      fetch('/data/pjsk_characters.json'),
+      fetch('/data/pjsk_nuigurumi.json')
     ]);
     
     historyData.value = await resEvents.json();
     baseCards.value = await resCards.json();
     songsData.value = await resSongs.json();
     charactersData.value = await resCharacters.json();
+    nuigurumiData.value = await resNuigurumi.json();
+    scheduleStatsTopControlStateSync();
     let activeCleanedCount = 0;
     predictSources.value = (predictSources.value || []).map((source) => {
       const beforeList = Array.isArray(source?.predictiveEvents) ? source.predictiveEvents : [];
@@ -2656,6 +2658,10 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (statsTopControlSyncRaf) {
+    cancelAnimationFrame(statsTopControlSyncRaf);
+    statsTopControlSyncRaf = 0;
+  }
   document.removeEventListener('pointerdown', handleGlobalPointerDown);
   window.removeEventListener('resize', updateCompactTopNav);
   window.removeEventListener('resize', updateSourceMenuPosition);
@@ -2711,7 +2717,7 @@ watch(sourceMenuOpen, async (open) => {
   }
   await nextTick();
   updateSourceMenuPosition();
-  syncStatsTopControlState();
+  scheduleStatsTopControlStateSync();
 });
 
 watch(isHistoryPredictEditorOpen, (open) => {
