@@ -240,6 +240,18 @@
                   </tr>
                 </tbody>
               </table>
+              <div v-if="panel.unitSummary?.length" class="dist-unit-summary">
+                <span
+                  v-for="unitRow in panel.unitSummary"
+                  :key="`${panel.id}-unit-summary-${unitRow.unit}`"
+                  class="dist-unit-summary-chip"
+                  :style="getDistUnitSummaryChipStyle(unitRow.unit)"
+                  :title="`${unitRow.title}：${unitRow.total}`"
+                >
+                  <img :src="unitLogoMap[unitRow.unit]" class="dist-unit-summary-logo" :alt="unitRow.title" />
+                  <span class="dist-unit-summary-num">{{ unitRow.total }}</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -248,11 +260,15 @@
           <div class="section-head">
             <div class="section-head-left">
               <h2>节日人选</h2>
-              <label v-if="showDesktopNameControls" class="festival-hide-name-toggle stats-checkbox export-hide" title="勾选后不显示角色头像下方名称。">
+              <label class="festival-card-mode-toggle stats-checkbox" title="勾选后，节日人选按年份展示卡面。">
+                <input v-model="festivalShowCardImages" type="checkbox" />
+                显示卡面
+              </label>
+              <label v-if="!festivalShowCardImages && showDesktopNameControls" class="festival-hide-name-toggle stats-checkbox export-hide" title="勾选后不显示角色头像下方名称。">
                 <input v-model="hideFestivalCharNames" type="checkbox" />
                 隐藏角色名
               </label>
-              <label class="festival-merge-toggle stats-checkbox" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
+              <label v-if="!festivalShowCardImages" class="festival-merge-toggle stats-checkbox" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
                 <input v-model="festivalMergeHigherRanks" type="checkbox" />
                 高星合并低星
               </label>
@@ -270,18 +286,18 @@
               <div class="festival-card-head">
                 <div class="festival-head-left">
                   <h3>{{ fest.festival }}</h3>
-                  <label class="festival-merge-toggle stats-checkbox festival-card-merge-toggle" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
+                  <label v-if="!festivalShowCardImages" class="festival-merge-toggle stats-checkbox festival-card-merge-toggle" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
                     <input v-model="festivalMergeToggles[fest.festival]" type="checkbox" />
                     高星合并低星
                   </label>
                   <label v-if="canToggleFestivalFes(fest.festival)" class="festival-fes-toggle stats-checkbox">
-                    <input v-model="festivalFesToggles[fest.festival]" type="checkbox" />
+                    <input :checked="festivalFesEnabled" type="checkbox" @change="onFestivalFesEnabledChange" />
                     统计FES
                   </label>
                 </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng(fest.anchorId, `节日人选_${fest.festival}`)">PNG</button>
               </div>
-              <table class="count-table" :class="{ 'compact-char-table': hideFestivalCharNames }">
+              <table v-if="!festivalShowCardImages" class="count-table" :class="{ 'compact-char-table': hideFestivalCharNames }">
                 <tbody>
                   <tr v-for="row in fest.rows" :key="`${fest.festival}-${row.key}`">
                     <td class="count-cell festival-tier-cell" :class="`festival-tier-${row.key}`">
@@ -325,6 +341,263 @@
                   </tr>
                 </tbody>
               </table>
+              <table v-else class="festival-card-table" :style="{ '--festival-card-column-count': fest.fourSlotCount + 2 }">
+                <colgroup>
+                  <col class="festival-card-year-col" />
+                  <col v-for="idx in fest.fourSlotCount" :key="`${fest.festival}-four-col-${idx}`" class="festival-card-four-col" />
+                  <col class="festival-card-minor-col" />
+                  <col class="festival-card-minor-col" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th class="festival-card-year-head">年份</th>
+                    <th :colspan="fest.fourSlotCount" class="festival-card-tier-head festival-card-tier-head-four">
+                      <span class="festival-star-stack festival-star-stack-row">
+                        <img
+                          v-for="idx in 4"
+                          :key="`${fest.festival}-card-head-four-${idx}`"
+                          :src="getFestivalTierIcon('four')"
+                          class="festival-star-icon"
+                        />
+                      </span>
+                    </th>
+                    <th class="festival-card-tier-head festival-card-tier-head-three">
+                      <span class="festival-star-stack festival-star-stack-row">
+                        <img
+                          v-for="idx in 3"
+                          :key="`${fest.festival}-card-head-three-${idx}`"
+                          :src="getFestivalTierIcon('three')"
+                          class="festival-star-icon"
+                        />
+                      </span>
+                    </th>
+                    <th class="festival-card-tier-head festival-card-tier-head-two">
+                      <span class="festival-star-stack festival-star-stack-row">
+                        <img
+                          v-for="idx in 2"
+                          :key="`${fest.festival}-card-head-two-${idx}`"
+                          :src="getFestivalTierIcon('two')"
+                          class="festival-star-icon"
+                        />
+                      </span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template v-for="yearRow in fest.yearRows" :key="`${fest.festival}-year-${yearRow.year}`">
+                  <tr>
+                    <td class="festival-card-year-cell" :rowspan="yearRow.fes.length ? 2 : 1">{{ yearRow.year }}</td>
+                    <td :colspan="fest.fourSlotCount" class="festival-card-tier-cell festival-card-tier-cell-four">
+                      <div class="festival-card-image-list festival-card-image-list-four" :style="{ '--festival-card-slot-count': fest.fourSlotCount, '--festival-card-cell-span': fest.fourSlotCount }">
+                        <div
+                          v-for="slot in yearRow.fourSlots"
+                          :key="slot.key"
+                          class="festival-card-image-item"
+                          :class="{ 'is-empty': slot.type === 'empty' }"
+                          :title="slot.card?.title || ''"
+                        >
+                          <div v-if="slot.type === 'card'" class="festival-card-image-thumb">
+                            <img :src="`/elements/card_frame_${slot.card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                            <img
+                              v-if="slot.card.imageSrc"
+                              :src="slot.card.imageSrc"
+                              :alt="`${slot.card.label} 卡面`"
+                              class="fes-card-thumb-img media-load-shimmer"
+                              loading="lazy"
+                              decoding="async"
+                              @load="onMediaImageLoad"
+                              @error="onMediaImageError"
+                            />
+                            <img
+                              v-else
+                              :src="`/chibi_s/${getCharAbbr(slot.card.name)}.webp`"
+                              :alt="slot.card.label"
+                              class="festival-card-image-fallback"
+                            />
+                            <img
+                              v-if="ATTRS.includes(slot.card.attr)"
+                              :src="`/elements/${String(slot.card.attr).toLowerCase()}.png`"
+                              :alt="ATTR_LABELS[slot.card.attr]"
+                              :title="ATTR_LABELS[slot.card.attr]"
+                              class="fes-card-thumb-attr"
+                            />
+                            <img
+                              v-if="slot.card.unitLogo"
+                              :src="slot.card.unitLogo"
+                              class="festival-card-unit-logo"
+                              :alt="slot.card.unit"
+                            />
+                            <span v-if="slot.card.isPermOnly" class="festival-card-perm-mark">普</span>
+                          </div>
+                        </div>
+                        <span v-if="!yearRow.four.length" class="festival-empty">-</span>
+                      </div>
+                    </td>
+                    <td class="festival-card-tier-cell festival-card-tier-cell-three">
+                      <div class="festival-card-image-list festival-card-image-list-minor" style="--festival-card-slot-count: 1; --festival-card-cell-span: 1;">
+                        <div
+                          v-for="card in yearRow.three"
+                          :key="card.key"
+                          class="festival-card-image-item"
+                          :title="card.title"
+                        >
+                          <div class="festival-card-image-thumb">
+                            <img :src="`/elements/card_frame_${card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                            <img
+                              v-if="card.imageSrc"
+                              :src="card.imageSrc"
+                              :alt="`${card.label} 卡面`"
+                              class="fes-card-thumb-img media-load-shimmer"
+                              loading="lazy"
+                              decoding="async"
+                              @load="onMediaImageLoad"
+                              @error="onMediaImageError"
+                            />
+                            <img
+                              v-else
+                              :src="`/chibi_s/${getCharAbbr(card.name)}.webp`"
+                              :alt="card.label"
+                              class="festival-card-image-fallback"
+                            />
+                            <img
+                              v-if="ATTRS.includes(card.attr)"
+                              :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                              :alt="ATTR_LABELS[card.attr]"
+                              :title="ATTR_LABELS[card.attr]"
+                              class="fes-card-thumb-attr"
+                            />
+                            <img
+                              v-if="card.unitLogo"
+                              :src="card.unitLogo"
+                              class="festival-card-unit-logo"
+                              :alt="card.unit"
+                            />
+                          </div>
+                        </div>
+                        <span v-if="!yearRow.three.length" class="festival-empty">-</span>
+                      </div>
+                    </td>
+                    <td class="festival-card-tier-cell festival-card-tier-cell-two">
+                      <div class="festival-card-image-list festival-card-image-list-minor" style="--festival-card-slot-count: 1; --festival-card-cell-span: 1;">
+                        <div
+                          v-for="card in yearRow.two"
+                          :key="card.key"
+                          class="festival-card-image-item"
+                          :title="card.title"
+                        >
+                          <div class="festival-card-image-thumb">
+                            <img :src="`/elements/card_frame_${card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                            <img
+                              v-if="card.imageSrc"
+                              :src="card.imageSrc"
+                              :alt="`${card.label} 卡面`"
+                              class="fes-card-thumb-img media-load-shimmer"
+                              loading="lazy"
+                              decoding="async"
+                              @load="onMediaImageLoad"
+                              @error="onMediaImageError"
+                            />
+                            <img
+                              v-else
+                              :src="`/chibi_s/${getCharAbbr(card.name)}.webp`"
+                              :alt="card.label"
+                              class="festival-card-image-fallback"
+                            />
+                            <img
+                              v-if="ATTRS.includes(card.attr)"
+                              :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                              :alt="ATTR_LABELS[card.attr]"
+                              :title="ATTR_LABELS[card.attr]"
+                              class="fes-card-thumb-attr"
+                            />
+                            <img
+                              v-if="card.unitLogo"
+                              :src="card.unitLogo"
+                              class="festival-card-unit-logo"
+                              :alt="card.unit"
+                            />
+                          </div>
+                        </div>
+                        <span v-if="!yearRow.two.length" class="festival-empty">-</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-if="yearRow.fes.length" class="festival-card-fes-row">
+                    <td :colspan="fest.fourSlotCount + 2" class="festival-card-tier-cell festival-card-tier-cell-four festival-card-tier-cell-fes">
+                      <div class="festival-card-image-list festival-card-image-list-four festival-card-image-list-fes" :style="{ '--festival-card-slot-count': fest.fourSlotCount + 2, '--festival-card-cell-span': fest.fourSlotCount + 2 }">
+                        <div
+                          v-for="slot in yearRow.fesSlots"
+                          :key="slot.key"
+                          class="festival-card-image-item"
+                          :class="{ 'is-empty': slot.type === 'empty', 'is-logo': slot.type === 'logo' }"
+                          :title="slot.card?.title || slot.label || ''"
+                        >
+                          <div v-if="slot.type === 'logo'" class="festival-card-fes-logo-box">
+                            <img :src="slot.logo" class="festival-card-fes-logo" :alt="slot.label" />
+                          </div>
+                          <div v-else-if="slot.type === 'card'" class="festival-card-image-thumb">
+                            <img :src="`/elements/card_frame_${slot.card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                            <img
+                              v-if="slot.card.imageSrc"
+                              :src="slot.card.imageSrc"
+                              :alt="`${slot.card.label} 卡面`"
+                              class="fes-card-thumb-img media-load-shimmer"
+                              loading="lazy"
+                              decoding="async"
+                              @load="onMediaImageLoad"
+                              @error="onMediaImageError"
+                            />
+                            <img
+                              v-else
+                              :src="`/chibi_s/${getCharAbbr(slot.card.name)}.webp`"
+                              :alt="slot.card.label"
+                              class="festival-card-image-fallback"
+                            />
+                            <img
+                              v-if="ATTRS.includes(slot.card.attr)"
+                              :src="`/elements/${String(slot.card.attr).toLowerCase()}.png`"
+                              :alt="ATTR_LABELS[slot.card.attr]"
+                              :title="ATTR_LABELS[slot.card.attr]"
+                              class="fes-card-thumb-attr"
+                            />
+                            <img
+                              v-if="slot.card.unitLogo"
+                              :src="slot.card.unitLogo"
+                              class="festival-card-unit-logo"
+                              :alt="slot.card.unit"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  </template>
+                  <tr class="festival-card-none-row">
+                    <td class="festival-card-year-cell festival-card-none-label">无</td>
+                    <td :colspan="fest.fourSlotCount + 2" class="festival-card-none-cell">
+                      <div class="chars-cell festival-card-none-avatars" :class="{ 'festival-chars-empty-cell': !fest.noneChars.length }">
+                        <template v-if="fest.noneChars.length">
+                          <div
+                            v-for="char in fest.noneChars"
+                            :key="`${fest.festival}-none-card-mode-${char.name}`"
+                            class="char-avatar-box festival-avatar-box"
+                          >
+                            <div class="festival-avatar-wrap">
+                              <img
+                                :src="`/chibi_s/${getCharAbbr(char.name)}.webp`"
+                                :title="char.name"
+                                class="avatar-img"
+                                :style="getStepFestivalAvatarStyle(char.name)"
+                              />
+                            </div>
+                          </div>
+                        </template>
+                        <span v-else class="festival-empty">-</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -332,13 +605,13 @@
         <div id="panel-related" data-scroll-anchor="panel-related" class="stats-section card-panel related-panel">
           <div class="section-head">
             <div class="section-head-left">
-              <h2>相关记录</h2>
-              <label class="fes-card-mode-toggle stats-checkbox" title="统一控制相关记录中可切换卡面的子模块。">
-                <input :checked="relatedPanelShowCardImagesAll" type="checkbox" @change="onRelatedPanelShowAllCardImagesChange" />
+              <h2>间隔记录</h2>
+              <label class="fes-card-mode-toggle stats-checkbox" title="统一控制间隔记录中可切换卡面的子模块。">
+                <input :checked="intervalPanelShowCardImagesAll" type="checkbox" @change="onIntervalPanelShowAllCardImagesChange" />
                 显示卡面
               </label>
             </div>
-            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-related', '相关记录')">PNG</button>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-related', '间隔记录')">PNG</button>
           </div>
 
           <div class="record-grid">
@@ -351,7 +624,7 @@
                     显示卡面
                   </label>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-four', '相关记录_上一次四星')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-four', '间隔记录_上一次四星')">PNG</button>
               </div>
               <table :class="['record-table', 'related-table', 'related-table-last', { 'last-record-table-card-mode': relatedLastRecordShowCardImages }]">
                 <thead>
@@ -415,7 +688,7 @@
                     显示卡面
                   </label>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-limited', '相关记录_上一次限定')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-limited', '间隔记录_上一次限定')">PNG</button>
               </div>
               <table :class="['record-table', 'related-table', 'related-table-last', { 'last-record-table-card-mode': relatedLastRecordShowCardImages }]">
                 <thead>
@@ -479,7 +752,7 @@
                     显示卡面
                   </label>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-long', '相关记录_四星最长间隔')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-long', '间隔记录_四星最长间隔')">PNG</button>
               </div>
               <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalFourShowCardImages }]">
                 <thead>
@@ -581,7 +854,7 @@
                     显示卡面
                   </label>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-short', '相关记录_四星最短间隔')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-short', '间隔记录_四星最短间隔')">PNG</button>
               </div>
               <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalFourShowCardImages }]">
                 <thead>
@@ -683,7 +956,7 @@
                     显示卡面
                   </label>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-long', '相关记录_限定最长间隔')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-long', '间隔记录_限定最长间隔')">PNG</button>
               </div>
               <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalLimitedShowCardImages }]">
                 <thead>
@@ -785,7 +1058,7 @@
                     显示卡面
                   </label>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-short', '相关记录_限定最短间隔')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-short', '间隔记录_限定最短间隔')">PNG</button>
               </div>
               <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalLimitedShowCardImages }]">
                 <thead>
@@ -905,7 +1178,7 @@
                     </label>
                   </div>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-ban-long', '相关记录_Ban最长间隔')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-ban-long', '间隔记录_Ban最长间隔')">PNG</button>
               </div>
               <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalBanShowCardImages }]">
                 <thead>
@@ -1025,7 +1298,7 @@
                     </label>
                   </div>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-ban-short', '相关记录_Ban最短间隔')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-ban-short', '间隔记录_Ban最短间隔')">PNG</button>
               </div>
               <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalBanShowCardImages }]">
                 <thead>
@@ -1117,6 +1390,22 @@
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <div id="panel-special" data-scroll-anchor="panel-special" class="stats-section card-panel related-panel">
+          <div class="section-head">
+            <div class="section-head-left">
+              <h2>特殊统计</h2>
+              <label class="fes-card-mode-toggle stats-checkbox" title="统一控制特殊统计中可切换卡面的子模块。">
+                <input :checked="specialPanelShowCardImagesAll" type="checkbox" @change="onSpecialPanelShowAllCardImagesChange" />
+                显示卡面
+              </label>
+            </div>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-special', '特殊统计')">PNG</button>
+          </div>
+
+          <div class="record-grid">
 
             <div id="rel-vs-unit-last-four" data-scroll-anchor="rel-vs-unit-last-four" class="record-block">
               <div class="record-head-row">
@@ -1141,7 +1430,7 @@
                     </button>
                   </div>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-last-four', '相关记录_各团虚拟歌手上次四星')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-last-four', '特殊统计_各团虚拟歌手上次四星')">PNG</button>
               </div>
 
               <table v-if="!vsUnitLastFourCompact" :class="['record-table', 'related-table', 'related-table-vs-last', { 'vs-last-four-card-mode': vsUnitLastFourShowCardImages }]">
@@ -1244,7 +1533,7 @@
                     </button>
                   </div>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-four-count', '相关记录_各团VS四星数')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-four-count', '特殊统计_各团VS四星数')">PNG</button>
               </div>
 
               <table v-if="!vsUnitFourCountCompact" :class="['record-table', 'related-table', 'related-table-vs-last', 'vs-four-count-detail-table', { 'vs-last-four-card-mode': vsUnitFourCountShowCardImages }]">
@@ -1361,7 +1650,7 @@
                     <span>显示卡面</span>
                   </label>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-score', '相关记录_团分统计')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-score', '特殊统计_团分统计')">PNG</button>
               </div>
               <table :class="['record-table', 'vs-unit-score-table', { 'is-card-mode': vsUnitScoreShowCardImages }]">
                 <thead>
@@ -1432,7 +1721,7 @@
                     <span>显示卡面</span>
                   </label>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-original-stat', '相关记录_原V统计')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-original-stat', '特殊统计_原V统计')">PNG</button>
               </div>
               <table :class="['record-table', 'vs-unit-score-table', 'vs-original-stat-table', { 'is-card-mode': vsOriginalStatShowCardImages }]">
                 <thead>
@@ -1557,7 +1846,7 @@
                     <span>显示卡面</span>
                   </label>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-cfes-stat', '相关记录_CFES统计')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-cfes-stat', '特殊统计_CFES统计')">PNG</button>
               </div>
               <table class="record-table fes-record-table" :class="{ 'is-card-mode': fesRecordShowCardImages }">
                 <thead>
@@ -1653,7 +1942,7 @@
                     <span>显示卡面</span>
                   </label>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-bfes-stat', '相关记录_BFES统计')">PNG</button>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-bfes-stat', '特殊统计_BFES统计')">PNG</button>
               </div>
               <table class="record-table fes-record-table" :class="{ 'is-card-mode': fesRecordShowCardImages }">
                 <thead>
@@ -2450,6 +2739,7 @@ const useRewardCountForThreeStar = ref(true);
 const useRewardCountForTwoStar = ref(true);
 const hideDistCharNames = ref(true);
 const hideFestivalCharNames = ref(true);
+const festivalShowCardImages = ref(false);
 const navNameFormat = ref('single');
 const navCardImageMode = ref('after');
 const banEventTypeFilter = ref('all');
@@ -2490,6 +2780,14 @@ const intervalBanShowCardImages = ref(false);
 const festivalFesToggles = reactive({
   半周年: false,
   周年: false
+});
+const festivalFesEnabled = computed({
+  get: () => !!festivalFesToggles['半周年'] && !!festivalFesToggles['周年'],
+  set: (value) => {
+    const checked = !!value;
+    festivalFesToggles['半周年'] = checked;
+    festivalFesToggles['周年'] = checked;
+  }
 });
 const cardStatsRootRef = ref(null);
 let sectionObserver = null;
@@ -2859,7 +3157,11 @@ const canToggleFestivalFes = (festival) => ['半周年', '周年'].includes(Stri
 
 const shouldCountFestivalFes = (festival) => {
   if (!canToggleFestivalFes(festival)) return false;
-  return !!festivalFesToggles[String(festival || '').trim()];
+  return festivalFesEnabled.value;
+};
+
+const onFestivalFesEnabledChange = (event) => {
+  festivalFesEnabled.value = !!event?.target?.checked;
 };
 
 const getFestivalTierCount = (tierKey) => {
@@ -3093,6 +3395,14 @@ const toDisplayOrderedCharNames = (sourceNames) => {
 const compareCharOrder = (a, b) => (CHAR_ORDER[a] || 999) - (CHAR_ORDER[b] || 999);
 
 const getUnitAccentColor = (unit) => UNIT_COLORS[String(unit || '').trim().toLowerCase()] || '#64748b';
+const getDistUnitSummaryChipStyle = (unit) => {
+  const color = getUnitAccentColor(unit);
+  return {
+    backgroundColor: hexToRgba(color, 0.16),
+    borderColor: hexToRgba(color, 0.34),
+    color
+  };
+};
 
 const getTypeSeriesText = (value) => {
   const s = String(value ?? '').trim();
@@ -3212,7 +3522,7 @@ const getNonBanEventMark = (ev) => {
 
 const formatGapValue = (gap) => (gap ? `${gap.days}天 | ${gap.periods}期` : '-');
 
-const RELATED_RECORD_ITEMS = [
+const INTERVAL_RECORD_ITEMS = [
   { id: 'rel-last-four', title: '上一次四星' },
   { id: 'rel-last-limited', title: '上一次限定' },
   { id: 'rel-four-long', title: '四星最长间隔' },
@@ -3220,13 +3530,21 @@ const RELATED_RECORD_ITEMS = [
   { id: 'rel-limited-long', title: '限定最长间隔' },
   { id: 'rel-limited-short', title: '限定最短间隔' },
   { id: 'rel-ban-long', title: 'Ban最长间隔' },
-  { id: 'rel-ban-short', title: 'Ban最短间隔' },
+  { id: 'rel-ban-short', title: 'Ban最短间隔' }
+];
+
+const SPECIAL_STAT_ITEMS = [
   { id: 'rel-vs-unit-last-four', title: '各团VS上次四星' },
   { id: 'rel-vs-unit-four-count', title: '各团VS四星数' },
   { id: 'rel-vs-unit-score', title: '团分统计' },
   { id: 'rel-vs-original-stat', title: '原V统计' },
   { id: 'rel-cfes-stat', title: 'CFES统计' },
   { id: 'rel-bfes-stat', title: 'BFES统计' }
+];
+
+const RELATED_RECORD_ITEMS = [
+  ...INTERVAL_RECORD_ITEMS,
+  ...SPECIAL_STAT_ITEMS
 ];
 
 const RELATED_RECORD_TITLE_MAP = Object.fromEntries(
@@ -3400,8 +3718,13 @@ const navGroups = computed(() => {
     },
     {
       id: 'panel-related',
-      title: '相关记录',
-      children: RELATED_RECORD_ITEMS.map((item) => ({ id: item.id, title: item.title }))
+      title: '间隔记录',
+      children: INTERVAL_RECORD_ITEMS.map((item) => ({ id: item.id, title: item.title }))
+    },
+    {
+      id: 'panel-special',
+      title: '特殊统计',
+      children: SPECIAL_STAT_ITEMS.map((item) => ({ id: item.id, title: item.title }))
     },
     {
       id: 'panel-lineup',
@@ -4896,7 +5219,7 @@ const prepareExportClone = async (targetEl) => {
     listEl.style.overflow = 'visible';
   });
 
-  // 相关记录子模块存在横向滚动和列宽变量，导出时同步布局避免列宽漂移。
+  // 记录类子模块存在横向滚动和列宽变量，导出时同步布局避免列宽漂移。
   let expandedCloneWidth = Math.max(1, Math.ceil(rect.width));
   if (targetEl.classList.contains('record-block') && clone.classList.contains('record-block')) {
     expandedCloneWidth = Math.max(expandedCloneWidth, syncRecordBlockLayoutForExport(targetEl, clone));
@@ -5295,36 +5618,40 @@ const bindSectionObserver = async () => {
 };
 
 const syncRelatedJumpChipWidths = () => {
-  const panel = document.getElementById('panel-related');
-  if (!(panel instanceof HTMLElement)) return;
-  const blocks = panel.querySelectorAll('.record-block');
-  blocks.forEach((blockEl) => {
-    if (!(blockEl instanceof HTMLElement)) return;
-    const buttons = blockEl.querySelectorAll('.jump-link');
-    if (!buttons.length) {
-      blockEl.style.removeProperty('--record-jump-chip-width');
-      return;
-    }
+  const panels = ['panel-related', 'panel-special']
+    .map((id) => document.getElementById(id))
+    .filter((panel) => panel instanceof HTMLElement);
 
-    let maxWidth = 0;
-    buttons.forEach((btnEl) => {
-      if (!(btnEl instanceof HTMLButtonElement)) return;
-      const prevWidth = btnEl.style.width;
-      const prevMinWidth = btnEl.style.minWidth;
-      const prevMaxWidth = btnEl.style.maxWidth;
-      btnEl.style.width = 'auto';
-      btnEl.style.minWidth = '0';
-      btnEl.style.maxWidth = 'none';
-      const measured = Math.ceil(btnEl.getBoundingClientRect().width);
-      if (measured > maxWidth) maxWidth = measured;
-      btnEl.style.width = prevWidth;
-      btnEl.style.minWidth = prevMinWidth;
-      btnEl.style.maxWidth = prevMaxWidth;
+  panels.forEach((panel) => {
+    const blocks = panel.querySelectorAll('.record-block');
+    blocks.forEach((blockEl) => {
+      if (!(blockEl instanceof HTMLElement)) return;
+      const buttons = blockEl.querySelectorAll('.jump-link');
+      if (!buttons.length) {
+        blockEl.style.removeProperty('--record-jump-chip-width');
+        return;
+      }
+
+      let maxWidth = 0;
+      buttons.forEach((btnEl) => {
+        if (!(btnEl instanceof HTMLButtonElement)) return;
+        const prevWidth = btnEl.style.width;
+        const prevMinWidth = btnEl.style.minWidth;
+        const prevMaxWidth = btnEl.style.maxWidth;
+        btnEl.style.width = 'auto';
+        btnEl.style.minWidth = '0';
+        btnEl.style.maxWidth = 'none';
+        const measured = Math.ceil(btnEl.getBoundingClientRect().width);
+        if (measured > maxWidth) maxWidth = measured;
+        btnEl.style.width = prevWidth;
+        btnEl.style.minWidth = prevMinWidth;
+        btnEl.style.maxWidth = prevMaxWidth;
+      });
+
+      if (maxWidth > 0) {
+        blockEl.style.setProperty('--record-jump-chip-width', `${maxWidth}px`);
+      }
     });
-
-    if (maxWidth > 0) {
-      blockEl.style.setProperty('--record-jump-chip-width', `${maxWidth}px`);
-    }
   });
 };
 
@@ -5346,24 +5673,28 @@ const bindRelatedJumpChipObservers = () => {
     relatedJumpMutationObserver = null;
   }
 
-  const panel = document.getElementById('panel-related');
-  if (!(panel instanceof HTMLElement)) return;
+  const panels = ['panel-related', 'panel-special']
+    .map((id) => document.getElementById(id))
+    .filter((panel) => panel instanceof HTMLElement);
+  if (!panels.length) return;
 
   if (typeof ResizeObserver !== 'undefined') {
     relatedJumpResizeObserver = new ResizeObserver(() => {
       scheduleRelatedJumpChipWidthSync();
     });
-    relatedJumpResizeObserver.observe(panel);
+    panels.forEach((panel) => relatedJumpResizeObserver.observe(panel));
   }
 
   if (typeof MutationObserver !== 'undefined') {
     relatedJumpMutationObserver = new MutationObserver(() => {
       scheduleRelatedJumpChipWidthSync();
     });
-    relatedJumpMutationObserver.observe(panel, {
-      childList: true,
-      subtree: true,
-      characterData: true
+    panels.forEach((panel) => {
+      relatedJumpMutationObserver.observe(panel, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
     });
   }
 
@@ -6860,17 +7191,12 @@ const onRelatedLastRecordShowCardImagesChange = (event) => {
   }, anchorEl);
 };
 
-const relatedPanelShowCardImagesAll = computed({
+const intervalPanelShowCardImagesAll = computed({
   get: () => (
     !!relatedLastRecordShowCardImages.value
     && !!intervalFourShowCardImages.value
     && !!intervalLimitedShowCardImages.value
     && !!intervalBanShowCardImages.value
-    && !!vsUnitLastFourShowCardImages.value
-    && !!vsUnitFourCountShowCardImages.value
-    && !!vsUnitScoreShowCardImages.value
-    && !!vsOriginalStatShowCardImages.value
-    && !!fesRecordShowCardImages.value
   ),
   set: (value) => {
     const checked = !!value;
@@ -6878,6 +7204,19 @@ const relatedPanelShowCardImagesAll = computed({
     intervalFourShowCardImages.value = checked;
     intervalLimitedShowCardImages.value = checked;
     intervalBanShowCardImages.value = checked;
+  }
+});
+
+const specialPanelShowCardImagesAll = computed({
+  get: () => (
+    !!vsUnitLastFourShowCardImages.value
+    && !!vsUnitFourCountShowCardImages.value
+    && !!vsUnitScoreShowCardImages.value
+    && !!vsOriginalStatShowCardImages.value
+    && !!fesRecordShowCardImages.value
+  ),
+  set: (value) => {
+    const checked = !!value;
     vsUnitLastFourShowCardImages.value = checked;
     vsUnitFourCountShowCardImages.value = checked;
     vsUnitScoreShowCardImages.value = checked;
@@ -6886,11 +7225,19 @@ const relatedPanelShowCardImagesAll = computed({
   }
 });
 
-const onRelatedPanelShowAllCardImagesChange = (event) => {
+const onIntervalPanelShowAllCardImagesChange = (event) => {
   const checked = !!event?.target?.checked;
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
-    relatedPanelShowCardImagesAll.value = checked;
+    intervalPanelShowCardImagesAll.value = checked;
+  }, anchorEl);
+};
+
+const onSpecialPanelShowAllCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    specialPanelShowCardImagesAll.value = checked;
   }, anchorEl);
 };
 
@@ -7216,45 +7563,91 @@ const groupByCount = (data, key) => {
     .sort((a, b) => b.count - a.count);
 };
 
+const DIST_SUMMARY_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
+
+const buildDistUnitSummary = (groups, key) => {
+  const unitTotals = Object.fromEntries(DIST_SUMMARY_UNITS.map((unit) => [unit, {
+    total: 0,
+    lastOrder: Number.POSITIVE_INFINITY
+  }]));
+  (groups || []).forEach((group) => {
+    const count = Number(group?.count || 0);
+    (group?.chars || []).forEach((char) => {
+      const unit = getUnitByChar(char?.name);
+      if (!DIST_SUMMARY_UNITS.includes(unit)) return;
+      unitTotals[unit].total += count;
+      if (count <= 0) return;
+      const order = Number(getStatProgressOrderKey(char, key) || 0);
+      if (Number.isFinite(order) && order > 0) {
+        unitTotals[unit].lastOrder = Number.isFinite(unitTotals[unit].lastOrder)
+          ? Math.max(unitTotals[unit].lastOrder, order)
+          : order;
+      }
+    });
+  });
+
+  return Object.entries(unitTotals)
+    .map(([unit, summary]) => ({
+      unit,
+      total: summary.total,
+      lastOrder: summary.lastOrder,
+      title: getUnitNavTitle(unit)
+    }))
+    .sort((a, b) => {
+      if (b.total !== a.total) return b.total - a.total;
+      const aOrder = Number.isFinite(a.lastOrder) ? a.lastOrder : Number.POSITIVE_INFINITY;
+      const bOrder = Number.isFinite(b.lastOrder) ? b.lastOrder : Number.POSITIVE_INFINITY;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return DIST_SUMMARY_UNITS.indexOf(a.unit) - DIST_SUMMARY_UNITS.indexOf(b.unit);
+    });
+};
+
+const createGroupPanel = (config, rows, key) => {
+  const groups = groupByCount(rows, key);
+  return {
+    ...config,
+    groups,
+    unitSummary: buildDistUnitSummary(groups, key)
+  };
+};
+
 const groupPanels = computed(() => [
-  { id: 'four', title: '4星总数', cellClass: '', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'fourStarCount') },
-  { id: 'limited', title: '限定总数', cellClass: 'lim', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'limitedCount') },
-  { id: 'pure-score', title: '4星分卡数', cellClass: 'pure-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pureScoreCount') },
-  { id: 'reward', title: '报酬总数', cellClass: 'reward', showRewardBreakdown: true, groups: groupByCount(processedStats.value, 'rewardTotalCount') },
-  { id: 'p-score', title: '4星P分数', cellClass: 'p-score', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'pScoreCount') },
-  { id: 'score-up', title: '4星普分数', cellClass: 'score-up', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'scoreUpCount') },
-  { id: 'recovery', title: '4星奶卡数', cellClass: 'recovery', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'recoveryCount') },
-  { id: 'accuracy', title: '4星判卡数', cellClass: 'accuracy', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'accuracyCount') },
-  {
+  createGroupPanel({ id: 'four', title: '4星总数', cellClass: '', showRewardBreakdown: false }, processedStats.value, 'fourStarCount'),
+  createGroupPanel({ id: 'limited', title: '限定总数', cellClass: 'lim', showRewardBreakdown: false }, processedStats.value, 'limitedCount'),
+  createGroupPanel({ id: 'pure-score', title: '4星分卡数', cellClass: 'pure-score', showRewardBreakdown: false }, processedStats.value, 'pureScoreCount'),
+  createGroupPanel({ id: 'reward', title: '报酬总数', cellClass: 'reward', showRewardBreakdown: true }, processedStats.value, 'rewardTotalCount'),
+  createGroupPanel({ id: 'p-score', title: '4星P分数', cellClass: 'p-score', showRewardBreakdown: false }, processedStats.value, 'pScoreCount'),
+  createGroupPanel({ id: 'score-up', title: '4星普分数', cellClass: 'score-up', showRewardBreakdown: false }, processedStats.value, 'scoreUpCount'),
+  createGroupPanel({ id: 'recovery', title: '4星奶卡数', cellClass: 'recovery', showRewardBreakdown: false }, processedStats.value, 'recoveryCount'),
+  createGroupPanel({ id: 'accuracy', title: '4星判卡数', cellClass: 'accuracy', showRewardBreakdown: false }, processedStats.value, 'accuracyCount'),
+  createGroupPanel({
     id: 'three',
     title: '3星总数',
     cellClass: 'three-star',
-    showRewardBreakdown: false,
-    groups: groupByCount(processedStats.value, useRewardCountForThreeStar.value ? 'rewardThreeCountWithCollab' : 'threeStarCount')
-  },
-  {
+    showRewardBreakdown: false
+  }, processedStats.value, useRewardCountForThreeStar.value ? 'rewardThreeCountWithCollab' : 'threeStarCount'),
+  createGroupPanel({
     id: 'two',
     title: '2星总数',
     cellClass: 'two-star',
-    showRewardBreakdown: false,
-    groups: groupByCount(processedStats.value, useRewardCountForTwoStar.value ? 'rewardTwoCountWithCollab' : 'twoStarCount')
-  },
-  { id: 'banner', title: 'Banner数', cellClass: 'banner', showRewardBreakdown: false,
-    groups: groupByCount(
-      processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
-      'bannerCount')
-  },
-  { id: 'limited-ban', title: '限Ban数', cellClass: 'limited-ban', showRewardBreakdown: false, 
-    groups: groupByCount(
-      processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
-      'limitedBanCount')
-  },
-  { id: 'fes-limited', title: '百六限定次数', cellClass: 'fes-limited', showRewardBreakdown: false, groups: groupByCount(processedStats.value, 'fesLimitedCount') },
-  { id: 'fes-limited-ban', title: '百六限Ban次数', cellClass: 'fes-limited-ban', showRewardBreakdown: false,
-    groups: groupByCount(
-      processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
-      'fesLimitedBanCount')
-  }
+    showRewardBreakdown: false
+  }, processedStats.value, useRewardCountForTwoStar.value ? 'rewardTwoCountWithCollab' : 'twoStarCount'),
+  createGroupPanel(
+    { id: 'banner', title: 'Banner数', cellClass: 'banner', showRewardBreakdown: false },
+    processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
+    'bannerCount'
+  ),
+  createGroupPanel(
+    { id: 'limited-ban', title: '限Ban数', cellClass: 'limited-ban', showRewardBreakdown: false },
+    processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
+    'limitedBanCount'
+  ),
+  createGroupPanel({ id: 'fes-limited', title: '百六限定次数', cellClass: 'fes-limited', showRewardBreakdown: false }, processedStats.value, 'fesLimitedCount'),
+  createGroupPanel(
+    { id: 'fes-limited-ban', title: '百六限Ban次数', cellClass: 'fes-limited-ban', showRewardBreakdown: false },
+    processedStats.value.filter((row) => !VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
+    'fesLimitedBanCount'
+  )
 ]);
 
 const festivalCharStats = computed(() => {
@@ -7279,14 +7672,74 @@ const festivalCharStats = computed(() => {
       three: {},
       two: {},
       fourMeta: {},
+      years: {},
       seenBase: new Set()
     }
   ]));
 
+  let festivalCardSeq = 0;
+  const getFestivalYearValue = (card, eid, festival) => {
+    const eventDate = eventsById.value[eid]?.start_date;
+    const dateObj = parseDateSafe(eventDate || card?.Date);
+    if (dateObj) {
+      const year = dateObj.getFullYear();
+      return String(festival || '').trim() === '新年' ? year + 1 : year;
+    }
+    const matched = String(eventDate || card?.Date || '').match(/^(\d{4})/);
+    if (!matched) return 0;
+    const year = Number(matched[1]);
+    return String(festival || '').trim() === '新年' ? year + 1 : year;
+  };
+
+  const ensureFestivalYearRow = (festBucket, year) => {
+    const yearKey = String(year || '未知');
+    if (!festBucket.years[yearKey]) {
+      festBucket.years[yearKey] = {
+        year: yearKey,
+        four: [],
+        three: [],
+        two: [],
+        fes: []
+      };
+    }
+    return festBucket.years[yearKey];
+  };
+
+  const buildFestivalCardEntry = (card, charName, tierKey, type) => {
+    const parsed = parseFestivalCharKey(charName);
+    const rarity = String(card?.Rarity || '').trim();
+    const rarityNum = Number(rarity);
+    const frameRarity = Number.isFinite(rarityNum) && rarityNum >= 1 && rarityNum <= 4 ? rarityNum : 4;
+    const attr = normalizeAttr(card?.Attribute);
+    const cardId = String(card?.CardID || '').trim();
+    const unit = parsed.unit || (parsed.isVs ? 'vs' : getUnitByChar(parsed.baseName));
+    const isPermOnly = tierKey === 'four' && type === 'perm';
+    festivalCardSeq += 1;
+    return {
+      key: `${cardId || 'na'}-${charName}-${festivalCardSeq}`,
+      cardId,
+      name: charName,
+      baseName: parsed.baseName,
+      label: getFestivalDisplayNameLabel(charName),
+      title: `${getFestivalDisplayNameLabel(charName)} #${cardId || '-'}`,
+      tierKey,
+      attr,
+      unit,
+      unitLogo: getFestivalUnitLogoByName(charName),
+      fesLogo: `/elements/${String(type || 'cfes').toLowerCase()}.webp`,
+      frameRarity,
+      isPermOnly,
+      isFes: isFesCardType(type),
+      orderId: getCardProgressOrderId(card),
+      imageSrc: buildCardImageSrc(cardId, parsed.baseName, { rarity: String(frameRarity) })
+    };
+  };
+
   (props.allCards || []).forEach((card) => {
     const eid = String(card?.EventID || '').trim();
     if (!isNumericEventId(eid)) return;
-    const fest = eventFestivalMap[Number(eid)];
+    const numericEid = Number(eid);
+    const fest = eventFestivalMap[numericEid];
     if (!fest) return;
 
     const charName = buildFestivalCharKey(card);
@@ -7301,6 +7754,8 @@ const festivalCharStats = computed(() => {
 
     const rarity = String(card?.Rarity || '').trim();
     const festBucket = festCounts[fest];
+    const year = getFestivalYearValue(card, numericEid, fest);
+    const yearRow = ensureFestivalYearRow(festBucket, year);
 
     if (rarity === '4' || isFes) {
       festBucket.four[charName] = (festBucket.four[charName] || 0) + 1;
@@ -7310,16 +7765,21 @@ const festivalCharStats = computed(() => {
       if (type === 'perm') festBucket.fourMeta[charName].perm += 1;
       else festBucket.fourMeta[charName].nonPerm += 1;
       festBucket.seenBase.add(baseName);
+      const entry = buildFestivalCardEntry(card, charName, 'four', type);
+      if (isFes) yearRow.fes.push(entry);
+      else yearRow.four.push(entry);
       return;
     }
     if (rarity === '3') {
       festBucket.three[charName] = (festBucket.three[charName] || 0) + 1;
       festBucket.seenBase.add(baseName);
+      yearRow.three.push(buildFestivalCardEntry(card, charName, 'three', type));
       return;
     }
     if (rarity === '2') {
       festBucket.two[charName] = (festBucket.two[charName] || 0) + 1;
       festBucket.seenBase.add(baseName);
+      yearRow.two.push(buildFestivalCardEntry(card, charName, 'two', type));
     }
   });
 
@@ -7332,6 +7792,7 @@ const festivalCharStats = computed(() => {
     })
     .sort((a, b) => compareFestivalCharKey(a.name, b.name));
   const getFestivalBaseName = (charName) => parseFestivalCharKey(charName).baseName;
+  const getFestivalCardBaseName = (card) => parseFestivalCharKey(card?.name).baseName;
 
   const shouldMergeFestivalRows = (festival) => {
     const festKey = String(festival || '').trim();
@@ -7360,6 +7821,62 @@ const festivalCharStats = computed(() => {
     });
   };
 
+  const getFestivalFourSlotCount = (festival) => (canToggleFestivalFes(festival) ? 4 : 3);
+  const buildFestivalSlots = (items, minCount, options = {}) => {
+    const slots = [];
+    const getSpanTotal = () => slots.reduce((sum, slot) => sum + Number(slot.span || 1), 0);
+    if (options.logo) {
+      slots.push({
+        type: 'logo',
+        key: `${options.keyPrefix || 'slot'}-logo`,
+        logo: options.logo,
+        label: options.label || 'FES',
+        span: Number(options.logoSpan || 1)
+      });
+    }
+    (items || []).forEach((item) => slots.push({ type: 'card', key: item.key, card: item, span: 1 }));
+    while (getSpanTotal() < minCount) {
+      slots.push({ type: 'empty', key: `${options.keyPrefix || 'slot'}-empty-${slots.length}` });
+    }
+    return slots;
+  };
+
+  const getFestivalFesLogo = (items) => {
+    const first = (items || [])[0];
+    return first?.fesLogo || '/elements/cfes.webp';
+  };
+
+  const buildFestivalYearRows = (festival, festBucket) => {
+    const fourSlotCount = getFestivalFourSlotCount(festival);
+    return Object.values(festBucket.years || {})
+      .map((row) => {
+        const sortCards = (cards) => [...(cards || [])].sort((a, b) => {
+          if (a.orderId !== b.orderId) return a.orderId - b.orderId;
+          return compareFestivalCharKey(a.name, b.name);
+        });
+        const four = sortCards(row.four);
+        const three = sortCards(row.three);
+        const two = sortCards(row.two);
+        const fes = sortCards(row.fes);
+        return {
+          ...row,
+          four,
+          three,
+          two,
+          fes,
+          fourSlots: buildFestivalSlots(four, fourSlotCount, { keyPrefix: `${festival}-${row.year}-four` }),
+          fesSlots: buildFestivalSlots(fes, fourSlotCount + 2, { keyPrefix: `${festival}-${row.year}-fes`, logo: getFestivalFesLogo(fes), logoSpan: 2, label: 'FES' })
+        };
+      })
+      .filter((row) => row.four.length || row.three.length || row.two.length || row.fes.length)
+      .sort((a, b) => {
+        const ay = Number(a.year);
+        const by = Number(b.year);
+        if (Number.isFinite(ay) && Number.isFinite(by) && ay !== by) return ay - by;
+        return String(a.year).localeCompare(String(b.year), 'zh-Hans-CN');
+      });
+  };
+
   return SPECIAL_FESTIVALS.map((fest) => {
     const festBucket = festCounts[fest];
     const rows = [
@@ -7373,7 +7890,14 @@ const festivalCharStats = computed(() => {
       .map((name) => ({ name, count: 0 }));
 
     rows.push({ key: 'none', label: '未出', chars: noneChars });
-    return { festival: fest, anchorId: FESTIVAL_ANCHOR_IDS[fest], rows: applyFestivalMerge(fest, rows) };
+    return {
+      festival: fest,
+      anchorId: FESTIVAL_ANCHOR_IDS[fest],
+      rows: applyFestivalMerge(fest, rows),
+      yearRows: buildFestivalYearRows(fest, festBucket),
+      fourSlotCount: getFestivalFourSlotCount(fest),
+      noneChars
+    };
   });
 });
 
@@ -9928,6 +10452,49 @@ defineExpose({
 
 .chars-cell { display: flex; flex-wrap: wrap; gap: 8px; }
 
+.dist-unit-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px;
+  border: 1px solid #eef2f7;
+  border-radius: 999px;
+  background: #f8fafc;
+}
+
+.dist-unit-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  min-height: 26px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dist-unit-summary-logo {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  object-fit: contain;
+}
+
+.dist-unit-summary-num {
+  min-width: 0;
+  color: #0f172a;
+  font-size: 0.88rem;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .count-table.compact-char-table td {
   padding-top: 7px;
   padding-bottom: 7px;
@@ -10442,11 +11009,13 @@ defineExpose({
 }
 
 .festival-card {
+  container-type: inline-size;
   border: 1px solid #dbe3ee;
   border-radius: var(--stats-radius-card);
   background: linear-gradient(180deg, #ffffff, #f8fbff);
   padding: 10px;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  overflow-x: visible;
 }
 
 .festival-card h3 {
@@ -10529,6 +11098,252 @@ defineExpose({
   margin: 0;
 }
 
+.festival-card-table {
+  --festival-card-year-width: 52px;
+  --festival-card-max-size: 76px;
+  --festival-card-gap: clamp(2px, 0.7vw, 6px);
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.festival-card-table th,
+.festival-card-table td {
+  border-right: 1px solid #eef2f7;
+  border-bottom: 1px solid #eef2f7;
+  padding: 6px;
+  vertical-align: middle;
+}
+
+.festival-card-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.festival-card-table th:last-child,
+.festival-card-table td:last-child {
+  border-right: 0;
+}
+
+.festival-card-year-col {
+  width: var(--festival-card-year-width);
+}
+
+.festival-card-four-col,
+.festival-card-minor-col {
+  width: calc((100% - var(--festival-card-year-width)) / var(--festival-card-column-count, 5));
+}
+
+.festival-card-year-head,
+.festival-card-year-cell {
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: #334155;
+  background: #f8fafc;
+}
+
+.festival-card-tier-head {
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: #334155;
+}
+
+.festival-card-tier-head-four {
+  background: #fff1f2;
+}
+
+.festival-card-tier-head-three {
+  background: #f5f3ff;
+}
+
+.festival-card-tier-head-two {
+  background: #ecfdf5;
+}
+
+.festival-card-tier-head-three,
+.festival-card-tier-head-two,
+.festival-card-tier-cell-three,
+.festival-card-tier-cell-two {
+  border-left: 2px solid #cbd5e1;
+}
+
+.festival-card-tier-cell {
+  min-height: 72px;
+  background: #ffffff;
+}
+
+.festival-card-tier-cell-four {
+  background: rgba(255, 241, 242, 0.32);
+}
+
+.festival-card-tier-cell-three {
+  background: rgba(245, 243, 255, 0.36);
+}
+
+.festival-card-tier-cell-two {
+  background: rgba(236, 253, 245, 0.36);
+}
+
+.festival-card-image-list {
+  --festival-card-slot-size: min(
+    var(--festival-card-max-size),
+    calc(((100cqw - var(--festival-card-year-width)) / var(--festival-card-column-count, 5)) - var(--festival-card-gap))
+  );
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  gap: var(--festival-card-gap);
+  min-height: 58px;
+}
+
+.festival-card-image-list-four,
+.festival-card-image-list-minor {
+  grid-template-columns: repeat(var(--festival-card-slot-count, 1), var(--festival-card-slot-size));
+  justify-content: center;
+  justify-items: center;
+  align-items: center;
+}
+
+.festival-card-image-item {
+  width: var(--festival-card-slot-size);
+  max-width: var(--festival-card-slot-size);
+}
+
+.festival-card-image-list-four .festival-card-image-item {
+  width: var(--festival-card-slot-size);
+  min-width: 0;
+  max-width: var(--festival-card-slot-size);
+}
+
+.festival-card-image-list-minor .festival-card-image-item {
+  width: var(--festival-card-slot-size);
+  min-width: 0;
+  max-width: var(--festival-card-slot-size);
+}
+
+.festival-card-image-item.is-empty {
+  width: var(--festival-card-slot-size);
+  max-width: var(--festival-card-slot-size);
+  aspect-ratio: 1;
+}
+
+.festival-card-image-item.is-logo {
+  grid-column: span 2;
+  width: 100%;
+  max-width: none;
+}
+
+.festival-card-image-thumb {
+  --fes-card-frame-size: 100%;
+  --fes-card-image-scale: 0.9;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  container-type: inline-size;
+}
+
+.festival-card-image-fallback {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 78%;
+  height: 78%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e5e7eb;
+  z-index: 1;
+}
+
+.festival-card-unit-logo {
+  position: absolute;
+  right: 3%;
+  bottom: 3%;
+  width: 26%;
+  height: 26%;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+  z-index: 4;
+}
+
+.festival-card-perm-mark {
+  position: absolute;
+  left: 3%;
+  bottom: 3%;
+  min-width: 23%;
+  height: 23%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: clamp(0.48rem, 18cqw, 0.72rem);
+  font-weight: 900;
+  color: #ffffff;
+  background: #111827;
+  border: 1px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+  z-index: 7;
+}
+
+.festival-card-tier-cell-fes {
+  background: rgba(248, 250, 252, 0.92);
+}
+
+.festival-card-fes-empty-cell {
+  background: #f8fafc;
+}
+
+.festival-card-fes-logo-box {
+  width: 100%;
+  max-width: calc((var(--festival-card-slot-size) * 2) + var(--festival-card-gap));
+  aspect-ratio: 2 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.festival-card-fes-logo {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+}
+
+.festival-card-image-thumb .fes-card-thumb-attr {
+  left: 3%;
+  top: 3%;
+  width: 24%;
+  height: 24%;
+}
+
+.festival-card-fes-row .festival-card-tier-cell {
+  border-left: 0;
+}
+
+.festival-card-none-label {
+  color: #4b5563;
+}
+
+.festival-card-none-cell {
+  background: #f8fafc;
+}
+
+.festival-card-none-avatars {
+  gap: 6px;
+}
+
 .festival-tier-cell {
   width: 40px;
   min-width: 40px;
@@ -10545,6 +11360,11 @@ defineExpose({
   align-items: center;
   justify-content: center;
   gap: 1px;
+}
+
+.festival-star-stack-row {
+  flex-direction: row;
+  gap: 2px;
 }
 
 .festival-star-icon {
@@ -11228,10 +12048,10 @@ td.record-char {
 
 .related-last-card-attr {
   position: absolute;
-  left: 2px;
-  top: 2px;
-  width: clamp(11px, calc(var(--rel-card-logo-scale, 0.24) * 100%), 18px);
-  height: clamp(11px, calc(var(--rel-card-logo-scale, 0.24) * 100%), 18px);
+  left: 3%;
+  top: 3%;
+  width: calc(var(--rel-card-logo-scale, 0.24) * 100%);
+  height: calc(var(--rel-card-logo-scale, 0.24) * 100%);
   object-fit: contain;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
@@ -11429,10 +12249,10 @@ td.record-char {
 
 .vs-unit-score-table.is-card-mode .score-card-wrap .fes-card-thumb-attr,
 .vs-original-stat-table.is-card-mode .score-card-wrap .fes-card-thumb-attr {
-  left: 2px;
-  top: 2px;
-  width: clamp(10px, 24%, 16px);
-  height: clamp(10px, 24%, 16px);
+  left: 3%;
+  top: 3%;
+  width: 24%;
+  height: 24%;
 }
 
 .vs-unit-last-four-mini-table .vs-mini-days-cell.vs-four-count-max {
@@ -11611,10 +12431,10 @@ td.record-char {
 
 .fes-card-thumb-attr {
   position: absolute;
-  left: 2px;
-  top: 2px;
-  width: 16px;
-  height: 16px;
+  left: calc(var(--fes-card-frame-size) * 0.035);
+  top: calc(var(--fes-card-frame-size) * 0.035);
+  width: calc(var(--fes-card-frame-size) * 0.27);
+  height: calc(var(--fes-card-frame-size) * 0.27);
   object-fit: contain;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.88);
@@ -12749,6 +13569,10 @@ td.record-char {
     overflow-x: auto;
   }
 
+  .festival-panel {
+    overflow-x: visible;
+  }
+
   .count-table {
     min-width: 300px;
     table-layout: fixed;
@@ -12774,6 +13598,27 @@ td.record-char {
     gap: 2px;
   }
 
+  .dist-unit-summary {
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .dist-unit-summary-chip {
+    gap: 3px;
+    min-height: 22px;
+    padding: 2px 4px;
+  }
+
+  .dist-unit-summary-logo {
+    width: 14px;
+    height: 14px;
+    flex-basis: 14px;
+  }
+
+  .dist-unit-summary-num {
+    font-size: 0.76rem;
+  }
+
   .count-table.compact-char-table .char-avatar-box {
     height: auto;
     min-height: 42px;
@@ -12795,6 +13640,31 @@ td.record-char {
   .festival-avatar-wrap {
     width: 42px;
     height: 42px;
+  }
+
+  .festival-card-table th,
+  .festival-card-table td {
+    padding: 4px;
+  }
+
+  .festival-card-table {
+    --festival-card-year-width: 42px;
+    --festival-card-max-size: 58px;
+    --festival-card-gap: 4px;
+  }
+
+  .festival-card-year-col {
+    width: var(--festival-card-year-width);
+  }
+
+  .festival-card-year-head,
+  .festival-card-year-cell,
+  .festival-card-tier-head {
+    font-size: 0.68rem;
+  }
+
+  .festival-card-image-list {
+    min-height: 48px;
   }
 
   .festival-unit-logo {
