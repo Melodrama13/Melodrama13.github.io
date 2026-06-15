@@ -6334,7 +6334,9 @@ const makeLineupFesBg = (alpha) => {
   return `linear-gradient(45deg, rgba(253,124,193,${a}) 0%, rgba(135,192,255,${a}) 50%, rgba(248,255,135,${a}) 100%)`;
 };
 
-const getCardBaseName = (cardName) => String(cardName || '').trim().split(/\s+/)[0] || '';
+function getCardBaseName(cardName) {
+  return String(cardName || '').trim().split(/\s+/)[0] || '';
+}
 
 const getLineupCardId = (name) => `lineup-card-${getCharAbbr(name).toLowerCase()}`;
 const getSupportCardId = (unit) => `support-card-${String(unit || '').toLowerCase()}`;
@@ -8911,11 +8913,11 @@ const createFesCardsSeed = () => Object.fromEntries(
   RELATED_FES_UNITS.map((unit) => [unit, []])
 );
 
-const getCardFolderByName = (name) => {
+function getCardFolderByName(name) {
   const key = String(name || '').trim();
   if (!key) return '';
   return CHAR_CARD_FOLDER_MAP.value[key] || '';
-};
+}
 
 const cardRarityByIdMap = computed(() => {
   const result = {};
@@ -8929,13 +8931,13 @@ const cardRarityByIdMap = computed(() => {
   return result;
 });
 
-const getCardRarityTier = (rarityValue) => {
+function getCardRarityTier(rarityValue) {
   const rarityNum = Number(String(rarityValue || '').trim());
   if (!Number.isFinite(rarityNum)) return 0;
   return rarityNum;
-};
+}
 
-const shouldUseAfterCardImage = (cardId, rarityHint = '') => {
+function shouldUseAfterCardImage(cardId, rarityHint = '') {
   if (navCardImageMode.value !== 'after') return false;
   const idNum = Number(cardId);
   const rarityRaw = String(rarityHint || cardRarityByIdMap.value[idNum] || '').trim();
@@ -8943,9 +8945,9 @@ const shouldUseAfterCardImage = (cardId, rarityHint = '') => {
   // 1/2星卡没有花后图，即使选择花后模式也回退花前。
   if (rarityTier > 0 && rarityTier <= 2) return false;
   return true;
-};
+}
 
-const buildCardImageSrc = (cardId, baseName, options = {}) => {
+function buildCardImageSrc(cardId, baseName, options = {}) {
   const idNum = Number(cardId);
   if (!Number.isFinite(idNum) || idNum <= 0) return '';
 
@@ -8954,7 +8956,7 @@ const buildCardImageSrc = (cardId, baseName, options = {}) => {
 
   const suffix = shouldUseAfterCardImage(idNum, options?.rarity) ? '_t' : '';
   return `/cards/${folder}/card${idNum}${suffix}.webp`;
-};
+}
 
 const buildFesCardImageSrc = (cardId, baseName, fesType) => {
   void fesType;
