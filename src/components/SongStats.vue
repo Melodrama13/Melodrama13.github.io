@@ -1423,6 +1423,11 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toCanvas } from 'html-to-image';
 import { toHiragana, toRomaji } from 'wanakana';
+import {
+  clampHostScrollTop,
+  createStatsNavigationHandlers,
+  getDefaultScrollContainer
+} from '../composables/useStatsNavigation';
 
 const props = defineProps({
   allEvents: { type: Array, default: () => [] },
@@ -1952,20 +1957,6 @@ const isTwoDmvNavScopeActive = computed(() => {
   return twoDmvUnitNavIds.value.has(activeNavId.value);
 });
 
-const isGroupActive = (group) => {
-  if (activeNavId.value === group.id) return true;
-  return (group.children || []).some((c) => c.id === activeNavId.value);
-};
-
-const isGroupExpanded = (group) => {
-  if (!isMobileNav.value) return isGroupActive(group);
-  return !!mobileNavExpandedGroups.value[String(group?.id || '')];
-};
-
-const resetMobileNavGroupExpansion = () => {
-  mobileNavExpandedGroups.value = {};
-};
-
 const isNestedNavChild = (item) => {
   const kind = String(item?.anchorKind || '').trim();
   return ['duo-unit', 'vs-singer', 'oc-unit', 'anvo-unit', '3dmv-unit', '2dmv-unit'].includes(kind);
@@ -1983,12 +1974,7 @@ const shouldShowNavChild = (item) => {
   return true;
 };
 
-const getScrollContainer = () => {
-  const content = document.querySelector('.content-area');
-  if (content instanceof HTMLElement) return content;
-  if (document.scrollingElement instanceof HTMLElement) return document.scrollingElement;
-  return document.documentElement;
-};
+const getScrollContainer = getDefaultScrollContainer;
 
 const pickActiveNavTargetIdByViewport = () => {
   const host = getScrollContainer();
@@ -2153,12 +2139,6 @@ const handleWindowResize = () => {
       scheduleNavSync();
     })();
   });
-};
-
-const clampHostScrollTop = (host, top) => {
-  if (!(host instanceof HTMLElement)) return 0;
-  const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
-  return Math.max(0, Math.min(maxTop, top));
 };
 
 const withPinnedElementPosition = async (targetEl, applyChange) => {
@@ -2436,7 +2416,7 @@ const onTwoDmvCoverOnlyChange = (event) => {
   }, anchorEl);
 };
 
-const setNavCollapsed = (nextCollapsed, preserveCenter = true) => {
+function setNavCollapsed(nextCollapsed, preserveCenter = true) {
   const next = !!nextCollapsed;
   if (navCollapsed.value === next) return;
   if (!next) {
@@ -2450,7 +2430,7 @@ const setNavCollapsed = (nextCollapsed, preserveCenter = true) => {
   void withInfoAreaTopLeftPinned(() => {
     navCollapsed.value = next;
   });
-};
+}
 
 const updateMobileNavState = () => {
   if (typeof window === 'undefined') return;
@@ -2483,52 +2463,23 @@ const updateMobileNavState = () => {
   recalcSongTableOverflow();
 };
 
-const scrollToSection = (id, options = {}) => {
-  const collapseOnMobile = options?.collapseOnMobile !== false;
-  const el = document.getElementById(id);
-  if (!el) return;
-  activeNavId.value = id;
-  const host = getScrollContainer();
-  const hostRect = host.getBoundingClientRect();
-  const targetRect = el.getBoundingClientRect();
-  const nextTop = host.scrollTop + (targetRect.top - hostRect.top) - 8;
-  host.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
-  scheduleNavSync();
-  if (isNavTopLayout.value && collapseOnMobile) {
-    setNavCollapsed(true, false);
-  }
-};
-
-const handleParentNavClick = (group) => {
-  const groupId = String(group?.id || '').trim();
-  if (!groupId) return;
-  const hasChildren = Array.isArray(group?.children) && group.children.length > 0;
-
-  if (isNavTopLayout.value) {
-    if (hasChildren) {
-      mobileNavExpandedGroups.value = {
-        [groupId]: true
-      };
-      scrollToSection(groupId, { collapseOnMobile: false });
-      return;
-    }
-
-    resetMobileNavGroupExpansion();
-    scrollToSection(groupId, { collapseOnMobile: true });
-    return;
-  }
-
-  scrollToSection(groupId);
-};
-
-const handleChildNavClick = (_group, item) => {
-  const itemId = String(item?.id || '').trim();
-  if (!itemId) return;
-  scrollToSection(itemId, { collapseOnMobile: true });
-  if (isNavTopLayout.value) {
-    resetMobileNavGroupExpansion();
-  }
-};
+const {
+  isGroupActive,
+  isGroupExpanded,
+  resetMobileNavGroupExpansion,
+  scrollToSection,
+  handleParentNavClick,
+  handleChildNavClick
+} = createStatsNavigationHandlers({
+  activeNavId,
+  isMobileNav,
+  isNavTopLayout,
+  mobileNavExpandedGroups,
+  navGroups,
+  getScrollContainer,
+  scheduleNavSync,
+  setNavCollapsed
+});
 
 const backToSongHome = (event = null) => {
   if (currentSongPage.value <= 1) return;
@@ -5715,13 +5666,24 @@ watch(totalSongPages, (nextTotal) => {
 .pjsk-song-stats {
   padding: 24px;
   color: #1f2937;
-  background: linear-gradient(45deg, rgba(253, 124, 193, 0.3) 0%, rgba(135, 192, 255, 0.3) 50%, rgba(248, 255, 135, 0.3) 100%);
+  background: transparent;
   min-height: 100vh;
   --stats-radius-panel: 18px;
+  --stats-nav-radius: 28px;
+  --stats-nav-inner-radius: 22px;
   --stats-radius-btn: 12px;
   --stats-nav-width: 220px;
   --stats-nav-left: 44px;
   --stats-nav-top: 78px;
+  --stats-nav-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.24) 42%, rgba(219, 234, 254, 0.18));
+  --stats-nav-glass-border: rgba(255, 255, 255, 0.62);
+  --stats-nav-glass-line: rgba(148, 163, 184, 0.26);
+  --stats-nav-glass-shadow: 0 18px 46px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -1px 0 rgba(15, 23, 42, 0.04);
+  --stats-nav-glass-blur: saturate(170%) blur(18px);
+  --stats-nav-control-bg: rgba(255, 255, 255, 0.24);
+  --stats-nav-control-bg-hover: rgba(255, 255, 255, 0.42);
+  --stats-nav-active-bg: linear-gradient(135deg, rgba(191, 219, 254, 0.66), rgba(224, 242, 254, 0.34));
+  --stats-nav-active-border: rgba(96, 165, 250, 0.58);
   --song-btn-pad-x: 8px;
   --song-mini-toggle-size: 20px;
   --song-stat-min-card-width: 250px;
@@ -5770,7 +5732,7 @@ watch(totalSongPages, (nextTotal) => {
   grid-column: 2;
 }
 
-.stats-nav {
+.stats-nav.card-panel {
   position: fixed;
   top: var(--stats-nav-top);
   left: var(--stats-nav-left);
@@ -5784,6 +5746,27 @@ watch(totalSongPages, (nextTotal) => {
   flex-direction: column;
   gap: 8px;
   z-index: 10;
+  padding: 14px;
+  border-radius: var(--stats-nav-radius);
+  border: 1px solid var(--stats-nav-glass-border);
+  background: var(--stats-nav-glass-bg);
+  box-shadow: var(--stats-nav-glass-shadow);
+  backdrop-filter: var(--stats-nav-glass-blur);
+  -webkit-backdrop-filter: var(--stats-nav-glass-blur);
+  isolation: isolate;
+}
+
+.stats-nav.card-panel::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 24% 0%, rgba(255, 255, 255, 0.72), transparent 30%),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.46), transparent 34%, rgba(125, 211, 252, 0.12) 72%, transparent);
+  opacity: 0.78;
+  z-index: -1;
 }
 
 .nav-quick-wrap {
@@ -5792,9 +5775,10 @@ watch(totalSongPages, (nextTotal) => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
-  border-radius: var(--stats-radius-panel);
-  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--stats-nav-glass-line);
+  border-radius: var(--stats-nav-inner-radius);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44), inset 0 -1px 0 rgba(15, 23, 42, 0.03);
   padding: 8px 6px 6px;
 }
 
@@ -5825,20 +5809,21 @@ watch(totalSongPages, (nextTotal) => {
   text-align: left;
   min-height: 32px;
   padding: 6px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--stats-nav-glass-line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--stats-nav-control-bg);
   color: #374151;
   cursor: pointer;
   font-size: 0.82rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
 }
 
 .nav-link-main {
   font-weight: 700;
-  border-color: #d1d5db;
+  border-color: rgba(148, 163, 184, 0.34);
 }
 
 .nav-sub-list {
@@ -5877,14 +5862,15 @@ watch(totalSongPages, (nextTotal) => {
 }
 
 .nav-link:hover {
-  background: rgba(229, 231, 235, 0.6);
+  background: var(--stats-nav-control-bg-hover);
 }
 
 
 .nav-link.active {
-  background: rgba(219, 234, 254, 0.6);
-  border-color: #93c5fd;
+  background: var(--stats-nav-active-bg);
+  border-color: var(--stats-nav-active-border);
   color: #1d4ed8;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.66);
 }
 
 .nav-collapse-fab {
@@ -8541,14 +8527,26 @@ watch(totalSongPages, (nextTotal) => {
     right: auto;
     width: min(240px, calc(100vw - 16px));
     max-width: calc(100vw - 16px);
+    height: auto;
     max-height: calc(100dvh - 60px);
     z-index: 4200;
-    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.22);
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border-radius: 24px !important;
+    box-shadow: var(--stats-nav-glass-shadow);
+    background: var(--stats-nav-glass-bg);
+    backdrop-filter: var(--stats-nav-glass-blur);
+    -webkit-backdrop-filter: var(--stats-nav-glass-blur);
+    border: 1px solid var(--stats-nav-glass-border);
+    border-radius: var(--stats-nav-radius) !important;
     overflow: hidden;
+  }
+
+  .stats-nav.mobile-floating .nav-quick-wrap {
+    flex: 0 1 auto;
+    max-height: min(70dvh, calc(100dvh - 220px));
+  }
+
+  .stats-nav.mobile-floating .nav-scroll {
+    flex: 0 1 auto;
+    max-height: inherit;
   }
 
   .stats-nav.mobile-floating.is-collapsed {
