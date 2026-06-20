@@ -1,0 +1,84 @@
+name: Sync external game data
+
+on:
+  schedule:
+    - cron: "17 20 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-external-data
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      HAS_SYNC_PRIVATE_REPO_TOKEN: ${{ secrets.SYNC_PRIVATE_REPO_TOKEN != '' }}
+
+    steps:
+      - name: Check private sync token
+        if: env.HAS_SYNC_PRIVATE_REPO_TOKEN != 'true'
+        run: |
+          echo "Missing repository secret: SYNC_PRIVATE_REPO_TOKEN"
+          echo "Create a fine-grained GitHub token with read access to Melodrama13/pjsk-planner-sync-private."
+          exit 1
+
+      - name: Checkout site repository
+        uses: actions/checkout@v4
+
+      - name: Checkout private sync scripts
+        uses: actions/checkout@v4
+        with:
+          repository: Melodrama13/pjsk-planner-sync-private
+          token: ${{ secrets.SYNC_PRIVATE_REPO_TOKEN }}
+          path: .sync-private
+          persist-credentials: false
+
+      - name: Install private sync scripts
+        run: |
+          mkdir -p scripts
+          cp .sync-private/scripts/*.mjs scripts/
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch external source data
+        run: npm run fetch:other-source
+
+      - name: Sync song data
+        run: npm run sync:other
+
+      - name: Sync card data
+        run: npm run sync:cards-other
+
+      - name: Build
+        run: npm run build
+
+      - name: Detect data changes
+        id: changes
+        run: |
+          if git diff --quiet -- public/data; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No public/data changes detected."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- public/data
+          fi
+
+      - name: Commit synced data
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          git commit -m "chore: sync external game data"
+          git push
