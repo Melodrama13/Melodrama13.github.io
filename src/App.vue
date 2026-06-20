@@ -33,7 +33,6 @@
         class="stats-top-nav-wrap"
         title="统计页：快速调整截止活动ID与展开菜单"
       >
-        <span class="stats-top-label">截止ID</span>
         <button class="pjsk-ui-btn-circle stats-top-mini-btn" title="减少 1" @click="adjustStatsTopDisplayEventId(-1)">－</button>
         <input
           v-model="statsTopDisplayEventIdDraft"
@@ -59,7 +58,7 @@
       <div class="predict-cleanup-info" v-if="cleanedPatchNoticeCount > 0">
         {{ isCompactTopNav ? `已清理 ${cleanedPatchNoticeCount} 条` : `已自动清理 ${cleanedPatchNoticeCount} 条过期/冲突预测` }}
       </div>
-      <div class="source-dropdown" ref="sourceDropdownRef">
+      <div v-if="showSourceDropdownInNav" class="source-dropdown" ref="sourceDropdownRef">
         <button
           ref="sourceTriggerRef"
           class="io-btn source-trigger"
@@ -74,7 +73,7 @@
       </div>
       <Teleport to="body">
         <div
-          v-if="sourceMenuOpen"
+          v-if="sourceMenuOpen && showSourceDropdownInNav"
           ref="sourceMenuPanelRef"
           class="source-menu source-menu-floating"
           :style="sourceMenuStyle"
@@ -620,7 +619,8 @@ const isHistoryPredictEditorOpen = computed(() => {
   return Number.isFinite(id) && id > 0;
 });
 
-const showStatsTopControlInNav = computed(() => currentTab.value === 'stats' && isStatsTopNavCompact.value);
+const showStatsTopControlInNav = computed(() => currentTab.value === 'stats');
+const showSourceDropdownInNav = computed(() => currentTab.value === 'history');
 const showPredictInfoInNav = computed(() => predictiveEvents.value.length > 0 && currentTab.value === 'history');
 
 const PREDICT_SOURCES_KEY = 'pjsk_predict_sources_v1';
@@ -784,6 +784,9 @@ const handleStatsJumpToEvent = async (eventId) => {
 };
 
 watch(currentTab, async (nextTab, prevTab) => {
+  if (nextTab !== 'history') {
+    sourceMenuOpen.value = false;
+  }
   if (nextTab === 'stats') {
     await nextTick();
     if (contentAreaRef.value) {
@@ -2646,6 +2649,12 @@ watch(isHistoryPredictEditorOpen, (open) => {
   display: flex;
   flex-direction: column;
   height: 100vh;     /* 强制占满一屏高度 */
+  height: 100svh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100svh;
+  max-height: 100dvh;
+  min-height: 0;
   width: 100%;
   max-width: 100%;
   overflow: hidden;  /* 锁定外层，防止整个网页滚动 */
@@ -2674,6 +2683,7 @@ watch(isHistoryPredictEditorOpen, (open) => {
   backdrop-filter: saturate(170%) blur(18px);
   -webkit-backdrop-filter: saturate(170%) blur(18px);
   z-index: 2000;
+  flex: 0 0 auto;
   /* 移除 sticky，因为外层已经是 flex 布局，它自然就在最顶部 */
 }
 
@@ -2844,7 +2854,8 @@ watch(isHistoryPredictEditorOpen, (open) => {
   border: 1px solid rgba(148, 163, 184, 0.32);
   border-radius: 999px;
   padding: 0 6px;
-  font-size: 0.74rem;
+  font-size: 0.88rem;
+  font-weight: 800;
   color: #0f172a;
   background: rgba(255, 255, 255, 0.62);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
@@ -3044,9 +3055,12 @@ watch(isHistoryPredictEditorOpen, (open) => {
 /* 修改并替换 App.vue 中的 .content-area 相关样式 */
 .content-area {
   flex: 1;
+  min-height: 0;
   padding: 20px;
   overflow-y: auto; /* 默认允许滚动，拯救你的统计面板 */
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* 当切换到历史页面时，去掉 padding 并锁定外层滚动 */
@@ -3277,7 +3291,18 @@ button.active {
   gap: 6px;
   max-height: 220px;
   overflow-y: auto;
+  padding: 7px;
   margin-bottom: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.16));
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.54), inset 0 -1px 0 rgba(15, 23, 42, 0.03);
+  backdrop-filter: saturate(165%) blur(14px);
+  -webkit-backdrop-filter: saturate(165%) blur(14px);
+}
+
+.source-list:not(:has(.source-item-row + .source-item-row)) {
+  border-radius: 999px;
 }
 
 .source-item {
@@ -3288,10 +3313,11 @@ button.active {
   justify-content: space-between;
   gap: 8px;
   background: var(--top-glass-bg, rgba(255, 255, 255, 0.58));
-  border: 1px solid rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 999px;
   padding: 6px 8px;
   font-size: 0.78rem;
+  box-shadow: var(--top-glass-shadow-soft, 0 5px 16px rgba(15, 23, 42, 0.08));
 }
 
 .source-item-row {
@@ -3302,8 +3328,8 @@ button.active {
 }
 
 .source-item-row.is-drag-over {
-  background: #e0f2fe;
-  box-shadow: inset 0 0 0 1px #38bdf8;
+  background: var(--top-glass-bg-hover, #e0f2fe);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.70);
 }
 
 .source-mini-btn {
@@ -3315,7 +3341,7 @@ button.active {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.70);
+  border: 1px solid rgba(148, 163, 184, 0.24);
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(240, 253, 250, 0.36));
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
   font-size: 0.72rem;
@@ -3338,7 +3364,7 @@ button.active {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.70);
+  border: 1px solid rgba(148, 163, 184, 0.24);
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(240, 253, 250, 0.36));
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
   font-size: 0.72rem;
@@ -3373,31 +3399,44 @@ button.active {
 }
 
 .source-item.active {
-  border-color: rgba(94, 234, 212, 0.78);
-  background: var(--top-active-bg, #33ccbb);
-  color: #0f172a;
+  border-color: rgba(94, 234, 212, 0.82);
+  background: var(--top-active-bg, linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(45, 212, 191, 0.72) 52%, rgba(14, 165, 233, 0.58)));
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(20, 184, 166, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.48);
 }
 
 .source-item.active .source-item-count {
-  color: #155e75;
-  background: #cffafe;
+  color: #0f766e;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.58);
 }
 
 .source-actions {
   display: flex;
-  gap: 4px;
+  gap: 5px;
+  justify-content: space-between;
   flex-wrap: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 1px;
+  padding: 6px;
   margin-bottom: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.16));
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.54), inset 0 -1px 0 rgba(15, 23, 42, 0.03);
+  backdrop-filter: saturate(165%) blur(14px);
+  -webkit-backdrop-filter: saturate(165%) blur(14px);
 }
 
 .source-actions .io-btn {
   flex: 0 0 auto;
+  min-width: 0;
   padding: 5px 8px;
   font-size: 0.74rem;
   border-radius: 999px;
+  border-color: rgba(148, 163, 184, 0.32);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(248, 250, 252, 0.34));
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 .nav-tabs > button:hover:not(.active),
@@ -3412,11 +3451,11 @@ button.active {
 }
 
 .source-item.active:hover {
-  background: var(--top-active-bg, #33ccbb);
+  background: var(--top-active-bg, linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(45, 212, 191, 0.72) 52%, rgba(14, 165, 233, 0.58)));
 }
 
 .source-actions .btn-with-icon {
-  gap: 5px;
+  gap: 4px;
   white-space: nowrap;
 }
 
@@ -3426,6 +3465,11 @@ button.active {
   gap: 6px;
   font-size: 0.74rem;
   color: #475569;
+  padding: 5px 8px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(248, 250, 252, 0.24));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
   margin-bottom: 8px;
   user-select: none;
 }
@@ -3437,11 +3481,12 @@ button.active {
 .source-export-status {
   font-size: 0.72rem;
   color: #0f766e;
-  background: #ecfeff;
-  border: 1px solid #99f6e4;
-  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(236, 254, 255, 0.72), rgba(255, 255, 255, 0.38));
+  border: 1px solid rgba(94, 234, 212, 0.66);
+  border-radius: 12px;
   padding: 4px 8px;
   margin-bottom: 8px;
+  box-shadow: var(--top-glass-shadow-soft, 0 5px 16px rgba(15, 23, 42, 0.08));
 }
 
 .app-screenshot-modal-mask {
@@ -3535,11 +3580,14 @@ button.active {
 }
 
 .source-export-confirm {
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 16px;
   padding: 8px;
-  background: #f8fafc;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.54), rgba(248, 250, 252, 0.28));
   margin-bottom: 8px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.68), inset 0 -1px 0 rgba(15, 23, 42, 0.03);
+  backdrop-filter: saturate(165%) blur(14px);
+  -webkit-backdrop-filter: saturate(165%) blur(14px);
 }
 
 .source-export-confirm-title {
@@ -3569,19 +3617,23 @@ button.active {
 .source-export-name-input {
   flex: 1 1 auto;
   min-width: 0;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 999px;
   padding: 5px 7px;
   font-size: 0.74rem;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
 }
 
 .source-export-range-input {
   flex: 1 1 0;
   min-width: 0;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 999px;
   padding: 5px 7px;
   font-size: 0.74rem;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
 }
 
 .source-export-range-sep {
@@ -3594,6 +3646,12 @@ button.active {
   display: flex;
   gap: 6px;
   justify-content: flex-end;
+}
+
+.source-export-confirm-actions .io-btn {
+  border-color: rgba(148, 163, 184, 0.32);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(248, 250, 252, 0.34));
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 .source-create-confirm {
@@ -3616,14 +3674,18 @@ button.active {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px dashed #cbd5e1;
-  border-radius: 10px;
-  padding: 3px 6px;
+  border: 1px dashed rgba(148, 163, 184, 0.30);
+  border-radius: 16px;
+  padding: 5px 8px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.42), rgba(248, 250, 252, 0.22));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.50);
+  backdrop-filter: saturate(165%) blur(14px);
+  -webkit-backdrop-filter: saturate(165%) blur(14px);
 }
 
 .io-drop-zone.is-drag-over {
-  border-color: #14b8a6;
-  background: #ecfeff;
+  border-color: rgba(94, 234, 212, 0.78);
+  background: var(--top-glass-bg-hover, #ecfeff);
 }
 
 .io-drop-hint {
@@ -3709,7 +3771,7 @@ button.active {
   .stats-top-id-input {
     width: 52px;
     padding: 0 5px;
-    font-size: 0.72rem;
+    font-size: 0.88rem;
   }
 
   .username-input {
@@ -3831,7 +3893,7 @@ button.active {
 
   .stats-top-id-input {
     width: 50px;
-    font-size: 0.64rem;
+    font-size: 0.88rem;
     padding: 0 4px;
   }
 
@@ -3942,6 +4004,17 @@ button.active {
     padding: 5px 7px;
   }
 
+  .source-menu {
+    max-height: calc(100vh - 74px);
+    max-height: calc(100dvh - 74px);
+    overflow-y: auto;
+  }
+
+  .source-list:not(:has(.source-item-row + .source-item-row)),
+  .source-actions {
+    border-radius: 999px;
+  }
+
   .source-menu-username-wrap {
     margin-bottom: 7px;
     padding: 5px 7px;
@@ -3962,14 +4035,7 @@ button.active {
     font-size: 0.66rem;
   }
 
-  .io-drop-zone {
-    order: 2;
-    gap: 4px;
-    padding: 2px 4px;
-    border-style: solid;
-  }
-
-  .io-drop-hint {
+  .source-drop-zone {
     display: none;
   }
 
@@ -4119,10 +4185,8 @@ button.active {
     font-size: 0.66rem;
   }
 
-  .io-drop-zone {
-    padding: 2px;
-    border: none;
-    background: transparent;
+  .source-drop-zone {
+    display: none;
   }
 }
 </style>

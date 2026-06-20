@@ -15,27 +15,8 @@
         </button>
 
         <div v-if="!navCollapsed" class="nav-cutoff" :class="{ 'mini-cutoff': isMiniFloatingNav }">
-          <div class="nav-cutoff-title" v-if="!isNavTopLayout">统计截止活动 ID</div>
-          <div v-if="isNavTopLayout" class="mini-cutoff-line">统计截止活动ID：{{ safeMaxEventId }}</div>
-          <div v-else class="nav-cutoff-controls">
-            <button class="id-step-btn" @click="adjustDisplayEventId(-1)" title="减少 1">－</button>
-            <input
-              type="number"
-              step="1"
-              inputmode="numeric"
-              :value="displayEventIdDraft"
-              @focus="onDisplayEventIdFocus"
-              @input="onDisplayEventIdInput($event.target.value)"
-              @blur="onDisplayEventIdBlur"
-              class="id-input"
-              placeholder="输入活动 ID"
-            />
-            <button class="id-step-btn" @click="adjustDisplayEventId(1)" title="增加 1">＋</button>
-            <button @click="manualEventId = null" class="reset-mini-btn" :title="`恢复到当前参考活动 ID：${autoCurrentId}`">
-              <img src="/data/icon/reset.png" class="reset-mini-icon" alt="复位" />
-            </button>
-          </div>
-          <p class="config-tips">{{ isNavTopLayout ? `系统时间：${nowStr} | 在顶栏中输入更大ID可查看预测统计。` : `系统时间：${nowStr} | 输入更大ID可查看预测统计。` }}</p>
+          <div class="mini-cutoff-line">统计活动截止ID：{{ safeMaxEventId }}</div>
+          <p class="config-tips">系统时间：{{ nowStr }} | 在顶栏中输入更大ID可查看预测统计。</p>
         </div>
 
         <template v-if="!navCollapsed">
@@ -107,6 +88,10 @@
                 <input v-model="hideDistCharNames" type="checkbox" />
                 隐藏角色名
               </label>
+              <label class="dist-vs-unit-toggle stats-checkbox export-hide" title="勾选后，阶梯分布底部团汇总会额外计入附属该团的VS卡片；活动banner相关统计不计入。">
+                <input v-model="includeVsInDistUnitSummary" type="checkbox" />
+                团统计VS
+              </label>
             </div>
             <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-dist', '阶梯分布')">PNG</button>
           </div>
@@ -121,6 +106,14 @@
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
                   <h2>{{ panel.title }}</h2>
+                  <label
+                    v-if="panel.allowVsUnitSummary"
+                    class="dist-vs-unit-toggle stats-checkbox"
+                    title="勾选后，该项底部团汇总会额外计入附属该团的VS卡片。"
+                  >
+                    <input v-model="distVsUnitSummaryToggles[panel.id]" type="checkbox" />
+                    统计VS
+                  </label>
                   <label
                     v-if="panel.id === 'reward'"
                     class="reward-collab-toggle stats-checkbox"
@@ -2821,6 +2814,32 @@ let lineupCardLayoutResizeObserver = null;
 let lineupCardLayoutMutationObserver = null;
 let topBarStateChangeRaf = 0;
 const mobileNavExpandedGroups = ref({});
+const DIST_VS_SUMMARY_PANEL_IDS = [
+  'four',
+  'limited',
+  'pure-score',
+  'reward',
+  'p-score',
+  'score-up',
+  'recovery',
+  'accuracy',
+  'three',
+  'two',
+  'fes-limited'
+];
+const distVsUnitSummaryToggles = reactive(Object.fromEntries(
+  DIST_VS_SUMMARY_PANEL_IDS.map((id) => [id, false])
+));
+const includeVsInDistUnitSummary = computed({
+  get: () => DIST_VS_SUMMARY_PANEL_IDS.every((id) => !!distVsUnitSummaryToggles[id]),
+  set: (value) => {
+    const checked = !!value;
+    DIST_VS_SUMMARY_PANEL_IDS.forEach((id) => {
+      distVsUnitSummaryToggles[id] = checked;
+    });
+  }
+});
+const isDistPanelVsSummaryEnabled = (panelId) => !!distVsUnitSummaryToggles[String(panelId || '')];
 
 //const getCharAbbr = (name) => CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
 const getCharAbbr = (name) => {
@@ -7518,8 +7537,114 @@ const groupByCount = (data, key) => {
 };
 
 const DIST_SUMMARY_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
+const DIST_VS_SUMMARY_KEYS = [
+  'fourStarCount',
+  'limitedCount',
+  'pureScoreCount',
+  'rewardTotalCount',
+  'pScoreCount',
+  'scoreUpCount',
+  'recoveryCount',
+  'accuracyCount',
+  'threeStarCount',
+  'twoStarCount',
+  'rewardThreeCountWithCollab',
+  'rewardTwoCountWithCollab',
+  'fesLimitedCount'
+];
 
-const buildDistUnitSummary = (groups, key) => {
+const createDistSummaryUnitMap = () => Object.fromEntries(DIST_SUMMARY_UNITS.map((unit) => [unit, {
+  total: 0,
+  lastOrder: Number.POSITIVE_INFINITY
+}]));
+
+const createDistVsSummaryMap = () => Object.fromEntries(
+  DIST_VS_SUMMARY_KEYS.map((key) => [key, createDistSummaryUnitMap()])
+);
+
+const addDistVsSummaryCount = (summaryMap, unit, key, orderId) => {
+  const target = summaryMap?.[key]?.[unit];
+  if (!target) return;
+  target.total += 1;
+  const order = Number(orderId || 0);
+  if (Number.isFinite(order) && order > 0) {
+    target.lastOrder = Number.isFinite(target.lastOrder)
+      ? Math.max(target.lastOrder, order)
+      : order;
+  }
+};
+
+const getDistVsAffiliationUnit = (card) => {
+  const unit = String(card?.Affiliation || '').trim().toLowerCase();
+  return DIST_SUMMARY_UNITS.includes(unit) ? unit : '';
+};
+
+const distVsUnitSummaryByKey = computed(() => {
+  const summaryMap = createDistVsSummaryMap();
+  const maxEid = safeMaxEventId.value;
+  const excludedPureSkills = includeUnitScoreInPureScore.value
+    ? ['accuracy', 'recovery', '-', '']
+    : ['accuracy', 'recovery', 'unit_score', '-', ''];
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+    const baseName = String(card?.Name || '').trim();
+    if (!VS_NAMES.includes(baseName)) return;
+    const unit = getDistVsAffiliationUnit(card);
+    if (!unit) return;
+
+    const rarity = String(card?.Rarity || '').trim();
+    const skill = String(card?.Skill || '').trim().toLowerCase();
+    const cardType = String(card?.Type || '').trim().toLowerCase();
+    const orderId = getCardProgressOrderId(card);
+    const eventIdRaw = String(card?.EventID || '').trim();
+    const eventIdNum = isNumericEventId(eventIdRaw) ? Number(eventIdRaw) : null;
+
+    if (rarity === '4') {
+      addDistVsSummaryCount(summaryMap, unit, 'fourStarCount', orderId);
+
+      if (LIMITED_TYPES.has(cardType)) {
+        addDistVsSummaryCount(summaryMap, unit, 'limitedCount', orderId);
+      }
+
+      const isFesCard = isFesCardType(cardType);
+      const isFesLimitedEventCard = eventIdNum !== null && fesLimitedEventIdSet.value.has(eventIdNum);
+      const shouldCountFesLimited = (isFesLimitedEventCard && !isFesCard)
+        || (fesLimitedIncludeFes.value && isFesCard);
+      if (shouldCountFesLimited) {
+        addDistVsSummaryCount(summaryMap, unit, 'fesLimitedCount', orderId);
+      }
+
+      if (skill === 'p_score') addDistVsSummaryCount(summaryMap, unit, 'pScoreCount', orderId);
+      if (skill === 'score_up') addDistVsSummaryCount(summaryMap, unit, 'scoreUpCount', orderId);
+      if (skill === 'accuracy') addDistVsSummaryCount(summaryMap, unit, 'accuracyCount', orderId);
+      if (skill === 'recovery') addDistVsSummaryCount(summaryMap, unit, 'recoveryCount', orderId);
+      if (!excludedPureSkills.includes(skill)) {
+        addDistVsSummaryCount(summaryMap, unit, 'pureScoreCount', orderId);
+      }
+    }
+
+    if (rarity === '3') {
+      addDistVsSummaryCount(summaryMap, unit, 'threeStarCount', orderId);
+    }
+    if (rarity === '2') {
+      addDistVsSummaryCount(summaryMap, unit, 'twoStarCount', orderId);
+    }
+
+    if (isEventRewardCard(card)) {
+      addDistVsSummaryCount(summaryMap, unit, 'rewardTotalCount', orderId);
+    }
+
+    if (isEventRewardCard(card, { includeCollab: true })) {
+      if (rarity === '3') addDistVsSummaryCount(summaryMap, unit, 'rewardThreeCountWithCollab', orderId);
+      if (rarity === '2') addDistVsSummaryCount(summaryMap, unit, 'rewardTwoCountWithCollab', orderId);
+    }
+  });
+
+  return summaryMap;
+});
+
+const buildDistUnitSummary = (groups, key, vsUnitAdditions = null) => {
   const unitTotals = Object.fromEntries(DIST_SUMMARY_UNITS.map((unit) => [unit, {
     total: 0,
     lastOrder: Number.POSITIVE_INFINITY
@@ -7540,6 +7665,21 @@ const buildDistUnitSummary = (groups, key) => {
     });
   });
 
+  if (vsUnitAdditions) {
+    DIST_SUMMARY_UNITS.forEach((unit) => {
+      const addition = vsUnitAdditions[unit];
+      const addTotal = Number(addition?.total || 0);
+      if (addTotal <= 0) return;
+      unitTotals[unit].total += addTotal;
+      const addOrder = Number(addition?.lastOrder || 0);
+      if (Number.isFinite(addOrder) && addOrder > 0) {
+        unitTotals[unit].lastOrder = Number.isFinite(unitTotals[unit].lastOrder)
+          ? Math.max(unitTotals[unit].lastOrder, addOrder)
+          : addOrder;
+      }
+    });
+  }
+
   return Object.entries(unitTotals)
     .map(([unit, summary]) => ({
       unit,
@@ -7558,10 +7698,17 @@ const buildDistUnitSummary = (groups, key) => {
 
 const createGroupPanel = (config, rows, key) => {
   const groups = groupByCount(rows, key);
+  const allowVsUnitSummary = DIST_VS_SUMMARY_PANEL_IDS.includes(config.id);
+  const includeVsSummary = allowVsUnitSummary && isDistPanelVsSummaryEnabled(config.id);
   return {
     ...config,
+    allowVsUnitSummary,
     groups,
-    unitSummary: buildDistUnitSummary(groups, key)
+    unitSummary: buildDistUnitSummary(
+      groups,
+      key,
+      includeVsSummary ? distVsUnitSummaryByKey.value[key] : null
+    )
   };
 };
 
@@ -9847,6 +9994,7 @@ defineExpose({
   color: #1f2937;
   background: transparent;
   min-height: 100vh;
+  min-height: 100dvh;
   --matrix-sticky-top: 0px;
   --stats-radius-panel: 28px;
   --stats-nav-radius: 28px;
@@ -9905,6 +10053,8 @@ defineExpose({
   width: var(--stats-nav-width);
   height: calc(100vh - var(--stats-nav-top) - 10px);
   max-height: calc(100vh - var(--stats-nav-top) - 10px);
+  height: calc(100dvh - var(--stats-nav-top) - 10px);
+  max-height: calc(100dvh - var(--stats-nav-top) - 10px);
   min-height: 0;
   box-sizing: border-box;
   overflow: hidden;
@@ -10043,7 +10193,7 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 5;
+  z-index: 4601;
 }
 
 .nav-collapse-fab-icon {
@@ -10056,7 +10206,7 @@ defineExpose({
 
 .floating-menu-btn {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 54px);
+  top: calc(env(safe-area-inset-top, 0px) + 60px);
   left: 8px;
   width: 40px;
   height: 40px;
@@ -10068,7 +10218,7 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 4300;
+  z-index: 5100;
   padding: 0;
   cursor: pointer;
 }
@@ -11475,6 +11625,7 @@ defineExpose({
   overflow-x: auto;
   overflow-y: auto;
   max-height: calc(100vh - 140px);
+  max-height: calc(100dvh - 140px);
   border: 1px solid #e5e7eb;
   border-radius: 12px;
 }
@@ -13320,6 +13471,8 @@ td.record-char {
   .stats-nav {
     height: calc(100vh - var(--stats-nav-top) - 10px);
     max-height: calc(100vh - var(--stats-nav-top) - 10px);
+    height: calc(100dvh - var(--stats-nav-top) - 10px);
+    max-height: calc(100dvh - var(--stats-nav-top) - 10px);
   }
   .pjsk-stats { padding: 14px; }
 
@@ -13424,14 +13577,14 @@ td.record-char {
 
   .stats-nav.mobile-floating {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 52px);
+    top: calc(env(safe-area-inset-top, 0px) + 58px);
     left: 8px;
     right: auto;
     width: min(240px, calc(100vw - 16px));
     max-width: calc(100vw - 16px);
     height: auto;
-    max-height: calc(100dvh - 60px);
-    z-index: 4200;
+    max-height: calc(100dvh - 70px);
+    z-index: 5090;
     box-shadow: var(--stats-nav-glass-shadow);
     background: var(--stats-nav-glass-bg);
     backdrop-filter: var(--stats-nav-glass-blur);
@@ -13452,7 +13605,7 @@ td.record-char {
   }
 
   .nav-collapse-fab {
-    z-index: 4201;
+    z-index: 5101;
   }
 
   .stats-nav.mobile-floating.is-collapsed {
@@ -13696,6 +13849,7 @@ td.record-char {
     overflow-x: auto;
     overflow-y: auto;
     max-height: calc(100vh - 120px);
+    max-height: calc(100dvh - 120px);
   }
 
   .matrix-table {
@@ -14109,15 +14263,17 @@ td.record-char {
   }
 
   .floating-menu-btn {
-    top: calc(env(safe-area-inset-top, 0px) + 48px);
+    top: calc(env(safe-area-inset-top, 0px) + 58px);
     width: 34px;
     height: 34px;
+    z-index: 5100;
   }
 
   .nav-collapse-fab {
     width: 30px;
     min-height: 30px;
     height: 30px;
+    z-index: 5101;
   }
 
   .stats-main h1 {

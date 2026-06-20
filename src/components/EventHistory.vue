@@ -565,8 +565,8 @@
           <div class="filter-row filter-mode-row">
             <span class="row-label">模式</span>
             <div class="btn-group">
-              <button class="filter-mode-btn" :class="{active: filterMode === 'event'}" @click="switchFilterMode('event')">活动筛选</button>
-              <button class="filter-mode-btn" :class="{active: filterMode === 'single'}" @click="switchFilterMode('single')">卡片筛选</button>
+              <button class="filter-mode-btn" :class="{active: filterMode === 'event'}" @click="switchFilterMode('event')">{{ isCompactFilterBar ? '活动' : '活动筛选' }}</button>
+              <button class="filter-mode-btn" :class="{active: filterMode === 'single'}" @click="switchFilterMode('single')">{{ isCompactFilterBar ? '卡片' : '卡片筛选' }}</button>
               <button class="filter-mode-btn clear-btn panel-reset-btn" :class="{ 'is-ready': hasActiveFilters }" :disabled="!hasActiveFilters" @click="resetFilters">{{ isCompactFilterBar ? '重置' : '重置筛选' }}</button>
               <button class="filter-mode-btn clear-btn panel-reset-btn panel-collapse-btn" @click="showFilter = false">收起</button>
             </div>
@@ -6009,6 +6009,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   display: flex;
   width: 100%;
   height: 100%;
+  min-height: 0;
   position: relative; /* 锁定外层不滚动 */
   top: 0;
   left: 0;
@@ -6018,6 +6019,13 @@ const getFestivalPreviewUnitLogo = (name) => {
   --eh-radius-card: 16px;
   --eh-radius-panel: 16px;
   --eh-radius-btn: 12px;
+  --history-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.34) 52%, rgba(219, 234, 254, 0.24));
+  --history-glass-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(236, 254, 255, 0.46) 55%, rgba(219, 234, 254, 0.30));
+  --history-glass-border: rgba(255, 255, 255, 0.72);
+  --history-glass-shadow: 0 10px 30px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  --history-glass-shadow-soft: 0 5px 16px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  --history-active-bg: linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(45, 212, 191, 0.72) 52%, rgba(14, 165, 233, 0.58));
+  --history-active-border: rgba(94, 234, 212, 0.78);
 }
 
 .predict-preview-floating {
@@ -6039,6 +6047,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   padding: 8px;
   pointer-events: auto;
   max-height: min(84vh, calc(100vh - var(--preview-config-top) - 10px));
+  max-height: min(84dvh, calc(100dvh - var(--preview-config-top) - 10px));
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -6797,11 +6806,13 @@ const getFestivalPreviewUnitLogo = (name) => {
 .event-history {
   flex: 1; /* 占据剩余所有空间 */
   height: 100%;
+  min-height: 0;
   overflow-y: auto; /* 只有列表区可以滚动 */
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   padding: 0 20px 20px;
   box-sizing: border-box;
-  background: #f4f7f6;
+  background: transparent;
   transition: margin-right 0.18s ease;
   min-width: 0; /* 防止子元素撑开 flex */
   touch-action: pan-y pinch-zoom;
@@ -6833,14 +6844,24 @@ button:not(:disabled):active {
   position: sticky;
   top: 0;
   z-index: 1500;
-  background: #f4f7f6;
+  padding-top: 0;
+  background: transparent;
+  border-bottom: 0;
+  box-shadow: none;
   overflow: visible;
   isolation: isolate;
 }
 
 .filter-bar {
-  background: #f4f7f6;
-  padding: 15px 5px;
+  width: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.36) 52%, rgba(219, 234, 254, 0.26));
+  border: 1px solid var(--history-glass-border);
+  border-radius: 999px;
+  box-shadow: var(--history-glass-shadow);
+  backdrop-filter: saturate(170%) blur(18px);
+  -webkit-backdrop-filter: saturate(170%) blur(18px);
+  padding: 8px 10px;
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
@@ -6859,8 +6880,11 @@ button:not(:disabled):active {
   gap: 4px;
   cursor: pointer;
   border-radius: 999px;
-  border: 1px solid #ddd;
-  background: #fff;
+  border: 1px solid var(--history-glass-border);
+  background: var(--history-glass-bg);
+  box-shadow: var(--history-glass-shadow-soft);
+  backdrop-filter: saturate(165%) blur(14px);
+  -webkit-backdrop-filter: saturate(165%) blur(14px);
   transition: 0.2s;
   white-space: nowrap;
   min-height: 32px;
@@ -6880,8 +6904,11 @@ button:not(:disabled):active {
   padding: 8px 16px;
   cursor: pointer;
   border-radius: 999px;
-  border: 1px solid #ddd;
-  background: #fff;
+  border: 1px solid var(--history-glass-border);
+  background: var(--history-glass-bg);
+  box-shadow: var(--history-glass-shadow-soft);
+  backdrop-filter: saturate(165%) blur(14px);
+  -webkit-backdrop-filter: saturate(165%) blur(14px);
   flex: 0 0 auto;
   white-space: nowrap;
   display: inline-flex;
@@ -7261,18 +7288,22 @@ button:not(:disabled):active {
 
 /* 筛选面板基础样式 */
 .filter-panel {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: var(--eh-radius-panel);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.38));
+  border: 1px solid var(--history-glass-border);
+  border-radius: calc(var(--eh-radius-panel) + 6px);
   position: relative;
   z-index: 1510;
+  width: 100%;
+  box-sizing: border-box;
   padding: 15px;
-  margin-top: -6px;
-  margin-bottom: 20px;
+  margin-top: 0;
+  margin-bottom: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: var(--history-glass-shadow);
+  backdrop-filter: saturate(170%) blur(18px);
+  -webkit-backdrop-filter: saturate(170%) blur(18px);
 }
 
 .filter-mode-row {
@@ -7333,10 +7364,11 @@ button:not(:disabled):active {
   margin-left: auto;
   font-size: 0.78rem;
   color: #0f766e;
-  background: #ecfeff;
-  border: 1px solid #99f6e4;
+  background: linear-gradient(145deg, rgba(236, 254, 255, 0.72), rgba(255, 255, 255, 0.42));
+  border: 1px solid rgba(94, 234, 212, 0.72);
   border-radius: 999px;
   padding: 2px 8px;
+  box-shadow: var(--history-glass-shadow-soft);
   line-height: 1.4;
   white-space: nowrap;
 }
@@ -7353,8 +7385,9 @@ button:not(:disabled):active {
 .btn-group button, 
 .btn-group-sm button {
   padding: 4px 12px;
-  border: 1px solid #eee;
-  background: #f9f9f9;
+  border: 1px solid rgba(255, 255, 255, 0.70);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.36));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   cursor: pointer;
   border-radius: 999px;
   white-space: nowrap; /* 确保按钮文字不会在内部换行 */
@@ -7364,9 +7397,10 @@ button:not(:disabled):active {
 /* 选中状态保持不变 */
 .btn-group button.active, 
 .btn-group-sm button.active {
-  background: #33ccbb;
+  background: var(--history-active-bg);
   color: white;
-  border-color: #33ccbb;
+  border-color: var(--history-active-border);
+  box-shadow: 0 8px 18px rgba(20, 184, 166, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.44);
 }
 
 /* 角色 Chip */
@@ -7382,15 +7416,28 @@ button:not(:disabled):active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid transparent;
-  transition: 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: var(--history-glass-shadow-soft);
+  backdrop-filter: saturate(165%) blur(14px);
+  -webkit-backdrop-filter: saturate(165%) blur(14px);
+  transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  touch-action: manipulation;
+}
+.char-chip:hover {
+  background: var(--history-glass-bg-hover);
+  border-color: rgba(255, 255, 255, 0.86);
+}
+.char-chip:active {
+  filter: brightness(0.86);
+  transform: translateY(1px) scale(0.97);
 }
 .char-chip.is-selected {
-  background: rgba(51, 204, 187, 0.14);
-  border-color: #33ccbb;
+  background: linear-gradient(145deg, rgba(236, 254, 255, 0.78), rgba(255, 255, 255, 0.38));
+  border-color: var(--history-active-border);
+  box-shadow: 0 8px 18px rgba(20, 184, 166, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.58);
 }
 .chip-img {
   width: 34px;
@@ -7411,20 +7458,49 @@ button:not(:disabled):active {
 .icon-group.attributes {gap: 10px;}
 .icon-group.attributes img {
   width: 35px; height: 35px;
+  padding: 3px;
+  box-sizing: border-box;
+  border: 0.3px solid rgba(255, 255, 255, 0.44);
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
+  box-shadow: var(--history-glass-shadow-soft);
+  backdrop-filter: saturate(165%) blur(14px);
+  -webkit-backdrop-filter: saturate(165%) blur(14px);
   cursor: pointer;
   filter: grayscale(1) opacity(0.5);
-  transition: 0.2s;
+  transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .icon-group.units {gap: 6px;}
 .icon-group.units img {
   width: 38px; height: 38px;
+  padding: 3px;
+  box-sizing: border-box;
+  border: 0.3px solid rgba(255, 255, 255, 0.44);
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
+  box-shadow: var(--history-glass-shadow-soft);
+  backdrop-filter: saturate(165%) blur(14px);
+  -webkit-backdrop-filter: saturate(165%) blur(14px);
   cursor: pointer;
   filter: grayscale(1) opacity(0.5);
-  transition: 0.2s;
+  transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.icon-group.attributes img:hover,
+.icon-group.units img:hover {
+  background: var(--history-glass-bg-hover);
+  border-color: rgba(255, 255, 255, 0.56);
+}
+.icon-group.attributes img:active,
+.icon-group.units img:active {
+  filter: grayscale(1) opacity(0.5) brightness(0.86);
+  transform: translateY(1px) scale(0.97);
 }
 .icon-group img.icon-active {
   filter: grayscale(0) opacity(1);
   transform: scale(1.1);
+  border-color: var(--history-active-border);
+  background: linear-gradient(145deg, rgba(236, 254, 255, 0.78), rgba(255, 255, 255, 0.38));
+  box-shadow: 0 8px 18px rgba(20, 184, 166, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.58);
 }
 
 .icon-group.is-disabled {
@@ -7443,24 +7519,38 @@ button:not(:disabled):active {
 }
 .rarity-item {
   padding: 4px 8px;
-  border: 1px solid #eee;
+  border: 1px solid rgba(255, 255, 255, 0.70);
   border-radius: 999px;
   display: flex;
   align-items: center;
   cursor: pointer;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.36));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease;
+  touch-action: manipulation;
+}
+.rarity-item:hover {
+  background: var(--history-glass-bg-hover);
+  border-color: rgba(255, 255, 255, 0.86);
+}
+.rarity-item:active {
+  filter: brightness(0.86);
+  transform: translateY(1px) scale(0.97);
 }
 .rarity-item.active {
-  border-color: #ffa940;
-  background: #fff7e6;
+  border-color: rgba(251, 191, 36, 0.78);
+  background: linear-gradient(145deg, rgba(254, 243, 199, 0.92), rgba(255, 255, 255, 0.42));
+  box-shadow: 0 8px 18px rgba(251, 191, 36, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.54);
 }
 .star-img { width: 18px; height: 18px; margin-right: 2px; }
 .birthday-img { width: 18px; height: 18px; }
 
 /* 顶部按钮高亮 */
 .active-highlight {
-  background: #33ccbb !important;
+  background: var(--history-active-bg) !important;
   color: white !important;
-  border-color: #33ccbb !important;
+  border-color: var(--history-active-border) !important;
+  box-shadow: 0 8px 18px rgba(20, 184, 166, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.44) !important;
 }
 
 .clear-btn {
@@ -7476,10 +7566,11 @@ button:not(:disabled):active {
   margin-left: 2px;
   padding: 0 10px;
   font-size: inherit;
-  background: #f3f4f6;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(248, 250, 252, 0.34));
   color: #6b7280;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.70);
   border-radius: 999px;
+  box-shadow: var(--history-glass-shadow-soft);
 }
 
 .sort-btn:hover,
@@ -7487,13 +7578,14 @@ button:not(:disabled):active {
 .btn-group button:hover,
 .btn-group-sm button:hover,
 .panel-reset-btn:hover {
-  background: #e5e7eb;
+  background: var(--history-glass-bg-hover);
+  border-color: rgba(255, 255, 255, 0.86);
 }
 
 .btn-group button.active:hover,
 .btn-group-sm button.active:hover,
 .nav-btn.active-highlight:hover {
-  background: #33ccbb;
+  background: var(--history-active-bg);
 }
 
 .clear-btn:hover {
@@ -7501,17 +7593,17 @@ button:not(:disabled):active {
 }
 
 .panel-reset-btn.is-ready {
-  background: #ef4444;
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.92), rgba(248, 113, 113, 0.72));
   color: #fff;
-  border-color: #ef4444;
+  border-color: rgba(252, 165, 165, 0.78);
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
 }
 
 .panel-reset-btn:disabled {
   opacity: 1;
-  background: #f3f4f6;
+  background: rgba(248, 250, 252, 0.42);
   color: #9ca3af;
-  border-color: #e5e7eb;
+  border-color: rgba(255, 255, 255, 0.54);
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -8037,6 +8129,7 @@ button:not(:disabled):active {
     width: 320px;
     left: 8px;
     max-height: min(82vh, calc(100vh - var(--preview-config-top) - 8px));
+    max-height: min(82dvh, calc(100dvh - var(--preview-config-top) - 8px));
   }
 
   .preview-panel {
@@ -8056,7 +8149,7 @@ button:not(:disabled):active {
 
 @media (max-width: 1200px) {
   .filter-bar {
-    padding: 9px 4px;
+    padding: 6px 12px;
     gap: 8px;
   }
 
@@ -8121,7 +8214,7 @@ button:not(:disabled):active {
   }
 
   .filter-bar {
-    padding: 10px 4px;
+    padding: 6px 12px;
     gap: 8px;
   }
 
@@ -8159,6 +8252,12 @@ button:not(:disabled):active {
 }
 
 @media (max-width: 900px) {
+  .filter-sticky {
+    background: transparent;
+    border-bottom: 0;
+    box-shadow: none;
+  }
+
   .event-history-wrapper.with-editor .event-history {
     margin-right: 0;
   }
@@ -8172,9 +8271,9 @@ button:not(:disabled):active {
   }
 
   .filter-bar {
-    padding: 4px 2px;
+    padding: 5px 6px;
     gap: 3px;
-    margin-bottom: 4px;
+    margin-bottom: 0;
   }
 
   .filter-bar .sort-btn,

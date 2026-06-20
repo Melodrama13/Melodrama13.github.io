@@ -5668,6 +5668,7 @@ watch(totalSongPages, (nextTotal) => {
   color: #1f2937;
   background: transparent;
   min-height: 100vh;
+  min-height: 100dvh;
   --stats-radius-panel: 18px;
   --stats-nav-radius: 28px;
   --stats-nav-inner-radius: 22px;
@@ -5739,6 +5740,8 @@ watch(totalSongPages, (nextTotal) => {
   width: var(--stats-nav-width);
   height: calc(100vh - var(--stats-nav-top) - 10px);
   max-height: calc(100vh - var(--stats-nav-top) - 10px);
+  height: calc(100dvh - var(--stats-nav-top) - 10px);
+  max-height: calc(100dvh - var(--stats-nav-top) - 10px);
   min-height: 0;
   box-sizing: border-box;
   overflow: hidden;
@@ -5889,7 +5892,7 @@ watch(totalSongPages, (nextTotal) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 5;
+  z-index: 4601;
 }
 
 .nav-collapse-fab-icon {
@@ -5902,7 +5905,7 @@ watch(totalSongPages, (nextTotal) => {
 
 .floating-menu-btn {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 54px);
+  top: calc(env(safe-area-inset-top, 0px) + 60px);
   left: 8px;
   width: 40px;
   height: 40px;
@@ -5914,7 +5917,7 @@ watch(totalSongPages, (nextTotal) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 4300;
+  z-index: 5100;
   padding: 0;
   cursor: pointer;
 }
@@ -8522,14 +8525,14 @@ watch(totalSongPages, (nextTotal) => {
 
   .stats-nav.mobile-floating {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 52px);
+    top: calc(env(safe-area-inset-top, 0px) + 58px);
     left: 8px;
     right: auto;
     width: min(240px, calc(100vw - 16px));
     max-width: calc(100vw - 16px);
     height: auto;
-    max-height: calc(100dvh - 60px);
-    z-index: 4200;
+    max-height: calc(100dvh - 70px);
+    z-index: 5090;
     box-shadow: var(--stats-nav-glass-shadow);
     background: var(--stats-nav-glass-bg);
     backdrop-filter: var(--stats-nav-glass-blur);
@@ -8852,15 +8855,17 @@ watch(totalSongPages, (nextTotal) => {
   }
 
   .floating-menu-btn {
-    top: calc(env(safe-area-inset-top, 0px) + 48px);
+    top: calc(env(safe-area-inset-top, 0px) + 58px);
     width: 34px;
     height: 34px;
+    z-index: 5100;
   }
 
   .nav-collapse-fab {
     width: 30px;
     min-height: 30px;
     height: 30px;
+    z-index: 5101;
   }
 }
 
