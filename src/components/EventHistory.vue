@@ -1081,6 +1081,7 @@
 import { ref, computed, inject, nextTick, watch, onMounted, onActivated, onDeactivated, onBeforeUnmount } from 'vue';
 import PredictEditor from './PredictEditor.vue';
 import html2canvas from 'html2canvas';
+import { buildAssetUrl } from '../utils/assets.js';
 
 
 // 2. 【新增】接收从 App.vue 传下来的总表（包含历史+预测）
@@ -1477,7 +1478,7 @@ const getSongIdText = (event) => {
 const getSongTooltipImageSrc = (event) => {
   const id = toFiniteSongId(event?.song_id);
   if (id === null) return '';
-  return `/songs/song_${String(id).padStart(3, '0')}.webp`;
+  return buildAssetUrl(`/songs/song_${String(id).padStart(3, '0')}.webp`);
 };
 
 const markMediaImageSettled = (event) => {
@@ -5648,7 +5649,7 @@ const getBirthdayCardImageSrc = (row) => {
   if (cardId === null) return '';
   const folder = CHAR_CARD_FOLDER_MAP.value[String(row?.name || '').trim()];
   if (!folder) return '';
-  return `/cards/${folder}/card${cardId}.webp`;
+  return buildAssetUrl(`/cards/${folder}/card${cardId}.webp`);
 };
 
 const isBirthdayCardImageFailed = (row) => {
@@ -5741,10 +5742,10 @@ const getCardTooltipImageList = (card) => {
   const base = `/cards/${folder}/card${Math.trunc(cardId)}`;
   const list = [];
   if (shouldIncludeCardNormalImage(cardId)) {
-    list.push(`${base}.webp`);
+    list.push(buildAssetUrl(`${base}.webp`));
   }
   if (shouldIncludeCardTrainingImage(card, cardId)) {
-    list.push(`${base}_t.webp`);
+    list.push(buildAssetUrl(`${base}_t.webp`));
   }
   return list;
 };

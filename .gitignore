@@ -32,6 +32,8 @@ other_source/
 # Generated song cover metadata
 public/songs/manifest.json
 public/cards/manifest.json
+public/songs/
+public/cards/
 
 # Local sync scripts (not for frontend runtime)
 scripts/*.mjs

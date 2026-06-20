@@ -1423,6 +1423,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toCanvas } from 'html-to-image';
 import { toHiragana, toRomaji } from 'wanakana';
+import { buildAssetUrl } from '../utils/assets.js';
 import {
   clampHostScrollTop,
   createStatsNavigationHandlers,
@@ -2763,7 +2764,7 @@ const buildLocalSongJacketUrl = (songIdRaw) => {
   const idText = buildSongJacketIdText(songIdRaw);
   if (!idText) return '';
   const fileName = `song_${idText}.webp`;
-  return `${LOCAL_SONG_JACKET_BASE_PATH}/${fileName}`;
+  return buildAssetUrl(`${LOCAL_SONG_JACKET_BASE_PATH}/${fileName}`);
 };
 
 const normalizeSongRow = (row) => {

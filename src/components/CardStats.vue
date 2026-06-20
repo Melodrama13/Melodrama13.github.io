@@ -2695,6 +2695,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, reactive } from 'vue';
 import { toCanvas } from 'html-to-image';
+import { buildAssetUrl } from '../utils/assets.js';
 import {
   clampHostScrollTop,
   createStatsNavigationHandlers,
@@ -9054,7 +9055,7 @@ function buildCardImageSrc(cardId, baseName, options = {}) {
   if (!folder) return '';
 
   const suffix = shouldUseAfterCardImage(idNum, options?.rarity) ? '_t' : '';
-  return `/cards/${folder}/card${idNum}${suffix}.webp`;
+  return buildAssetUrl(`/cards/${folder}/card${idNum}${suffix}.webp`);
 }
 
 const buildFesCardImageSrc = (cardId, baseName, fesType) => {
