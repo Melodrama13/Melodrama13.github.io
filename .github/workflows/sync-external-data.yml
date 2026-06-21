@@ -94,7 +94,7 @@ jobs:
           exit 1
 
       - name: Sync song data
-        run: npm run sync:other
+        run: npm run sync:songs-other
 
       - name: Sync event data
         run: npm run sync:events-other
