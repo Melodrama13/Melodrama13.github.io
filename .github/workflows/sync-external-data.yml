@@ -149,15 +149,25 @@ jobs:
               return false;
             }
           };
+          const missingSongs = [];
+          const missingCards = [];
+          const maxMissingSongs = Number(process.env.MEDIA_SYNC_MAX_MISSING_SONGS || 50);
+          const maxMissingCards = Number(process.env.MEDIA_SYNC_MAX_MISSING_CARDS || 150);
+          const refuseLikelyFullSync = () => {
+            if (missingSongs.length > maxMissingSongs || missingCards.length > maxMissingCards) {
+              console.error(`Refusing likely full media sync: songs=${missingSongs.length}/${maxMissingSongs}, cards=${missingCards.length}/${maxMissingCards}`);
+              process.exit(1);
+            }
+          };
 
           const songs = readJson('public/data/pjsk_songs.json');
-          const missingSongs = [];
           for (const song of asArray(songs)) {
             const id = toId(song?.id);
             if (id === null) continue;
             const songId = String(id).padStart(3, '0');
             if (!(await headOk(`songs/song_${songId}.webp`))) {
               missingSongs.push(song);
+              refuseLikelyFullSync();
             }
           }
 
@@ -180,7 +190,6 @@ jobs:
           };
           const localName = (cardId, variant) => `card${cardId}${variant === 'after_training' ? '_t' : ''}.webp`;
 
-          const missingCards = [];
           for (const card of asArray(cards)) {
             const id = toId(card?.CardID);
             if (id === null || !text(card?.Bundle)) continue;
@@ -192,16 +201,13 @@ jobs:
                 break;
               }
             }
-            if (cardMissing) missingCards.push(card);
+            if (cardMissing) {
+              missingCards.push(card);
+              refuseLikelyFullSync();
+            }
           }
 
           fs.mkdirSync('.media-cache', { recursive: true });
-          const maxMissingSongs = Number(process.env.MEDIA_SYNC_MAX_MISSING_SONGS || 50);
-          const maxMissingCards = Number(process.env.MEDIA_SYNC_MAX_MISSING_CARDS || 150);
-          if (missingSongs.length > maxMissingSongs || missingCards.length > maxMissingCards) {
-            console.error(`Refusing likely full media sync: songs=${missingSongs.length}/${maxMissingSongs}, cards=${missingCards.length}/${maxMissingCards}`);
-            process.exit(1);
-          }
           fs.writeFileSync('.media-cache/missing-songs.json', `${JSON.stringify(missingSongs, null, 2)}\n`);
           fs.writeFileSync('.media-cache/missing-cards.json', `${JSON.stringify(missingCards, null, 2)}\n`);
           fs.writeFileSync('.media-cache/media-plan.env', [
