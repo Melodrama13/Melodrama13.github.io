@@ -60,7 +60,7 @@ jobs:
       - name: Fetch external source data
         run: |
           for attempt in 1 2 3; do
-            if npm run fetch:other-source && node - <<'NODE'
+            if npm run fetch:other-source && node --input-type=commonjs - <<'NODE'
           const fs = require('node:fs');
           const path = require('node:path');
           const files = [
@@ -124,7 +124,7 @@ jobs:
         if: env.HAS_R2_SYNC_SECRETS == 'true'
         run: |
           mkdir -p .media-cache/songs .media-cache/cards
-          node - <<'NODE'
+          node --input-type=commonjs - <<'NODE'
           const fs = require('node:fs');
           const path = require('node:path');
 
