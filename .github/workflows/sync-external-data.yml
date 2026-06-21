@@ -131,17 +131,17 @@ jobs:
       - name: Plan missing media assets
         id: media-plan
         if: env.HAS_R2_SYNC_SECRETS == 'true'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
         run: |
           mkdir -p .media-cache/songs .media-cache/cards
+          aws s3api list-objects-v2 --bucket "$R2_BUCKET" --prefix songs/ --endpoint-url "$R2_ENDPOINT" --query "Contents[].Key" --output json > .media-cache/r2-songs.json
+          aws s3api list-objects-v2 --bucket "$R2_BUCKET" --prefix cards/ --endpoint-url "$R2_ENDPOINT" --query "Contents[].Key" --output json > .media-cache/r2-cards.json
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
-          import path from 'node:path';
-
-          const baseUrl = String(process.env.R2_PUBLIC_BASE_URL || '').replace(/\/+$/, '');
-          if (!baseUrl) {
-            console.error('R2_PUBLIC_BASE_URL is required.');
-            process.exit(1);
-          }
 
           const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
           const asArray = (value) => Array.isArray(value) ? value : [];
@@ -150,41 +150,31 @@ jobs:
             const n = Number(value);
             return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
           };
-          const headOk = async (assetPath) => {
-            try {
-              const response = await fetch(`${baseUrl}/${assetPath}`, { method: 'HEAD', redirect: 'follow' });
-              return response.ok;
-            } catch {
-              return false;
-            }
-          };
+          const r2SongKeys = new Set(asArray(readJson('.media-cache/r2-songs.json')).map(text).filter(Boolean));
+          const r2CardKeys = new Set(asArray(readJson('.media-cache/r2-cards.json')).map(text).filter(Boolean));
           const missingSongs = [];
           const missingCards = [];
           const maxMissingSongs = Number(process.env.MEDIA_SYNC_MAX_MISSING_SONGS || 50);
           const maxMissingCards = Number(process.env.MEDIA_SYNC_MAX_MISSING_CARDS || 150);
-          const headConcurrency = Number(process.env.MEDIA_SYNC_HEAD_CONCURRENCY || 24);
           const refuseLikelyFullSync = () => {
             if (missingSongs.length > maxMissingSongs || missingCards.length > maxMissingCards) {
               console.error(`Refusing likely full media sync: songs=${missingSongs.length}/${maxMissingSongs}, cards=${missingCards.length}/${maxMissingCards}`);
+              console.error(`Missing song sample: ${missingSongs.slice(0, 20).map((song) => song?.id).join(', ')}`);
+              console.error(`Missing card sample: ${missingCards.slice(0, 20).map((card) => card?.CardID).join(', ')}`);
               process.exit(1);
-            }
-          };
-          const runBatches = async (items, worker, onMissing) => {
-            const size = Number.isFinite(headConcurrency) && headConcurrency > 0 ? Math.trunc(headConcurrency) : 24;
-            for (let index = 0; index < items.length; index += size) {
-              const results = await Promise.all(items.slice(index, index + size).map(worker));
-              results.filter(Boolean).forEach(onMissing);
-              refuseLikelyFullSync();
             }
           };
 
           const songs = readJson('public/data/pjsk_songs.json');
           const songRows = asArray(songs).filter((song) => toId(song?.id) !== null);
-          await runBatches(songRows, async (song) => {
+          for (const song of songRows) {
             const id = toId(song?.id);
             const songId = String(id).padStart(3, '0');
-            return await headOk(`songs/song_${songId}.webp`) ? null : song;
-          }, (song) => missingSongs.push(song));
+            if (!r2SongKeys.has(`songs/song_${songId}.webp`)) {
+              missingSongs.push(song);
+              refuseLikelyFullSync();
+            }
+          }
 
           const cards = readJson('public/data/pjsk_cards.json');
           const characters = readJson('public/data/pjsk_characters.json');
@@ -206,16 +196,17 @@ jobs:
           const localName = (cardId, variant) => `card${cardId}${variant === 'after_training' ? '_t' : ''}.webp`;
 
           const cardRows = asArray(cards).filter((card) => toId(card?.CardID) !== null && text(card?.Bundle));
-          await runBatches(cardRows, async (card) => {
+          for (const card of cardRows) {
             const id = toId(card?.CardID);
             const folder = characterFolderByName.get(text(card?.Name)) || '000unknown';
             for (const variant of variantsForCard(card)) {
-              if (!(await headOk(`cards/${folder}/${localName(id, variant)}`))) {
-                return card;
+              if (!r2CardKeys.has(`cards/${folder}/${localName(id, variant)}`)) {
+                missingCards.push(card);
+                refuseLikelyFullSync();
+                break;
               }
             }
-            return null;
-          }, (card) => missingCards.push(card));
+          }
 
           fs.mkdirSync('.media-cache', { recursive: true });
           fs.writeFileSync('.media-cache/missing-songs.json', `${JSON.stringify(missingSongs, null, 2)}\n`);
