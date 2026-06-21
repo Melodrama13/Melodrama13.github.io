@@ -5,6 +5,15 @@ on:
     - cron: "7 3 * * *"
     - cron: "17 20 * * *"
   workflow_dispatch:
+    inputs:
+      media_max_missing_songs:
+        description: "Max missing song jackets before refusing media sync"
+        required: false
+        default: "50"
+      media_max_missing_cards:
+        description: "Max missing card rows before refusing media sync"
+        required: false
+        default: "150"
 
 permissions:
   contents: write
@@ -21,8 +30,8 @@ jobs:
       HAS_R2_SYNC_SECRETS: ${{ secrets.R2_ACCOUNT_ID != '' && secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_SECRET_ACCESS_KEY != '' }}
       R2_BUCKET: pjsk-planner-assets
       R2_PUBLIC_BASE_URL: https://pub-7686b7655bb6415da2e3b3030ceee7aa.r2.dev
-      MEDIA_SYNC_MAX_MISSING_SONGS: 50
-      MEDIA_SYNC_MAX_MISSING_CARDS: 150
+      MEDIA_SYNC_MAX_MISSING_SONGS: ${{ github.event_name == 'workflow_dispatch' && inputs.media_max_missing_songs || '50' }}
+      MEDIA_SYNC_MAX_MISSING_CARDS: ${{ github.event_name == 'workflow_dispatch' && inputs.media_max_missing_cards || '150' }}
 
     steps:
       - name: Check private sync token
@@ -153,23 +162,29 @@ jobs:
           const missingCards = [];
           const maxMissingSongs = Number(process.env.MEDIA_SYNC_MAX_MISSING_SONGS || 50);
           const maxMissingCards = Number(process.env.MEDIA_SYNC_MAX_MISSING_CARDS || 150);
+          const headConcurrency = Number(process.env.MEDIA_SYNC_HEAD_CONCURRENCY || 24);
           const refuseLikelyFullSync = () => {
             if (missingSongs.length > maxMissingSongs || missingCards.length > maxMissingCards) {
               console.error(`Refusing likely full media sync: songs=${missingSongs.length}/${maxMissingSongs}, cards=${missingCards.length}/${maxMissingCards}`);
               process.exit(1);
             }
           };
-
-          const songs = readJson('public/data/pjsk_songs.json');
-          for (const song of asArray(songs)) {
-            const id = toId(song?.id);
-            if (id === null) continue;
-            const songId = String(id).padStart(3, '0');
-            if (!(await headOk(`songs/song_${songId}.webp`))) {
-              missingSongs.push(song);
+          const runBatches = async (items, worker, onMissing) => {
+            const size = Number.isFinite(headConcurrency) && headConcurrency > 0 ? Math.trunc(headConcurrency) : 24;
+            for (let index = 0; index < items.length; index += size) {
+              const results = await Promise.all(items.slice(index, index + size).map(worker));
+              results.filter(Boolean).forEach(onMissing);
               refuseLikelyFullSync();
             }
-          }
+          };
+
+          const songs = readJson('public/data/pjsk_songs.json');
+          const songRows = asArray(songs).filter((song) => toId(song?.id) !== null);
+          await runBatches(songRows, async (song) => {
+            const id = toId(song?.id);
+            const songId = String(id).padStart(3, '0');
+            return await headOk(`songs/song_${songId}.webp`) ? null : song;
+          }, (song) => missingSongs.push(song));
 
           const cards = readJson('public/data/pjsk_cards.json');
           const characters = readJson('public/data/pjsk_characters.json');
@@ -190,22 +205,17 @@ jobs:
           };
           const localName = (cardId, variant) => `card${cardId}${variant === 'after_training' ? '_t' : ''}.webp`;
 
-          for (const card of asArray(cards)) {
+          const cardRows = asArray(cards).filter((card) => toId(card?.CardID) !== null && text(card?.Bundle));
+          await runBatches(cardRows, async (card) => {
             const id = toId(card?.CardID);
-            if (id === null || !text(card?.Bundle)) continue;
             const folder = characterFolderByName.get(text(card?.Name)) || '000unknown';
-            let cardMissing = false;
             for (const variant of variantsForCard(card)) {
               if (!(await headOk(`cards/${folder}/${localName(id, variant)}`))) {
-                cardMissing = true;
-                break;
+                return card;
               }
             }
-            if (cardMissing) {
-              missingCards.push(card);
-              refuseLikelyFullSync();
-            }
-          }
+            return null;
+          }, (card) => missingCards.push(card));
 
           fs.mkdirSync('.media-cache', { recursive: true });
           fs.writeFileSync('.media-cache/missing-songs.json', `${JSON.stringify(missingSongs, null, 2)}\n`);
