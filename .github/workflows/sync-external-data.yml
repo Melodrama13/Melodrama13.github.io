@@ -2,6 +2,7 @@ name: Sync external game data
 
 on:
   schedule:
+    - cron: "7 3 * * *"
     - cron: "17 20 * * *"
   workflow_dispatch:
 
@@ -17,6 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HAS_SYNC_PRIVATE_REPO_TOKEN: ${{ secrets.SYNC_PRIVATE_REPO_TOKEN != '' }}
+      HAS_R2_SYNC_SECRETS: ${{ secrets.R2_ACCOUNT_ID != '' && secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_SECRET_ACCESS_KEY != '' }}
+      R2_BUCKET: pjsk-planner-assets
+      R2_PUBLIC_BASE_URL: https://pub-7686b7655bb6415da2e3b3030ceee7aa.r2.dev
+      MEDIA_SYNC_MAX_MISSING_SONGS: 50
+      MEDIA_SYNC_MAX_MISSING_CARDS: 150
 
     steps:
       - name: Check private sync token
@@ -52,7 +58,40 @@ jobs:
         run: npm ci
 
       - name: Fetch external source data
-        run: npm run fetch:other-source
+        run: |
+          for attempt in 1 2 3; do
+            if npm run fetch:other-source && node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const files = [
+            'musics.json',
+            'musicDifficulties.json',
+            'musicTags.json',
+            'musicVocals.json',
+            'gameCharacters.json',
+            'outsideCharacters.json',
+            'cards.json',
+            'cardSupplies.json',
+            'gachas.json',
+            'events.json',
+            'eventMusics.json',
+            'skills.json',
+            'eventStoryUnits.json'
+          ];
+          const missing = files.filter((file) => !fs.existsSync(path.join('other_source', file)));
+          if (missing.length > 0) {
+            console.error(`Missing source files: ${missing.join(', ')}`);
+            process.exit(1);
+          }
+          NODE
+            then
+              exit 0
+            fi
+            echo "Fetch attempt $attempt failed; retrying shortly..."
+            sleep $((attempt * 60))
+          done
+          echo "Failed to fetch complete external source data after 3 attempts."
+          exit 1
 
       - name: Sync song data
         run: npm run sync:other
@@ -62,6 +101,138 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Check media sync configuration
+        run: |
+          if [ "$HAS_R2_SYNC_SECRETS" = "true" ]; then
+            echo "R2 media sync is enabled."
+          else
+            echo "R2 media sync is skipped. Configure R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY to enable it."
+          fi
+
+      - name: Install AWS CLI for R2 sync
+        if: env.HAS_R2_SYNC_SECRETS == 'true'
+        run: |
+          python -m pip install --user awscli
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Plan missing media assets
+        id: media-plan
+        if: env.HAS_R2_SYNC_SECRETS == 'true'
+        run: |
+          mkdir -p .media-cache/songs .media-cache/cards
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const baseUrl = String(process.env.R2_PUBLIC_BASE_URL || '').replace(/\/+$/, '');
+          if (!baseUrl) {
+            console.error('R2_PUBLIC_BASE_URL is required.');
+            process.exit(1);
+          }
+
+          const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
+          const asArray = (value) => Array.isArray(value) ? value : [];
+          const text = (value) => String(value || '').trim();
+          const toId = (value) => {
+            const n = Number(value);
+            return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
+          };
+          const headOk = async (assetPath) => {
+            try {
+              const response = await fetch(`${baseUrl}/${assetPath}`, { method: 'HEAD', redirect: 'follow' });
+              return response.ok;
+            } catch {
+              return false;
+            }
+          };
+
+          const songs = readJson('public/data/pjsk_songs.json');
+          const missingSongs = [];
+          for (const song of asArray(songs)) {
+            const id = toId(song?.id);
+            if (id === null) continue;
+            const songId = String(id).padStart(3, '0');
+            if (!(await headOk(`songs/song_${songId}.webp`))) {
+              missingSongs.push(song);
+            }
+          }
+
+          const cards = readJson('public/data/pjsk_cards.json');
+          const characters = readJson('public/data/pjsk_characters.json');
+          const characterFolderByName = new Map();
+          for (const row of asArray(characters)) {
+            const id = toId(row?.id);
+            if (id === null) continue;
+            const folder = `${String(id).padStart(3, '0')}${text(row?.en_abbr || row?.abbr).toLowerCase()}`;
+            [text(row?.zh_name), text(row?.ja_name)].filter(Boolean).forEach((name) => characterFolderByName.set(name, folder));
+          }
+
+          const variantsForCard = (card) => {
+            const id = toId(card?.CardID);
+            if (id === 1167) return ['after_training'];
+            const rarity = text(card?.Rarity).toLowerCase();
+            if (['3', '4', 'rarity_3', 'rarity_4'].includes(rarity)) return ['normal', 'after_training'];
+            return ['normal'];
+          };
+          const localName = (cardId, variant) => `card${cardId}${variant === 'after_training' ? '_t' : ''}.webp`;
+
+          const missingCards = [];
+          for (const card of asArray(cards)) {
+            const id = toId(card?.CardID);
+            if (id === null || !text(card?.Bundle)) continue;
+            const folder = characterFolderByName.get(text(card?.Name)) || '000unknown';
+            let cardMissing = false;
+            for (const variant of variantsForCard(card)) {
+              if (!(await headOk(`cards/${folder}/${localName(id, variant)}`))) {
+                cardMissing = true;
+                break;
+              }
+            }
+            if (cardMissing) missingCards.push(card);
+          }
+
+          fs.mkdirSync('.media-cache', { recursive: true });
+          const maxMissingSongs = Number(process.env.MEDIA_SYNC_MAX_MISSING_SONGS || 50);
+          const maxMissingCards = Number(process.env.MEDIA_SYNC_MAX_MISSING_CARDS || 150);
+          if (missingSongs.length > maxMissingSongs || missingCards.length > maxMissingCards) {
+            console.error(`Refusing likely full media sync: songs=${missingSongs.length}/${maxMissingSongs}, cards=${missingCards.length}/${maxMissingCards}`);
+            process.exit(1);
+          }
+          fs.writeFileSync('.media-cache/missing-songs.json', `${JSON.stringify(missingSongs, null, 2)}\n`);
+          fs.writeFileSync('.media-cache/missing-cards.json', `${JSON.stringify(missingCards, null, 2)}\n`);
+          fs.writeFileSync('.media-cache/media-plan.env', [
+            `MISSING_SONGS=${missingSongs.length}`,
+            `MISSING_CARDS=${missingCards.length}`
+          ].join('\n') + '\n');
+          console.log(`Missing song jackets: ${missingSongs.length}`);
+          console.log(`Cards with missing thumbnails: ${missingCards.length}`);
+          NODE
+          cat .media-cache/media-plan.env >> "$GITHUB_ENV"
+          . .media-cache/media-plan.env
+          echo "missing_songs=$MISSING_SONGS" >> "$GITHUB_OUTPUT"
+          echo "missing_cards=$MISSING_CARDS" >> "$GITHUB_OUTPUT"
+
+      - name: Download missing media assets
+        if: env.HAS_R2_SYNC_SECRETS == 'true' && (steps.media-plan.outputs.missing_songs != '0' || steps.media-plan.outputs.missing_cards != '0')
+        run: |
+          if [ "$MISSING_SONGS" != "0" ]; then
+            npm run sync:song-covers -- --songs-file .media-cache/missing-songs.json --output-dir .media-cache/songs --manifest-file .media-cache/songs/manifest.json
+          fi
+          if [ "$MISSING_CARDS" != "0" ]; then
+            npm run sync:card-thumbnails -- --cards-file .media-cache/missing-cards.json --output-dir .media-cache/cards --manifest-file .media-cache/cards/manifest.json
+          fi
+
+      - name: Upload media cache to R2
+        if: env.HAS_R2_SYNC_SECRETS == 'true' && (steps.media-plan.outputs.missing_songs != '0' || steps.media-plan.outputs.missing_cards != '0')
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          aws s3 sync .media-cache/songs "s3://$R2_BUCKET/songs" --endpoint-url "$R2_ENDPOINT" --size-only --exclude "manifest.json" --only-show-errors
+          aws s3 sync .media-cache/cards "s3://$R2_BUCKET/cards" --endpoint-url "$R2_ENDPOINT" --size-only --exclude "manifest.json" --only-show-errors
 
       - name: Detect data changes
         id: changes

@@ -28,6 +28,7 @@ dist-ssr
 
 # Local private data source (do not commit)
 other_source/
+.sync-reports/
 
 # Generated song cover metadata
 public/songs/manifest.json
