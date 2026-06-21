@@ -1082,6 +1082,7 @@ import { ref, computed, inject, nextTick, watch, onMounted, onActivated, onDeact
 import PredictEditor from './PredictEditor.vue';
 import html2canvas from 'html2canvas';
 import { buildAssetUrl } from '../utils/assets.js';
+import { isCardImageReleased, isEventStarted, isSongReleased } from '../utils/spoilerGuard.js';
 
 
 // 2. 【新增】接收从 App.vue 传下来的总表（包含历史+预测）
@@ -1097,6 +1098,13 @@ const props = defineProps({
 });
 const emit = defineEmits(['sync-preview-event-id']);
 const deletePredictEvent = inject('deletePredictEvent');
+
+const SPOILER_CLOCK_INTERVAL_MS = 60 * 1000;
+const spoilerNow = ref(new Date());
+let spoilerClockTimer = 0;
+const refreshSpoilerClock = () => {
+  spoilerNow.value = new Date();
+};
 
 const normalizeEventId = (value) => String(value ?? '').trim();
 const isNumericEventId = (value) => /^\d+$/.test(normalizeEventId(value));
@@ -1436,8 +1444,10 @@ const toFiniteSongId = (value) => {
 };
 
 const songsById = computed(() => {
+  const now = spoilerNow.value;
   const map = new Map();
   (props.allSongs || []).forEach((song) => {
+    if (!isSongReleased(song, now)) return;
     const id = toFiniteSongId(song?.id);
     if (id === null) return;
     map.set(id, song);
@@ -1618,11 +1628,10 @@ const getPredictStatus = (event) => {
 };
 
 const getCurrentEventId = () => {
-  const today = new Date();
+  const now = spoilerNow.value;
   const candidates = (props.allEvents || []).filter(ev => {
     if (!isNumericEventId(ev?.id)) return false;
-    const evDate = new Date(ev.start_date.replace(/\//g, '-'));
-    return evDate <= today;
+    return isEventStarted(ev, now);
   });
   if (candidates.length === 0) return -1;
   return candidates.reduce((prev, curr) => (Number(prev.id) > Number(curr.id) ? prev : curr)).id;
@@ -4288,6 +4297,8 @@ const birthdayRows = computed(() => {
       id: `birthday-${key}`,
       name,
       date,
+      cardDate,
+      Type: 'birthday',
       cardId: normalizeCardIdText(card?.CardID),
       attribute: normalizeAttr(card?.Attribute)
     });
@@ -5423,6 +5434,8 @@ const restoreHistoryScroll = () => {
 };
 
 onMounted(() => {
+  refreshSpoilerClock();
+  spoilerClockTimer = window.setInterval(refreshSpoilerClock, SPOILER_CLOCK_INTERVAL_MS);
   Promise.all([
     fetch('/data/pjsk_preview.json').then((res) => (res.ok ? res.json() : [])).catch(() => [])
   ]).then(([previewRows]) => {
@@ -5536,6 +5549,10 @@ onActivated(() => {
 });
 
 onBeforeUnmount(() => {
+  if (spoilerClockTimer) {
+    clearInterval(spoilerClockTimer);
+    spoilerClockTimer = 0;
+  }
   closeInlineTooltips();
   stopDragPreviewConfig();
   emit('sync-preview-event-id', null);
@@ -5578,12 +5595,11 @@ const scrollTo = (target) => {
   } else if (target === 'bottom') {
     container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   } else if (target === 'current') {
-    const today = new Date();
+    const now = spoilerNow.value;
     let candidates = (props.allEvents || []).filter(ev => {
       if (!isNumericEventId(ev?.id)) return false;
       // 兼容日期格式处理
-      const evDate = new Date(ev.start_date.replace(/\//g, '-'));
-      return evDate <= today;
+      return isEventStarted(ev, now);
     });
 
     candidates = displayRows.value
@@ -5591,8 +5607,7 @@ const scrollTo = (target) => {
       .map((row) => row.event)
       .filter((ev) => {
         if (!isNumericEventId(ev?.id)) return false;
-        const evDate = new Date(String(ev.start_date || '').replace(/\//g, '-'));
-        return Number.isFinite(evDate.getTime()) && evDate <= today;
+        return isEventStarted(ev, now);
       });
 
     if (candidates.length > 0) {
@@ -5645,6 +5660,7 @@ const CHARACTER_BIRTHDAY_MD_MAP = computed(() => {
 const birthdayCardImageErrorMap = ref({});
 
 const getBirthdayCardImageSrc = (row) => {
+  if (!isCardImageReleased({ Date: row?.cardDate || row?.date, Type: 'birthday' }, spoilerNow.value)) return '';
   const cardId = parseCardIdNumber(row?.cardId);
   if (cardId === null) return '';
   const folder = CHAR_CARD_FOLDER_MAP.value[String(row?.name || '').trim()];
@@ -5731,6 +5747,7 @@ const shouldIncludeCardTrainingImage = (card, cardId) => {
 
 const getCardTooltipImageList = (card) => {
   if (!isCardTooltipImageEligible(card)) return [];
+  if (!isCardImageReleased(card, spoilerNow.value)) return [];
 
   const cardId = parseCardIdNumber(card?.CardID);
   if (cardId === null) return [];

@@ -2696,6 +2696,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, reactive } from 'vue';
 import { toCanvas } from 'html-to-image';
 import { buildAssetUrl } from '../utils/assets.js';
+import { isCardImageReleased, isEventStarted } from '../utils/spoilerGuard.js';
 import {
   clampHostScrollTop,
   createStatsNavigationHandlers,
@@ -2713,6 +2714,35 @@ const props = defineProps({
   previewSyncEventId: { type: [Number, String], default: null }
 });
 const emit = defineEmits(['jump-to-event', 'stats-preview-update', 'stats-top-state-change']);
+
+const cardRarityByIdMap = computed(() => {
+  const result = {};
+  (props.allCards || []).forEach((card) => {
+    const cardId = Number(card?.CardID);
+    if (!Number.isFinite(cardId) || cardId <= 0) return;
+    const rarity = String(card?.Rarity || '').trim();
+    if (!rarity) return;
+    result[cardId] = rarity;
+  });
+  return result;
+});
+
+const cardByIdMap = computed(() => {
+  const result = {};
+  (props.allCards || []).forEach((card) => {
+    const cardId = Number(card?.CardID);
+    if (!Number.isFinite(cardId) || cardId <= 0) return;
+    result[Math.trunc(cardId)] = card;
+  });
+  return result;
+});
+
+const SPOILER_CLOCK_INTERVAL_MS = 60 * 1000;
+const spoilerNow = ref(new Date());
+let spoilerClockTimer = 0;
+const refreshSpoilerClock = () => {
+  spoilerNow.value = new Date();
+};
 
 // 2. 新增：用户自定义的截止 ID 状态
 const manualEventId = ref(null);
@@ -5674,6 +5704,8 @@ const bindRelatedJumpChipObservers = () => {
 };
 
 onMounted(() => {
+  refreshSpoilerClock();
+  spoilerClockTimer = window.setInterval(refreshSpoilerClock, SPOILER_CLOCK_INTERVAL_MS);
   updateMobileNavState();
   window.addEventListener('resize', updateMobileNavState);
   bindViewportScrollTracking();
@@ -5696,6 +5728,10 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (spoilerClockTimer) {
+    clearInterval(spoilerClockTimer);
+    spoilerClockTimer = 0;
+  }
   if (topBarStateChangeRaf) {
     cancelAnimationFrame(topBarStateChangeRaf);
     topBarStateChangeRaf = 0;
@@ -6028,8 +6064,7 @@ const bannerLastEventIdMap = computed(() => {
   return map;
 });
 
-const now = new Date();
-const nowStr = now.toLocaleDateString();
+const nowStr = computed(() => spoilerNow.value.toLocaleDateString());
 
 const toFiniteEventId = (value) => {
   if (value === null || value === undefined) return null;
@@ -6043,14 +6078,12 @@ const toFiniteEventId = (value) => {
 
 // 3. 自动计算“当前实际活动”的 ID (作为默认值)
 const autoCurrentId = computed(() => {
-  const today = new Date();
+  const now = spoilerNow.value;
   const numericIds = (props.allEvents || [])
     .filter((ev) => {
       if (ev?.isPredict) return false;
       if (!isNumericEventId(ev?.id)) return false;
-      const evDate = parseDateSafe(ev?.start_date);
-      if (!evDate) return false;
-      return evDate <= today;
+      return isEventStarted(ev, now);
     })
     .map((e) => Number(e.id));
 
@@ -9019,18 +9052,6 @@ function getCardFolderByName(name) {
   return CHAR_CARD_FOLDER_MAP.value[key] || '';
 }
 
-const cardRarityByIdMap = computed(() => {
-  const result = {};
-  (props.allCards || []).forEach((card) => {
-    const cardId = Number(card?.CardID);
-    if (!Number.isFinite(cardId) || cardId <= 0) return;
-    const rarity = String(card?.Rarity || '').trim();
-    if (!rarity) return;
-    result[cardId] = rarity;
-  });
-  return result;
-});
-
 function getCardRarityTier(rarityValue) {
   const rarityNum = Number(String(rarityValue || '').trim());
   if (!Number.isFinite(rarityNum)) return 0;
@@ -9050,6 +9071,8 @@ function shouldUseAfterCardImage(cardId, rarityHint = '') {
 function buildCardImageSrc(cardId, baseName, options = {}) {
   const idNum = Number(cardId);
   if (!Number.isFinite(idNum) || idNum <= 0) return '';
+  const sourceCard = options?.card || cardByIdMap.value[Math.trunc(idNum)] || null;
+  if (sourceCard && !isCardImageReleased(sourceCard, spoilerNow.value)) return '';
 
   const folder = getCardFolderByName(baseName);
   if (!folder) return '';

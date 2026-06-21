@@ -3,9 +3,6 @@ name: Sync external game data
 on:
   schedule:
     - cron: "7 3 * * *"
-    - cron: "27 11 * * *"
-    - cron: "27 13 * * *"
-    - cron: "17 20 * * *"
   workflow_dispatch:
     inputs:
       media_max_missing_songs:

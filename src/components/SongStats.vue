@@ -1424,6 +1424,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toCanvas } from 'html-to-image';
 import { toHiragana, toRomaji } from 'wanakana';
 import { buildAssetUrl } from '../utils/assets.js';
+import { isSongReleased } from '../utils/spoilerGuard.js';
 import {
   clampHostScrollTop,
   createStatsNavigationHandlers,
@@ -1435,6 +1436,13 @@ const props = defineProps({
   allSongs: { type: Array, default: () => [] },
   allCharacters: { type: Array, default: () => [] }
 });
+
+const SPOILER_CLOCK_INTERVAL_MS = 60 * 1000;
+const spoilerNow = ref(new Date());
+let spoilerClockTimer = 0;
+const refreshSpoilerClock = () => {
+  spoilerNow.value = new Date();
+};
 
 const keyword = ref('');
 const mvFilter = ref('all');
@@ -2544,6 +2552,8 @@ const bindSectionObserver = async () => {
 };
 
 onMounted(() => {
+  refreshSpoilerClock();
+  spoilerClockTimer = window.setInterval(refreshSpoilerClock, SPOILER_CLOCK_INTERVAL_MS);
   updateMobileNavState();
   window.addEventListener('resize', handleWindowResize);
   document.addEventListener('pointerdown', handleDocumentPointerDownForSongToast, true);
@@ -2579,6 +2589,10 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (spoilerClockTimer) {
+    clearInterval(spoilerClockTimer);
+    spoilerClockTimer = 0;
+  }
   window.removeEventListener('resize', handleWindowResize);
   document.removeEventListener('pointerdown', handleDocumentPointerDownForSongToast, true);
   if (statsMainInteractionHost instanceof HTMLElement) {
@@ -2813,8 +2827,10 @@ const normalizeSongRow = (row) => {
 };
 
 const songs = computed(() => {
+  const now = spoilerNow.value;
   return (Array.isArray(props.allSongs) ? props.allSongs : [])
     .map((row) => normalizeSongRow(row))
+    .filter((song) => isSongReleased(song, now))
     .sort((a, b) => normalizeSongId(a.id) - normalizeSongId(b.id));
 });
 
