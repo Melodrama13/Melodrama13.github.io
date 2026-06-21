@@ -11,6 +11,8 @@
     "sync:other:dry": "node scripts/sync-other-source.mjs --dry-run",
     "fetch:other-source": "node scripts/fetch-other-source.mjs",
     "fetch:other-source:dry": "node scripts/fetch-other-source.mjs --dry-run",
+    "sync:events-other": "node scripts/sync-events-other-source.mjs",
+    "sync:events-other:dry": "node scripts/sync-events-other-source.mjs --dry-run",
     "sync:cards-other": "node scripts/sync-cards-other-source.mjs",
     "sync:cards-other:dry": "node scripts/sync-cards-other-source.mjs --dry-run",
     "sync:song-covers": "node scripts/sync-song-covers.mjs",
