@@ -1,6 +1,12 @@
 <template>
-  <transition name="slide">
-    <div v-if="isOpen" class="predict-drawer" :class="{ 'is-mobile-sheet': isMobileViewport }" :style="drawerStyle">
+  <Teleport to="body">
+    <transition name="slide">
+      <div
+        v-if="isOpen"
+        class="predict-drawer"
+        :class="{ 'is-mobile-sheet': isMobileViewport }"
+        :style="drawerStyle"
+      >
       <div class="drawer-header">
         <div
           v-if="isMobileViewport"
@@ -136,8 +142,9 @@
       <div class="drawer-footer">
         <button @click="submit" class="save-all-btn">确认并保存预测</button>
       </div>
-    </div>
-  </transition>
+      </div>
+    </transition>
+  </Teleport>
 </template>
 
 <script setup>
@@ -1210,7 +1217,10 @@ const submit = () => {
 
 /* 进场动画 */
 .slide-enter-active, .slide-leave-active { transition: transform 0.3s ease; }
-.slide-enter-from, .slide-leave-to { transform: translateX(100%); }
+.slide-enter-from, .slide-leave-to {
+  transform: translate3d(100%, 0, 0);
+  -webkit-transform: translate3d(100%, 0, 0);
+}
 
 .empty-hint { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 30px; }
 

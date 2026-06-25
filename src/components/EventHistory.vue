@@ -822,7 +822,7 @@
               </template>
             </div>
             <div
-              v-if="isEditorOpen && !isBottomPredictEditorMode && formatSeriesCompact(row.event)"
+              v-if="formatSeriesCompact(row.event)"
               class="editor-series-chip"
               :style="getEditorSeriesStyle(row.event)"
             >
@@ -830,7 +830,7 @@
             </div>
           </div>
 
-          <div v-if="!shouldApplyEditorHideRules" class="event-main-content">
+          <div class="event-main-content">
             <div class="event-title-row">
               <span class="event-title">{{ row.event.event_title }}</span>
             </div>
@@ -950,7 +950,7 @@
             </div>
           </div>
 
-          <div v-if="!shouldApplyEditorHideRules" class="vs-section">
+          <div class="vs-section">
             <div class="vs-top-row">
               <div v-if="row.event.virtual_singer" class="vs-list">
                 <img v-for="vs in parseVS(row.event.virtual_singer)" :key="vs" :src="`/chars/${getCharAbbr(vs)}.png`" :title="vs" class="vs-avatar" />
@@ -7652,7 +7652,7 @@ button:not(:disabled):active {
 
 .editor-series-chip {
   margin-top: 6px;
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   min-height: 18px;
@@ -7666,6 +7666,10 @@ button:not(:disabled):active {
   line-height: 1;
 }
 
+.event-history-wrapper.with-editor .editor-series-chip {
+  display: inline-flex;
+}
+
 .event-history-wrapper.with-editor .banner-section {
   display: inline-flex;
   flex-direction: column;
@@ -7674,6 +7678,10 @@ button:not(:disabled):active {
 
 /* 3. 标题 */
 .event-main-content { width: var(--event-main-width); min-width: 0; padding: 0 var(--event-main-pad-x); }
+.event-history-wrapper.with-editor .event-main-content,
+.event-history-wrapper.with-editor .vs-section {
+  display: none;
+}
 .event-title { font-weight: bold; font-size: var(--event-title-font-size); color: #333; line-height: 1.3; }
 .type-indicator { margin-top: 5px; display: flex; align-items: center; gap: var(--event-type-gap); min-width: 0; flex-wrap: nowrap; }
 .type-tag { font-size: var(--event-type-font-size); padding: 2px var(--event-type-pad-x); border-radius: 10px; color: white; white-space: nowrap; flex: 0 0 auto; }
