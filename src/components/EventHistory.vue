@@ -10,8 +10,8 @@
           <div class="preview-config-head" @mousedown.prevent="startDragPreviewConfig($event)" @touchstart.prevent="startDragPreviewConfigTouch($event)">
             <span>悬浮统计（最多6个）</span>
             <div class="preview-config-actions">
-              <button class="preview-config-reset" @mousedown.stop @touchstart.stop @click="previewConfigBodyCollapsed = !previewConfigBodyCollapsed">{{ previewConfigBodyCollapsed ? '展开' : '收起' }}</button>
               <button v-if="!previewConfigBodyCollapsed" class="preview-config-reset" @mousedown.stop @touchstart.stop @click="resetPreviewPanelLayout">重置布局</button>
+              <button class="preview-config-reset" @mousedown.stop @touchstart.stop @click="previewConfigBodyCollapsed = !previewConfigBodyCollapsed">{{ previewConfigBodyCollapsed ? '展开' : '收起' }}</button>
             </div>
           </div>
           <div v-show="!previewFloatingCollapsed && !previewConfigBodyCollapsed" class="preview-config-options">
@@ -505,9 +505,25 @@
         </div>
       </div>
     </transition>
-    <div class="event-history" ref="historyContainer" @scroll.passive="handleHistoryScroll">
+    <div
+      class="event-history"
+      ref="historyContainer"
+      @scroll.passive="handleHistoryScroll"
+      @wheel.passive="handleHistoryManualScrollIntent"
+      @touchstart.passive="handleHistoryManualScrollIntent"
+      @touchmove.passive="handleHistoryManualScrollIntent"
+      @pointerdown.passive="handleHistoryManualScrollIntent"
+    >
       <div ref="filterStickyRef" class="filter-sticky">
-        <div class="filter-bar" :class="{ 'is-compact': isCompactFilterBar }">
+        <div
+          ref="filterBarRef"
+          class="filter-bar"
+          :class="{
+            'is-compact': isCompactFilterBar,
+            'is-editor-tight': isEditorFilterTight,
+            'is-editor-mobile': isEditorFilterMobile
+          }"
+        >
           <button @click="sortDesc = !sortDesc" class="sort-btn" :title="sortDesc ? '最新在前' : '最早在前'">
             {{ sortDesc ? '最新在前' : '最早在前' }}
           </button>
@@ -782,7 +798,11 @@
             v-if="row.kind === 'event'"
             :id="'event-' + row.event.id"
             class="event-item"
-            :class="{ 'is-tooltip-raised': tooltipRaisedEventKey === row.key }"
+            :class="{
+              'is-tooltip-raised': tooltipRaisedEventKey === row.key,
+              'is-active': currentActiveId === normalizeEventId(row.event.id),
+              'is-heavy-ready': shouldRenderEventHeavy(row)
+            }"
             :data-predict-state="getPredictStatus(row.event)"
             @click="openPredictEditor(row.event)"
             :style="[
@@ -844,6 +864,7 @@
           </div>
 
           <div class="event-members">
+            <template v-if="shouldRenderEventHeavy(row)">
             <div class="member-row">
               <div v-for="(card, normalIndex) in getNormalCards(row.event.memberCards)" :key="`${card.CardID}-${normalIndex}`" class="member-card-box">
                 <div
@@ -895,8 +916,18 @@
                 </div>
               </div>
             </div>
+            </template>
+            <template v-else>
+              <div class="member-row member-row-placeholder" aria-hidden="true">
+                <span
+                  v-for="n in getEventPlaceholderMemberCount(row.event, 'normal')"
+                  :key="`member-placeholder-${row.key}-${n}`"
+                  class="member-card-placeholder"
+                ></span>
+              </div>
+            </template>
 
-            <div v-if="getFesCards(row.event.memberCards).length > 0" class="member-row fes-row">
+            <div v-if="shouldRenderEventHeavy(row) && getFesCards(row.event.memberCards).length > 0" class="member-row fes-row">
               <img :src="`/elements/${getFesType(row.event.memberCards)}.webp`" class="fes-type-icon" />
               <div v-for="(card, fesIndex) in getFesCards(row.event.memberCards)" :key="`${card.CardID}-${fesIndex}`" class="member-card-box">
                 <div
@@ -948,9 +979,18 @@
                 </div>
               </div>
             </div>
+            <div v-else-if="getEventPlaceholderMemberCount(row.event, 'fes') > 0" class="member-row fes-row member-row-placeholder" aria-hidden="true">
+              <span class="fes-type-icon-placeholder"></span>
+              <span
+                v-for="n in getEventPlaceholderMemberCount(row.event, 'fes')"
+                :key="`fes-placeholder-${row.key}-${n}`"
+                class="member-card-placeholder"
+              ></span>
+            </div>
           </div>
 
           <div class="vs-section">
+            <template v-if="shouldRenderEventHeavy(row)">
             <div class="vs-top-row">
               <div v-if="row.event.virtual_singer" class="vs-list">
                 <img v-for="vs in parseVS(row.event.virtual_singer)" :key="vs" :src="`/chars/${getCharAbbr(vs)}.png`" :title="vs" class="vs-avatar" />
@@ -1002,6 +1042,20 @@
             <div class="song-mv-grid" v-if="hasSongTooltip(row.event)">
               <span class="song-mv-pill is-3d" :class="{ 'is-empty': !hasSong3DMV(row.event) }">3D</span>
               <span class="song-mv-pill is-2d" :class="{ 'is-empty': !hasSong2DMV(row.event) }">2D</span>
+            </div>
+            </template>
+            <div v-else class="vs-section-placeholder" aria-hidden="true">
+              <div class="vs-placeholder-row">
+                <span
+                  v-for="n in getEventPlaceholderVsCount(row.event)"
+                  :key="`vs-placeholder-${row.key}-${n}`"
+                  class="vs-avatar-placeholder"
+                ></span>
+              </div>
+              <div class="song-mv-grid song-mv-grid-placeholder" v-if="hasSongTooltip(row.event)">
+                <span class="song-mv-pill-placeholder"></span>
+                <span class="song-mv-pill-placeholder"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -1108,6 +1162,15 @@ const refreshSpoilerClock = () => {
 
 const normalizeEventId = (value) => String(value ?? '').trim();
 const isNumericEventId = (value) => /^\d+$/.test(normalizeEventId(value));
+const normalizeCardIdText = (value) => String(value || '').trim();
+
+const parseCardIdNumber = (value) => {
+  const text = normalizeCardIdText(value);
+  if (!/^\d+$/.test(text)) return null;
+  const n = Number.parseInt(text, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
 const hideCollabPools = ref(true);
 const hideBirthdayRows = ref(false);
 const hidePreviewRows = ref(false);
@@ -1120,6 +1183,14 @@ const pinnedSongTooltipEventKey = ref('');
 const openedBirthdayInfoKey = ref('');
 const cardTooltipOffsetMap = ref({});
 const songTooltipOffsetMap = ref({});
+const TOOLTIP_HOVER_DELAY_MS = 300;
+let tooltipHoverTimer = 0;
+
+const cancelPendingTooltipOpen = () => {
+  if (!tooltipHoverTimer) return;
+  clearTimeout(tooltipHoverTimer);
+  tooltipHoverTimer = 0;
+};
 
 const makeCardTooltipKey = (eventKey, card, slotKey = '') => {
   const eventPart = String(eventKey || '').trim();
@@ -1137,6 +1208,7 @@ const hasOpenTooltipForEventKey = (eventKey) => {
 };
 
 const closeInlineTooltips = () => {
+  cancelPendingTooltipOpen();
   openedCardTooltipKey.value = '';
   openedSongTooltipEventKey.value = '';
   pinnedCardTooltipKey.value = '';
@@ -1217,14 +1289,26 @@ const adjustCardTooltipViewportAfterOpen = async (eventKey, card, slotKey = '', 
 };
 
 const handleCardTooltipEnter = (eventKey, card, slotKey = '', event) => {
+  cancelPendingTooltipOpen();
   if (pinnedCardTooltipKey.value || pinnedSongTooltipEventKey.value) return;
   const key = makeCardTooltipKey(eventKey, card, slotKey);
-  setTooltipRaisedEvent(eventKey);
-  openedCardTooltipKey.value = key;
-  openedSongTooltipEventKey.value = '';
   const host = event?.currentTarget;
   if (!(host instanceof HTMLElement)) return;
-  void adjustCardTooltipViewportAfterOpen(eventKey, card, slotKey, host);
+  const openTooltip = () => {
+    setTooltipRaisedEvent(eventKey);
+    openedCardTooltipKey.value = key;
+    openedSongTooltipEventKey.value = '';
+    void adjustCardTooltipViewportAfterOpen(eventKey, card, slotKey, host);
+  };
+  if (event?.type === 'mouseenter') {
+    tooltipHoverTimer = window.setTimeout(() => {
+      tooltipHoverTimer = 0;
+      if (!host.matches(':hover')) return;
+      openTooltip();
+    }, TOOLTIP_HOVER_DELAY_MS);
+    return;
+  }
+  openTooltip();
 };
 
 const setSongTooltipOffset = (eventKey, offsetX = 0, offsetY = 0) => {
@@ -1289,15 +1373,27 @@ const adjustSongTooltipViewportAfterOpen = async (eventKey, hostEl = null) => {
 };
 
 const handleSongTooltipEnter = (eventKey, event) => {
+  cancelPendingTooltipOpen();
   if (pinnedCardTooltipKey.value || pinnedSongTooltipEventKey.value) return;
   const key = String(eventKey || '').trim();
   if (!key) return;
-  setTooltipRaisedEvent(eventKey);
-  openedSongTooltipEventKey.value = key;
-  openedCardTooltipKey.value = '';
   const host = event?.currentTarget;
   if (!(host instanceof HTMLElement)) return;
-  void adjustSongTooltipViewportAfterOpen(eventKey, host);
+  const openTooltip = () => {
+    setTooltipRaisedEvent(eventKey);
+    openedSongTooltipEventKey.value = key;
+    openedCardTooltipKey.value = '';
+    void adjustSongTooltipViewportAfterOpen(eventKey, host);
+  };
+  if (event?.type === 'mouseenter') {
+    tooltipHoverTimer = window.setTimeout(() => {
+      tooltipHoverTimer = 0;
+      if (!host.matches(':hover')) return;
+      openTooltip();
+    }, TOOLTIP_HOVER_DELAY_MS);
+    return;
+  }
+  openTooltip();
 };
 
 const makeBirthdayInfoKey = (row) => String(row?.key || row?.id || '').trim();
@@ -1335,6 +1431,7 @@ const setTooltipRaisedEvent = (eventKey) => {
 };
 
 const clearTooltipRaisedEvent = (eventKey) => {
+  cancelPendingTooltipOpen();
   const key = String(eventKey || '').trim();
   if (openedCardTooltipKey.value.startsWith(`${key}::`) && openedCardTooltipKey.value !== pinnedCardTooltipKey.value) {
     clearCardTooltipOffset(openedCardTooltipKey.value);
@@ -1351,6 +1448,7 @@ const clearTooltipRaisedEvent = (eventKey) => {
 };
 
 const toggleCardTooltip = (eventKey, card, slotKey = '', event = null) => {
+  cancelPendingTooltipOpen();
   const key = makeCardTooltipKey(eventKey, card, slotKey);
   const host = event?.currentTarget;
 
@@ -1382,6 +1480,7 @@ const toggleCardTooltip = (eventKey, card, slotKey = '', event = null) => {
 const isCardTooltipOpen = (eventKey, card, slotKey = '') => openedCardTooltipKey.value === makeCardTooltipKey(eventKey, card, slotKey);
 
 const toggleSongTooltip = (eventKey, event = null) => {
+  cancelPendingTooltipOpen();
   const key = String(eventKey || '').trim();
   if (!key) return;
   if (pinnedSongTooltipEventKey.value === key) {
@@ -1649,6 +1748,7 @@ const currentEditingEvent = ref(null);
 const lastFocusedEventId = ref(null);
 const historyWrapperRef = ref(null);
 const filterStickyRef = ref(null);
+const filterBarRef = ref(null);
 const previewLayerCursor = ref(0);
 const previewPanelLayers = ref({});
 const previewConfigLayer = ref(0);
@@ -2135,6 +2235,7 @@ const _internalScrollTo = (eventId, behavior = 'smooth') => {
   const el = findEventElementInContainer(idKey);
   if (!el || !container) return false;
   if (container.clientHeight <= 0 || container.getClientRects().length === 0) return false;
+  setActiveEventItem(idKey);
 
   // 获取筛选栏的高度作为偏移量
   const filterBar = container.querySelector('.filter-bar');
@@ -2142,6 +2243,36 @@ const _internalScrollTo = (eventId, behavior = 'smooth') => {
   const containerTop = container.getBoundingClientRect().top;
   const elementTop = el.getBoundingClientRect().top;
   const targetTop = Math.max(0, container.scrollTop + (elementTop - containerTop) - offset);
+  const correctionToken = scrollCorrectionToken + 1;
+  scrollCorrectionToken = correctionToken;
+  const correctTarget = () => {
+    if (correctionToken !== scrollCorrectionToken) return;
+    const targetEl = findEventElementInContainer(idKey);
+    if (!targetEl || !historyContainer.value) return;
+    const nextContainerTop = historyContainer.value.getBoundingClientRect().top;
+    const nextElementTop = targetEl.getBoundingClientRect().top;
+    const delta = nextElementTop - nextContainerTop - offset;
+    if (Math.abs(delta) > 0.5) {
+      historyContainer.value.scrollTop += delta;
+      historyScrollTop.value = historyContainer.value.scrollTop || 0;
+      try {
+        sessionStorage.setItem(HISTORY_SCROLL_KEY, String(historyScrollTop.value));
+      } catch (_) {}
+    }
+  };
+  const scheduleCorrections = () => {
+    let frames = 24;
+    const tick = () => {
+      if (correctionToken !== scrollCorrectionToken) return;
+      correctTarget();
+      frames -= 1;
+      if (frames > 0) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    setTimeout(correctTarget, 250);
+    setTimeout(correctTarget, 700);
+    setTimeout(correctTarget, 1200);
+  };
 
   container.scrollTo({ top: targetTop, behavior });
   suppressRestoreUntil.value = Date.now() + 1000;
@@ -2149,7 +2280,7 @@ const _internalScrollTo = (eventId, behavior = 'smooth') => {
   try {
     sessionStorage.setItem(HISTORY_SCROLL_KEY, String(targetTop));
   } catch (_) {}
-  setActiveEventItem(idKey);
+  scheduleCorrections();
   return true;
 };
 
@@ -2158,6 +2289,11 @@ const openPredictEditor = (event) => {
     return;
   }
 
+  if (isEditorOpen.value) {
+    return;
+  }
+
+  forceRenderEventRow(event.id);
   lastFocusedEventId.value = event.id;
   currentEditingEvent.value = event;
   currentEditingSelectionNames.value = Array.isArray(event?.memberCards)
@@ -2187,6 +2323,17 @@ const handleCloseEditor = () => {
   preserveAnchorWhileLayoutChanges(anchorId, () => {
     isEditorOpen.value = false;
   });
+  currentEditingSelectionNames.value = [];
+  currentEditingSelectionCards.value = [];
+  emit('sync-preview-event-id', null);
+};
+
+const closePredictEditorImmediately = () => {
+  if (!isEditorOpen.value && currentEditingSelectionNames.value.length === 0 && currentEditingSelectionCards.value.length === 0) {
+    return;
+  }
+  isEditorOpen.value = false;
+  currentEditingEvent.value = null;
   currentEditingSelectionNames.value = [];
   currentEditingSelectionCards.value = [];
   emit('sync-preview-event-id', null);
@@ -2226,6 +2373,32 @@ const PREVIEW_DAILY_CHAR_UNIT_MAP = computed(() => {
   });
   return map;
 });
+
+const CHAR_MAP = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const key = String(char?.zh_name || '').trim();
+    const abbr = String(char?.en_abbr || '').trim();
+    if (!key || !abbr) return;
+    map[key] = abbr;
+  });
+  return map;
+});
+
+const CHARACTER_BIRTHDAY_MD_MAP = computed(() => {
+  const map = {};
+  (props.allCharacters || []).forEach((char) => {
+    const name = String(char?.zh_name || '').trim();
+    const month = Number(char?.birthday_month);
+    const day = Number(char?.birthday_day);
+    if (!name) return;
+    if (!Number.isFinite(month) || !Number.isFinite(day)) return;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return;
+    map[name] = { month: Math.trunc(month), day: Math.trunc(day) };
+  });
+  return map;
+});
+
 const PREVIEW_DAILY_SKILL_BASE = {
   bfes_up: 160,
   cfes: 140,
@@ -2733,12 +2906,20 @@ const setActiveEventItem = (eventId) => {
   const idKey = normalizeEventId(eventId);
   if (!idKey) return;
   currentActiveId.value = idKey;
+  forceRenderEventNeighborhood(idKey);
 
   const container = historyContainer.value;
   if (!container) return;
   container.querySelectorAll('.event-item').forEach((item) => item.classList.remove('is-active'));
   const target = findEventElementInContainer(idKey);
   if (target) target.classList.add('is-active');
+};
+
+const clearActiveEventItem = () => {
+  currentActiveId.value = null;
+  const container = historyContainer.value;
+  if (!container) return;
+  container.querySelectorAll('.event-item.is-active').forEach((item) => item.classList.remove('is-active'));
 };
 
 const lastHandledJumpSeq = ref(0);
@@ -2907,6 +3088,26 @@ const previewFestivalIncludeFes = computed(() => {
 });
 
 const previewFestivalShowFes = computed(() => canTogglePreviewFestivalFes(activePreviewFestivalName.value));
+
+const isCardWithinPreviewLimit = (card, maxId) => {
+  const eidRaw = String(card?.EventID || '').trim();
+  if (!eidRaw) return true;
+  if (isNumericEventId(eidRaw)) return Number(eidRaw) <= Number(maxId);
+  const cutoffDate = getEventIdCutoffDate(maxId);
+  if (!cutoffDate) return true;
+  const sourceDate = getCardSourceDate(card);
+  if (!sourceDate) return true;
+  if (sourceDate.getTime() !== cutoffDate.getTime()) return sourceDate < cutoffDate;
+  return true;
+};
+
+const getPreviewCardProgressOrderId = (card) => {
+  const cardId = Number(String(card?.CardID || '').trim());
+  if (Number.isFinite(cardId) && cardId > 0) return cardId;
+  const eventId = Number(String(card?.EventID || '').trim());
+  if (Number.isFinite(eventId) && eventId > 0) return eventId * 10000;
+  return 0;
+};
 
 const PREVIEW_VS_NAMES = ['初音未来', '镜音铃', '镜音连', '巡音流歌', 'MEIKO', 'KAITO'];
 const PREVIEW_VS_ORIGINAL_STAT_TYPES = ['大罪', 'CF', 'BF', 'WL1', 'WL2', 'WL3', '其他'];
@@ -3227,18 +3428,6 @@ const getPreviewVsFourCountCellStyle = (value) => {
   };
 };
 
-const isCardWithinPreviewLimit = (card, maxId) => {
-  const eidRaw = String(card?.EventID || '').trim();
-  if (!eidRaw) return true;
-  if (isNumericEventId(eidRaw)) return Number(eidRaw) <= Number(maxId);
-  const cutoffDate = getEventIdCutoffDate(maxId);
-  if (!cutoffDate) return true;
-  const sourceDate = getCardSourceDate(card);
-  if (!sourceDate) return true;
-  if (sourceDate.getTime() !== cutoffDate.getTime()) return sourceDate < cutoffDate;
-  return true;
-};
-
 const isPreviewEventRewardCard = (card, options = {}) => {
   const rarity = String(card?.Rarity || '').trim();
   if (!['2', '3'].includes(rarity)) return false;
@@ -3246,14 +3435,6 @@ const isPreviewEventRewardCard = (card, options = {}) => {
   if (isNumericEventId(card?.EventID)) return true;
   if (!includeCollab) return false;
   return String(card?.Type || '').trim().toLowerCase() === 'collab';
-};
-
-const getPreviewCardProgressOrderId = (card) => {
-  const cardId = Number(String(card?.CardID || '').trim());
-  if (Number.isFinite(cardId) && cardId > 0) return cardId;
-  const eventId = Number(String(card?.EventID || '').trim());
-  if (Number.isFinite(eventId) && eventId > 0) return eventId * 10000;
-  return 0;
 };
 
 const getPreviewStepBaseOrder = (name) => {
@@ -4308,14 +4489,15 @@ const birthdayRows = computed(() => {
 });
 
 const previewRows = computed(() => {
-  return (previewDataRows.value || []).map((item) => {
+  return (previewDataRows.value || []).map((item, index) => {
     const idNum = Number(item?.id);
     const date = String(item?.date || '').trim();
     const week = String(item?.week || '').trim();
     const members = Array.isArray(item?.members)
       ? item.members.map((name) => String(name || '').trim()).filter((name) => !!CHAR_MAP.value[name]).slice(0, 4)
       : [];
-    const safeId = Number.isFinite(idNum) ? idNum : `x${Math.random().toString(36).slice(2, 8)}`;
+    const fallbackId = `${date}-${week}-${members.join('-')}-${index}`.replace(/[^\w\u4e00-\u9fa5-]+/g, '_');
+    const safeId = Number.isFinite(idNum) ? idNum : `x${fallbackId || index}`;
     return {
       kind: 'preview',
       key: `preview-${safeId}`,
@@ -4461,6 +4643,307 @@ const displayRows = computed(() => {
 
   return withPreview;
 });
+
+const PROGRESSIVE_RENDER_VIEWPORT_BUFFER_PX = 900;
+const PROGRESSIVE_MANUAL_SCROLL_IDLE_MS = 800;
+const EVENT_FULL_RENDER_STORAGE_KEY = 'pjsk_event_history_full_render_v1';
+const EVENT_FULL_RENDER_QUERY_PARAM = 'eventFullRender';
+const progressiveEventRenderKeys = ref(new Set());
+const isFullEventRenderMode = ref(false);
+let progressiveRenderTimer = 0;
+let progressiveVisibleRaf = 0;
+let progressiveResumeTimer = 0;
+let progressivePausedUntil = 0;
+
+const readFullEventRenderPreference = () => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const queryValue = new URLSearchParams(window.location.search).get(EVENT_FULL_RENDER_QUERY_PARAM);
+    if (queryValue !== null) {
+      return ['1', 'true', 'yes', 'on', 'full'].includes(String(queryValue).trim().toLowerCase());
+    }
+    return String(localStorage.getItem(EVENT_FULL_RENDER_STORAGE_KEY) || '').trim() === '1';
+  } catch (_) {
+    return false;
+  }
+};
+
+const persistFullEventRenderPreference = (enabled) => {
+  if (typeof window === 'undefined') return;
+  try {
+    if (enabled) {
+      localStorage.setItem(EVENT_FULL_RENDER_STORAGE_KEY, '1');
+    } else {
+      localStorage.removeItem(EVENT_FULL_RENDER_STORAGE_KEY);
+    }
+  } catch (_) {}
+};
+
+const setFullEventRenderMode = (enabled, options = {}) => {
+  const next = !!enabled;
+  isFullEventRenderMode.value = next;
+  if (options.persist !== false) {
+    persistFullEventRenderPreference(next);
+  }
+  resetProgressiveEventRender();
+  return isFullEventRenderMode.value;
+};
+
+const isProgressiveTouchLayout = () => {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth <= 1200 || window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches;
+};
+
+const getProgressiveInitialRowCount = () => {
+  if (typeof window === 'undefined') return 48;
+  return isProgressiveTouchLayout() ? 28 : 56;
+};
+
+const getProgressiveBatchRowCount = () => {
+  if (typeof window === 'undefined') return 12;
+  return isProgressiveTouchLayout() ? 6 : 12;
+};
+
+const getProgressiveBatchDelayMs = () => {
+  if (typeof window === 'undefined') return 48;
+  return isProgressiveTouchLayout() ? 80 : 48;
+};
+
+const shouldRunProgressiveBackgroundRender = () => {
+  if (isFullEventRenderMode.value) return false;
+  if (typeof window === 'undefined') return true;
+  return !isProgressiveTouchLayout();
+};
+
+const getProgressiveJumpPrewarmCounts = () => {
+  if (typeof window === 'undefined') return { before: 48, after: 12 };
+  return isProgressiveTouchLayout()
+    ? { before: 56, after: 12 }
+    : { before: 72, after: 18 };
+};
+
+const getProgressiveEventRows = () => displayRows.value.filter((row) => row.kind === 'event');
+
+const isProgressiveRenderPaused = () => Date.now() < progressivePausedUntil;
+
+const getForceHeavyEventKeys = () => {
+  const keys = new Set();
+  const pushEventId = (value) => {
+    const idKey = normalizeEventId(value);
+    if (idKey) keys.add(`event-${idKey}`);
+  };
+
+  pushEventId(currentActiveId.value);
+  pushEventId(pendingJumpEventId.value);
+
+  const raisedKey = String(tooltipRaisedEventKey.value || '').trim();
+  if (raisedKey.startsWith('event-')) keys.add(raisedKey);
+
+  return keys;
+};
+
+const setProgressiveEventRenderKeys = (nextKeys) => {
+  progressiveEventRenderKeys.value = nextKeys;
+};
+
+const addProgressiveEventRenderKeys = (keys) => {
+  if (!keys || keys.size === 0) return false;
+  const next = new Set(progressiveEventRenderKeys.value);
+  let changed = false;
+  keys.forEach((key) => {
+    if (!key || next.has(key)) return;
+    next.add(key);
+    changed = true;
+  });
+  if (changed) setProgressiveEventRenderKeys(next);
+  return changed;
+};
+
+const forceRenderEventRow = (eventId) => {
+  const idKey = normalizeEventId(eventId);
+  if (!idKey) return;
+  addProgressiveEventRenderKeys(new Set([`event-${idKey}`]));
+};
+
+const forceRenderEventNeighborhood = (eventId, options = {}) => {
+  const idKey = normalizeEventId(eventId);
+  if (!idKey) return;
+  const rows = getProgressiveEventRows();
+  const targetIndex = rows.findIndex((row) => normalizeEventId(row.event?.id) === idKey);
+  if (targetIndex < 0) {
+    forceRenderEventRow(idKey);
+    return;
+  }
+
+  const fallback = getProgressiveJumpPrewarmCounts();
+  const before = Number.isFinite(options.before) ? Math.max(0, options.before) : fallback.before;
+  const after = Number.isFinite(options.after) ? Math.max(0, options.after) : fallback.after;
+  const start = Math.max(0, targetIndex - before);
+  const end = Math.min(rows.length, targetIndex + after + 1);
+  addProgressiveEventRenderKeys(new Set(rows.slice(start, end).map((row) => row.key)));
+};
+
+const forceRenderAllEventRows = () => {
+  const keys = new Set(getProgressiveEventRows().map((row) => row.key));
+  addProgressiveEventRenderKeys(keys);
+};
+
+const cancelProgressiveEventRender = () => {
+  if (progressiveRenderTimer) {
+    clearTimeout(progressiveRenderTimer);
+    progressiveRenderTimer = 0;
+  }
+  if (progressiveVisibleRaf) {
+    cancelAnimationFrame(progressiveVisibleRaf);
+    progressiveVisibleRaf = 0;
+  }
+  if (progressiveResumeTimer) {
+    clearTimeout(progressiveResumeTimer);
+    progressiveResumeTimer = 0;
+  }
+};
+
+const scheduleProgressiveResume = () => {
+  if (isFullEventRenderMode.value) return;
+  if (progressiveResumeTimer) clearTimeout(progressiveResumeTimer);
+  const delay = Math.max(80, progressivePausedUntil - Date.now() + 32);
+  progressiveResumeTimer = window.setTimeout(() => {
+    progressiveResumeTimer = 0;
+    if (isProgressiveRenderPaused()) {
+      scheduleProgressiveResume();
+      return;
+    }
+    scheduleVisibleEventRowsHeavy();
+    scheduleProgressiveEventRender();
+  }, delay);
+};
+
+const pauseProgressiveRenderForManualScroll = () => {
+  if (isFullEventRenderMode.value) return;
+  progressivePausedUntil = Date.now() + PROGRESSIVE_MANUAL_SCROLL_IDLE_MS;
+  if (progressiveRenderTimer) {
+    clearTimeout(progressiveRenderTimer);
+    progressiveRenderTimer = 0;
+  }
+  scheduleProgressiveResume();
+};
+
+const scheduleProgressiveEventRender = () => {
+  if (isFullEventRenderMode.value) return;
+  if (!shouldRunProgressiveBackgroundRender()) return;
+  if (isProgressiveRenderPaused()) {
+    scheduleProgressiveResume();
+    return;
+  }
+  if (progressiveRenderTimer) return;
+  progressiveRenderTimer = window.setTimeout(() => {
+    progressiveRenderTimer = 0;
+    if (isProgressiveRenderPaused()) {
+      scheduleProgressiveResume();
+      return;
+    }
+    const rows = getProgressiveEventRows();
+    if (rows.length === 0) return;
+
+    const next = new Set(progressiveEventRenderKeys.value);
+    const batch = getProgressiveBatchRowCount();
+    let added = 0;
+
+    for (const row of rows) {
+      if (next.has(row.key)) continue;
+      next.add(row.key);
+      added += 1;
+      if (added >= batch) break;
+    }
+
+    if (added > 0) {
+      setProgressiveEventRenderKeys(next);
+      scheduleProgressiveEventRender();
+    }
+  }, getProgressiveBatchDelayMs());
+};
+
+const markVisibleEventRowsHeavy = () => {
+  if (isFullEventRenderMode.value) return;
+  if (isProgressiveRenderPaused()) return;
+  const container = historyContainer.value;
+  if (!container) return;
+
+  const containerRect = container.getBoundingClientRect();
+  const top = containerRect.top - PROGRESSIVE_RENDER_VIEWPORT_BUFFER_PX;
+  const bottom = containerRect.bottom + PROGRESSIVE_RENDER_VIEWPORT_BUFFER_PX;
+  const keys = new Set();
+
+  container.querySelectorAll('.event-item').forEach((node) => {
+    const rect = node.getBoundingClientRect();
+    if (rect.bottom < top || rect.top > bottom) return;
+    const idKey = parseEventIdFromDomId(node.id);
+    if (idKey) keys.add(`event-${idKey}`);
+  });
+
+  updateViewportAnchor();
+  if (addProgressiveEventRenderKeys(keys)) {
+    nextTick(() => {
+      restoreViewportAnchor();
+    });
+    if (!isProgressiveRenderPaused()) {
+      scheduleProgressiveEventRender();
+    }
+  }
+};
+
+const scheduleVisibleEventRowsHeavy = () => {
+  if (progressiveVisibleRaf) return;
+  progressiveVisibleRaf = requestAnimationFrame(() => {
+    progressiveVisibleRaf = 0;
+    markVisibleEventRowsHeavy();
+  });
+};
+
+const resetProgressiveEventRender = () => {
+  cancelProgressiveEventRender();
+  const rows = getProgressiveEventRows();
+  if (isFullEventRenderMode.value) {
+    setProgressiveEventRenderKeys(new Set(rows.map((row) => row.key)));
+    return;
+  }
+  const rowKeys = new Set(rows.map((row) => row.key));
+  const next = getForceHeavyEventKeys();
+  progressiveEventRenderKeys.value.forEach((key) => {
+    if (rowKeys.has(key)) next.add(key);
+  });
+  rows.slice(0, getProgressiveInitialRowCount()).forEach((row) => next.add(row.key));
+  setProgressiveEventRenderKeys(next);
+  nextTick(() => {
+    scheduleVisibleEventRowsHeavy();
+    if (!shouldRunProgressiveBackgroundRender()) {
+      return;
+    }
+    if (isProgressiveRenderPaused()) {
+      scheduleProgressiveResume();
+    } else {
+      scheduleProgressiveEventRender();
+    }
+  });
+};
+
+const shouldRenderEventHeavy = (row) => {
+  if (!row || row.kind !== 'event') return true;
+  if (isFullEventRenderMode.value) return true;
+  const forceKeys = getForceHeavyEventKeys();
+  return forceKeys.has(row.key) || progressiveEventRenderKeys.value.has(row.key);
+};
+
+const getEventPlaceholderMemberCount = (event, group = 'normal') => {
+  const cards = Array.isArray(event?.memberCards) ? event.memberCards : [];
+  const targetCards = group === 'fes' ? getFesCards(cards) : getNormalCards(cards);
+  return Math.max(0, Math.min(targetCards.length, 5));
+};
+
+const getEventPlaceholderVsCount = (event) => {
+  const singers = parseVS(event?.virtual_singer);
+  return Math.max(0, Math.min(singers.length, 3));
+};
 
 const updatePreviewConfigOffset = () => {
   if (Number.isFinite(previewConfigPanelPos.value.x) && Number.isFinite(previewConfigPanelPos.value.y)) return;
@@ -4770,25 +5253,143 @@ const pendingJumpEventId = ref('');
 const suppressRestoreUntil = ref(0);
 const isCompactFilterBar = ref(false);
 const isBottomPredictEditorMode = ref(false);
+const isEditorFilterTight = ref(false);
+const isEditorFilterMobile = ref(false);
 const shouldApplyEditorHideRules = computed(() => isEditorOpen.value && !isBottomPredictEditorMode.value);
 let resizeRafId = 0;
 let jumpRetryTimer = 0;
+let scrollCorrectionToken = 0;
+let filterAdaptRafId = 0;
+let filterAdaptFramesLeft = 0;
+let isHistoryPageActive = true;
+let activationRestoreToken = 0;
+let activationRestoreTimeoutIds = [];
 
-const updateCompactFilterState = () => {
-  isCompactFilterBar.value = window.innerWidth <= 900;
-  isBottomPredictEditorMode.value = window.innerWidth <= 900;
+const cancelScrollCorrections = () => {
+  scrollCorrectionToken += 1;
 };
 
-const saveHistoryScroll = () => {
+const cancelActivationRestore = () => {
+  activationRestoreToken += 1;
+  activationRestoreTimeoutIds.forEach((timerId) => clearTimeout(timerId));
+  activationRestoreTimeoutIds = [];
+};
+
+const scheduleActivationRestoreTimeout = (callback, delayMs, token) => {
+  const timerId = setTimeout(() => {
+    activationRestoreTimeoutIds = activationRestoreTimeoutIds.filter((id) => id !== timerId);
+    if (token !== activationRestoreToken) return;
+    callback();
+  }, delayMs);
+  activationRestoreTimeoutIds.push(timerId);
+};
+
+const getDisplayRowsStructureSignature = (rows) => (
+  (Array.isArray(rows) ? rows : [])
+    .map((row) => `${row?.kind || ''}:${row?.key || ''}`)
+    .join('|')
+);
+
+let lastDisplayRowsStructureSignature = '';
+isFullEventRenderMode.value = readFullEventRenderPreference();
+
+watch(displayRows, (rows) => {
+  const nextSignature = getDisplayRowsStructureSignature(rows);
+  if (nextSignature === lastDisplayRowsStructureSignature) {
+    return;
+  }
+  lastDisplayRowsStructureSignature = nextSignature;
+  resetProgressiveEventRender();
+}, { immediate: true, flush: 'post' });
+
+const getEditorDrawerWidthEstimate = () => {
+  if (typeof window === 'undefined') return 360;
+  return Math.min(380, Math.max(320, window.innerWidth * 0.3));
+};
+
+const getHistoryWidthWithEditor = () => {
+  if (typeof window === 'undefined') return 0;
+  if (!isEditorOpen.value || isBottomPredictEditorMode.value) return window.innerWidth;
+  const wrapperWidth = historyWrapperRef.value instanceof HTMLElement
+    ? historyWrapperRef.value.getBoundingClientRect().width
+    : window.innerWidth;
+  return Math.max(0, wrapperWidth - getEditorDrawerWidthEstimate());
+};
+
+const applyMeasuredFilterFit = () => {
+  if (!isHistoryPageActive) return;
+  if (!isEditorOpen.value || isBottomPredictEditorMode.value || !isEditorFilterTight.value) return;
+  const bar = filterBarRef.value;
+  if (!(bar instanceof HTMLElement)) return;
+  const needsMobile = bar.scrollWidth > bar.clientWidth + 1;
+  if (needsMobile !== isEditorFilterMobile.value) {
+    isEditorFilterMobile.value = needsMobile;
+    isCompactFilterBar.value = window.innerWidth <= 900 || needsMobile;
+  }
+};
+
+const scheduleMeasuredFilterFit = () => {
+  if (!isHistoryPageActive) return;
+  if (filterAdaptRafId) cancelAnimationFrame(filterAdaptRafId);
+  filterAdaptFramesLeft = 6;
+  const tick = () => {
+    filterAdaptRafId = 0;
+    applyMeasuredFilterFit();
+    filterAdaptFramesLeft -= 1;
+    if (filterAdaptFramesLeft > 0 && isEditorOpen.value && !isEditorFilterMobile.value) {
+      filterAdaptRafId = requestAnimationFrame(tick);
+    }
+  };
+  filterAdaptRafId = requestAnimationFrame(() => {
+    tick();
+  });
+};
+
+const updateCompactFilterState = () => {
+  if (!isHistoryPageActive) return;
+  const viewportWidth = window.innerWidth;
+  const nextBottomMode = viewportWidth <= 900;
+  isBottomPredictEditorMode.value = nextBottomMode;
+
+  const historyWidth = getHistoryWidthWithEditor();
+  const editorSideMode = isEditorOpen.value && !nextBottomMode;
+  const editorTight = editorSideMode && historyWidth > 0 && historyWidth < 900;
+
+  isEditorFilterTight.value = editorTight;
+  isEditorFilterMobile.value = false;
+  isCompactFilterBar.value = viewportWidth <= 900;
+
+  if (editorTight) {
+    nextTick(() => {
+      scheduleMeasuredFilterFit();
+    });
+  }
+};
+
+const isHistoryContainerVisible = () => {
+  const container = historyContainer.value;
+  return !!container
+    && container.isConnected
+    && container.clientHeight > 0
+    && container.getClientRects().length > 0;
+};
+
+const saveHistoryScroll = ({ force = false, requireVisible = false } = {}) => {
+  if (!force && !isHistoryPageActive) return;
   if (!historyContainer.value) return;
-  historyScrollTop.value = historyContainer.value.scrollTop || 0;
+  if (requireVisible && !isHistoryContainerVisible()) return;
+  const nextTop = historyContainer.value.scrollTop || 0;
+  if (force && nextTop <= 0 && !isHistoryContainerVisible() && historyScrollTop.value > 0) return;
+  historyScrollTop.value = nextTop;
   try {
     sessionStorage.setItem(HISTORY_SCROLL_KEY, String(historyScrollTop.value));
   } catch (_) {}
 };
 
 const handleHistoryScroll = () => {
+  if (!isHistoryPageActive) return;
   updateViewportAnchor();
+  scheduleVisibleEventRowsHeavy();
   saveHistoryScroll();
 };
 
@@ -4817,9 +5418,48 @@ const updateViewportAnchor = () => {
   viewportAnchor.value = anchor;
 };
 
-const restoreViewportAnchor = () => {
+const getVisibleRowAnchorById = (rowId) => {
   const container = historyContainer.value;
-  const anchor = viewportAnchor.value;
+  const id = String(rowId || '').trim();
+  if (!container || !id) return null;
+
+  const el = findRowElementInContainer(id);
+  if (!el) return null;
+
+  const containerTop = container.getBoundingClientRect().top;
+  const rect = el.getBoundingClientRect();
+  if (rect.bottom <= containerTop || rect.top >= containerTop + container.clientHeight) return null;
+  return {
+    id,
+    top: rect.top - containerTop
+  };
+};
+
+const updateViewportAnchorForSnapshot = () => {
+  const activeId = currentActiveId.value ? `event-${normalizeEventId(currentActiveId.value)}` : '';
+  const activeAnchor = getVisibleRowAnchorById(activeId);
+  if (activeAnchor) {
+    viewportAnchor.value = activeAnchor;
+    return;
+  }
+  updateViewportAnchor();
+};
+
+const saveHistoryScrollSnapshot = () => {
+  updateViewportAnchorForSnapshot();
+  saveHistoryScroll({ force: true, requireVisible: true });
+};
+
+const handleHistoryManualScrollIntent = () => {
+  cancelActivationRestore();
+  cancelScrollCorrections();
+  clearActiveEventItem();
+  pauseProgressiveRenderForManualScroll();
+};
+
+const restoreViewportAnchor = (anchorOverride = null) => {
+  const container = historyContainer.value;
+  const anchor = anchorOverride || viewportAnchor.value;
   if (!container || !anchor?.id) return false;
 
   const el = findRowElementInContainer(anchor.id);
@@ -4830,6 +5470,38 @@ const restoreViewportAnchor = () => {
   container.scrollTop += (nextTop - anchor.top);
   saveHistoryScroll();
   return true;
+};
+
+const restoreHistoryPositionAfterActivation = () => {
+  if (pendingJumpEventId.value) return false;
+  cancelActivationRestore();
+  const restoreToken = activationRestoreToken + 1;
+  activationRestoreToken = restoreToken;
+  const savedAnchor = viewportAnchor.value?.id
+    ? { id: viewportAnchor.value.id, top: viewportAnchor.value.top }
+    : null;
+  const hadAnchor = !!savedAnchor?.id;
+  const restoredScroll = restoreHistoryScroll(restoreToken);
+  const restoreAnchor = () => {
+    if (restoreToken !== activationRestoreToken || !isHistoryPageActive || !hadAnchor || pendingJumpEventId.value) return;
+    restoreViewportAnchor(savedAnchor);
+  };
+
+  restoreAnchor();
+  requestAnimationFrame(() => {
+    if (restoreToken !== activationRestoreToken) return;
+    restoreAnchor();
+    requestAnimationFrame(() => {
+      if (restoreToken !== activationRestoreToken) return;
+      restoreAnchor();
+    });
+  });
+  scheduleActivationRestoreTimeout(restoreAnchor, 220, restoreToken);
+  scheduleActivationRestoreTimeout(() => {
+    restoreAnchor();
+    updateViewportAnchor();
+  }, 620, restoreToken);
+  return restoredScroll || hadAnchor;
 };
 
 const toggleVisibilityWithViewportAnchor = (targetRef) => {
@@ -4873,7 +5545,10 @@ const handleWindowResize = () => {
 };
 
 watch([showFilter, isEditorOpen], () => {
+  if (!isHistoryPageActive) return;
   nextTick(() => {
+    if (!isHistoryPageActive) return;
+    updateCompactFilterState();
     updatePreviewConfigOffset();
   });
 }, { flush: 'post' });
@@ -4911,8 +5586,11 @@ const jumpToEventById = (eventId, behavior = 'auto') => {
   const idKey = normalizeEventId(eventId);
   if (!idKey) return false;
   pendingJumpEventId.value = idKey;
-  if (pendingJumpSeq.value <= 0) {
-    pendingJumpSeq.value = Number(props.jumpEventSeq || 0);
+  const seq = Number(props.jumpEventSeq || 0);
+  if (Number.isFinite(seq) && seq > 0) {
+    pendingJumpSeq.value = seq;
+  } else if (pendingJumpSeq.value <= 0) {
+    pendingJumpSeq.value = 0;
   }
   return consumePendingJump(behavior, 30);
 };
@@ -5255,6 +5933,9 @@ const exportPredictedRangePng = async (options = {}) => {
   const onStatus = typeof options?.onStatus === 'function' ? options.onStatus : null;
   const cancelPromise = options?.cancelPromise || null;
   const isCancelled = typeof options?.isCancelled === 'function' ? options.isCancelled : (() => false);
+  forceRenderAllEventRows();
+  await nextTick();
+  await waitHistoryNextPaint();
   const { rows, error } = getExportRowsInRange(includeBirthdayRows, {
     rangeStartId: options?.rangeStartId,
     rangeEndId: options?.rangeEndId
@@ -5396,7 +6077,10 @@ const exportPredictedRangePng = async (options = {}) => {
 defineExpose({
   jumpToEventById,
   getPredictedExportRangeInfo,
-  exportPredictedRangePng
+  exportPredictedRangePng,
+  saveHistoryScrollSnapshot,
+  setFullEventRenderMode,
+  isFullEventRenderMode
 });
 
 const isReloadNavigation = () => {
@@ -5409,11 +6093,11 @@ const isReloadNavigation = () => {
   }
 };
 
-const restoreHistoryScroll = () => {
+const restoreHistoryScroll = (restoreToken = null) => {
   const container = historyContainer.value;
-  if (!container) return;
-  if (pendingJumpEventId.value) return;
-  if (Date.now() < suppressRestoreUntil.value) return;
+  if (!container) return false;
+  if (pendingJumpEventId.value) return false;
+  if (Date.now() < suppressRestoreUntil.value) return false;
 
   let targetTop = historyScrollTop.value;
   if (!Number.isFinite(targetTop) || targetTop <= 0) {
@@ -5425,15 +6109,24 @@ const restoreHistoryScroll = () => {
     }
   }
 
+  container.scrollTop = targetTop;
+  historyScrollTop.value = targetTop;
   requestAnimationFrame(() => {
+    if (restoreToken !== null && restoreToken !== activationRestoreToken) return;
     container.scrollTop = targetTop;
     requestAnimationFrame(() => {
+      if (restoreToken !== null && restoreToken !== activationRestoreToken) return;
       container.scrollTop = targetTop;
     });
   });
+  return true;
 };
 
 onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.pjskSetEventHistoryFullRender = (enabled = true) => setFullEventRenderMode(enabled);
+    window.pjskIsEventHistoryFullRender = () => isFullEventRenderMode.value;
+  }
   refreshSpoilerClock();
   spoilerClockTimer = window.setInterval(refreshSpoilerClock, SPOILER_CLOCK_INTERVAL_MS);
   Promise.all([
@@ -5483,11 +6176,15 @@ onMounted(() => {
 });
 
 onDeactivated(() => {
+  isHistoryPageActive = false;
+  cancelActivationRestore();
+  closePredictEditorImmediately();
   closeInlineTooltips();
   stopDragPreviewConfig();
-  emit('sync-preview-event-id', null);
   stopDragPreview();
   stopResizePreview();
+  cancelScrollCorrections();
+  cancelProgressiveEventRender();
   pendingJumpEventId.value = '';
   pendingJumpSeq.value = 0;
   if (jumpRetryTimer) {
@@ -5497,6 +6194,10 @@ onDeactivated(() => {
   if (resizeRafId) {
     cancelAnimationFrame(resizeRafId);
     resizeRafId = 0;
+  }
+  if (filterAdaptRafId) {
+    cancelAnimationFrame(filterAdaptRafId);
+    filterAdaptRafId = 0;
   }
   window.removeEventListener('mousemove', handleDragPreviewConfig);
   window.removeEventListener('mouseup', stopDragPreviewConfig);
@@ -5518,15 +6219,15 @@ onDeactivated(() => {
 });
 
 onActivated(() => {
+  isHistoryPageActive = true;
   closeInlineTooltips();
   nextTick(() => {
     queueJumpFromProps();
     if (pendingJumpEventId.value) {
       consumePendingJump('auto', 20);
     } else if (!consumePendingJump('auto')) {
-      restoreHistoryScroll();
+      restoreHistoryPositionAfterActivation();
     }
-    updateViewportAnchor();
     updatePreviewConfigOffset();
   });
   window.addEventListener('mousemove', handleDragPreviewConfig);
@@ -5549,6 +6250,10 @@ onActivated(() => {
 });
 
 onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    if (window.pjskSetEventHistoryFullRender) delete window.pjskSetEventHistoryFullRender;
+    if (window.pjskIsEventHistoryFullRender) delete window.pjskIsEventHistoryFullRender;
+  }
   if (spoilerClockTimer) {
     clearInterval(spoilerClockTimer);
     spoilerClockTimer = 0;
@@ -5558,6 +6263,9 @@ onBeforeUnmount(() => {
   emit('sync-preview-event-id', null);
   stopDragPreview();
   stopResizePreview();
+  cancelActivationRestore();
+  cancelScrollCorrections();
+  cancelProgressiveEventRender();
   if (jumpRetryTimer) {
     clearTimeout(jumpRetryTimer);
     jumpRetryTimer = 0;
@@ -5565,6 +6273,10 @@ onBeforeUnmount(() => {
   if (resizeRafId) {
     cancelAnimationFrame(resizeRafId);
     resizeRafId = 0;
+  }
+  if (filterAdaptRafId) {
+    cancelAnimationFrame(filterAdaptRafId);
+    filterAdaptRafId = 0;
   }
   window.removeEventListener('mousemove', handleDragPreviewConfig);
   window.removeEventListener('mouseup', stopDragPreviewConfig);
@@ -5591,9 +6303,22 @@ const scrollTo = (target) => {
   if (!container) return;
 
   if (target === 'top') {
+    cancelScrollCorrections();
+    clearActiveEventItem();
     container.scrollTo({ top: 0, behavior: 'smooth' });
+    historyScrollTop.value = 0;
+    try {
+      sessionStorage.setItem(HISTORY_SCROLL_KEY, '0');
+    } catch (_) {}
   } else if (target === 'bottom') {
-    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    cancelScrollCorrections();
+    clearActiveEventItem();
+    const bottomTop = Math.max(0, container.scrollHeight - container.clientHeight);
+    container.scrollTo({ top: bottomTop, behavior: 'smooth' });
+    historyScrollTop.value = bottomTop;
+    try {
+      sessionStorage.setItem(HISTORY_SCROLL_KEY, String(bottomTop));
+    } catch (_) {}
   } else if (target === 'current') {
     const now = spoilerNow.value;
     let candidates = (props.allEvents || []).filter(ev => {
@@ -5631,31 +6356,6 @@ const FALLBACK_UNIT_COLORS = {
   nc: '#884499',
   vs: '#000000'
 };
-
-const CHAR_MAP = computed(() => {
-  const map = {};
-  (props.allCharacters || []).forEach((char) => {
-    const key = String(char?.zh_name || '').trim();
-    const abbr = String(char?.en_abbr || '').trim();
-    if (!key || !abbr) return;
-    map[key] = abbr;
-  });
-  return map;
-});
-
-const CHARACTER_BIRTHDAY_MD_MAP = computed(() => {
-  const map = {};
-  (props.allCharacters || []).forEach((char) => {
-    const name = String(char?.zh_name || '').trim();
-    const month = Number(char?.birthday_month);
-    const day = Number(char?.birthday_day);
-    if (!name) return;
-    if (!Number.isFinite(month) || !Number.isFinite(day)) return;
-    if (month < 1 || month > 12 || day < 1 || day > 31) return;
-    map[name] = { month: Math.trunc(month), day: Math.trunc(day) };
-  });
-  return map;
-});
 
 const birthdayCardImageErrorMap = ref({});
 
@@ -5708,15 +6408,6 @@ const getCardTooltipBaseName = (nameRaw) => String(nameRaw || '').trim().split(/
 
 const CARD_TOOLTIP_RESERVED_TYPE_RE = /(pred|reserve|placeholder)/i;
 const cardTooltipImageErrorMap = ref({});
-
-const normalizeCardIdText = (value) => String(value || '').trim();
-
-const parseCardIdNumber = (value) => {
-  const text = normalizeCardIdText(value);
-  if (!/^\d+$/.test(text)) return null;
-  const n = Number.parseInt(text, 10);
-  return Number.isFinite(n) && n > 0 ? n : null;
-};
 
 const isCardTooltipImageEligible = (card) => {
   const cardIdRaw = normalizeCardIdText(card?.CardID);
@@ -6058,16 +6749,23 @@ const getFestivalPreviewUnitLogo = (name) => {
   top: var(--preview-config-top);
   z-index: 6200;
   width: 360px;
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 24px;
+  background:
+    linear-gradient(142deg, rgba(204, 251, 241, 0.34), rgba(186, 230, 253, 0.20) 48%, rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.34);
+  box-shadow:
+    0 18px 44px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.90),
+    inset 0 -1px 0 rgba(148, 163, 184, 0.12);
   padding: 8px;
   pointer-events: auto;
   max-height: min(84vh, calc(100vh - var(--preview-config-top) - 10px));
   max-height: min(84dvh, calc(100dvh - var(--preview-config-top) - 10px));
   overflow-x: hidden;
   overflow-y: auto;
+  backdrop-filter: saturate(185%) blur(24px);
+  -webkit-backdrop-filter: saturate(185%) blur(24px);
 }
 
 .preview-config-head {
@@ -6096,20 +6794,41 @@ const getFestivalPreviewUnitLogo = (name) => {
 .preview-config-panel.is-collapsed {
   max-height: none;
   overflow: visible;
+  border-radius: 999px;
+  padding: 6px 8px;
+}
+
+.preview-config-panel.is-collapsed .preview-config-head {
+  min-height: 30px;
+  margin-bottom: 0;
+  align-items: center;
+}
+
+.preview-config-panel.is-collapsed .preview-config-actions {
+  align-self: center;
+}
+
+.preview-config-panel.is-collapsed .preview-config-reset {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .preview-config-reset {
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.26);
   border-radius: 999px;
-  background: #f8fafc;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(240, 253, 250, 0.30));
   color: #334155;
   font-size: 0.68rem;
   padding: 3px 9px;
   cursor: pointer;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  backdrop-filter: saturate(150%) blur(10px);
+  -webkit-backdrop-filter: saturate(150%) blur(10px);
 }
 
 .preview-config-reset:hover {
-  background: #e2e8f0;
+  background: linear-gradient(145deg, rgba(236, 254, 255, 0.76), rgba(255, 255, 255, 0.42));
 }
 
 .preview-config-options {
@@ -6119,19 +6838,20 @@ const getFestivalPreviewUnitLogo = (name) => {
 }
 
 .preview-config-btn {
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.26);
   border-radius: 999px;
-  background: #f8fafc;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(240, 253, 250, 0.30));
   color: #334155;
   font-size: 0.72rem;
   padding: 4px 10px;
   cursor: pointer;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .preview-config-btn.is-active {
-  background: #0ea5e9;
+  background: linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(14, 165, 233, 0.68));
   color: #fff;
-  border-color: #0ea5e9;
+  border-color: rgba(94, 234, 212, 0.78);
 }
 
 .preview-config-btn:disabled {
@@ -6141,8 +6861,11 @@ const getFestivalPreviewUnitLogo = (name) => {
 
 .preview-char-select {
   margin-top: 8px;
-  border-top: 1px dashed #cbd5e1;
-  padding-top: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 18px;
+  padding: 8px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(240, 253, 250, 0.16));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
 }
 
 .preview-char-select-title {
@@ -6162,9 +6885,9 @@ const getFestivalPreviewUnitLogo = (name) => {
 }
 
 .preview-char-select-toggle {
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 999px;
-  background: #f8fafc;
+  background: rgba(255, 255, 255, 0.54);
   color: #334155;
   font-size: 0.64rem;
   padding: 2px 8px;
@@ -6190,10 +6913,11 @@ const getFestivalPreviewUnitLogo = (name) => {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  border: 1px solid #cbd5e1;
-  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.34);
   padding: 0;
   cursor: pointer;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
 }
 
 .preview-char-chip.is-active {
@@ -6229,9 +6953,9 @@ const getFestivalPreviewUnitLogo = (name) => {
 }
 
 .preview-festival-chip {
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 999px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.54);
   color: #334155;
   font-size: 0.68rem;
   line-height: 1;
@@ -6248,12 +6972,18 @@ const getFestivalPreviewUnitLogo = (name) => {
 .preview-panel {
   position: fixed;
   min-width: 0;
-  border-radius: 10px;
+  border-radius: 24px;
   padding: 10px 10px 8px;
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  box-shadow:
+    0 18px 44px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.90),
+    inset 0 -1px 0 rgba(148, 163, 184, 0.12);
+  background:
+    linear-gradient(142deg, rgba(204, 251, 241, 0.34), rgba(186, 230, 253, 0.20) 48%, rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.34);
+  backdrop-filter: saturate(185%) blur(24px);
+  -webkit-backdrop-filter: saturate(185%) blur(24px);
   pointer-events: auto;
   overflow: hidden;
 }
@@ -6311,10 +7041,10 @@ const getFestivalPreviewUnitLogo = (name) => {
   gap: 3px;
   font-size: 0.66rem;
   color: #334155;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 999px;
   padding: 1px 6px;
-  background: #f8fafc;
+  background: rgba(255, 255, 255, 0.54);
 }
 
 .preview-head-filter-toggle input {
@@ -6323,9 +7053,9 @@ const getFestivalPreviewUnitLogo = (name) => {
 }
 
 .preview-head-filter-btn {
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 999px;
-  background: #f8fafc;
+  background: rgba(255, 255, 255, 0.54);
   color: #334155;
   font-size: 0.66rem;
   line-height: 1;
@@ -6334,15 +7064,15 @@ const getFestivalPreviewUnitLogo = (name) => {
 }
 
 .preview-head-filter-btn:hover {
-  background: #e2e8f0;
+  background: rgba(236, 254, 255, 0.72);
 }
 
 .preview-collapse-btn {
   width: 22px;
   height: 22px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #f8fafc;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.54);
   color: #334155;
   font-size: 0.8rem;
   cursor: pointer;
@@ -6352,7 +7082,7 @@ const getFestivalPreviewUnitLogo = (name) => {
 }
 
 .preview-collapse-btn:hover {
-  background: #e2e8f0;
+  background: rgba(236, 254, 255, 0.72);
 }
 
 .preview-drag-hint {
@@ -6400,8 +7130,9 @@ const getFestivalPreviewUnitLogo = (name) => {
 }
 
 .preview-attr-row {
-  background: rgba(241, 245, 249, 0.9);
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: 999px;
   padding: 2px;
 }
 
@@ -6445,9 +7176,10 @@ const getFestivalPreviewUnitLogo = (name) => {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  border-radius: 6px;
+  border-radius: 16px;
   padding: 2px 6px;
-  background: rgba(236, 253, 245, 0.9);
+  background: rgba(236, 253, 245, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.42);
   box-sizing: border-box;
 }
 
@@ -6507,9 +7239,9 @@ const getFestivalPreviewUnitLogo = (name) => {
 
 .preview-daily-card {
   width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: rgba(248, 250, 252, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.32);
   padding: 6px;
   box-sizing: border-box;
 }
@@ -6598,9 +7330,9 @@ const getFestivalPreviewUnitLogo = (name) => {
 
 .preview-char-attr-card {
   width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: rgba(248, 250, 252, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.32);
   padding: 6px;
   box-sizing: border-box;
 }
@@ -6648,12 +7380,12 @@ const getFestivalPreviewUnitLogo = (name) => {
 
 .preview-char-attr-table thead th,
 .preview-char-attr-total-row td {
-  background: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.46);
   font-weight: 700;
 }
 
 .preview-char-attr-table tbody tr td {
-  background: var(--preview-char-attr-row-bg, rgba(255, 255, 255, 0.9));
+  background: var(--preview-char-attr-row-bg, rgba(255, 255, 255, 0.42));
 }
 
 .preview-char-attr-attr-cell {
@@ -6681,12 +7413,12 @@ const getFestivalPreviewUnitLogo = (name) => {
   font-size: 0.68rem;
   color: #0f172a;
   border-radius: 6px;
-  background: rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.34);
   padding: 3px 0;
 }
 
 .preview-vs-mini-table thead th {
-  background: rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.44);
   color: #0f172a;
   font-weight: 700;
 }
@@ -6719,7 +7451,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   font-size: 0.68rem;
   color: #0f172a;
   border-radius: 6px;
-  background: rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.34);
   padding: 3px 2px;
   vertical-align: middle;
 }
@@ -6745,9 +7477,10 @@ const getFestivalPreviewUnitLogo = (name) => {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  border-radius: 6px;
+  border-radius: 16px;
   padding: 2px 6px;
-  background: rgba(236, 253, 245, 0.9);
+  background: rgba(236, 253, 245, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.42);
   color: #065f46;
   font-size: 0.72rem;
   line-height: 1.2;
@@ -6798,7 +7531,7 @@ const getFestivalPreviewUnitLogo = (name) => {
 
 .preview-step-empty {
   justify-content: center;
-  background: rgba(241, 245, 249, 0.9);
+  background: rgba(255, 255, 255, 0.34);
 }
 
 .preview-resize-handle {
@@ -6852,7 +7585,7 @@ button:not(:disabled):active {
 
 /* 如果你希望编辑器是覆盖式的（Overlapping），则维持 position: fixed 
    但给左侧列表增加 marginRight */
-@media (min-width: 1001px) {
+@media (min-width: 901px) {
   .event-history-wrapper.with-editor .event-history {
     margin-right: var(--editor-drawer-width); /* 强制拉开距离，绝不重叠 */
   }
@@ -6939,6 +7672,92 @@ button:not(:disabled):active {
 .current-btn {
   min-width: 58px;
   font-weight: 700;
+}
+
+.filter-bar.is-editor-tight {
+  gap: 4px;
+  padding: 6px;
+  scrollbar-width: none;
+}
+
+.filter-bar.is-editor-tight::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-bar.is-editor-tight .sort-btn,
+.filter-bar.is-editor-tight .nav-btn,
+.filter-bar.is-editor-tight .clear-btn {
+  height: 31px;
+  min-height: 31px;
+  padding: 0 7px;
+  font-size: 0.72rem;
+  gap: 3px;
+}
+
+.filter-bar.is-editor-tight .sort-btn {
+  min-width: 78px;
+}
+
+.filter-bar.is-editor-tight .nav-btn:not(.is-icon-only) {
+  min-width: 0;
+}
+
+.filter-bar.is-editor-tight .current-btn {
+  min-width: 52px;
+}
+
+.filter-bar.is-editor-tight .compact-btn-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.filter-bar.is-editor-mobile {
+  gap: 3px;
+  padding: 5px 6px;
+  scrollbar-width: none;
+}
+
+.filter-bar.is-editor-mobile::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-bar.is-editor-mobile .sort-btn,
+.filter-bar.is-editor-mobile .nav-btn,
+.filter-bar.is-editor-mobile .clear-btn {
+  min-width: 0;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 6px;
+  font-size: 0.72rem;
+}
+
+.filter-bar.is-editor-mobile .nav-btn.is-icon-only {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+}
+
+.filter-bar.is-editor-mobile .nav-btn.compact-tip.has-count {
+  width: auto;
+  min-width: 52px;
+  padding: 0 8px;
+  gap: 3px;
+  aspect-ratio: auto;
+}
+
+.filter-bar.is-editor-mobile .sort-btn {
+  min-width: 80px;
+}
+
+.filter-bar.is-editor-mobile .current-btn {
+  min-width: 52px;
+}
+
+.filter-bar.is-editor-mobile .compact-btn-icon {
+  width: 14px;
+  height: 14px;
 }
 
 .compact-btn-icon {
@@ -7028,8 +7847,19 @@ button:not(:disabled):active {
   background: var(--bg-color); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   transition: all 0.2s; border-left: 6px solid transparent;
   box-sizing: border-box;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 132px;
 }
 .event-item:hover { z-index: 900; transform: translateX(5px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.event-item.is-tooltip-raised {
+  content-visibility: visible;
+  contain-intrinsic-size: none;
+}
+
+.event-item.is-active {
+  content-visibility: visible;
+  contain-intrinsic-size: none;
+}
 
 .birthday-row {
   display: flex;
@@ -7043,6 +7873,8 @@ button:not(:disabled):active {
   position: relative;
   transition: filter 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
   box-sizing: border-box;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
 }
 
 .birthday-row:active {
@@ -7053,6 +7885,8 @@ button:not(:disabled):active {
 .birthday-row.is-open {
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
   border-color: rgba(14, 116, 144, 0.38);
+  content-visibility: visible;
+  contain-intrinsic-size: none;
 }
 
 .birthday-date {
@@ -7165,6 +7999,27 @@ button:not(:disabled):active {
   border: 1px dashed rgba(15, 23, 42, 0.16);
   background: rgba(15, 23, 42, 0.03);
   box-sizing: border-box;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 78px;
+}
+
+.history-export-clone-host .event-item,
+.history-export-clone-host .birthday-row,
+.history-export-clone-host .preview-row,
+.history-export-shell .event-item,
+.history-export-shell .birthday-row,
+.history-export-shell .preview-row {
+  content-visibility: visible;
+  contain-intrinsic-size: none;
+}
+
+@media (max-width: 1200px), (hover: none) and (pointer: coarse) {
+  .event-item,
+  .birthday-row,
+  .preview-row {
+    content-visibility: visible;
+    contain-intrinsic-size: none;
+  }
 }
 
 .preview-label {
@@ -7735,6 +8590,32 @@ button:not(:disabled):active {
   margin-right: 0;
   object-fit: contain;
 }
+.member-row-placeholder {
+  min-height: var(--member-avatar-size);
+  pointer-events: none;
+}
+.member-card-placeholder,
+.vs-avatar-placeholder,
+.fes-type-icon-placeholder,
+.song-mv-pill-placeholder {
+  display: block;
+  background: linear-gradient(145deg, rgba(248, 250, 252, 0.64), rgba(226, 232, 240, 0.42));
+  border: 1px solid rgba(148, 163, 184, 0.20);
+}
+.member-card-placeholder,
+.vs-avatar-placeholder {
+  width: var(--member-avatar-size);
+  height: var(--member-avatar-size);
+  border-radius: 50%;
+}
+.fes-type-icon-placeholder {
+  grid-column: span 2;
+  justify-self: stretch;
+  align-self: center;
+  width: 100%;
+  height: calc(var(--member-avatar-size) * 0.62);
+  border-radius: 999px;
+}
 .member-card-box {
   width: var(--member-avatar-size);
   justify-self: center;
@@ -7984,6 +8865,25 @@ button:not(:disabled):active {
 }
 .vs-list { display: flex; gap: 2px; justify-content: flex-end; }
 .vs-avatar { width: var(--event-vs-avatar-size); height: var(--event-vs-avatar-size); border-radius: 50%; border: 1px solid #ddd; }
+.vs-section-placeholder {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+}
+.vs-placeholder-row {
+  width: 100%;
+  min-height: var(--event-vs-avatar-size);
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.vs-avatar-placeholder {
+  width: var(--event-vs-avatar-size);
+  height: var(--event-vs-avatar-size);
+}
 .song-tooltip {
   cursor: pointer;
   position: relative;
@@ -8036,6 +8936,14 @@ button:not(:disabled):active {
 }
 .song-mv-pill.is-empty {
   visibility: hidden;
+}
+.song-mv-grid-placeholder {
+  min-height: var(--event-song-pill-height);
+}
+.song-mv-pill-placeholder {
+  width: var(--event-song-pill-width);
+  height: var(--event-song-pill-height);
+  border-radius: 999px;
 }
 .tooltip-content {
   visibility: hidden;

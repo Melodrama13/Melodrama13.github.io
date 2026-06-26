@@ -2,6 +2,8 @@ name: Sync external game data
 
 on:
   schedule:
+    # Beijing 08:00 precheck plus the original Beijing 11:07 sync.
+    - cron: "0 0 * * *"
     - cron: "7 3 * * *"
   workflow_dispatch:
     inputs:

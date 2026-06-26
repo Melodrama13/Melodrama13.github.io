@@ -268,7 +268,7 @@
     </div>
 
     <div v-if="showAppUpdateBanner" class="app-update-banner" role="status" aria-live="polite">
-      <span class="app-update-text">检测到新版本已发布，刷新后可获取最新内容。</span>
+      <span class="app-update-text">{{ appUpdateBannerText }}</span>
       <button class="app-update-btn app-update-btn-muted" @click="openAppUpdatePromptModal">更新说明</button>
       <button class="app-update-btn" @click="reloadForAppUpdate">立即更新</button>
       <button class="app-update-btn app-update-btn-muted" @click="dismissAppUpdateBanner">稍后</button>
@@ -276,8 +276,8 @@
 
     <div v-if="showAppUpdatePromptDialog" class="app-update-modal-mask" @click.self="dismissAppUpdateBanner">
       <div class="app-update-modal" role="dialog" aria-modal="true" aria-label="版本更新日志">
-        <div class="app-update-modal-title">新版本已发布</div>
-        <div class="app-update-modal-subtitle">构建号：{{ remoteAppBuildId || '未知' }}</div>
+        <div class="app-update-modal-title">{{ appUpdatePromptTitle }}</div>
+        <div class="app-update-modal-subtitle">{{ appUpdatePromptSubtitle }}</div>
         <ul class="app-update-log-list">
           <li v-for="(item, idx) in appUpdateReleaseNotes" :key="`update-log-${idx}`">{{ item }}</li>
         </ul>
@@ -290,7 +290,7 @@
 
     <div v-if="showAppReleaseLogModal" class="app-update-modal-mask" @click.self="closeAppReleaseLogModal">
       <div class="app-update-modal" role="dialog" aria-modal="true" aria-label="新版日志">
-        <div class="app-update-modal-title">新版内容</div>
+        <div class="app-update-modal-title">{{ currentReleaseLogTitle }}</div>
         <div class="app-update-modal-subtitle">当前版本：{{ currentAppBuildId || '未知' }}</div>
         <ul class="app-update-log-list">
           <li v-for="(item, idx) in currentBuildReleaseNotes" :key="`release-log-${idx}`">{{ item }}</li>
@@ -459,8 +459,10 @@ const statsTopAutoCurrentId = ref('');
 let statsTopControlSyncRaf = 0;
 const currentAppBuildId = String(__APP_BUILD_ID__ || '').trim();
 const currentAppReleaseNotes = Array.isArray(__APP_RELEASE_NOTES__) ? __APP_RELEASE_NOTES__ : [];
+const currentAppUpdateKind = String(__APP_UPDATE_KIND__ || 'code').trim() === 'resource' ? 'resource' : 'code';
 const remoteAppBuildId = ref('');
 const remoteAppReleaseNotes = ref([]);
+const remoteAppUpdateKind = ref('code');
 const hasAppUpdate = ref(false);
 const appUpdateDismissed = ref(false);
 const showAppUpdatePromptModal = ref(false);
@@ -481,6 +483,7 @@ const appUpdateReleaseNotes = computed(() => {
     ? remoteAppReleaseNotes.value.map((item) => String(item || '').trim()).filter(Boolean)
     : [];
   if (list.length > 0) return list;
+  if (remoteAppUpdateKind.value === 'resource') return ['更新资源'];
   return ['修复若干已知问题并优化交互体验。'];
 });
 
@@ -489,8 +492,27 @@ const currentBuildReleaseNotes = computed(() => {
     ? currentAppReleaseNotes.map((item) => String(item || '').trim()).filter(Boolean)
     : [];
   if (list.length > 0) return list;
+  if (currentAppUpdateKind === 'resource') return ['更新资源'];
   return ['修复若干已知问题并优化交互体验。'];
 });
+
+const appUpdateBannerText = computed(() => (
+  remoteAppUpdateKind.value === 'resource'
+    ? '检测到资源已更新，刷新后可获取最新数据。'
+    : '检测到新版本已发布，刷新后可获取最新内容。'
+));
+
+const appUpdatePromptTitle = computed(() => (
+  remoteAppUpdateKind.value === 'resource' ? '更新资源' : '新版本已发布'
+));
+
+const appUpdatePromptSubtitle = computed(() => (
+  `${remoteAppUpdateKind.value === 'resource' ? '资源构建号' : '构建号'}：${remoteAppBuildId.value || '未知'}`
+));
+
+const currentReleaseLogTitle = computed(() => (
+  currentAppUpdateKind === 'resource' ? '更新资源' : '新版内容'
+));
 
 const showAppUpdateBanner = computed(() => {
   return hasAppUpdate.value && !appUpdateDismissed.value;
@@ -571,7 +593,8 @@ const fetchRemoteVersionMeta = async () => {
     const data = await response.json();
     return {
       buildId: String(data?.buildId || '').trim(),
-      releaseNotes: Array.isArray(data?.releaseNotes) ? data.releaseNotes : []
+      releaseNotes: Array.isArray(data?.releaseNotes) ? data.releaseNotes : [],
+      updateKind: String(data?.updateKind || '').trim() === 'resource' ? 'resource' : 'code'
     };
   } catch {
     return null;
@@ -587,6 +610,7 @@ const checkForAppUpdate = async () => {
 
   remoteAppBuildId.value = remoteBuildId;
   remoteAppReleaseNotes.value = Array.isArray(remoteMeta?.releaseNotes) ? remoteMeta.releaseNotes : [];
+  remoteAppUpdateKind.value = remoteMeta?.updateKind === 'resource' ? 'resource' : 'code';
 
   if (remoteBuildId !== currentAppBuildId) {
     hasAppUpdate.value = true;
@@ -761,6 +785,11 @@ const setCurrentTab = (tab) => {
     saveStatsScroll();
   } else if (currentTab.value === 'songs') {
     saveSongsScroll();
+  } else if (currentTab.value === 'history') {
+    const instance = tabComponentRef.value;
+    if (instance && typeof instance.saveHistoryScrollSnapshot === 'function') {
+      instance.saveHistoryScrollSnapshot();
+    }
   }
   currentTab.value = tab;
   persistCurrentTab(tab);
