@@ -112,7 +112,7 @@
                     title="勾选后，该项底部团汇总会额外计入附属该团的VS卡片。"
                   >
                     <input v-model="distVsUnitSummaryToggles[panel.id]" type="checkbox" />
-                    统计VS
+                    团统计VS
                   </label>
                   <label
                     v-if="panel.id === 'reward'"

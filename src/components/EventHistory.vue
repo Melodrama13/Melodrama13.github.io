@@ -1134,7 +1134,7 @@
 <script setup>
 import { ref, computed, inject, nextTick, watch, onMounted, onActivated, onDeactivated, onBeforeUnmount } from 'vue';
 import PredictEditor from './PredictEditor.vue';
-import html2canvas from 'html2canvas';
+import { toCanvas } from 'html-to-image';
 import { buildAssetUrl } from '../utils/assets.js';
 import { isCardImageReleased, isEventStarted, isSongReleased } from '../utils/spoilerGuard.js';
 
@@ -5694,6 +5694,8 @@ const waitHistoryNextPaint = () => new Promise((resolve) => {
   });
 });
 
+const HISTORY_CAPTURE_IMAGE_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
+
 const copyHistoryCssCustomProperties = (sourceEl, targetEl) => {
   if (!(sourceEl instanceof HTMLElement) || !(targetEl instanceof HTMLElement)) return;
   const style = window.getComputedStyle(sourceEl);
@@ -5724,6 +5726,92 @@ const waitHistoryImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve)
   imgEl.addEventListener('error', finish, { once: true });
   timer = window.setTimeout(finish, timeoutMs);
 });
+
+const syncHistoryExportCloneImagesWithSource = (sourceRoot, cloneRoot) => {
+  if (!(sourceRoot instanceof HTMLElement) || !(cloneRoot instanceof HTMLElement)) return;
+  const sourceImages = Array.from(sourceRoot.querySelectorAll('img'));
+  const cloneImages = Array.from(cloneRoot.querySelectorAll('img'));
+  const pairCount = Math.min(sourceImages.length, cloneImages.length);
+
+  for (let idx = 0; idx < pairCount; idx += 1) {
+    const sourceImg = sourceImages[idx];
+    const cloneImg = cloneImages[idx];
+    if (!(cloneImg instanceof HTMLImageElement)) continue;
+    const sourceUrl = String(sourceImg?.currentSrc || sourceImg?.getAttribute('src') || sourceImg?.src || '').trim();
+
+    cloneImg.setAttribute('loading', 'eager');
+    cloneImg.setAttribute('decoding', 'sync');
+    if ('fetchPriority' in cloneImg) {
+      cloneImg.fetchPriority = 'high';
+    }
+    if (sourceUrl) {
+      cloneImg.setAttribute('src', sourceUrl);
+    }
+  }
+
+  for (let idx = pairCount; idx < cloneImages.length; idx += 1) {
+    const cloneImg = cloneImages[idx];
+    if (!(cloneImg instanceof HTMLImageElement)) continue;
+    cloneImg.setAttribute('loading', 'eager');
+    cloneImg.setAttribute('decoding', 'sync');
+    if ('fetchPriority' in cloneImg) {
+      cloneImg.fetchPriority = 'high';
+    }
+  }
+};
+
+const preloadSingleHistoryImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((resolve) => {
+  const src = String(url || '').trim();
+  if (!src) {
+    resolve(false);
+    return;
+  }
+  let done = false;
+  let timer = 0;
+  const img = new Image();
+  const finish = (ok) => {
+    if (done) return;
+    done = true;
+    if (timer) clearTimeout(timer);
+    img.onload = null;
+    img.onerror = null;
+    resolve(!!ok);
+  };
+  img.onload = () => finish(true);
+  img.onerror = () => finish(false);
+  try {
+    img.decoding = 'async';
+    img.loading = 'eager';
+    img.referrerPolicy = 'no-referrer';
+  } catch (_) {
+    // Ignore unsupported attributes.
+  }
+  timer = window.setTimeout(() => finish(false), timeoutMs);
+  img.src = src;
+});
+
+const preloadHistoryImageUrlsForCapture = async (rootEl, options = {}) => {
+  if (!(rootEl instanceof HTMLElement)) return;
+  const maxImages = Number(options?.maxImages || 0) > 0 ? Number(options.maxImages) : 360;
+  const concurrency = Number(options?.concurrency || 0) > 0 ? Number(options.concurrency) : 8;
+  const timeoutMs = Number(options?.timeoutMs || 0) > 0 ? Number(options.timeoutMs) : 7000;
+  const srcList = Array.from(rootEl.querySelectorAll('img'))
+    .map((imgEl) => String(imgEl?.currentSrc || imgEl?.getAttribute('src') || '').trim())
+    .filter(Boolean)
+    .slice(0, maxImages);
+  const uniq = [...new Set(srcList)];
+  if (!uniq.length) return;
+
+  let cursor = 0;
+  const workers = Array.from({ length: Math.max(1, Math.min(concurrency, uniq.length)) }).map(async () => {
+    while (cursor < uniq.length) {
+      const idx = cursor;
+      cursor += 1;
+      await preloadSingleHistoryImageUrlForCapture(uniq[idx], timeoutMs);
+    }
+  });
+  await Promise.allSettled(workers);
+};
 
 const waitForHistoryExportAssets = async (rootEl, options = {}) => {
   if (!(rootEl instanceof HTMLElement)) return;
@@ -5767,6 +5855,12 @@ const sanitizeHistoryExportClone = (cloneRoot) => {
     if (!(node instanceof HTMLElement)) return;
     node.style.animation = 'none';
     node.style.backgroundImage = 'none';
+  });
+  cloneRoot.querySelectorAll('.avatar-wrapper').forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    if (node.querySelector('.banner-avatar')) {
+      node.classList.add('is-export-banner-avatar-wrapper');
+    }
   });
 };
 
@@ -5813,6 +5907,7 @@ const prepareHistoryExportClone = async (listEl, rows) => {
 
   rows.forEach((row) => {
     const clonedRow = row.cloneNode(true);
+    syncHistoryExportCloneImagesWithSource(row, clonedRow);
     sanitizeHistoryExportClone(clonedRow);
     cloneList.appendChild(clonedRow);
   });
@@ -5826,6 +5921,11 @@ const prepareHistoryExportClone = async (listEl, rows) => {
   await waitForHistoryExportAssets(cloneList, {
     maxWaitMs: getHistoryCaptureDeviceTier() === 'phone' ? 3600 : 2800,
     maxImages: Math.max(120, Math.min(900, cloneList.querySelectorAll('img').length + 80))
+  });
+  await preloadHistoryImageUrlsForCapture(cloneList, {
+    maxImages: Math.max(160, Math.min(1000, cloneList.querySelectorAll('img').length + 100)),
+    concurrency: getHistoryCaptureDeviceTier() === 'desktop' ? 12 : 6,
+    timeoutMs: getHistoryCaptureDeviceTier() === 'phone' ? 9000 : 7000
   });
   await waitHistoryNextPaint();
 
@@ -5891,15 +5991,15 @@ const buildHistoryScaleCandidates = ({ bounds, deviceTier, deviceScale, useExper
   let ladder;
   if (deviceTier === 'phone') {
     if (baseMegaPixels > 12) {
-      ladder = [1.05, 1];
+      ladder = [2.0, 1.05, 1];
     } else if (baseMegaPixels > 8) {
-      ladder = [1.15, 1];
+      ladder = [2.0, 1.15, 1];
     } else if (baseMegaPixels > 5) {
-      ladder = [1.3, 1.12, 1];
+      ladder = [2.0, 1.3, 1.12, 1];
     } else if (baseMegaPixels > 3) {
-      ladder = [1.5, 1.3, 1.12, 1];
+      ladder = [2.0, 1.5, 1.3, 1.12, 1];
     } else {
-      ladder = [1.75, 1.5, 1.25, 1];
+      ladder = [2.0, 1.75, 1.5, 1.25, 1];
     }
   } else if (deviceTier === 'tablet') {
     if (baseMegaPixels > 14) {
@@ -5928,14 +6028,22 @@ const buildHistoryScaleCandidates = ({ bounds, deviceTier, deviceScale, useExper
     });
 };
 
+const getHistoryEventKeysFromExportRows = (rows) => {
+  const keys = new Set();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    if (!(row instanceof HTMLElement)) return;
+    if (!row.classList.contains('event-item')) return;
+    const idKey = parseEventIdFromDomId(row.id);
+    if (idKey) keys.add(`event-${idKey}`);
+  });
+  return keys;
+};
+
 const exportPredictedRangePng = async (options = {}) => {
   const includeBirthdayRows = options?.includeBirthdayRows !== false;
   const onStatus = typeof options?.onStatus === 'function' ? options.onStatus : null;
   const cancelPromise = options?.cancelPromise || null;
   const isCancelled = typeof options?.isCancelled === 'function' ? options.isCancelled : (() => false);
-  forceRenderAllEventRows();
-  await nextTick();
-  await waitHistoryNextPaint();
   const { rows, error } = getExportRowsInRange(includeBirthdayRows, {
     rangeStartId: options?.rangeStartId,
     rangeEndId: options?.rangeEndId
@@ -5946,8 +6054,10 @@ const exportPredictedRangePng = async (options = {}) => {
   if (!listEl) return { ok: false, message: '历史列表尚未渲染完成。' };
 
   let exportClone = null;
+  const previousProgressiveRenderKeys = new Set(progressiveEventRenderKeys.value);
   try {
     const deviceTier = getHistoryCaptureDeviceTier();
+    addProgressiveEventRenderKeys(getHistoryEventKeysFromExportRows(rows));
     await nextTick();
     await waitHistoryNextPaint();
     exportClone = await prepareHistoryExportClone(listEl, rows);
@@ -6009,16 +6119,30 @@ const exportPredictedRangePng = async (options = {}) => {
             height: bounds.height,
             scale
           });
-          return await withCaptureTimeout(html2canvas(renderTarget, {
+          await waitForHistoryExportAssets(renderTarget, {
+            maxWaitMs: deviceTier === 'phone' ? 3000 : 2400,
+            maxImages: Math.max(120, Math.min(900, renderTarget.querySelectorAll('img').length + 80))
+          });
+          await preloadHistoryImageUrlsForCapture(renderTarget, {
+            maxImages: Math.max(160, Math.min(1000, renderTarget.querySelectorAll('img').length + 100)),
+            concurrency: deviceTier === 'desktop' ? 12 : 6,
+            timeoutMs: deviceTier === 'phone' ? 9000 : 7000
+          });
+          await waitHistoryNextPaint();
+
+          const canvasWidth = Math.max(1, Math.round(bounds.width * scale));
+          const canvasHeight = Math.max(1, Math.round(bounds.height * scale));
+          return await withCaptureTimeout(toCanvas(renderTarget, {
             backgroundColor: '#f4f7f6',
-            scale,
-            useCORS: true,
-            logging: false,
-            imageTimeout: 12000,
             width: bounds.width,
             height: bounds.height,
-            scrollX: 0,
-            scrollY: 0
+            canvasWidth,
+            canvasHeight,
+            pixelRatio: 1,
+            skipFonts: false,
+            cacheBust: false,
+            skipAutoScale: true,
+            imagePlaceholder: HISTORY_CAPTURE_IMAGE_PLACEHOLDER
           }), timeoutMs, cancelPromise);
         } catch (err) {
           lastErr = err;
@@ -6071,6 +6195,7 @@ const exportPredictedRangePng = async (options = {}) => {
     if (exportClone?.host instanceof HTMLElement) {
       exportClone.host.remove();
     }
+    setProgressiveEventRenderKeys(previousProgressiveRenderKeys);
   }
 };
 
@@ -8164,7 +8289,10 @@ button:not(:disabled):active {
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.38));
   border: 1px solid var(--history-glass-border);
   border-radius: calc(var(--eh-radius-panel) + 6px);
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
   z-index: 1510;
   width: 100%;
   box-sizing: border-box;
@@ -9425,7 +9553,7 @@ button:not(:disabled):active {
     max-height: none;
     overflow: visible;
     padding: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     gap: 8px;
   }
 
@@ -9611,6 +9739,15 @@ button:not(:disabled):active {
     width: 42px;
     height: 42px;
     border-width: 2px;
+  }
+
+  .history-export-list .is-export-banner-avatar-wrapper {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
+
+  .history-export-list .banner-avatar {
+    display: block;
+    box-shadow: none !important;
   }
 
   .unit-logo-banner {
