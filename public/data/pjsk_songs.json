@@ -26133,6 +26133,22 @@
           "桐谷遥",
           "日野森雫"
         ]
+      },
+      {
+        "vocal_id": 1840,
+        "type": "another_vocal",
+        "released_at": "2026/6/29",
+        "characters": [
+          "桃井爱莉"
+        ]
+      },
+      {
+        "vocal_id": 1841,
+        "type": "another_vocal",
+        "released_at": "2026/6/29",
+        "characters": [
+          "MEIKO"
+        ]
       }
     ]
   },
@@ -29218,6 +29234,14 @@
           "桃井爱莉",
           "日野森雫"
         ]
+      },
+      {
+        "vocal_id": 1842,
+        "type": "another_vocal",
+        "released_at": "2026/6/29",
+        "characters": [
+          "桐谷遥"
+        ]
       }
     ]
   },
@@ -30033,6 +30057,52 @@
           "朝比奈真冬",
           "东云绘名",
           "晓山瑞希"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 631,
+    "title": "天才ロック",
+    "pronunciation": "てんさいろっく",
+    "composer": "カラスヤサボウ",
+    "lyricist": "カラスヤサボウ",
+    "arranger": "カラスヤサボウ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-07-01 15:00:00",
+    "categories": [
+      "3DMV"
+    ],
+    "units": [
+      "all",
+      "ws"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 18,
+      "expert": 27,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1188,
+        "type": "original_song",
+        "released_at": "2026/7/1",
+        "characters": [
+          "镜音铃"
+        ]
+      },
+      {
+        "vocal_id": 1844,
+        "type": "sekai",
+        "released_at": "2026/7/1",
+        "characters": [
+          "镜音铃",
+          "天马司",
+          "凤笑梦",
+          "草薙宁宁",
+          "神代类"
         ]
       }
     ]
@@ -34066,6 +34136,41 @@
     ]
   },
   {
+    "id": 741,
+    "title": "アイ・メイカー！",
+    "pronunciation": "あい・めいかー",
+    "composer": "マキシウキョウ",
+    "lyricist": "マキシウキョウ",
+    "arranger": "マキシウキョウ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-07-06 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 18,
+      "expert": 26,
+      "master": 31
+    },
+    "vocals": [
+      {
+        "vocal_id": 1298,
+        "type": "original_song",
+        "released_at": "2026/7/6",
+        "characters": [
+          "MEIKO"
+        ]
+      }
+    ]
+  },
+  {
     "id": 742,
     "title": "旅に帰る",
     "pronunciation": "たびにかえる",
@@ -34396,6 +34501,56 @@
         "released_at": "2026/6/9",
         "characters": [
           "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 756,
+    "title": "Gimme more!",
+    "pronunciation": "ぎみーもあ",
+    "composer": "めろくる",
+    "lyricist": "めろくる",
+    "arranger": "めろくる",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-06-30 15:00:00",
+    "categories": [
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "mmj"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 11,
+      "hard": 17,
+      "expert": 24,
+      "master": 28,
+      "append": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1313,
+        "type": "original_song",
+        "released_at": "2026/6/30",
+        "characters": [
+          "初音未来",
+          "镜音铃",
+          "巡音流歌",
+          "MEIKO"
+        ]
+      },
+      {
+        "vocal_id": 1843,
+        "type": "sekai",
+        "released_at": "2026/6/30",
+        "characters": [
+          "花里实乃里",
+          "初音未来",
+          "桐谷遥",
+          "桃井爱莉",
+          "日野森雫"
         ]
       }
     ]
