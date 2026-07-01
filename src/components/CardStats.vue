@@ -13878,8 +13878,6 @@ td.record-char {
   white-space: nowrap;
   user-select: none;
   line-height: 1;
-  position: relative;
-  top: 2px;
 }
 
 .stats-checkbox input[type='checkbox'] {
@@ -13888,8 +13886,17 @@ td.record-char {
   height: 14px;
   flex: 0 0 14px;
   position: relative;
-  top: 0;
+  top: 0px;
   accent-color: #14b8a6;
+}
+
+.duo-unit-row .stats-checkbox {
+  position: relative;
+  top: 2px;
+}
+
+.duo-unit-row .stats-checkbox input[type='checkbox'] {
+  top: 0;
 }
 
 .fes-record-table {
@@ -15975,7 +15982,7 @@ td.record-char {
     padding: 6px;
   }
 
-  .stats-checkbox {
+  .duo-unit-row .stats-checkbox {
     top: 3px;
   }
 

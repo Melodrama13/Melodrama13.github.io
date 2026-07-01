@@ -471,6 +471,109 @@
               </div>
             </article>
 
+            <article id="panel-book-round-stats" class="stats-section card-panel" data-scroll-anchor="panel-book-round-stats">
+              <div class="section-head section-head-sub">
+                <div class="section-head-left">
+                  <h2>{{ getSongSectionTitle('panel-book-round-stats') }}</h2>
+                </div>
+                <button class="pjsk-ui-btn-pill card-export-btn song-export-btn" :disabled="isExportingPng" @click="exportSongPanelPng('panel-book-round-stats', getSongSectionTitle('panel-book-round-stats'))">PNG</button>
+              </div>
+
+              <div class="song-book-round-layout">
+                <section class="song-book-round-table-card">
+                  <div class="song-book-round-title">OC</div>
+                  <div class="song-book-round-scroll">
+                    <table class="song-book-round-table song-book-round-oc-table">
+                      <thead>
+                        <tr>
+                          <th class="song-book-round-index-head">轮</th>
+                          <th v-for="position in BOOK_ROUND_POSITION_KEYS" :key="`book-round-oc-head-${position}`">{{ position }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="round in bookRoundStats" :key="`book-round-oc-${round.round}`">
+                          <th class="song-book-round-index-cell">{{ round.round }}</th>
+                          <td
+                            v-for="position in BOOK_ROUND_POSITION_KEYS"
+                            :key="`book-round-oc-${round.round}-${position}`"
+                            class="song-book-round-cell song-book-round-oc-cell"
+                            :style="{ backgroundColor: round.cells[position - 1]?.ocFill || '#f8fafc' }"
+                          >
+                            <img
+                              v-if="round.cells[position - 1]?.ocIcon"
+                              :src="round.cells[position - 1].ocIcon"
+                              :alt="round.cells[position - 1].ocName"
+                              :title="round.cells[position - 1].ocTitle"
+                              class="song-book-round-character-icon"
+                            />
+                            <span v-else class="song-book-round-empty">-</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="song-book-round-table-card">
+                  <div class="song-book-round-title song-book-round-title-with-legend">
+                    <span>VS</span>
+                    <span class="song-book-round-legend">
+                      <span class="song-book-round-legend-pill is-3d">3D</span>
+                      <span class="song-book-round-legend-pill is-2d">2D</span>
+                    </span>
+                  </div>
+                  <div class="song-book-round-scroll">
+                    <table class="song-book-round-table song-book-round-vs-table">
+                      <thead>
+                        <tr>
+                          <th class="song-book-round-index-head">轮</th>
+                          <th v-for="position in BOOK_ROUND_POSITION_KEYS" :key="`book-round-vs-head-${position}`">{{ position }}</th>
+                          <th class="song-book-round-missing-head">缺失</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="round in bookRoundStats" :key="`book-round-vs-${round.round}`">
+                          <th class="song-book-round-index-cell">{{ round.round }}</th>
+                          <td
+                            v-for="position in BOOK_ROUND_POSITION_KEYS"
+                            :key="`book-round-vs-${round.round}-${position}`"
+                            :class="['song-book-round-cell', 'song-book-round-vs-cell', round.cells[position - 1] ? (round.cells[position - 1].has3d ? 'is-3d' : 'is-2d') : 'is-empty']"
+                          >
+                            <div v-if="round.cells[position - 1]?.vsIcons?.length" class="song-book-round-icon-row">
+                              <img
+                                v-for="vs in round.cells[position - 1].vsIcons"
+                                :key="`book-round-vs-icon-${round.round}-${position}-${vs.name}`"
+                                :src="vs.icon"
+                                :alt="vs.name"
+                                :title="vs.name"
+                                class="song-book-round-character-icon"
+                              />
+                            </div>
+                            <span v-else class="song-book-round-empty">-</span>
+                          </td>
+                          <td class="song-book-round-cell song-book-round-missing-cell">
+                            <div v-if="round.missingVsIcons.length" class="song-book-round-icon-row">
+                              <img
+                                v-for="vs in round.missingVsIcons"
+                                :key="`book-round-missing-vs-${round.round}-${vs.name}`"
+                                :src="vs.icon"
+                                :alt="vs.name"
+                                :title="vs.name"
+                                class="song-book-round-character-icon"
+                              />
+                            </div>
+                            <span v-else class="song-book-round-empty">-</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+
+              <div v-if="bookRoundStats.length === 0" class="song-empty">暂无书下轮次数据</div>
+            </article>
+
             <article id="panel-another-vocal" class="stats-section card-panel" data-scroll-anchor="panel-another-vocal">
               <div class="section-head section-head-sub">
                 <div class="section-head-left">
@@ -1640,12 +1743,14 @@ const OC_UNIT_KEYS = Object.freeze(OC_UNIT_OPTIONS.map((item) => item.key));
 const CORE_UNIT_KEYS = Object.freeze(['vs', ...OC_UNIT_KEYS]);
 const VS_UNIT_ORDER = Object.freeze(['ln', 'mmj', 'vbs', 'ws', 'nc']);
 const VS_UNIT_ORDER_MAP = Object.freeze({ ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5 });
+const BOOK_ROUND_POSITION_KEYS = Object.freeze([1, 2, 3, 4, 5]);
 
 const SONG_SECTION_TITLE_MAP = Object.freeze({
   'panel-song-stats': '乐曲统计',
   'panel-oc-stats': '各团歌曲统计',
   'panel-vs-song-stats': 'VS书下统计',
   'panel-oc-book-stats': 'OC书下统计',
+  'panel-book-round-stats': '书下轮次统计',
   'panel-another-vocal': 'Anvo统计',
   'panel-duo-stats': '双人歌曲统计',
   'panel-3dmv-stats': '3DMV统计',
@@ -1833,6 +1938,11 @@ const navGroups = computed(() => {
       id: 'panel-oc-book-stats',
       title: getSongSectionTitle('panel-oc-book-stats'),
       children: [...ocBookUnitNavChildren.value]
+    },
+    {
+      id: 'panel-book-round-stats',
+      title: getSongSectionTitle('panel-book-round-stats'),
+      children: []
     },
     {
       id: 'panel-another-vocal',
@@ -3100,6 +3210,25 @@ const buildVsIconsFromNames = (vsNames) => {
     .filter(Boolean);
 };
 
+const getUnitVsAvatarSrc = (rawName, unitKey) => {
+  const normalized = normalizeCharacterName(rawName);
+  const meta = characterByName.value.get(normalized);
+  const abbr = String(meta?.abbr || '').trim().replace(/[^a-zA-Z]/g, '').toLowerCase();
+  const unit = String(unitKey || '').trim().toLowerCase();
+  if (abbr && VS_UNIT_ORDER.includes(unit)) return `/chibi_s/${abbr}_${unit}.webp`;
+  return getCharacterAvatarSrc(rawName);
+};
+
+const buildBookRoundVsIcons = (vsNames, unitKey) => {
+  return asArray(vsNames)
+    .map((name) => {
+      const icon = getUnitVsAvatarSrc(name, unitKey);
+      if (!icon) return null;
+      return { name, icon };
+    })
+    .filter(Boolean);
+};
+
 const parseSeriesOrder = (ev) => {
   const rawSeries = Number(ev?.type_series_id);
   if (Number.isFinite(rawSeries) && rawSeries > 0) return Math.trunc(rawSeries);
@@ -3109,6 +3238,89 @@ const parseSeriesOrder = (ev) => {
   if (matched) return Number(matched[1]);
   return Number.MAX_SAFE_INTEGER;
 };
+
+const getBookRoundEventIdText = (event) => String(event?.id ?? '').trim();
+
+const isBookRoundNumericEventId = (event) => /^-?\d+$/.test(getBookRoundEventIdText(event));
+
+const compareBookRoundEventOrder = (a, b) => {
+  const da = parseSlashDateOrder(a?.start_date);
+  const db = parseSlashDateOrder(b?.start_date);
+  if (da !== db) return da - db;
+
+  const aNumeric = isBookRoundNumericEventId(a);
+  const bNumeric = isBookRoundNumericEventId(b);
+  if (aNumeric !== bNumeric) return aNumeric ? 1 : -1;
+  if (aNumeric && bNumeric) return Number(a.id) - Number(b.id);
+  return getBookRoundEventIdText(a).localeCompare(getBookRoundEventIdText(b), 'zh-Hans-CN');
+};
+
+const bookRoundStats = computed(() => {
+  const rows = [];
+  let currentRow = null;
+  let usedUnits = new Set();
+
+  asArray(props.allEvents)
+    .filter((ev) => !ev?.isPredict && isBookRoundNumericEventId(ev))
+    .sort(compareBookRoundEventOrder)
+    .forEach((ev) => {
+      if (ev?.event_type !== '箱活') return;
+      const unitKey = String(ev?.unit || '').trim().toLowerCase();
+      if (!VS_UNIT_ORDER.includes(unitKey)) return;
+
+      const songId = toFiniteSongId(ev?.song_id);
+      if (songId === null) return;
+      const song = songsById.value.get(songId);
+      const songName = String(song?.title || '').trim();
+      if (!songName) return;
+
+      if (!currentRow || usedUnits.size >= VS_UNIT_ORDER.length || usedUnits.has(unitKey)) {
+        currentRow = {
+          round: rows.length + 1,
+          cells: Array.from({ length: VS_UNIT_ORDER.length }, () => null),
+          seenVs: new Set()
+        };
+        rows.push(currentRow);
+        usedUnits = new Set();
+      }
+
+      const position = usedUnits.size;
+      usedUnits.add(unitKey);
+
+      const bannerName = String(ev?.banner || '').trim();
+      const normalizedName = normalizeCharacterName(bannerName);
+      const ocName = normalizedName || bannerName;
+      const vsNames = parseVS(ev?.virtual_singer);
+      vsNames.forEach((name) => currentRow.seenVs.add(name));
+
+      currentRow.cells[position] = {
+        eventId: Number(ev.id),
+        unit: unitKey,
+        songId,
+        songName,
+        ocName,
+        ocTitle: `${ocName || '-'} / ${songName}`,
+        ocIcon: getCharacterAvatarSrc(ocName),
+        ocFill: mixHexWithWhite(unitColorMap.value[unitKey] || BASE_UNIT_COLOR_MAP[unitKey] || '#cbd5e1', 0.22),
+        vsIcons: buildBookRoundVsIcons(vsNames, unitKey),
+        has3d: hasSong3DMVCategory(song)
+      };
+    });
+
+  return rows.map((row) => {
+    const isCompleteRound = row.cells.filter(Boolean).length >= VS_UNIT_ORDER.length;
+    return {
+      round: row.round,
+      cells: row.cells,
+      missingVsIcons: row.round === 1 || !isCompleteRound
+        ? []
+        : VS_NAMES.value
+          .filter((name) => !row.seenVs.has(name))
+          .map((name) => ({ name, icon: getCharacterAvatarSrc(name) }))
+          .filter((item) => item.icon)
+    };
+  });
+});
 
 const ocBookStatsByUnit = computed(() => {
   const groupMap = Object.fromEntries(OC_UNIT_KEYS.map((unitKey) => [unitKey, new Map()]));
@@ -6200,6 +6412,170 @@ watch(totalSongPages, (nextTotal) => {
   object-fit: contain;
 }
 
+.song-book-round-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.song-book-round-table-card {
+  min-width: 0;
+}
+
+.song-book-round-title {
+  margin: 0 0 6px;
+  color: #334155;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.song-book-round-title-with-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.song-book-round-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.song-book-round-legend-pill {
+  min-width: 34px;
+  border: 1px solid rgba(51, 65, 85, 0.16);
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: #334155;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+.song-book-round-legend-pill.is-3d {
+  background: rgba(254, 170, 197, 0.55);
+}
+
+.song-book-round-legend-pill.is-2d {
+  background: rgba(153, 246, 228, 0.48);
+}
+
+.song-book-round-scroll {
+  overflow: visible;
+  padding-bottom: 2px;
+}
+
+.song-book-round-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 4px;
+}
+
+.song-book-round-vs-table {
+  min-width: 0;
+}
+
+.song-book-round-table th,
+.song-book-round-table td {
+  height: 46px;
+  padding: 4px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid rgba(51, 65, 85, 0.18);
+  border-radius: 7px;
+}
+
+.song-book-round-table thead th {
+  height: 34px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.song-book-round-index-head,
+.song-book-round-index-cell {
+  width: 34px;
+}
+
+.song-book-round-index-cell {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.song-book-round-missing-head {
+  width: 74px;
+}
+
+.song-book-round-unit-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: inline-block;
+}
+
+.song-book-round-cell {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.song-book-round-oc-cell {
+  background: #f8fafc;
+}
+
+.song-book-round-vs-cell.is-3d {
+  background: rgba(254, 170, 197, 0.55);
+}
+
+.song-book-round-vs-cell.is-2d {
+  background: rgba(153, 246, 228, 0.48);
+}
+
+.song-book-round-vs-cell.is-empty {
+  background: #f8fafc;
+}
+
+.song-book-round-missing-cell {
+  background: rgba(226, 232, 240, 0.78);
+}
+
+.song-book-round-icon-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.song-book-round-character-icon {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+}
+
+.song-book-round-empty {
+  color: #94a3b8;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+@media (min-width: 701px) {
+  .song-book-round-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .anvo-mode-switch {
   display: inline-flex;
   min-height: 24px;
@@ -8633,6 +9009,31 @@ watch(totalSongPages, (nextTotal) => {
   .song-oc-unit-logo {
     height: 28px;
     max-width: 110px;
+  }
+
+  .song-book-round-layout {
+    gap: 10px;
+  }
+
+  .song-book-round-table {
+    border-spacing: 3px;
+  }
+
+  .song-book-round-table th,
+  .song-book-round-table td {
+    height: 40px;
+    padding: 3px;
+  }
+
+  .song-book-round-character-icon {
+    width: 23px;
+    height: 23px;
+    min-width: 23px;
+  }
+
+  .song-book-round-unit-logo {
+    width: 18px;
+    height: 18px;
   }
 
   .song-vs-event-unit-counts {
