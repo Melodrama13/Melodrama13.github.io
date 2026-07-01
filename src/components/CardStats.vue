@@ -1386,6 +1386,334 @@
           </div>
         </div>
 
+        <div id="panel-duo" data-scroll-anchor="panel-duo" class="stats-section card-panel related-panel duo-panel">
+          <div class="section-head">
+            <div class="section-head-left">
+              <h2>双人统计</h2>
+            </div>
+            <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-duo', '双人统计')">PNG</button>
+          </div>
+
+          <div class="record-grid duo-record-grid">
+            <div id="duo-unit-pool" data-scroll-anchor="duo-unit-pool" class="record-block duo-record-block duo-wide-block duo-unit-section">
+              <div class="block-head">
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('duo-unit-pool') }}</h3>
+                  <div class="duo-filter-row">
+                    <label
+                      v-for="option in DUO_FILTER_OPTIONS"
+                      :key="`unit-filter-${option.value}`"
+                      class="head-filter-toggle stats-checkbox"
+                      :title="option.title"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="duoUnitPoolFilters.includes(option.value)"
+                        @change="onDuoFilterChange('unit', option.value, $event)"
+                      />
+                      {{ option.label }}
+                    </label>
+                    <label class="head-filter-toggle stats-checkbox" title="勾选后显示上次同池组合二人的当期卡面。">
+                      <input :checked="duoLastPoolShowCardImages" type="checkbox" @change="onDuoLastPoolShowCardImagesChange" />
+                      显示卡面
+                    </label>
+                  </div>
+                </div>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('duo-unit-pool', '双人统计_各团同池统计')">PNG</button>
+              </div>
+              <div class="duo-unit-row-list">
+                <div
+                  v-for="unitRow in duoUnitRows"
+                  :key="unitRow.id"
+                  :id="unitRow.id"
+                  class="duo-unit-row duo-unit-combined-card"
+                  :style="{ '--duo-unit-color': getUnitAccentColor(unitRow.unit) }"
+                >
+                  <div class="duo-unit-combined-head">
+                    <span class="duo-unit-combined-title">
+                      <img v-if="unitLogoMap[unitRow.unit]" :src="unitLogoMap[unitRow.unit]" class="duo-unit-logo" :alt="unitRow.title" />
+                      {{ unitRow.title }}
+                    </span>
+                    <button class="card-export-btn duo-unit-export-btn" :disabled="isExportingPng" @click="exportElementPng(unitRow.id, `双人统计_${unitRow.title}_同池统计`)">PNG</button>
+                  </div>
+                  <div class="duo-unit-pair-grid">
+                  <div class="duo-unit-card duo-unit-card-matrix">
+                    <div class="duo-unit-title duo-unit-subhead">
+                      <span class="duo-unit-title-main">
+                        <img v-if="unitLogoMap[unitRow.unit]" :src="unitLogoMap[unitRow.unit]" class="duo-unit-logo" :alt="unitRow.title" />
+                        <span>同池次数</span>
+                      </span>
+                      <div class="duo-unit-title-actions duo-unit-filter-row">
+                        <label
+                          v-for="option in DUO_FILTER_OPTIONS"
+                          :key="`${unitRow.unit}-filter-${option.value}`"
+                          class="head-filter-toggle stats-checkbox"
+                          :title="option.title"
+                        >
+                          <input
+                            type="checkbox"
+                            :checked="unitRow.filters.includes(option.value)"
+                            @change="onDuoUnitFilterChange(unitRow.unit, option.value, $event)"
+                          />
+                          {{ option.label }}
+                        </label>
+                      </div>
+                    </div>
+                    <div class="matrix-wrap duo-matrix-wrap duo-unit-wrap">
+                      <table class="matrix-table duo-table duo-unit-table">
+                        <thead>
+                          <tr>
+                            <th class="duo-corner-cell"></th>
+                            <th v-for="col in unitRow.matrix.columns" :key="col.key" class="duo-char-head" :style="getDuoHeadCellStyle(col)">
+                              <img :src="col.avatarSrc" class="duo-head-avatar" :title="col.name" :style="{ borderColor: col.color }" />
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="row in unitRow.matrix.rows"
+                            :key="row.key"
+                            :class="{ 'duo-vs-row': row.isVs }"
+                            :style="{ backgroundColor: row.tint }"
+                          >
+                            <td class="row-char duo-row-char" :style="{ backgroundColor: row.unitTint }">
+                              <img :src="row.avatarSrc" class="mini-avatar" :title="row.name" :style="{ borderColor: row.color }" />
+                            </td>
+                            <td
+                              v-for="cell in row.cells"
+                              :key="cell.key"
+                              class="matrix-num duo-num"
+                              :class="getDuoMatrixCellClass(cell)"
+                              :style="getDuoMatrixCellStyle(cell)"
+                            >
+                              {{ formatDuoCount(cell.value) }}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="duo-unit-card duo-unit-card-last">
+                    <div class="duo-unit-title duo-unit-subhead duo-unit-last-subhead">
+                      <span class="duo-unit-title-main">
+                        <img v-if="unitLogoMap[unitRow.unit]" :src="unitLogoMap[unitRow.unit]" class="duo-unit-logo" :alt="unitRow.title" />
+                        <span>上次同池</span>
+                      </span>
+                      <div class="duo-unit-title-actions">
+                        <label class="head-filter-toggle stats-checkbox" title="勾选后显示上次同池组合二人的当期卡面。">
+                          <input :checked="unitRow.showCardImages" type="checkbox" @change="onDuoUnitLastPoolShowCardImagesChange(unitRow.unit, $event)" />
+                          显示卡面
+                        </label>
+                        <button class="card-export-btn duo-unit-export-btn duo-unit-export-btn-inline" :disabled="isExportingPng" @click="exportElementPng(unitRow.id, `双人统计_${unitRow.title}_同池统计`)">PNG</button>
+                      </div>
+                    </div>
+                    <table :class="['record-table', 'related-table', 'related-table-last', 'duo-last-table', { 'duo-last-card-mode': unitRow.showCardImages }]">
+                      <thead>
+                        <tr>
+                          <th>组合</th>
+                          <th v-if="unitRow.showCardImages">卡面</th>
+                          <template v-if="unitRow.showCardImages">
+                            <th class="duo-last-event-date-head">活动/日期</th>
+                            <th class="duo-last-info-head">时间</th>
+                            <th class="duo-last-gap-head">距今</th>
+                          </template>
+                          <template v-else>
+                            <th>活动</th>
+                            <th>日期</th>
+                            <th>距今</th>
+                          </template>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in unitRow.lastRows" :key="row.key" :style="{ backgroundColor: row.tint, '--record-tint': row.tint }">
+                          <td class="duo-pair-cell">
+                            <img
+                              v-for="member in row.members"
+                              :key="member.key"
+                              :src="member.avatarSrc"
+                              class="duo-pair-avatar"
+                              :title="member.name"
+                              :style="{ borderColor: member.color }"
+                            />
+                          </td>
+                          <td v-if="unitRow.showCardImages" class="duo-last-card-cell">
+                            <div class="duo-last-card-pair">
+                              <div
+                                v-for="card in row.cards"
+                                :key="card.key"
+                                class="duo-last-card-item"
+                              >
+                                <div v-if="card.imageSrc" class="lineup-slot-card related-last-card-thumb duo-last-card-thumb">
+                                  <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                                  <img
+                                    :src="card.imageSrc"
+                                    class="lineup-slot-card-img media-load-shimmer"
+                                    :alt="`${card.name} 卡面`"
+                                    loading="lazy"
+                                    decoding="async"
+                                    @load="onMediaImageLoad"
+                                    @error="onMediaImageError"
+                                  />
+                                  <img
+                                    v-if="ATTRS.includes(card.attr)"
+                                    :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                                    :alt="ATTR_LABELS[card.attr]"
+                                    :title="ATTR_LABELS[card.attr]"
+                                    class="related-last-card-attr"
+                                  />
+                                </div>
+                                <span v-else class="score-empty">-</span>
+                              </div>
+                            </div>
+                          </td>
+                          <template v-if="unitRow.showCardImages">
+                            <td class="duo-last-event-date-cell">
+                              <div class="duo-last-info-stack">
+                                <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
+                                <span class="duo-last-date-text">{{ row.date }}</span>
+                              </div>
+                            </td>
+                            <td class="duo-last-info-cell">
+                              <div class="duo-last-info-stack">
+                                <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
+                                <span class="duo-last-date-text">{{ row.date }}</span>
+                                <span class="duo-last-gap-text">{{ row.gapText }}</span>
+                              </div>
+                            </td>
+                            <td class="duo-last-gap-cell">{{ row.gapText }}</td>
+                          </template>
+                          <template v-else>
+                            <td>
+                            <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
+                            </td>
+                            <td>{{ row.date }}</td>
+                            <td>{{ row.gapText }}</td>
+                          </template>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="duo-pool" data-scroll-anchor="duo-pool" class="record-block duo-record-block duo-wide-block">
+              <div class="block-head">
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('duo-pool') }}</h3>
+                  <div class="duo-filter-row">
+                    <label
+                      v-for="option in DUO_FILTER_OPTIONS"
+                      :key="`pool-filter-${option.value}`"
+                      class="head-filter-toggle stats-checkbox"
+                      :title="option.title"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="duoPoolFilters.includes(option.value)"
+                        @change="onDuoFilterChange('pool', option.value, $event)"
+                      />
+                      {{ option.label }}
+                    </label>
+                  </div>
+                </div>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('duo-pool', '双人统计_同池次数')">PNG</button>
+              </div>
+              <div class="matrix-wrap duo-matrix-wrap duo-full-wrap">
+                <table class="matrix-table duo-table duo-full-table">
+                  <thead>
+                    <tr>
+                      <th class="duo-corner-cell">角色</th>
+                      <th v-for="col in duoPoolMatrix.columns" :key="col.key" class="duo-char-head" :style="getDuoHeadCellStyle(col)">
+                        <img :src="col.avatarSrc" class="duo-head-avatar" :title="col.name" :style="{ borderColor: col.color }" />
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="row in duoPoolMatrix.rows"
+                      :key="row.key"
+                      :class="{ 'duo-vs-row': row.isVs }"
+                      :style="{ backgroundColor: row.tint }"
+                    >
+                      <td class="row-char duo-row-char" :style="{ backgroundColor: row.unitTint }">
+                        <img :src="row.avatarSrc" class="mini-avatar" :title="row.name" :style="{ borderColor: row.color }" />
+                      </td>
+                      <td
+                        v-for="cell in row.cells"
+                        :key="cell.key"
+                        class="matrix-num duo-num"
+                        :class="getDuoMatrixCellClass(cell)"
+                        :style="getDuoMatrixCellStyle(cell)"
+                      >
+                        {{ formatDuoCount(cell.value) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="duo-event" data-scroll-anchor="duo-event" class="record-block duo-record-block duo-wide-block">
+              <div class="block-head">
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('duo-event') }}</h3>
+                  <div class="duo-filter-row">
+                    <label
+                      v-for="option in DUO_FILTER_OPTIONS"
+                      :key="`event-filter-${option.value}`"
+                      class="head-filter-toggle stats-checkbox"
+                      :title="option.title"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="duoEventFilters.includes(option.value)"
+                        @change="onDuoFilterChange('event', option.value, $event)"
+                      />
+                      {{ option.label }}
+                    </label>
+                  </div>
+                </div>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('duo-event', '双人统计_同活次数')">PNG</button>
+              </div>
+              <div class="matrix-wrap duo-matrix-wrap duo-full-wrap">
+                <table class="matrix-table duo-table duo-full-table">
+                  <thead>
+                    <tr>
+                      <th class="duo-corner-cell">角色</th>
+                      <th v-for="col in duoEventMatrix.columns" :key="col.key" class="duo-char-head" :style="getDuoHeadCellStyle(col)">
+                        <img :src="col.avatarSrc" class="duo-head-avatar" :title="col.name" :style="{ borderColor: col.color }" />
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="row in duoEventMatrix.rows"
+                      :key="row.key"
+                      :class="{ 'duo-vs-row': row.isVs }"
+                      :style="{ backgroundColor: row.tint }"
+                    >
+                      <td class="row-char duo-row-char" :style="{ backgroundColor: row.unitTint }">
+                        <img :src="row.avatarSrc" class="mini-avatar" :title="row.name" :style="{ borderColor: row.color }" />
+                      </td>
+                      <td
+                        v-for="cell in row.cells"
+                        :key="cell.key"
+                        class="matrix-num duo-num"
+                        :class="getDuoMatrixCellClass(cell)"
+                        :style="getDuoMatrixCellStyle(cell)"
+                      >
+                        {{ formatDuoCount(cell.value) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div id="panel-special" data-scroll-anchor="panel-special" class="stats-section card-panel related-panel">
           <div class="section-head">
             <div class="section-head-left">
@@ -2806,6 +3134,25 @@ const fesRecordShowCardImages = ref(false);
 const intervalFourShowCardImages = ref(false);
 const intervalLimitedShowCardImages = ref(false);
 const intervalBanShowCardImages = ref(false);
+const DEFAULT_DUO_UNIT_POOL_FILTERS = Object.freeze(['box', 'wl']);
+const duoUnitPoolFilters = ref([...DEFAULT_DUO_UNIT_POOL_FILTERS]);
+const duoUnitPoolFiltersByUnit = reactive({
+  ln: [...DEFAULT_DUO_UNIT_POOL_FILTERS],
+  mmj: [...DEFAULT_DUO_UNIT_POOL_FILTERS],
+  vbs: [...DEFAULT_DUO_UNIT_POOL_FILTERS],
+  ws: [...DEFAULT_DUO_UNIT_POOL_FILTERS],
+  nc: [...DEFAULT_DUO_UNIT_POOL_FILTERS]
+});
+const duoPoolFilters = ref(['mix', 'wl']);
+const duoEventFilters = ref(['mix', 'wl']);
+const duoLastPoolShowCardImages = ref(false);
+const duoLastPoolShowCardImagesByUnit = reactive({
+  ln: false,
+  mmj: false,
+  vbs: false,
+  ws: false,
+  nc: false
+});
 const festivalFesToggles = reactive({
   半周年: false,
   周年: false
@@ -3098,6 +3445,14 @@ const RELATED_FES_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'];
 const SUPPORT_UNITS = ['vs', 'ln', 'mmj', 'vbs', 'ws', 'nc'];
 const LINEUP_NAV_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'];
 const SUPPORT_NAV_UNITS = ['vs', 'ln', 'mmj', 'vbs', 'ws', 'nc'];
+const DUO_OC_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
+const DUO_FILTER_OPTIONS = Object.freeze([
+  { value: 'box', label: '箱活', title: '统计箱活。' },
+  { value: 'mix', label: '混活', title: '统计混活。' },
+  { value: 'wl', label: 'WL', title: '统计 World Link 和 World Link终章。' },
+  { value: 'collab', label: '联动', title: '仅统计 c1-c5 联动活动。' },
+  { value: 'fes', label: 'FES', title: '同池统计中允许 FES 卡参与计数。' }
+]);
 const supportUnitTitleLogoMap = Object.freeze({
   ln: '/elements/Leo_need.png',
   mmj: '/elements/MORE_MORE_JUMP!.png',
@@ -3597,8 +3952,15 @@ const SPECIAL_STAT_ITEMS = [
   { id: 'rel-bfes-stat', title: 'BFES统计' }
 ];
 
+const DUO_STAT_ITEMS = [
+  { id: 'duo-unit-pool', title: '各团同池统计' },
+  { id: 'duo-pool', title: '同池次数' },
+  { id: 'duo-event', title: '同活次数' }
+];
+
 const RELATED_RECORD_ITEMS = [
   ...INTERVAL_RECORD_ITEMS,
+  ...DUO_STAT_ITEMS,
   ...SPECIAL_STAT_ITEMS
 ];
 
@@ -3775,6 +4137,11 @@ const navGroups = computed(() => {
       id: 'panel-related',
       title: '间隔记录',
       children: INTERVAL_RECORD_ITEMS.map((item) => ({ id: item.id, title: item.title }))
+    },
+    {
+      id: 'panel-duo',
+      title: '双人统计',
+      children: DUO_STAT_ITEMS.map((item) => ({ id: item.id, title: item.title }))
     },
     {
       id: 'panel-special',
@@ -4619,6 +4986,20 @@ const syncRecordBlockLayoutForExport = (sourceBlock, cloneBlock) => {
   cloneTables.forEach((cloneTable, idx) => {
     const sourceTable = sourceTables[idx];
     if (!(cloneTable instanceof HTMLTableElement) || !(sourceTable instanceof HTMLTableElement)) return;
+    if (sourceTable.classList.contains('duo-unit-table') || cloneTable.classList.contains('duo-unit-table')) {
+      cloneTable.style.width = '100%';
+      cloneTable.style.minWidth = '0';
+      cloneTable.style.maxWidth = '100%';
+      cloneTable.style.tableLayout = 'fixed';
+      return;
+    }
+    if (sourceTable.classList.contains('duo-last-table') || cloneTable.classList.contains('duo-last-table')) {
+      cloneTable.style.width = '100%';
+      cloneTable.style.minWidth = '0';
+      cloneTable.style.maxWidth = '100%';
+      cloneTable.style.tableLayout = 'fixed';
+      return;
+    }
     const widths = getTableColumnWidths(sourceTable);
     if (widths.length > 0) {
       applyTableColumnWidths(cloneTable, widths);
@@ -4628,17 +5009,77 @@ const syncRecordBlockLayoutForExport = (sourceBlock, cloneBlock) => {
       cloneTable.style.minWidth = `${tableWidth}px`;
       cloneTable.style.maxWidth = 'none';
     }
-    expandedWidth = Math.max(expandedWidth, sourceTable.scrollWidth + 20);
+    const shouldExpandForTable = !sourceTable.classList.contains('duo-unit-table');
+    if (shouldExpandForTable) {
+      expandedWidth = Math.max(expandedWidth, sourceTable.scrollWidth + 20);
+    }
   });
 
   const sourceBlockHeight = Math.max(sourceBlock.clientHeight, sourceBlock.scrollHeight);
   cloneBlock.style.overflow = 'visible';
   cloneBlock.style.maxHeight = 'none';
-  cloneBlock.style.height = `${Math.max(1, Math.ceil(sourceBlockHeight))}px`;
+  const expandedHeight = Math.max(sourceBlockHeight, cloneBlock.scrollHeight, cloneBlock.clientHeight);
+  cloneBlock.style.height = 'auto';
+  cloneBlock.style.minHeight = `${Math.max(1, Math.ceil(expandedHeight))}px`;
   cloneBlock.style.width = `${Math.max(1, Math.ceil(expandedWidth))}px`;
   cloneBlock.style.minWidth = `${Math.max(1, Math.ceil(expandedWidth))}px`;
   cloneBlock.style.maxWidth = 'none';
   return expandedWidth;
+};
+
+const syncDuoUnitRowsForExport = (sourceRoot, cloneRoot) => {
+  if (!(sourceRoot instanceof HTMLElement) || !(cloneRoot instanceof HTMLElement)) return 0;
+  const collectRows = (rootEl) => {
+    const rows = [];
+    if (rootEl.classList.contains('duo-unit-row')) rows.push(rootEl);
+    rows.push(...Array.from(rootEl.querySelectorAll('.duo-unit-row')));
+    return rows.filter((row) => row instanceof HTMLElement);
+  };
+  const sourceRows = collectRows(sourceRoot);
+  const cloneRows = collectRows(cloneRoot);
+  const pairCount = Math.min(sourceRows.length, cloneRows.length);
+  let maxWidth = 0;
+
+  for (let idx = 0; idx < pairCount; idx += 1) {
+    const sourceRow = sourceRows[idx];
+    const cloneRow = cloneRows[idx];
+    const sourceGrid = sourceRow.querySelector('.duo-unit-pair-grid');
+    const cloneGrid = cloneRow.querySelector('.duo-unit-pair-grid');
+    if (!(sourceGrid instanceof HTMLElement) || !(cloneGrid instanceof HTMLElement)) continue;
+
+    const sourceGridStyle = window.getComputedStyle(sourceGrid);
+    const sourceColumns = String(sourceGridStyle.gridTemplateColumns || '').trim().split(/\s+/).filter(Boolean);
+    const gridWidth = Math.max(sourceGrid.clientWidth, sourceGrid.getBoundingClientRect().width);
+    const rowWidth = Math.max(sourceRow.clientWidth, sourceRow.getBoundingClientRect().width);
+    const gap = Number.parseFloat(sourceGridStyle.columnGap || sourceGridStyle.gap || '0') || 0;
+    const sourceCards = Array.from(sourceGrid.children).filter((child) => child instanceof HTMLElement);
+    const cloneCards = Array.from(cloneGrid.children).filter((child) => child instanceof HTMLElement);
+
+    maxWidth = Math.max(maxWidth, rowWidth);
+    cloneRow.style.width = `${Math.max(1, Math.ceil(rowWidth))}px`;
+    cloneRow.style.maxWidth = 'none';
+    cloneGrid.style.width = `${Math.max(1, Math.ceil(gridWidth))}px`;
+    cloneGrid.style.maxWidth = 'none';
+    cloneGrid.style.columnGap = `${Math.max(0, gap)}px`;
+
+    if (sourceColumns.length >= 2 && sourceCards.length >= 2 && cloneCards.length >= 2) {
+      const firstWidth = Math.max(sourceCards[0].clientWidth, sourceCards[0].getBoundingClientRect().width);
+      const secondWidth = Math.max(sourceCards[1].clientWidth, sourceCards[1].getBoundingClientRect().width);
+      cloneGrid.style.gridTemplateColumns = `${Math.max(1, Math.ceil(firstWidth))}px ${Math.max(1, Math.ceil(secondWidth))}px`;
+      cloneCards[0].style.width = `${Math.max(1, Math.ceil(firstWidth))}px`;
+      cloneCards[1].style.width = `${Math.max(1, Math.ceil(secondWidth))}px`;
+      cloneCards[0].style.maxWidth = 'none';
+      cloneCards[1].style.maxWidth = 'none';
+    } else {
+      cloneGrid.style.gridTemplateColumns = 'minmax(0, 1fr)';
+      cloneCards.forEach((card) => {
+        card.style.width = '100%';
+        card.style.maxWidth = '100%';
+      });
+    }
+  }
+
+  return maxWidth;
 };
 
 const copyCssCustomPropertiesFromAncestors = (sourceEl, targetEl, stopEl = null) => {
@@ -5190,15 +5631,26 @@ const prepareExportClone = async (targetEl) => {
   `;
   clone.insertBefore(stabilizeStyle, clone.firstChild);
 
-  const originalMatrixWrap = targetEl.querySelector('.matrix-wrap');
-  const cloneMatrixWrap = clone.querySelector('.matrix-wrap');
-  if (originalMatrixWrap && cloneMatrixWrap) {
-    const fullMatrixWidth = Math.max(originalMatrixWrap.scrollWidth, originalMatrixWrap.clientWidth);
-    const fullMatrixHeight = Math.max(originalMatrixWrap.scrollHeight, originalMatrixWrap.clientHeight);
-    cloneMatrixWrap.style.maxHeight = 'none';
-    cloneMatrixWrap.style.height = `${fullMatrixHeight}px`;
-    cloneMatrixWrap.style.width = `${fullMatrixWidth}px`;
-    cloneMatrixWrap.style.overflow = 'visible';
+  const originalMatrixWraps = targetEl.querySelectorAll('.matrix-wrap');
+  const cloneMatrixWraps = clone.querySelectorAll('.matrix-wrap');
+  if (originalMatrixWraps.length && cloneMatrixWraps.length) {
+    let fullMatrixWidthMax = 0;
+    cloneMatrixWraps.forEach((cloneMatrixWrap, idx) => {
+      const originalMatrixWrap = originalMatrixWraps[idx];
+      if (!originalMatrixWrap) return;
+      const isDuoUnitWrap = originalMatrixWrap.classList.contains('duo-unit-wrap') || cloneMatrixWrap.classList.contains('duo-unit-wrap');
+      const fullMatrixWidth = isDuoUnitWrap
+        ? Math.max(originalMatrixWrap.clientWidth, originalMatrixWrap.getBoundingClientRect().width)
+        : Math.max(originalMatrixWrap.scrollWidth, originalMatrixWrap.clientWidth);
+      const fullMatrixHeight = Math.max(originalMatrixWrap.scrollHeight, originalMatrixWrap.clientHeight);
+      if (!isDuoUnitWrap) {
+        fullMatrixWidthMax = Math.max(fullMatrixWidthMax, fullMatrixWidth);
+      }
+      cloneMatrixWrap.style.maxHeight = 'none';
+      cloneMatrixWrap.style.height = `${fullMatrixHeight}px`;
+      cloneMatrixWrap.style.width = `${fullMatrixWidth}px`;
+      cloneMatrixWrap.style.overflow = 'visible';
+    });
 
     const cloneMatrixHeadCells = clone.querySelectorAll('.matrix-table thead th, .matrix-table th:first-child, .matrix-table td:first-child');
     cloneMatrixHeadCells.forEach((cell) => {
@@ -5208,7 +5660,7 @@ const prepareExportClone = async (targetEl) => {
     });
 
     const panelPadding = 28;
-    clone.style.width = `${Math.max(Math.ceil(rect.width), fullMatrixWidth + panelPadding)}px`;
+    clone.style.width = `${Math.max(Math.ceil(rect.width), fullMatrixWidthMax + panelPadding)}px`;
   }
 
   const originalSongLists = targetEl.querySelectorAll('.song-list');
@@ -5234,6 +5686,13 @@ const prepareExportClone = async (targetEl) => {
     expandedCloneWidth = Math.max(expandedCloneWidth, nextWidth + 20);
   });
 
+  if (targetEl.classList.contains('duo-unit-row') || targetEl.querySelector('.duo-unit-row')) {
+    const duoRowsWidth = syncDuoUnitRowsForExport(targetEl, clone);
+    if (duoRowsWidth > 0) {
+      expandedCloneWidth = Math.max(expandedCloneWidth, duoRowsWidth + 24);
+    }
+  }
+
   if (expandedCloneWidth > Math.ceil(rect.width)) {
     clone.style.width = `${expandedCloneWidth}px`;
   }
@@ -5251,6 +5710,13 @@ const prepareExportClone = async (targetEl) => {
   host.appendChild(clone);
   document.body.appendChild(host);
   await waitNextPaint();
+  const finalWidth = Math.max(clone.scrollWidth, clone.clientWidth, clone.getBoundingClientRect().width);
+  const finalHeight = Math.max(clone.scrollHeight, clone.clientHeight, clone.getBoundingClientRect().height);
+  clone.style.width = `${Math.max(1, Math.ceil(finalWidth))}px`;
+  clone.style.minWidth = `${Math.max(1, Math.ceil(finalWidth))}px`;
+  clone.style.height = `${Math.max(1, Math.ceil(finalHeight))}px`;
+  clone.style.minHeight = `${Math.max(1, Math.ceil(finalHeight))}px`;
+  await waitNextPaint();
   return clone;
 };
 
@@ -5260,10 +5726,10 @@ const resolveExportElementById = (id) => {
 
   const exact = document.getElementById(targetId);
   if (!exact) return null;
-  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('festival-card') || exact.classList.contains('lineup-card') || exact.classList.contains('support-card') || exact.classList.contains('attr-summary-card')) {
+  if (exact.classList.contains('card-panel') || exact.classList.contains('record-block') || exact.classList.contains('duo-unit-row') || exact.classList.contains('festival-card') || exact.classList.contains('lineup-card') || exact.classList.contains('support-card') || exact.classList.contains('attr-summary-card')) {
     return exact;
   }
-  return exact.closest('.record-block, .festival-card, .lineup-card, .support-card, .attr-summary-card, .card-panel');
+  return exact.closest('.duo-unit-row, .record-block, .festival-card, .lineup-card, .support-card, .attr-summary-card, .card-panel');
 };
 
 const freezeCssVariablesForCapture = (targetEl) => {
@@ -5620,7 +6086,7 @@ const bindSectionObserver = async () => {
 };
 
 const syncRelatedJumpChipWidths = () => {
-  const panels = ['panel-related', 'panel-special']
+  const panels = ['panel-related', 'panel-duo', 'panel-special']
     .map((id) => document.getElementById(id))
     .filter((panel) => panel instanceof HTMLElement);
 
@@ -6343,6 +6809,427 @@ function getCardBaseName(cardName) {
   return String(cardName || '').trim().split(/\s+/)[0] || '';
 }
 
+const normalizeCharName = (value) => getCardBaseName(value);
+
+const isDuoWorldLinkEvent = (event) => {
+  const eventType = String(event?.event_type || '').trim();
+  const lower = eventType.toLowerCase();
+  return lower === 'wl' || lower === 'world link' || eventType === 'World Link终章';
+};
+
+const isDuoCollabEvent = (event) => /^c[1-5]$/i.test(normalizeSourceKey(event?.id));
+
+const isDuoFesCard = (card) => {
+  const cardType = String(card?.Type || '').trim().toLowerCase();
+  const skillKind = String(card?.Skill || '').trim().toLowerCase();
+  return isFesCardType(cardType) || skillKind === 'bfes_up' || skillKind.startsWith('cfes');
+};
+
+const EARLY_SPLIT_FES_EVENT_IDS = new Set(['18', '27']);
+const isEarlySplitFesEvent = (event) => EARLY_SPLIT_FES_EVENT_IDS.has(normalizeSourceKey(event?.id));
+
+const getDuoFilterSet = (filters) => new Set(Array.isArray(filters) ? filters : []);
+
+const matchDuoEventFilters = (event, filters) => {
+  const selected = getDuoFilterSet(filters);
+  if (selected.has('box') && String(event?.event_type || '').trim() === '箱活') return true;
+  if (selected.has('mix') && String(event?.event_type || '').trim() === '混活') return true;
+  if (selected.has('wl') && isDuoWorldLinkEvent(event)) return true;
+  if (selected.has('collab') && isDuoCollabEvent(event)) return true;
+  return false;
+};
+
+const duoFiltersIncludeFes = (filters) => getDuoFilterSet(filters).has('fes');
+
+const isDuoEventWithinLimit = (event) => {
+  if (shouldSkipPredictEvent(event)) return false;
+  if (EXCLUDED_PERIOD_EVENT_TYPES.has(String(event?.event_type || '').trim())) return false;
+
+  const maxEid = Number(safeMaxEventId.value);
+  const idRaw = normalizeSourceKey(event?.id);
+  if (isNumericEventId(idRaw)) {
+    return Number(idRaw) <= maxEid;
+  }
+
+  const cutoffDate = getStatsCutoffDate(maxEid);
+  if (!cutoffDate) return true;
+  const eventDate = parseDateSafe(event?.start_date || event?.date);
+  if (!eventDate) return true;
+  if (eventDate.getTime() !== cutoffDate.getTime()) return eventDate < cutoffDate;
+  return true;
+};
+
+const getDuoEventCards = (event) => {
+  const cardsInEvent = Array.isArray(event?.memberCards) ? event.memberCards.filter(Boolean) : [];
+  if (cardsInEvent.length > 0) return cardsInEvent;
+  const eid = normalizeSourceKey(event?.id);
+  if (!eid) return [];
+  return (props.allCards || []).filter((card) => normalizeSourceKey(card?.EventID) === eid);
+};
+
+const normalizeDuoParticipantName = (name) => {
+  const baseName = normalizeCharName(name);
+  if (!baseName) return '';
+  if (!CHAR_ORDER[baseName] && !VS_NAMES.includes(baseName)) return '';
+  return baseName;
+};
+
+const getDuoEventParticipantNames = (event, options = {}) => {
+  const names = new Set();
+  const bannerName = normalizeDuoParticipantName(event?.banner);
+  if (bannerName) names.add(bannerName);
+  const includeFes = options?.includeFes === true;
+
+  getDuoEventCards(event).forEach((card) => {
+    if (isDuoFesCard(card) && !includeFes) return;
+    const name = normalizeDuoParticipantName(card?.Name);
+    if (name) names.add(name);
+  });
+
+  return [...names];
+};
+
+const getDuoPoolParticipantNames = (event, options = {}) => {
+  const names = new Set();
+  getDuoPoolParticipantGroups(event, options).forEach((group) => {
+    group.forEach((name) => names.add(name));
+  });
+  return [...names];
+};
+
+const getDuoPoolParticipantGroups = (event, options = {}) => {
+  const includeFes = options?.includeFes === true;
+  const fourStarCards = getDuoEventCards(event).filter((card) => {
+    if (String(card?.Rarity || '').trim() !== '4') return;
+    if (isDuoFesCard(card) && !includeFes) return false;
+    return true;
+  });
+  const toNames = (cards) => {
+    const names = new Set();
+    cards.forEach((card) => {
+      const name = normalizeDuoParticipantName(card?.Name);
+      if (name) names.add(name);
+    });
+    return [...names];
+  };
+
+  if (!isEarlySplitFesEvent(event)) return [toNames(fourStarCards)].filter((group) => group.length);
+
+  const normalNames = toNames(fourStarCards.filter((card) => !isDuoFesCard(card)));
+  const fesNames = includeFes ? toNames(fourStarCards.filter((card) => isDuoFesCard(card))) : [];
+  return [normalNames, fesNames].filter((group) => group.length);
+};
+
+const makeDuoPairKey = (a, b) => {
+  const ao = CHAR_ORDER[a] || 999;
+  const bo = CHAR_ORDER[b] || 999;
+  if (ao !== bo) return ao < bo ? `${a}::${b}` : `${b}::${a}`;
+  return String(a).localeCompare(String(b), 'zh-Hans-CN') <= 0 ? `${a}::${b}` : `${b}::${a}`;
+};
+
+const buildDuoEventRef = (event) => ({
+  id: isNumericEventId(event?.id) ? Number(event.id) : normalizeSourceKey(event?.id),
+  date: String(event?.start_date || event?.date || '').trim(),
+  typeSeriesId: event?.type_series_id,
+  eventType: String(event?.event_type || '').trim(),
+  banner: String(event?.banner || '').trim(),
+  unit: String(event?.unit || '').trim(),
+  sourceKey: normalizeSourceKey(event?.id)
+});
+
+const getDuoEventSortTime = (event) => {
+  const d = parseDateSafe(event?.start_date || event?.date);
+  if (d) return d.getTime();
+  const idNum = Number(event?.id);
+  return Number.isFinite(idNum) ? idNum : 0;
+};
+
+const buildDuoCountMap = (mode, filters) => {
+  const map = new Map();
+  const includeFes = duoFiltersIncludeFes(filters);
+  (props.allEvents || []).forEach((event) => {
+    if (!isDuoEventWithinLimit(event)) return;
+    if (!matchDuoEventFilters(event, filters)) return;
+
+    const groups = mode === 'event'
+      ? [getDuoEventParticipantNames(event, { includeFes })]
+      : getDuoPoolParticipantGroups(event, { includeFes });
+
+    groups.forEach((names) => {
+      if (names.length < 2) return;
+      for (let i = 0; i < names.length; i += 1) {
+        for (let j = i + 1; j < names.length; j += 1) {
+          const a = names[i];
+          const b = names[j];
+          if (!a || !b || a === b) continue;
+          const key = makeDuoPairKey(a, b);
+          map.set(key, (map.get(key) || 0) + 1);
+        }
+      }
+    });
+  });
+  return map;
+};
+
+const buildDuoLastPoolMap = (filters) => {
+  const map = new Map();
+  const includeFes = duoFiltersIncludeFes(filters);
+  (props.allEvents || [])
+    .filter((event) => isDuoEventWithinLimit(event) && matchDuoEventFilters(event, filters))
+    .sort((a, b) => {
+      const dt = getDuoEventSortTime(a) - getDuoEventSortTime(b);
+      if (dt !== 0) return dt;
+      return String(a?.id || '').localeCompare(String(b?.id || ''), 'zh-Hans-CN', { numeric: true });
+    })
+    .forEach((event) => {
+      const eventRef = buildDuoEventRef(event);
+      const groups = getDuoPoolParticipantGroups(event, { includeFes });
+      groups.forEach((names) => {
+        if (names.length < 2) return;
+        for (let i = 0; i < names.length; i += 1) {
+          for (let j = i + 1; j < names.length; j += 1) {
+            const a = names[i];
+            const b = names[j];
+            if (!a || !b || a === b) continue;
+            map.set(makeDuoPairKey(a, b), {
+              eventRef,
+              eventLabel: getNonBanEventMark(eventRef),
+              date: eventRef.date
+            });
+          }
+        }
+      });
+    });
+  return map;
+};
+
+const getDuoPairCount = (map, rowName, colName) => {
+  if (!rowName || !colName || rowName === colName) return null;
+  return map.get(makeDuoPairKey(rowName, colName)) || 0;
+};
+
+const duoOcNames = computed(() => toDisplayOrderedCharNames(
+  Object.keys(CHAR_ORDER).filter((name) => !VS_NAMES.includes(name))
+));
+
+const duoVsNames = computed(() => toDisplayOrderedCharNames([...VS_NAMES]));
+
+const duoRowsAll = computed(() => [...duoOcNames.value, ...duoVsNames.value]);
+
+const duoUnitCharacters = computed(() => {
+  const grouped = Object.fromEntries(DUO_OC_UNITS.map((unit) => [unit, []]));
+  duoOcNames.value.forEach((name) => {
+    const unit = getUnitByChar(name);
+    if (grouped[unit]) grouped[unit].push(name);
+  });
+  return grouped;
+});
+
+const buildDuoCharMeta = (name) => {
+  const baseName = normalizeCharName(name);
+  const isVs = VS_NAMES.includes(baseName);
+  return {
+    key: baseName,
+    name: baseName,
+    isVs,
+    shortName: getCharSingleMark(baseName),
+    avatarSrc: `/chibi_s/${getCharAbbr(baseName)}.webp`,
+    color: getCharColor(baseName),
+    unit: isVs ? 'vs' : getUnitByChar(baseName),
+    tint: getCharTint(baseName),
+    unitTint: getUnitMatrixTint(baseName)
+  };
+};
+
+const buildDuoMatrixData = (columns, rows, countMap) => {
+  const columnMetas = columns.map(buildDuoCharMeta);
+  const rowMetas = rows.map(buildDuoCharMeta);
+  const isSameUnitOc = (a, b) => !a?.isVs && !b?.isVs && a?.unit && b?.unit && a.unit === b.unit;
+  const isVsRegion = (a, b) => !!(a && b && (a.isVs || b.isVs));
+  const vsRegionBounds = rowMetas.reduce((bounds, row, rowIndex) => {
+    columnMetas.forEach((col, colIndex) => {
+      if (!isVsRegion(row, col)) return;
+      bounds.minRow = Math.min(bounds.minRow, rowIndex);
+      bounds.maxRow = Math.max(bounds.maxRow, rowIndex);
+      bounds.minCol = Math.min(bounds.minCol, colIndex);
+      bounds.maxCol = Math.max(bounds.maxCol, colIndex);
+    });
+    return bounds;
+  }, {
+    minRow: Number.POSITIVE_INFINITY,
+    maxRow: Number.NEGATIVE_INFINITY,
+    minCol: Number.POSITIVE_INFINITY,
+    maxCol: Number.NEGATIVE_INFINITY
+  });
+  const hasVsRegion = Number.isFinite(vsRegionBounds.minRow) && Number.isFinite(vsRegionBounds.minCol);
+  const vsRegionRowCount = hasVsRegion ? (vsRegionBounds.maxRow - vsRegionBounds.minRow + 1) : 0;
+  const vsRegionColCount = hasVsRegion ? (vsRegionBounds.maxCol - vsRegionBounds.minCol + 1) : 0;
+  return {
+    columns: columnMetas,
+    rows: rowMetas.map((row, rowIndex) => {
+      return {
+        ...row,
+        cells: columnMetas.map((col, colIndex) => {
+          const sameUnit = isSameUnitOc(row, col);
+          const vsRegion = isVsRegion(row, col);
+          const prevRow = rowMetas[rowIndex - 1] || null;
+          const nextRow = rowMetas[rowIndex + 1] || null;
+          const prevCol = columnMetas[colIndex - 1] || null;
+          const nextCol = columnMetas[colIndex + 1] || null;
+          return {
+            key: `${row.key}-${col.key}`,
+            value: getDuoPairCount(countMap, row.name, col.name),
+            row,
+            col,
+            isDiagonal: row.name === col.name,
+            isVsPair: vsRegion,
+            isSameUnitOcPair: sameUnit,
+            sameUnitTop: sameUnit && !isSameUnitOc(prevRow, col),
+            sameUnitBottom: sameUnit && !isSameUnitOc(nextRow, col),
+            sameUnitLeft: sameUnit && !isSameUnitOc(row, prevCol),
+            sameUnitRight: sameUnit && !isSameUnitOc(row, nextCol),
+            vsTop: vsRegion && !isVsRegion(prevRow, col),
+            vsBottom: vsRegion && !isVsRegion(nextRow, col),
+            vsLeft: vsRegion && !isVsRegion(row, prevCol),
+            vsRight: vsRegion && !isVsRegion(row, nextCol),
+            vsRegionRowIndex: hasVsRegion ? rowIndex - vsRegionBounds.minRow : 0,
+            vsRegionColIndex: hasVsRegion ? colIndex - vsRegionBounds.minCol : 0,
+            vsRegionRowCount,
+            vsRegionColCount,
+            unitColor: sameUnit ? getUnitAccentColor(row.unit) : ''
+          };
+        })
+      };
+    })
+  };
+};
+
+const getDuoMatrixCellClass = (cell) => ({
+  'duo-cell-empty': cell?.value == null && !cell?.isDiagonal,
+  'duo-zero': cell?.value === 0 && !cell?.isDiagonal,
+  'duo-diagonal': !!cell?.isDiagonal,
+  'duo-same-unit-top': !!cell?.sameUnitTop,
+  'duo-same-unit-bottom': !!cell?.sameUnitBottom,
+  'duo-same-unit-left': !!cell?.sameUnitLeft,
+  'duo-same-unit-right': !!cell?.sameUnitRight,
+  'duo-vs-top': !!cell?.vsTop && !cell?.isDiagonal,
+  'duo-vs-bottom': !!cell?.vsBottom && !cell?.isDiagonal,
+  'duo-vs-left': !!cell?.vsLeft && !cell?.isDiagonal,
+  'duo-vs-right': !!cell?.vsRight && !cell?.isDiagonal
+});
+
+const getDuoHeadCellStyle = (meta) => ({
+  background: `linear-gradient(0deg, ${meta?.tint || 'rgba(248, 250, 252, 1)'}, ${meta?.tint || 'rgba(248, 250, 252, 1)'}), #ffffff`
+});
+
+const getDuoMatrixCellStyle = (cell) => {
+  const style = {};
+  if (cell?.unitColor) style['--duo-cell-unit-color'] = cell.unitColor;
+  if (cell?.isVsPair) {
+    const rowIndex = Number(cell.vsRegionRowIndex || 0);
+    const colIndex = Number(cell.vsRegionColIndex || 0);
+    const rowCount = Math.max(1, Number(cell.vsRegionRowCount || 1));
+    const colCount = Math.max(1, Number(cell.vsRegionColCount || 1));
+    style['--duo-vs-bg-x'] = `${colCount > 1 ? (colIndex / (colCount - 1)) * 100 : 0}%`;
+    style['--duo-vs-bg-y'] = `${rowCount > 1 ? (rowIndex / (rowCount - 1)) * 100 : 0}%`;
+    style['--duo-vs-region-height'] = `${rowCount * 100}%`;
+    style['--duo-vs-region-width'] = `${colCount * 100}%`;
+  }
+  return style;
+};
+
+const getDuoUnitPoolFilters = (unit) => {
+  const key = String(unit || '').trim().toLowerCase();
+  const filters = duoUnitPoolFiltersByUnit[key];
+  return Array.isArray(filters) ? filters : duoUnitPoolFilters.value;
+};
+
+const getDuoUnitShowCardImages = (unit) => {
+  const key = String(unit || '').trim().toLowerCase();
+  return !!duoLastPoolShowCardImagesByUnit[key];
+};
+
+const duoUnitPoolCountMap = computed(() => buildDuoCountMap('pool', duoUnitPoolFilters.value));
+const duoPoolCountMap = computed(() => buildDuoCountMap('pool', duoPoolFilters.value));
+const duoEventCountMap = computed(() => buildDuoCountMap('event', duoEventFilters.value));
+const duoUnitLastPoolMap = computed(() => buildDuoLastPoolMap(duoUnitPoolFilters.value));
+
+const duoUnitPoolCountMaps = computed(() => Object.fromEntries(DUO_OC_UNITS.map((unit) => [
+  unit,
+  buildDuoCountMap('pool', getDuoUnitPoolFilters(unit))
+])));
+
+const duoUnitLastPoolMaps = computed(() => Object.fromEntries(DUO_OC_UNITS.map((unit) => [
+  unit,
+  buildDuoLastPoolMap(getDuoUnitPoolFilters(unit))
+])));
+
+const getDuoUnitPairRows = (unitNames, lastMap) => {
+  const rows = [];
+  for (let i = 0; i < unitNames.length; i += 1) {
+    for (let j = i + 1; j < unitNames.length; j += 1) {
+      const a = unitNames[i];
+      const b = unitNames[j];
+      const last = lastMap.get(makeDuoPairKey(a, b)) || null;
+      const members = [buildDuoCharMeta(a), buildDuoCharMeta(b)];
+      const cards = members.map((member) => {
+        const cardInfo = last?.eventRef
+          ? getRelatedRecordCardInfo(member.name, last.eventRef, { mode: 'four' })
+          : { imageSrc: '', attr: '' };
+        return {
+          key: `${member.key}-card`,
+          name: member.name,
+          imageSrc: cardInfo.imageSrc,
+          attr: cardInfo.attr
+        };
+      });
+      rows.push({
+        key: `${a}-${b}`,
+        members,
+        cards,
+        eventRef: last?.eventRef || null,
+        eventLabel: last?.eventLabel || '-',
+        date: last?.date || '-',
+        gapText: last?.date ? `${monthsSince(last.date)}个月 | ${last?.eventRef ? countPeriodsSince(last.eventRef) : 0}期` : '-',
+        tint: hexToRgba(getMatrixUnitColor(a), 0.14)
+      });
+    }
+  }
+  return rows.sort((a, b) => {
+    const at = parseDateSafe(a.date)?.getTime();
+    const bt = parseDateSafe(b.date)?.getTime();
+    const aValid = Number.isFinite(at);
+    const bValid = Number.isFinite(bt);
+    if (aValid && bValid && at !== bt) return at - bt;
+    if (aValid !== bValid) return aValid ? -1 : 1;
+    return String(a.key || '').localeCompare(String(b.key || ''), 'zh-Hans-CN', { numeric: true });
+  });
+};
+
+const duoUnitRows = computed(() => DUO_OC_UNITS.map((unit) => {
+  const unitNames = duoUnitCharacters.value[unit] || [];
+  const unitFilters = getDuoUnitPoolFilters(unit);
+  const unitShowCardImages = getDuoUnitShowCardImages(unit);
+  const unitCountMap = duoUnitPoolCountMaps.value[unit] || duoUnitPoolCountMap.value;
+  const unitLastPoolMap = duoUnitLastPoolMaps.value[unit] || duoUnitLastPoolMap.value;
+  return {
+    id: `duo-unit-${unit}`,
+    unit,
+    title: getUnitNavTitle(unit),
+    filters: unitFilters,
+    showCardImages: unitShowCardImages,
+    matrix: unitShowCardImages && !isNavTopLayout.value
+      ? buildDuoMatrixData(unitNames, [...unitNames, ...duoVsNames.value], unitCountMap)
+      : buildDuoMatrixData([...unitNames, ...duoVsNames.value], unitNames, unitCountMap),
+    lastRows: getDuoUnitPairRows(unitNames, unitLastPoolMap)
+  };
+}));
+
+const duoPoolMatrix = computed(() => buildDuoMatrixData(duoOcNames.value, duoRowsAll.value, duoPoolCountMap.value));
+const duoEventMatrix = computed(() => buildDuoMatrixData(duoOcNames.value, duoRowsAll.value, duoEventCountMap.value));
+
+const formatDuoCount = (value) => (value == null ? '—' : String(value));
+
 const getLineupCardId = (name) => `lineup-card-${getCharAbbr(name).toLowerCase()}`;
 const getSupportCardId = (unit) => `support-card-${String(unit || '').toLowerCase()}`;
 const getAttrSummaryCardId = (name) => `attr-summary-${getCharAbbr(name).toLowerCase()}`;
@@ -6516,11 +7403,17 @@ const getFesJumpLabel = (eventRef) => {
   return 'FES';
 };
 
+const normalizeJumpLinkLabel = (label) => {
+  const raw = String(label || '').trim();
+  if (!raw) return '';
+  return raw.replace(/\bwl(\d*)\b/gi, (_, part) => `WL${part || ''}`);
+};
+
 const getJumpLinkLabel = (eventRef, fallback = '-') => {
-  if (!eventRef) return fallback || '-';
+  if (!eventRef) return normalizeJumpLinkLabel(fallback) || '-';
   if (eventRef?.isFesCard) return getFesJumpLabel(eventRef);
   const mark = getLineupEventMark(eventRef, useSingleNameMark.value);
-  return mark || fallback || '-';
+  return normalizeJumpLinkLabel(mark || fallback) || '-';
 };
 
 const calcLineupUnitScore = (unit, unitCountMap) => {
@@ -7245,6 +8138,71 @@ const onSpecialPanelShowAllCardImagesChange = (event) => {
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
     specialPanelShowCardImagesAll.value = checked;
+  }, anchorEl);
+};
+
+const getDuoFilterTargetRef = (targetKey) => {
+  if (targetKey === 'unit') return duoUnitPoolFilters;
+  if (targetKey === 'pool') return duoPoolFilters;
+  if (targetKey === 'event') return duoEventFilters;
+  return null;
+};
+
+const onDuoFilterChange = (targetKey, optionValue, event) => {
+  const checked = !!event?.target?.checked;
+  const value = String(optionValue || '').trim();
+  const targetRef = getDuoFilterTargetRef(targetKey);
+  if (!value || !targetRef || !Array.isArray(targetRef.value)) return;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    const next = new Set(targetRef.value);
+    if (checked) next.add(value);
+    else next.delete(value);
+    targetRef.value = DUO_FILTER_OPTIONS
+      .map((option) => option.value)
+      .filter((option) => next.has(option));
+    if (targetKey === 'unit') {
+      DUO_OC_UNITS.forEach((unit) => {
+        duoUnitPoolFiltersByUnit[unit] = [...targetRef.value];
+      });
+    }
+  }, anchorEl);
+};
+
+const onDuoUnitFilterChange = (unit, optionValue, event) => {
+  const checked = !!event?.target?.checked;
+  const value = String(optionValue || '').trim();
+  const key = String(unit || '').trim().toLowerCase();
+  if (!value || !DUO_OC_UNITS.includes(key)) return;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    const next = new Set(getDuoUnitPoolFilters(key));
+    if (checked) next.add(value);
+    else next.delete(value);
+    duoUnitPoolFiltersByUnit[key] = DUO_FILTER_OPTIONS
+      .map((option) => option.value)
+      .filter((option) => next.has(option));
+  }, anchorEl);
+};
+
+const onDuoLastPoolShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    duoLastPoolShowCardImages.value = checked;
+    DUO_OC_UNITS.forEach((unit) => {
+      duoLastPoolShowCardImagesByUnit[unit] = checked;
+    });
+  }, anchorEl);
+};
+
+const onDuoUnitLastPoolShowCardImagesChange = (unit, event) => {
+  const checked = !!event?.target?.checked;
+  const key = String(unit || '').trim().toLowerCase();
+  if (!DUO_OC_UNITS.includes(key)) return;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    duoLastPoolShowCardImagesByUnit[key] = checked;
   }, anchorEl);
 };
 
@@ -11793,6 +12751,462 @@ defineExpose({
   background-color: #ffffff !important;
 }
 
+.duo-record-grid {
+  grid-template-columns: 1fr;
+}
+
+.duo-wide-block {
+  grid-column: 1 / -1;
+}
+
+.duo-unit-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.duo-unit-card-last {
+  container-type: inline-size;
+}
+
+.duo-unit-row-list {
+  display: grid;
+  gap: 10px;
+}
+
+.duo-unit-row {
+  position: relative;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  border-left: 3px solid var(--duo-unit-color, #94a3b8);
+  border-radius: var(--stats-radius-card);
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.duo-unit-pair-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.duo-unit-combined-head {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+}
+
+.duo-unit-combined-title {
+  display: none;
+}
+
+.duo-unit-export-btn {
+  min-height: 0;
+  height: auto;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.duo-filter-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.duo-unit-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 24px;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.duo-unit-subhead {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+}
+
+.duo-unit-title-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: max-content;
+}
+
+.duo-unit-title-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  margin-left: 0;
+}
+
+.duo-unit-filter-row {
+  row-gap: 4px;
+}
+
+.duo-unit-export-btn-inline {
+  display: none;
+  margin-left: auto;
+}
+
+.duo-unit-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.duo-corner-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.duo-matrix-wrap {
+  max-height: min(72vh, 680px);
+  border-radius: var(--stats-radius-card);
+}
+
+.duo-unit-wrap {
+  flex: 1 1 auto;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+.duo-table {
+  table-layout: fixed;
+  min-width: 100%;
+}
+
+.duo-table th,
+.duo-table td {
+  border-color: #cbd5e1;
+  padding: 6px 4px;
+}
+
+.duo-full-table {
+  width: 100%;
+}
+
+.duo-unit-table {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.duo-unit-table thead th,
+.duo-unit-table th:first-child,
+.duo-unit-table td:first-child {
+  position: static;
+  z-index: auto;
+  box-shadow: none;
+}
+
+.duo-full-table .duo-corner-cell,
+.duo-full-table .duo-row-char {
+  width: 72px;
+}
+
+.duo-unit-table .duo-corner-cell,
+.duo-unit-table .duo-row-char {
+  width: 8%;
+}
+
+.duo-char-head {
+  min-width: 0;
+}
+
+.duo-char-head,
+.duo-row-char {
+  vertical-align: middle;
+}
+
+.duo-char-head span,
+.duo-row-char span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.duo-head-avatar {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  object-fit: cover;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -2px 3px rgba(15, 23, 42, 0.18),
+    0 1px 3px rgba(15, 23, 42, 0.18);
+}
+
+.duo-row-char {
+  min-width: 0;
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.duo-row-char .mini-avatar {
+  width: 26px;
+  height: 26px;
+  display: block;
+  margin: 0 auto;
+  box-sizing: border-box;
+  object-fit: cover;
+}
+
+.duo-vs-row .duo-row-char {
+  box-shadow: inset 3px 0 0 rgba(17, 24, 39, 0.34);
+}
+
+.matrix-table td.duo-num {
+  position: relative;
+  font-size: 1rem;
+}
+
+.duo-cell-empty {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.duo-zero {
+  color: #94a3b8 !important;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.matrix-table td.duo-num.duo-same-unit-top {
+  border-top-color: var(--duo-cell-unit-color, #64748b) !important;
+  border-top-width: 2px !important;
+}
+
+.matrix-table td.duo-num.duo-same-unit-bottom {
+  border-bottom-color: var(--duo-cell-unit-color, #64748b) !important;
+  border-bottom-width: 2px !important;
+}
+
+.matrix-table td.duo-num.duo-same-unit-left {
+  border-left-color: var(--duo-cell-unit-color, #64748b) !important;
+  border-left-width: 2px !important;
+}
+
+.matrix-table td.duo-num.duo-same-unit-right {
+  border-right-color: var(--duo-cell-unit-color, #64748b) !important;
+  border-right-width: 2px !important;
+}
+
+.matrix-table td.duo-num.duo-vs-top {
+  --duo-vs-top-width: 3px;
+}
+
+.matrix-table td.duo-num.duo-vs-bottom {
+  --duo-vs-bottom-width: 3px;
+}
+
+.matrix-table td.duo-num.duo-vs-left {
+  --duo-vs-left-width: 3px;
+}
+
+.matrix-table td.duo-num.duo-vs-right {
+  --duo-vs-right-width: 3px;
+}
+
+.matrix-table td.duo-num.duo-vs-top::after,
+.matrix-table td.duo-num.duo-vs-bottom::after,
+.matrix-table td.duo-num.duo-vs-left::after,
+.matrix-table td.duo-num.duo-vs-right::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, #99f6e4 0%, #7dd3fc 38%, #c4b5fd 100%) var(--duo-vs-bg-x, 0%) top / var(--duo-vs-region-width, 100%) var(--duo-vs-top-width, 0) no-repeat,
+    linear-gradient(180deg, #c4b5fd 0%, #f9a8d4 48%, #fdba74 100%) right var(--duo-vs-bg-y, 0%) / var(--duo-vs-right-width, 0) var(--duo-vs-region-height, 100%) no-repeat,
+    linear-gradient(90deg, #86efac 0%, #fde68a 48%, #fdba74 100%) var(--duo-vs-bg-x, 0%) bottom / var(--duo-vs-region-width, 100%) var(--duo-vs-bottom-width, 0) no-repeat,
+    linear-gradient(180deg, #99f6e4 0%, #6ee7b7 48%, #86efac 100%) left var(--duo-vs-bg-y, 0%) / var(--duo-vs-left-width, 0) var(--duo-vs-region-height, 100%) no-repeat;
+}
+
+.matrix-table td.duo-num.duo-diagonal {
+  color: transparent !important;
+  background-image: none !important;
+  background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.matrix-table td.duo-num.duo-diagonal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-1 -1 102 102' preserveAspectRatio='none'%3E%3Cline x1='-1' y1='-1' x2='101' y2='101' stroke='%23111827' stroke-width='2.1' stroke-linecap='square' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.duo-last-table {
+  display: table;
+  flex: none;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.duo-last-table th,
+.duo-last-table td {
+  border-color: #cbd5e1;
+  border-width: 2px;
+  padding: 6px 5px;
+  vertical-align: middle;
+}
+
+.duo-unit-table thead th,
+.duo-last-table thead th {
+  height: 38px;
+}
+
+.duo-unit-table thead th {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.duo-unit-table tbody tr,
+.duo-last-table tbody tr {
+  height: auto;
+}
+
+.duo-last-table th:first-child,
+.duo-last-table td:first-child {
+  width: 24%;
+}
+
+.duo-pair-cell {
+  white-space: nowrap;
+  text-align: center;
+}
+
+.duo-pair-avatar {
+  display: inline-block;
+  vertical-align: middle;
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  object-fit: cover;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -2px 3px rgba(15, 23, 42, 0.18),
+    0 1px 3px rgba(15, 23, 42, 0.18);
+}
+
+.duo-pair-avatar + .duo-pair-avatar {
+  margin-left: 7px;
+}
+
+.duo-last-table .jump-link {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: var(--record-tint, rgba(255, 255, 255, 0.78));
+  border-color: rgba(148, 163, 184, 0.55);
+}
+
+.duo-last-table .jump-link:not(:disabled) {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+
+.duo-last-card-mode th:first-child,
+.duo-last-card-mode td:first-child {
+  width: 18%;
+}
+
+.duo-last-card-cell {
+  width: 28%;
+}
+
+.duo-last-card-pair {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.duo-last-card-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.duo-last-card-thumb {
+  --rel-last-card-frame-size: 64px;
+}
+
+.duo-last-info-head,
+.duo-last-info-cell {
+  display: table-cell;
+  width: 34%;
+}
+
+.duo-last-event-date-head,
+.duo-last-event-date-cell,
+.duo-last-gap-head,
+.duo-last-gap-cell {
+  display: none;
+  width: 0;
+}
+
+.duo-last-info-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+
+.duo-last-date-text,
+.duo-last-gap-text {
+  display: block;
+  white-space: nowrap;
+}
+
 .attr-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -12464,6 +13878,8 @@ td.record-char {
   white-space: nowrap;
   user-select: none;
   line-height: 1;
+  position: relative;
+  top: 2px;
 }
 
 .stats-checkbox input[type='checkbox'] {
@@ -12472,7 +13888,7 @@ td.record-char {
   height: 14px;
   flex: 0 0 14px;
   position: relative;
-  top: -1px;
+  top: 0;
   accent-color: #14b8a6;
 }
 
@@ -13418,6 +14834,131 @@ td.record-char {
   max-width: 90%;
 }
 
+.related-panel .duo-unit-wrap.matrix-wrap {
+  max-height: none;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+.related-panel .record-block.duo-unit-section {
+  overflow: visible;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+.related-panel .duo-last-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.related-panel .duo-last-table th,
+.related-panel .duo-last-table td {
+  border-color: #cbd5e1 !important;
+  border-width: 2px !important;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.related-panel .duo-last-table:not(.duo-last-card-mode) th:first-child,
+.related-panel .duo-last-table:not(.duo-last-card-mode) td:first-child {
+  width: 22%;
+}
+
+.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(2),
+.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(2) {
+  width: 24%;
+}
+
+.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(3),
+.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(3) {
+  width: 27%;
+}
+
+.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(4),
+.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(4) {
+  width: 27%;
+}
+
+.related-panel .duo-last-table.duo-last-card-mode th:first-child,
+.related-panel .duo-last-table.duo-last-card-mode td:first-child {
+  width: 24%;
+}
+
+.related-panel .duo-last-table.duo-last-card-mode th:nth-child(2),
+.related-panel .duo-last-table.duo-last-card-mode td:nth-child(2) {
+  width: 42%;
+}
+
+.related-panel .duo-last-table.duo-last-card-mode th:nth-child(3),
+.related-panel .duo-last-table.duo-last-card-mode td:nth-child(3) {
+  width: 0;
+}
+
+.related-panel .duo-last-table.duo-last-card-mode th:nth-child(4),
+.related-panel .duo-last-table.duo-last-card-mode td:nth-child(4) {
+  width: 34%;
+}
+
+.related-panel .duo-last-table.duo-last-card-mode th:nth-child(5),
+.related-panel .duo-last-table.duo-last-card-mode td:nth-child(5) {
+  width: 0;
+}
+
+.related-panel .duo-last-table .jump-link {
+  width: var(--record-jump-chip-width, auto);
+  min-width: var(--record-jump-chip-width, 0);
+  max-width: 100%;
+}
+
+@container (min-width: 500px) {
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-info-head,
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-info-cell {
+    display: none;
+    width: 0;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-event-date-head,
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-event-date-cell {
+    display: table-cell;
+    width: 26%;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-gap-head,
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-gap-cell {
+    display: table-cell;
+    width: 20%;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode th:first-child,
+  .related-panel .duo-last-table.duo-last-card-mode td:first-child {
+    width: 16%;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode th:nth-child(2),
+  .related-panel .duo-last-table.duo-last-card-mode td:nth-child(2) {
+    width: 38%;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode th:nth-child(3),
+  .related-panel .duo-last-table.duo-last-card-mode td:nth-child(3) {
+    width: 26%;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode th:nth-child(5),
+  .related-panel .duo-last-table.duo-last-card-mode td:nth-child(5) {
+    width: 20%;
+  }
+
+  .duo-last-card-thumb {
+    --rel-last-card-frame-size: 76px;
+  }
+}
+
 .jump-link:hover:not(:disabled) {
   filter: brightness(0.98);
 }
@@ -13435,6 +14976,10 @@ td.record-char {
 
   .matrix-table td.matrix-num {
     font-size: 1.24rem;
+  }
+
+  .matrix-table td.duo-num {
+    font-size: 1rem;
   }
 
   .vs-unit-score-table th,
@@ -13880,6 +15425,186 @@ td.record-char {
     min-width: 620px;
   }
 
+  .duo-unit-row {
+    padding: 6px;
+    overflow: visible;
+  }
+
+  .duo-unit-combined-head {
+    display: none;
+  }
+
+  .duo-unit-pair-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .duo-unit-card {
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .duo-unit-card-last {
+    display: block;
+    height: auto;
+    min-height: max-content;
+    padding-bottom: 12px;
+  }
+
+  .duo-unit-subhead {
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .duo-unit-title-main {
+    min-width: max-content;
+  }
+
+  .duo-unit-title-actions {
+    gap: 4px;
+  }
+
+  .duo-unit-card-matrix .duo-unit-title-actions {
+    justify-content: flex-start;
+  }
+
+  .duo-unit-last-subhead .duo-unit-title-actions {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+
+  .duo-unit-export-btn-inline {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
+  .duo-table {
+    width: max-content;
+    min-width: 0;
+  }
+
+  .duo-full-table {
+    min-width: 1160px;
+  }
+
+  .duo-unit-table {
+    width: 100%;
+    min-width: 100%;
+    height: auto;
+    table-layout: fixed;
+  }
+
+  .duo-full-table .duo-corner-cell,
+  .duo-full-table .duo-row-char {
+    width: 58px;
+  }
+
+  .duo-unit-table .duo-corner-cell,
+  .duo-unit-table .duo-row-char {
+    width: 9%;
+  }
+
+  .duo-full-table .duo-char-head,
+  .duo-full-table td.duo-num {
+    width: 52px;
+    min-width: 52px;
+    max-width: 52px;
+  }
+
+  .duo-unit-table .duo-char-head,
+  .duo-unit-table td.duo-num {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .duo-head-avatar {
+    width: 22px;
+    height: 22px;
+  }
+
+  .duo-row-char .mini-avatar {
+    width: 22px;
+    height: 22px;
+  }
+
+  .duo-char-head span,
+  .duo-row-char span {
+    font-size: 0.64rem;
+  }
+
+  .duo-unit-wrap {
+    max-height: none;
+    overflow: visible;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  .duo-unit-table th,
+  .duo-unit-table td {
+    padding: 3px 1px;
+  }
+
+  .duo-unit-table thead th,
+  .duo-last-table thead th {
+    height: 28px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+
+  .duo-unit-table .duo-head-avatar,
+  .duo-unit-table .mini-avatar {
+    width: 20px;
+    height: 20px;
+  }
+
+  .duo-unit-table td.duo-num {
+    font-size: 0.82rem;
+    line-height: 1;
+  }
+
+  .duo-pair-avatar {
+    width: 22px;
+    height: 22px;
+  }
+
+  .duo-pair-avatar + .duo-pair-avatar {
+    margin-left: 5px;
+  }
+
+  .related-panel .duo-last-table th,
+  .related-panel .duo-last-table td {
+    padding: 3px 2px;
+    font-size: 0.62rem;
+    line-height: 1.2;
+  }
+
+  .duo-last-table,
+  .related-panel .duo-last-table {
+    display: table;
+    flex: none;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+  }
+
+  .related-panel .duo-last-table .jump-link {
+    min-height: 0;
+    padding: 2px 5px;
+    font-size: 0.64rem;
+    line-height: 1.25;
+  }
+
+  .duo-last-card-pair {
+    gap: 3px;
+  }
+
+  .duo-last-card-thumb {
+    --rel-last-card-frame-size: 58px;
+  }
+
   .matrix-table th,
   .matrix-table td {
     padding: 6px;
@@ -14250,6 +15975,10 @@ td.record-char {
     padding: 6px;
   }
 
+  .stats-checkbox {
+    top: 3px;
+  }
+
   .related-panel {
     --related-record-card-row-height: 78px;
     --rel-avatar-size: 24px;
@@ -14347,6 +16076,76 @@ td.record-char {
   .score-attr-icon {
     width: 20px;
     height: 20px;
+  }
+
+  .duo-unit-row {
+    padding: 5px;
+  }
+
+  .duo-unit-card {
+    padding: 0;
+  }
+
+  .duo-unit-card-last {
+    display: block;
+    height: auto;
+    min-height: max-content;
+    padding-bottom: 11px;
+  }
+
+  .duo-unit-table th,
+  .duo-unit-table td {
+    padding: 2px 1px;
+  }
+
+  .duo-unit-table thead th,
+  .duo-last-table thead th {
+    height: 24px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+  }
+
+  .duo-unit-table .duo-head-avatar,
+  .duo-unit-table .mini-avatar {
+    width: 18px;
+    height: 18px;
+  }
+
+  .duo-unit-table td.duo-num {
+    font-size: 0.76rem;
+  }
+
+  .duo-pair-avatar {
+    width: 20px;
+    height: 20px;
+  }
+
+  .duo-pair-avatar + .duo-pair-avatar {
+    margin-left: 4px;
+  }
+
+  .related-panel .duo-last-table th,
+  .related-panel .duo-last-table td {
+    padding: 2px 1px;
+    font-size: 0.58rem;
+  }
+
+  .duo-last-table,
+  .related-panel .duo-last-table {
+    display: table;
+    flex: none;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+  }
+
+  .related-panel .duo-last-table .jump-link {
+    padding: 2px 4px;
+    font-size: 0.6rem;
+  }
+
+  .duo-last-card-thumb {
+    --rel-last-card-frame-size: 52px;
   }
 
   .record-table {

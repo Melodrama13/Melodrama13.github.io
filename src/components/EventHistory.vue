@@ -510,9 +510,7 @@
       ref="historyContainer"
       @scroll.passive="handleHistoryScroll"
       @wheel.passive="handleHistoryManualScrollIntent"
-      @touchstart.passive="handleHistoryManualScrollIntent"
       @touchmove.passive="handleHistoryManualScrollIntent"
-      @pointerdown.passive="handleHistoryManualScrollIntent"
     >
       <div ref="filterStickyRef" class="filter-sticky">
         <div
@@ -804,7 +802,7 @@
               'is-heavy-ready': shouldRenderEventHeavy(row)
             }"
             :data-predict-state="getPredictStatus(row.event)"
-            @click="openPredictEditor(row.event)"
+            @click="handleEventRowClick(row.event, $event)"
             :style="[
               isUnitRelated(row.event)
                 ? { backgroundColor: getUnitColor(row.event.unit) + '20' }
@@ -1218,6 +1216,14 @@ const closeInlineTooltips = () => {
   songTooltipOffsetMap.value = {};
 };
 
+const hasAnyInlineTooltipOpen = () => (
+  !!openedCardTooltipKey.value
+  || !!openedSongTooltipEventKey.value
+  || !!pinnedCardTooltipKey.value
+  || !!pinnedSongTooltipEventKey.value
+  || tooltipRaisedEventKey.value !== null
+);
+
 const setCardTooltipOffset = (tooltipKey, offsetX = 0, offsetY = 0) => {
   if (!tooltipKey) return;
   cardTooltipOffsetMap.value = {
@@ -1255,7 +1261,7 @@ const getTooltipViewportEdges = () => {
 const adjustCardTooltipViewport = (eventKey, card, slotKey = '', hostEl = null) => {
   const tooltipKey = makeCardTooltipKey(eventKey, card, slotKey);
   const host = hostEl instanceof HTMLElement ? hostEl : null;
-  if (!tooltipKey || !host) return;
+  if (!tooltipKey || !host || !host.isConnected) return;
 
   const tooltipEl = host.querySelector('.card-detail-tooltip');
   if (!(tooltipEl instanceof HTMLElement)) return;
@@ -1285,6 +1291,8 @@ const adjustCardTooltipViewport = (eventKey, card, slotKey = '', hostEl = null) 
 const adjustCardTooltipViewportAfterOpen = async (eventKey, card, slotKey = '', hostEl = null) => {
   await nextTick();
   await new Promise((resolve) => requestAnimationFrame(resolve));
+  if (!(hostEl instanceof HTMLElement) || !hostEl.isConnected) return;
+  if (!isCardTooltipOpen(eventKey, card, slotKey)) return;
   adjustCardTooltipViewport(eventKey, card, slotKey, hostEl);
 };
 
@@ -1369,6 +1377,8 @@ const adjustSongTooltipViewport = (eventKey, hostEl = null) => {
 const adjustSongTooltipViewportAfterOpen = async (eventKey, hostEl = null) => {
   await nextTick();
   await new Promise((resolve) => requestAnimationFrame(resolve));
+  if (!(hostEl instanceof HTMLElement) || !hostEl.isConnected) return;
+  if (!isSongTooltipOpen(eventKey)) return;
   adjustSongTooltipViewport(eventKey, hostEl);
 };
 
@@ -1422,6 +1432,7 @@ const handleTooltipGlobalPointerDown = (event) => {
     return;
   }
   closeBirthdayInfo();
+  if (target.closest('.event-item')) return;
   if (target.closest('.avatar-container, .song-tooltip')) return;
   closeInlineTooltips();
 };
@@ -1694,11 +1705,12 @@ const BIRTHDAY_ORDER = {
 };
 
 const hasNonEmptyText = (value) => String(value || '').trim().length > 0;
-const getSourceEventTitle = (event) => (
-  Object.prototype.hasOwnProperty.call(event || {}, 'source_event_title')
-    ? String(event?.source_event_title || '').trim()
-    : String(event?.event_title || '').trim()
-);
+const getSourceEventTitle = (event) => {
+  if (Object.prototype.hasOwnProperty.call(event || {}, 'source_event_title')) {
+    return String(event?.source_event_title || '').trim();
+  }
+  return event?.isPredict === true ? '' : String(event?.event_title || '').trim();
+};
 const getSourceEventType = (event) => (
   Object.prototype.hasOwnProperty.call(event || {}, 'source_event_type')
     ? String(event?.source_event_type || '').trim()
@@ -1739,8 +1751,12 @@ const getCurrentEventId = () => {
 const canOpenPredictEditor = (event) => {
   if (!event) return false;
   if (!isNumericEventId(event?.id)) return false;
+  const eventId = Number(event.id);
+  const currentId = Number(getCurrentEventId());
+  if (Number.isFinite(eventId) && Number.isFinite(currentId) && eventId <= currentId) return false;
   if (isEventPredictDisabledByJson(event)) return false;
-  return !isEventOfficialRevealedByJson(event);
+  if (isEventOfficialRevealedByJson(event)) return false;
+  return true;
 };
 
 const isEditorOpen = ref(false);
@@ -2208,7 +2224,7 @@ const preserveAnchorWhileLayoutChanges = (eventId, mutator) => {
     if (!anchorElAfter) return;
     const afterTop = anchorElAfter.getBoundingClientRect().top - container.getBoundingClientRect().top;
     const delta = afterTop - beforeTop;
-    if (Math.abs(delta) > 0.5) {
+    if (Math.abs(delta) > 2.5) {
       container.scrollTop += delta;
     }
   };
@@ -2252,7 +2268,7 @@ const _internalScrollTo = (eventId, behavior = 'smooth') => {
     const nextContainerTop = historyContainer.value.getBoundingClientRect().top;
     const nextElementTop = targetEl.getBoundingClientRect().top;
     const delta = nextElementTop - nextContainerTop - offset;
-    if (Math.abs(delta) > 0.5) {
+    if (Math.abs(delta) > 3) {
       historyContainer.value.scrollTop += delta;
       historyScrollTop.value = historyContainer.value.scrollTop || 0;
       try {
@@ -2261,17 +2277,15 @@ const _internalScrollTo = (eventId, behavior = 'smooth') => {
     }
   };
   const scheduleCorrections = () => {
-    let frames = 24;
-    const tick = () => {
-      if (correctionToken !== scrollCorrectionToken) return;
-      correctTarget();
-      frames -= 1;
-      if (frames > 0) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    setTimeout(correctTarget, 250);
-    setTimeout(correctTarget, 700);
-    setTimeout(correctTarget, 1200);
+    if (behavior === 'smooth') {
+      setTimeout(correctTarget, 900);
+      setTimeout(correctTarget, 1400);
+      return;
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(correctTarget);
+    });
+    setTimeout(correctTarget, 260);
   };
 
   container.scrollTo({ top: targetTop, behavior });
@@ -2293,6 +2307,7 @@ const openPredictEditor = (event) => {
     return;
   }
 
+  closeInlineTooltips();
   forceRenderEventRow(event.id);
   lastFocusedEventId.value = event.id;
   currentEditingEvent.value = event;
@@ -2309,6 +2324,30 @@ const openPredictEditor = (event) => {
   preserveAnchorWhileLayoutChanges(event.id, () => {
     isEditorOpen.value = true;
   });
+};
+
+const openPredictEditorAfterTooltipClose = async (event) => {
+  closeInlineTooltips();
+  await nextTick();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  if (!canOpenPredictEditor(event) || isEditorOpen.value) return;
+  openPredictEditor(event);
+};
+
+const handleEventRowClick = (event, domEvent = null) => {
+  const target = domEvent?.target;
+  if (target instanceof HTMLElement && target.closest('.avatar-container, .song-tooltip, .predict-delete-btn')) {
+    return;
+  }
+  if (!canOpenPredictEditor(event)) {
+    closeInlineTooltips();
+    return;
+  }
+  if (hasAnyInlineTooltipOpen()) {
+    void openPredictEditorAfterTooltipClose(event);
+    return;
+  }
+  openPredictEditor(event);
 };
 
 const handleCloseEditor = () => {
@@ -2923,6 +2962,7 @@ const clearActiveEventItem = () => {
 };
 
 const lastHandledJumpSeq = ref(0);
+const lastHandledJumpEventId = ref('');
 const pendingJumpSeq = ref(0);
 const queueJumpRequest = (seqValue, idValue) => {
   const seq = Number(seqValue || 0);
@@ -2938,6 +2978,13 @@ const queueJumpRequest = (seqValue, idValue) => {
 };
 
 const queueJumpFromProps = () => queueJumpRequest(props.jumpEventSeq, props.jumpEventId);
+
+const hasUnhandledJumpFromProps = () => {
+  const seq = Number(props.jumpEventSeq || 0);
+  if (!Number.isFinite(seq) || seq <= 0) return false;
+  if (seq === lastHandledJumpSeq.value) return false;
+  return !!normalizeEventId(props.jumpEventId);
+};
 
 const previewMaxEventId = computed(() => {
   const editingId = Number(currentEditingEvent.value?.id);
@@ -4244,7 +4291,7 @@ watch(() => [props.jumpEventSeq, props.jumpEventId], ([seqValue, idValue]) => {
   if (!queued) return;
   nextTick(() => {
     requestAnimationFrame(() => {
-      consumePendingJump('smooth', 30);
+      consumePendingJump('auto', 30);
     });
   });
 }, { flush: 'post' });
@@ -4761,18 +4808,17 @@ const addProgressiveEventRenderKeys = (keys) => {
 
 const forceRenderEventRow = (eventId) => {
   const idKey = normalizeEventId(eventId);
-  if (!idKey) return;
-  addProgressiveEventRenderKeys(new Set([`event-${idKey}`]));
+  if (!idKey) return false;
+  return addProgressiveEventRenderKeys(new Set([`event-${idKey}`]));
 };
 
 const forceRenderEventNeighborhood = (eventId, options = {}) => {
   const idKey = normalizeEventId(eventId);
-  if (!idKey) return;
+  if (!idKey) return false;
   const rows = getProgressiveEventRows();
   const targetIndex = rows.findIndex((row) => normalizeEventId(row.event?.id) === idKey);
   if (targetIndex < 0) {
-    forceRenderEventRow(idKey);
-    return;
+    return forceRenderEventRow(idKey);
   }
 
   const fallback = getProgressiveJumpPrewarmCounts();
@@ -4780,7 +4826,7 @@ const forceRenderEventNeighborhood = (eventId, options = {}) => {
   const after = Number.isFinite(options.after) ? Math.max(0, options.after) : fallback.after;
   const start = Math.max(0, targetIndex - before);
   const end = Math.min(rows.length, targetIndex + after + 1);
-  addProgressiveEventRenderKeys(new Set(rows.slice(start, end).map((row) => row.key)));
+  return addProgressiveEventRenderKeys(new Set(rows.slice(start, end).map((row) => row.key)));
 };
 
 const forceRenderAllEventRows = () => {
@@ -5063,8 +5109,13 @@ const getCardBaseName = (card) => String(card?.Name || '').trim().split(' ')[0] 
 
 const isFesCard = (card) => {
   const t = String(card?.Type || '').trim().toLowerCase();
-  return t === 'cfes' || t === 'bfes';
+  const skillKind = String(card?.Skill || '').trim().toLowerCase();
+  return t === 'cfes' || t === 'bfes' || skillKind === 'bfes_up' || skillKind.startsWith('cfes');
 };
+
+const EARLY_SPLIT_FES_EVENT_IDS = new Set(['18', '27']);
+
+const isEarlySplitFesEvent = (event) => EARLY_SPLIT_FES_EVENT_IDS.has(normalizeEventId(event?.id));
 
 const isVsEventCard = (card) => {
   const baseName = getCardBaseName(card);
@@ -5116,6 +5167,25 @@ const getEventCardNames = (event) => {
   });
 
   return [...names];
+};
+
+const getSamePoolNameGroupsForEventFilter = (event) => {
+  const fourStarCards = getEventCardsForFilter(event)
+    .filter((card) => String(card?.Rarity || '').trim() === '4');
+  const toNames = (cards) => {
+    const names = new Set();
+    cards.forEach((card) => {
+      const n = getCardBaseName(card);
+      if (n && n !== '-' && n !== 'CardID') names.add(n);
+    });
+    return [...names];
+  };
+
+  if (!isEarlySplitFesEvent(event)) return [toNames(fourStarCards)].filter((group) => group.length);
+
+  const normalNames = toNames(fourStarCards.filter((card) => !isFesCard(card)));
+  const fesNames = toNames(fourStarCards.filter((card) => isFesCard(card)));
+  return [normalNames, fesNames].filter((group) => group.length);
 };
 
 const eventBannerMatchesCharacter = (event, name) => {
@@ -5173,16 +5243,10 @@ const matchEventFilters = (event) => {
     if (!hasAllSelected) return false;
 
     if (f.characters.length >= 2 && f.multiPersonRule === 'same-pool') {
-      const cards = Array.isArray(event?.memberCards) ? event.memberCards : [];
-      const hasAllFourStar = f.characters.every((name) => {
-        const target = String(name || '').trim();
-        return cards.some((card) => {
-          const cardName = String(card?.Name || '').trim().split(' ')[0];
-          const rarity = String(card?.Rarity || '').trim();
-          return cardName === target && rarity === '4';
-        });
-      });
-      if (!hasAllFourStar) return false;
+      const selectedTargets = f.characters.map((name) => String(name || '').trim()).filter(Boolean);
+      const hasSamePoolGroup = getSamePoolNameGroupsForEventFilter(event)
+        .some((group) => selectedTargets.every((target) => group.includes(target)));
+      if (!hasSamePoolGroup) return false;
     }
   }
 
@@ -5474,6 +5538,8 @@ const restoreViewportAnchor = (anchorOverride = null) => {
 
 const restoreHistoryPositionAfterActivation = () => {
   if (pendingJumpEventId.value) return false;
+  if (hasUnhandledJumpFromProps()) return false;
+  if (Date.now() < suppressRestoreUntil.value) return false;
   cancelActivationRestore();
   const restoreToken = activationRestoreToken + 1;
   activationRestoreToken = restoreToken;
@@ -5530,6 +5596,20 @@ const toggleBirthdayRowsVisibility = () => toggleVisibilityWithViewportAnchor(hi
 const togglePreviewRowsVisibility = () => toggleVisibilityWithViewportAnchor(hidePreviewRows);
 const toggleCollabPoolsVisibility = () => toggleVisibilityWithViewportAnchor(hideCollabPools);
 
+const schedulePendingJumpAfterRender = (behavior = 'auto', retry = 8) => {
+  if (jumpRetryTimer) clearTimeout(jumpRetryTimer);
+  jumpRetryTimer = window.setTimeout(() => {
+    jumpRetryTimer = 0;
+    nextTick(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          consumePendingJump(behavior, retry);
+        });
+      });
+    });
+  }, 0);
+};
+
 const handleWindowResize = () => {
   if (resizeRafId) cancelAnimationFrame(resizeRafId);
   resizeRafId = requestAnimationFrame(() => {
@@ -5559,10 +5639,17 @@ const consumePendingJump = (behavior = 'auto', retry = 8) => {
 
   relaxFiltersForJump(idKey);
 
+  const changedRenderKeys = forceRenderEventNeighborhood(idKey);
+  if (changedRenderKeys && retry > 0) {
+    schedulePendingJumpAfterRender(behavior, retry - 1);
+    return false;
+  }
+
   const ok = _internalScrollTo(idKey, behavior);
   if (ok) {
     if (pendingJumpSeq.value > 0) {
       lastHandledJumpSeq.value = pendingJumpSeq.value;
+      lastHandledJumpEventId.value = idKey;
     }
     pendingJumpEventId.value = '';
     pendingJumpSeq.value = 0;
@@ -5585,14 +5672,25 @@ const consumePendingJump = (behavior = 'auto', retry = 8) => {
 const jumpToEventById = (eventId, behavior = 'auto') => {
   const idKey = normalizeEventId(eventId);
   if (!idKey) return false;
-  pendingJumpEventId.value = idKey;
   const seq = Number(props.jumpEventSeq || 0);
+  if (Number.isFinite(seq) && seq > 0 && seq === lastHandledJumpSeq.value && idKey === lastHandledJumpEventId.value) {
+    return true;
+  }
+  pendingJumpEventId.value = idKey;
   if (Number.isFinite(seq) && seq > 0) {
     pendingJumpSeq.value = seq;
   } else if (pendingJumpSeq.value <= 0) {
     pendingJumpSeq.value = 0;
   }
   return consumePendingJump(behavior, 30);
+};
+
+const scrollToEventById = (eventId, behavior = 'auto', retry = 24) => {
+  const idKey = normalizeEventId(eventId);
+  if (!idKey) return false;
+  pendingJumpEventId.value = idKey;
+  pendingJumpSeq.value = 0;
+  return consumePendingJump(behavior, retry);
 };
 
 const sanitizeExportBaseName = (name) => {
@@ -5696,6 +5794,24 @@ const waitHistoryNextPaint = () => new Promise((resolve) => {
 
 const HISTORY_CAPTURE_IMAGE_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
 
+const decodeHistoryImageForCapture = async (imgEl, timeoutMs = 1400) => {
+  if (!(imgEl instanceof HTMLImageElement) || typeof imgEl.decode !== 'function') return;
+  const src = String(imgEl.currentSrc || imgEl.src || imgEl.getAttribute('src') || '').trim();
+  if (!src || src === HISTORY_CAPTURE_IMAGE_PLACEHOLDER) return;
+
+  let timer = 0;
+  try {
+    await Promise.race([
+      imgEl.decode().catch(() => undefined),
+      new Promise((resolve) => {
+        timer = window.setTimeout(resolve, Math.max(400, timeoutMs));
+      })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
 const copyHistoryCssCustomProperties = (sourceEl, targetEl) => {
   if (!(sourceEl instanceof HTMLElement) || !(targetEl instanceof HTMLElement)) return;
   const style = window.getComputedStyle(sourceEl);
@@ -5708,20 +5824,27 @@ const copyHistoryCssCustomProperties = (sourceEl, targetEl) => {
 };
 
 const waitHistoryImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
-  if (!(imgEl instanceof HTMLImageElement) || imgEl.complete) {
+  if (!(imgEl instanceof HTMLImageElement)) {
     resolve();
     return;
   }
   let done = false;
   let timer = 0;
-  const finish = () => {
+  const finish = async () => {
     if (done) return;
     done = true;
     imgEl.removeEventListener('load', finish);
     imgEl.removeEventListener('error', finish);
     if (timer) clearTimeout(timer);
+    await decodeHistoryImageForCapture(imgEl, Math.min(1800, Math.max(700, timeoutMs)));
     resolve();
   };
+
+  if (imgEl.complete) {
+    finish();
+    return;
+  }
+
   imgEl.addEventListener('load', finish, { once: true });
   imgEl.addEventListener('error', finish, { once: true });
   timer = window.setTimeout(finish, timeoutMs);
@@ -5777,7 +5900,10 @@ const preloadSingleHistoryImageUrlForCapture = (url, timeoutMs = 7000) => new Pr
     img.onerror = null;
     resolve(!!ok);
   };
-  img.onload = () => finish(true);
+  img.onload = async () => {
+    await decodeHistoryImageForCapture(img, Math.min(2600, Math.max(900, timeoutMs)));
+    finish(true);
+  };
   img.onerror = () => finish(false);
   try {
     img.decoding = 'async';
@@ -5841,6 +5967,27 @@ const waitForHistoryExportAssets = async (rootEl, options = {}) => {
     ]),
     new Promise((resolve) => window.setTimeout(resolve, maxWaitMs))
   ]);
+};
+
+const prewarmHistoryExportSourceRows = async (rows, deviceTier) => {
+  const rowEls = (Array.isArray(rows) ? rows : []).filter((row) => row instanceof HTMLElement);
+  if (rowEls.length === 0) return;
+
+  const maxImagesTotal = deviceTier === 'desktop' ? 1200 : 900;
+  const maxWaitMs = deviceTier === 'phone' ? 3800 : (deviceTier === 'tablet' ? 3400 : 3200);
+  let imageBudgetUsed = 0;
+  const tasks = [];
+
+  for (const rowEl of rowEls) {
+    if (imageBudgetUsed >= maxImagesTotal) break;
+    const imageCount = rowEl.querySelectorAll('img').length;
+    if (imageCount <= 0) continue;
+    const maxImages = Math.min(imageCount, maxImagesTotal - imageBudgetUsed);
+    imageBudgetUsed += maxImages;
+    tasks.push(waitForHistoryExportAssets(rowEl, { maxWaitMs, maxImages }));
+  }
+
+  await Promise.allSettled(tasks);
 };
 
 const sanitizeHistoryExportClone = (cloneRoot) => {
@@ -5973,14 +6120,18 @@ const withCaptureTimeout = async (promise, timeoutMs, cancelPromise = null) => {
 
 const computeHistoryCaptureTimeoutMs = ({ deviceTier, width, height, scale }) => {
   const totalMegaPixels = (Math.max(1, width) * Math.max(1, height) * Math.max(1, scale) * Math.max(1, scale)) / 1000000;
-  if (totalMegaPixels <= 4) return 4500;
-  if (totalMegaPixels <= 8) return 6200;
-  if (totalMegaPixels <= 14) return 8000;
-  if (totalMegaPixels <= 22) return 9800;
-  if (totalMegaPixels <= 32) return 11800;
-  if (deviceTier === 'phone') return 14500;
-  if (deviceTier === 'tablet') return 16000;
-  return 15000;
+  let timeoutMs = 15000;
+  if (totalMegaPixels <= 4) timeoutMs = 4500;
+  else if (totalMegaPixels <= 8) timeoutMs = 6200;
+  else if (totalMegaPixels <= 14) timeoutMs = 8000;
+  else if (totalMegaPixels <= 22) timeoutMs = 9800;
+  else if (totalMegaPixels <= 32) timeoutMs = 11800;
+  else if (deviceTier === 'phone') timeoutMs = 14500;
+  else if (deviceTier === 'tablet') timeoutMs = 16000;
+
+  if (deviceTier === 'phone') return Math.max(timeoutMs + 2500, 9000);
+  if (deviceTier === 'tablet') return Math.max(timeoutMs + 1800, 8500);
+  return Math.max(timeoutMs + 1800, 9000);
 };
 
 const buildHistoryScaleCandidates = ({ bounds, deviceTier, deviceScale, useExperimentalHQ }) => {
@@ -6059,6 +6210,16 @@ const exportPredictedRangePng = async (options = {}) => {
     const deviceTier = getHistoryCaptureDeviceTier();
     addProgressiveEventRenderKeys(getHistoryEventKeysFromExportRows(rows));
     await nextTick();
+    await waitHistoryNextPaint();
+    if (isCancelled()) {
+      throw new Error('export-cancelled');
+    }
+    onStatus?.({
+      state: 'capturing',
+      stage: 'capturing',
+      message: '正在预热截图资源...'
+    });
+    await prewarmHistoryExportSourceRows(rows, deviceTier);
     await waitHistoryNextPaint();
     exportClone = await prepareHistoryExportClone(listEl, rows);
     if (!exportClone?.target) {
@@ -6346,6 +6507,20 @@ onDeactivated(() => {
 onActivated(() => {
   isHistoryPageActive = true;
   closeInlineTooltips();
+  queueJumpFromProps();
+  if (pendingJumpEventId.value || hasUnhandledJumpFromProps()) {
+    cancelActivationRestore();
+    suppressRestoreUntil.value = Date.now() + 1400;
+    if (!consumePendingJump('auto', 20)) {
+      nextTick(() => {
+        requestAnimationFrame(() => {
+          queueJumpFromProps();
+          consumePendingJump('auto', 20);
+          updatePreviewConfigOffset();
+        });
+      });
+    }
+  }
   nextTick(() => {
     queueJumpFromProps();
     if (pendingJumpEventId.value) {
@@ -6468,7 +6643,7 @@ const scrollTo = (target) => {
         return Number(curr.id) > Number(prev.id) ? curr : prev;
       });
       
-      _internalScrollTo(currentEvent.id, 'smooth');
+      scrollToEventById(currentEvent.id, 'smooth', 24);
     }
   }
 };
@@ -7970,7 +8145,7 @@ button:not(:disabled):active {
   z-index: 1;
   display: flex; align-items: center; padding: var(--event-row-pad-y) var(--event-row-pad-x); border-radius: var(--eh-radius-card);
   background: var(--bg-color); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  transition: all 0.2s; border-left: 6px solid transparent;
+  transition: box-shadow 0.2s, background-color 0.2s, border-color 0.2s, filter 0.2s; border-left: 6px solid transparent;
   box-sizing: border-box;
   content-visibility: auto;
   contain-intrinsic-size: auto 132px;
@@ -8226,10 +8401,7 @@ button:not(:disabled):active {
 .event-item.is-active {
   position: relative;
   z-index: 950;
-  transform: translateX(10px);
   box-shadow: 0 4px 20px rgba(51, 204, 187, 0.3);
-  /* 确保这里不设置 border，否则会挤压内部布局 */
-  border: none; 
 }
 
 .event-item.is-tooltip-raised {
