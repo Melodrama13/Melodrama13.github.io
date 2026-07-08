@@ -89,7 +89,12 @@
                 隐藏角色名
               </label>
               <label class="dist-vs-unit-toggle stats-checkbox export-hide" title="勾选后，阶梯分布底部团汇总会额外计入附属该团的VS卡片；活动banner相关统计不计入。">
-                <input v-model="includeVsInDistUnitSummary" type="checkbox" />
+                <input
+                  :checked="includeVsInDistUnitSummary"
+                  :indeterminate="includeVsInDistUnitSummaryIndeterminate"
+                  type="checkbox"
+                  @change="onIncludeVsInDistUnitSummaryChange"
+                />
                 团统计VS
               </label>
             </div>
@@ -155,57 +160,57 @@
                     统计FES
                   </label>
                   <div v-if="panel.id === 'limited-ban'" class="head-inline-filters">
-                    <label class="head-filter-toggle stats-checkbox" title="只统计箱限Ban个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="统计箱活限定Ban个数。">
                       <input
                         type="checkbox"
-                        :checked="limitedBanEventTypeFilter === '箱活'"
+                        :checked="limitedBanEventTypeFilter.includes('箱活')"
                         @change="setLimitedBanEventTypeFilter('箱活', $event.target.checked)"
                       />
-                      仅箱
+                      箱活
                     </label>
-                    <label class="head-filter-toggle stats-checkbox" title="只统计混限Ban个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="统计混活限定Ban个数。">
                       <input
                         type="checkbox"
-                        :checked="limitedBanEventTypeFilter === '混活'"
+                        :checked="limitedBanEventTypeFilter.includes('混活')"
                         @change="setLimitedBanEventTypeFilter('混活', $event.target.checked)"
                       />
-                      仅混
+                      混活
                     </label>
                   </div>
                   <div v-if="panel.id === 'banner'" class="head-inline-filters">
-                    <label class="head-filter-toggle stats-checkbox" title="只统计箱活Banner个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="统计箱活Banner个数。">
                       <input
                         type="checkbox"
-                        :checked="bannerEventTypeFilter === '箱活'"
+                        :checked="bannerEventTypeFilter.includes('箱活')"
                         @change="setBannerEventTypeFilter('箱活', $event.target.checked)"
                       />
-                      仅箱
+                      箱活
                     </label>
-                    <label class="head-filter-toggle stats-checkbox" title="只统计混活Banner个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="统计混活Banner个数。">
                       <input
                         type="checkbox"
-                        :checked="bannerEventTypeFilter === '混活'"
+                        :checked="bannerEventTypeFilter.includes('混活')"
                         @change="setBannerEventTypeFilter('混活', $event.target.checked)"
                       />
-                      仅混
+                      混活
                     </label>
                   </div>
                   <div v-if="panel.id === 'fes-limited-ban'" class="head-inline-filters">
-                    <label class="head-filter-toggle stats-checkbox" title="只统计百六箱限Ban个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="统计百六箱限Ban个数。">
                       <input
                         type="checkbox"
-                        :checked="fesLimitedBanEventTypeFilter === '箱活'"
+                        :checked="fesLimitedBanEventTypeFilter.includes('箱活')"
                         @change="setFesLimitedBanEventTypeFilter('箱活', $event.target.checked)"
                       />
-                      仅箱
+                      箱活
                     </label>
-                    <label class="head-filter-toggle stats-checkbox" title="只统计百六混限Ban个数。">
+                    <label class="head-filter-toggle stats-checkbox" title="统计百六混限Ban个数。">
                       <input
                         type="checkbox"
-                        :checked="fesLimitedBanEventTypeFilter === '混活'"
+                        :checked="fesLimitedBanEventTypeFilter.includes('混活')"
                         @change="setFesLimitedBanEventTypeFilter('混活', $event.target.checked)"
                       />
-                      仅混
+                      混活
                     </label>
                   </div>
                 </div>
@@ -262,7 +267,12 @@
                 隐藏角色名
               </label>
               <label v-if="!festivalShowCardImages" class="festival-merge-toggle stats-checkbox" title="勾选后，若角色已在更高星级出现，则不在低星级重复显示。">
-                <input v-model="festivalMergeHigherRanks" type="checkbox" />
+                <input
+                  :checked="festivalMergeHigherRanks"
+                  :indeterminate="festivalMergeHigherRanksIndeterminate"
+                  type="checkbox"
+                  @change="onFestivalMergeHigherRanksChange"
+                />
                 高星合并低星
               </label>
             </div>
@@ -284,7 +294,12 @@
                     高星合并低星
                   </label>
                   <label v-if="canToggleFestivalFes(fest.festival)" class="festival-fes-toggle stats-checkbox">
-                    <input :checked="festivalFesEnabled" type="checkbox" @change="onFestivalFesEnabledChange" />
+                    <input
+                      :checked="festivalFesEnabled"
+                      :indeterminate="festivalFesEnabledIndeterminate"
+                      type="checkbox"
+                      @change="onFestivalFesEnabledChange"
+                    />
                     统计FES
                   </label>
                 </div>
@@ -600,7 +615,12 @@
             <div class="section-head-left">
               <h2>间隔记录</h2>
               <label class="fes-card-mode-toggle stats-checkbox" title="统一控制间隔记录中可切换卡面的子模块。">
-                <input :checked="intervalPanelShowCardImagesAll" type="checkbox" @change="onIntervalPanelShowAllCardImagesChange" />
+                <input
+                  :checked="intervalPanelShowCardImagesAll"
+                  :indeterminate="intervalPanelShowCardImagesIndeterminate"
+                  type="checkbox"
+                  @change="onIntervalPanelShowAllCardImagesChange"
+                />
                 显示卡面
               </label>
             </div>
@@ -1153,21 +1173,21 @@
                     显示卡面
                   </label>
                   <div class="head-inline-filters">
-                    <label class="head-filter-toggle stats-checkbox" title="只统计箱活的Ban间隔。">
+                    <label class="head-filter-toggle stats-checkbox" title="统计箱活的Ban间隔。">
                       <input
                         type="checkbox"
-                        :checked="banEventTypeFilter === '箱活'"
+                        :checked="banEventTypeFilter.includes('箱活')"
                         @change="setBanEventTypeFilter('箱活', $event.target.checked)"
                       />
-                      仅箱
+                      箱活
                     </label>
-                    <label class="head-filter-toggle stats-checkbox" title="只统计混活的Ban间隔。">
+                    <label class="head-filter-toggle stats-checkbox" title="统计混活的Ban间隔。">
                       <input
                         type="checkbox"
-                        :checked="banEventTypeFilter === '混活'"
+                        :checked="banEventTypeFilter.includes('混活')"
                         @change="setBanEventTypeFilter('混活', $event.target.checked)"
                       />
-                      仅混
+                      混活
                     </label>
                   </div>
                 </div>
@@ -1273,21 +1293,21 @@
                     显示卡面
                   </label>
                   <div class="head-inline-filters">
-                    <label class="head-filter-toggle stats-checkbox" title="只统计箱活的Ban间隔。">
+                    <label class="head-filter-toggle stats-checkbox" title="统计箱活的Ban间隔。">
                       <input
                         type="checkbox"
-                        :checked="banEventTypeFilter === '箱活'"
+                        :checked="banEventTypeFilter.includes('箱活')"
                         @change="setBanEventTypeFilter('箱活', $event.target.checked)"
                       />
-                      仅箱
+                      箱活
                     </label>
-                    <label class="head-filter-toggle stats-checkbox" title="只统计混活的Ban间隔。">
+                    <label class="head-filter-toggle stats-checkbox" title="统计混活的Ban间隔。">
                       <input
                         type="checkbox"
-                        :checked="banEventTypeFilter === '混活'"
+                        :checked="banEventTypeFilter.includes('混活')"
                         @change="setBanEventTypeFilter('混活', $event.target.checked)"
                       />
-                      仅混
+                      混活
                     </label>
                   </div>
                 </div>
@@ -1396,9 +1416,12 @@
 
           <div class="record-grid duo-record-grid">
             <div id="duo-unit-pool" data-scroll-anchor="duo-unit-pool" class="record-block duo-record-block duo-wide-block duo-unit-section">
-              <div class="block-head">
+              <div class="block-head duo-block-head">
                 <div class="block-head-left">
-                  <h3>{{ getRelatedRecordTitle('duo-unit-pool') }}</h3>
+                  <div class="duo-block-title-row">
+                    <h3>{{ getRelatedRecordTitle('duo-unit-pool') }}</h3>
+                    <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('duo-unit-pool', '双人统计_各团同池统计')">PNG</button>
+                  </div>
                   <div class="duo-filter-row">
                     <label
                       v-for="option in DUO_FILTER_OPTIONS"
@@ -1408,18 +1431,23 @@
                     >
                       <input
                         type="checkbox"
-                        :checked="duoUnitPoolFilters.includes(option.value)"
+                        :checked="isDuoUnitGlobalFilterChecked(option.value)"
+                        :indeterminate="isDuoUnitGlobalFilterIndeterminate(option.value)"
                         @change="onDuoFilterChange('unit', option.value, $event)"
                       />
                       {{ option.label }}
                     </label>
                     <label class="head-filter-toggle stats-checkbox" title="勾选后显示上次同池组合二人的当期卡面。">
-                      <input :checked="duoLastPoolShowCardImages" type="checkbox" @change="onDuoLastPoolShowCardImagesChange" />
+                      <input
+                        :checked="duoLastPoolShowCardImagesAll"
+                        :indeterminate="duoLastPoolShowCardImagesIndeterminate"
+                        type="checkbox"
+                        @change="onDuoLastPoolShowCardImagesChange"
+                      />
                       显示卡面
                     </label>
                   </div>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('duo-unit-pool', '双人统计_各团同池统计')">PNG</button>
               </div>
               <div class="duo-unit-row-list">
                 <div
@@ -1443,6 +1471,7 @@
                         <img v-if="unitLogoMap[unitRow.unit]" :src="unitLogoMap[unitRow.unit]" class="duo-unit-logo" :alt="unitRow.title" />
                         <span>同池次数</span>
                       </span>
+                      <button class="card-export-btn duo-unit-export-btn duo-unit-export-btn-matrix-mobile" :disabled="isExportingPng" @click="exportElementPng(unitRow.id, `双人统计_${unitRow.title}_同池统计`)">PNG</button>
                       <div class="duo-unit-title-actions duo-unit-filter-row">
                         <label
                           v-for="option in DUO_FILTER_OPTIONS"
@@ -1460,12 +1489,12 @@
                       </div>
                     </div>
                     <div class="matrix-wrap duo-matrix-wrap duo-unit-wrap">
-                      <table class="matrix-table duo-table duo-unit-table">
+                      <table :class="['matrix-table', 'duo-table', 'duo-unit-table', { 'duo-unit-limited-table': unitRow.isLimitedOnly }]">
                         <thead>
                           <tr>
                             <th class="duo-corner-cell"></th>
                             <th v-for="col in unitRow.matrix.columns" :key="col.key" class="duo-char-head" :style="getDuoHeadCellStyle(col)">
-                              <img :src="col.avatarSrc" class="duo-head-avatar" :title="col.name" :style="{ borderColor: col.color }" />
+                              <img :src="col.avatarSrc" class="duo-head-avatar" :title="col.title || col.name" :style="{ borderColor: col.color }" />
                             </th>
                           </tr>
                         </thead>
@@ -1477,7 +1506,7 @@
                             :style="{ backgroundColor: row.tint }"
                           >
                             <td class="row-char duo-row-char" :style="{ backgroundColor: row.unitTint }">
-                              <img :src="row.avatarSrc" class="mini-avatar" :title="row.name" :style="{ borderColor: row.color }" />
+                              <img :src="row.avatarSrc" class="mini-avatar" :title="row.title || row.name" :style="{ borderColor: row.color }" />
                             </td>
                             <td
                               v-for="cell in row.cells"
@@ -1599,9 +1628,12 @@
             </div>
 
             <div id="duo-pool" data-scroll-anchor="duo-pool" class="record-block duo-record-block duo-wide-block">
-              <div class="block-head">
+              <div class="block-head duo-block-head">
                 <div class="block-head-left">
-                  <h3>{{ getRelatedRecordTitle('duo-pool') }}</h3>
+                  <div class="duo-block-title-row">
+                    <h3>{{ getRelatedRecordTitle('duo-pool') }}</h3>
+                    <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('duo-pool', '双人统计_同池统计')">PNG</button>
+                  </div>
                   <div class="duo-filter-row">
                     <label
                       v-for="option in DUO_FILTER_OPTIONS"
@@ -1618,7 +1650,6 @@
                     </label>
                   </div>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('duo-pool', '双人统计_同池次数')">PNG</button>
               </div>
               <div class="matrix-wrap duo-matrix-wrap duo-full-wrap">
                 <table class="matrix-table duo-table duo-full-table">
@@ -1626,7 +1657,7 @@
                     <tr>
                       <th class="duo-corner-cell">角色</th>
                       <th v-for="col in duoPoolMatrix.columns" :key="col.key" class="duo-char-head" :style="getDuoHeadCellStyle(col)">
-                        <img :src="col.avatarSrc" class="duo-head-avatar" :title="col.name" :style="{ borderColor: col.color }" />
+                        <img :src="col.avatarSrc" class="duo-head-avatar" :title="col.title || col.name" :style="{ borderColor: col.color }" />
                       </th>
                     </tr>
                   </thead>
@@ -1638,7 +1669,7 @@
                       :style="{ backgroundColor: row.tint }"
                     >
                       <td class="row-char duo-row-char" :style="{ backgroundColor: row.unitTint }">
-                        <img :src="row.avatarSrc" class="mini-avatar" :title="row.name" :style="{ borderColor: row.color }" />
+                        <img :src="row.avatarSrc" class="mini-avatar" :title="row.title || row.name" :style="{ borderColor: row.color }" />
                       </td>
                       <td
                         v-for="cell in row.cells"
@@ -1656,9 +1687,12 @@
             </div>
 
             <div id="duo-event" data-scroll-anchor="duo-event" class="record-block duo-record-block duo-wide-block">
-              <div class="block-head">
+              <div class="block-head duo-block-head">
                 <div class="block-head-left">
-                  <h3>{{ getRelatedRecordTitle('duo-event') }}</h3>
+                  <div class="duo-block-title-row">
+                    <h3>{{ getRelatedRecordTitle('duo-event') }}</h3>
+                    <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('duo-event', '双人统计_同活统计')">PNG</button>
+                  </div>
                   <div class="duo-filter-row">
                     <label
                       v-for="option in DUO_FILTER_OPTIONS"
@@ -1675,7 +1709,6 @@
                     </label>
                   </div>
                 </div>
-                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('duo-event', '双人统计_同活次数')">PNG</button>
               </div>
               <div class="matrix-wrap duo-matrix-wrap duo-full-wrap">
                 <table class="matrix-table duo-table duo-full-table">
@@ -1683,7 +1716,7 @@
                     <tr>
                       <th class="duo-corner-cell">角色</th>
                       <th v-for="col in duoEventMatrix.columns" :key="col.key" class="duo-char-head" :style="getDuoHeadCellStyle(col)">
-                        <img :src="col.avatarSrc" class="duo-head-avatar" :title="col.name" :style="{ borderColor: col.color }" />
+                        <img :src="col.avatarSrc" class="duo-head-avatar" :title="col.title || col.name" :style="{ borderColor: col.color }" />
                       </th>
                     </tr>
                   </thead>
@@ -1695,7 +1728,7 @@
                       :style="{ backgroundColor: row.tint }"
                     >
                       <td class="row-char duo-row-char" :style="{ backgroundColor: row.unitTint }">
-                        <img :src="row.avatarSrc" class="mini-avatar" :title="row.name" :style="{ borderColor: row.color }" />
+                        <img :src="row.avatarSrc" class="mini-avatar" :title="row.title || row.name" :style="{ borderColor: row.color }" />
                       </td>
                       <td
                         v-for="cell in row.cells"
@@ -1719,7 +1752,12 @@
             <div class="section-head-left">
               <h2>特殊统计</h2>
               <label class="fes-card-mode-toggle stats-checkbox" title="统一控制特殊统计中可切换卡面的子模块。">
-                <input :checked="specialPanelShowCardImagesAll" type="checkbox" @change="onSpecialPanelShowAllCardImagesChange" />
+                <input
+                  :checked="specialPanelShowCardImagesAll"
+                  :indeterminate="specialPanelShowCardImagesIndeterminate"
+                  type="checkbox"
+                  @change="onSpecialPanelShowAllCardImagesChange"
+                />
                 显示卡面
               </label>
             </div>
@@ -3099,10 +3137,12 @@ const hideFestivalCharNames = ref(true);
 const festivalShowCardImages = ref(false);
 const navNameFormat = ref('single');
 const navCardImageMode = ref('after');
-const banEventTypeFilter = ref('all');
-const bannerEventTypeFilter = ref('all');
-const limitedBanEventTypeFilter = ref('all');
-const fesLimitedBanEventTypeFilter = ref('all');
+const EVENT_TYPE_FILTER_OPTIONS = Object.freeze(['箱活', '混活']);
+const createEventTypeFilter = () => ref([...EVENT_TYPE_FILTER_OPTIONS]);
+const banEventTypeFilter = createEventTypeFilter();
+const bannerEventTypeFilter = createEventTypeFilter();
+const limitedBanEventTypeFilter = createEventTypeFilter();
+const fesLimitedBanEventTypeFilter = createEventTypeFilter();
 const fesLimitedIncludeFes = ref(false);
 const includeUnitScoreInPureScore = ref(false);
 const festivalMergeToggles = reactive({
@@ -3121,6 +3161,10 @@ const festivalMergeHigherRanks = computed({
       festivalMergeToggles[fest] = checked;
     });
   }
+});
+const festivalMergeHigherRanksIndeterminate = computed(() => {
+  const values = Object.keys(festivalMergeToggles).map((fest) => !!festivalMergeToggles[fest]);
+  return values.some(Boolean) && values.some((value) => !value);
 });
 const isMobileNav = ref(false);
 const isNavTopLayout = ref(false);
@@ -3164,6 +3208,10 @@ const festivalFesEnabled = computed({
     festivalFesToggles['半周年'] = checked;
     festivalFesToggles['周年'] = checked;
   }
+});
+const festivalFesEnabledIndeterminate = computed(() => {
+  const values = ['半周年', '周年'].map((fest) => !!festivalFesToggles[fest]);
+  return values.some(Boolean) && values.some((value) => !value);
 });
 const cardStatsRootRef = ref(null);
 let sectionObserver = null;
@@ -3217,6 +3265,22 @@ const includeVsInDistUnitSummary = computed({
     });
   }
 });
+const includeVsInDistUnitSummaryIndeterminate = computed(() => {
+  const values = DIST_VS_SUMMARY_PANEL_IDS.map((id) => !!distVsUnitSummaryToggles[id]);
+  return values.some(Boolean) && values.some((value) => !value);
+});
+const onIncludeVsInDistUnitSummaryChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const shouldResetDefault = includeVsInDistUnitSummaryIndeterminate.value;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    includeVsInDistUnitSummary.value = shouldResetDefault ? false : checked;
+    if (shouldResetDefault && event?.target) {
+      event.target.checked = false;
+      event.target.indeterminate = false;
+    }
+  }, anchorEl);
+};
 const isDistPanelVsSummaryEnabled = (panelId) => !!distVsUnitSummaryToggles[String(panelId || '')];
 
 //const getCharAbbr = (name) => CHAR_MAP[name] || name.toUpperCase() || name.toLowerCase();
@@ -3449,10 +3513,13 @@ const DUO_OC_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 const DUO_FILTER_OPTIONS = Object.freeze([
   { value: 'box', label: '箱活', title: '统计箱活。' },
   { value: 'mix', label: '混活', title: '统计混活。' },
-  { value: 'wl', label: 'WL', title: '统计 World Link 和 World Link终章。' },
-  { value: 'collab', label: '联动', title: '仅统计 c1-c5 联动活动。' },
-  { value: 'fes', label: 'FES', title: '同池统计中允许 FES 卡参与计数。' }
+  { value: 'wl', label: 'WL', title: '统计 World Link。' },
+  { value: 'collab', label: '联动', title: '统计联动。' },
+  { value: 'fes', label: 'FES', title: '同池统计中允许 FES 卡参与计数。' },
+  { value: 'limited', label: '限定', title: '勾选后仅统计普限、WL、联动与 FES 卡。' },
+  { value: 'ownVs', label: '本团V', title: '勾选后，OC 与 VS 的配对仅统计该 OC 所属团的附属 VS。' }
 ]);
+const DUO_VS_TOTAL_KEY = '__duo_vs_total__';
 const supportUnitTitleLogoMap = Object.freeze({
   ln: '/elements/Leo_need.png',
   mmj: '/elements/MORE_MORE_JUMP!.png',
@@ -3570,8 +3637,30 @@ const shouldCountFestivalFes = (festival) => {
   return festivalFesEnabled.value;
 };
 
+const onFestivalMergeHigherRanksChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const shouldResetDefault = festivalMergeHigherRanksIndeterminate.value;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    festivalMergeHigherRanks.value = shouldResetDefault ? false : checked;
+    if (shouldResetDefault && event?.target) {
+      event.target.checked = false;
+      event.target.indeterminate = false;
+    }
+  }, anchorEl);
+};
+
 const onFestivalFesEnabledChange = (event) => {
-  festivalFesEnabled.value = !!event?.target?.checked;
+  const checked = !!event?.target?.checked;
+  const shouldResetDefault = festivalFesEnabledIndeterminate.value;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    festivalFesEnabled.value = shouldResetDefault ? false : checked;
+    if (shouldResetDefault && event?.target) {
+      event.target.checked = false;
+      event.target.indeterminate = false;
+    }
+  }, anchorEl);
 };
 
 const getFestivalTierCount = (tierKey) => {
@@ -3954,8 +4043,8 @@ const SPECIAL_STAT_ITEMS = [
 
 const DUO_STAT_ITEMS = [
   { id: 'duo-unit-pool', title: '各团同池统计' },
-  { id: 'duo-pool', title: '同池次数' },
-  { id: 'duo-event', title: '同活次数' }
+  { id: 'duo-pool', title: '同池统计' },
+  { id: 'duo-event', title: '同活统计' }
 ];
 
 const RELATED_RECORD_ITEMS = [
@@ -6320,44 +6409,40 @@ const isEventRewardCard = (card, options = {}) => {
   return String(card?.Type || '').trim().toLowerCase() === 'collab';
 };
 
+const normalizeEventTypeFilter = (value) => {
+  if (Array.isArray(value)) {
+    return EVENT_TYPE_FILTER_OPTIONS.filter((type) => value.includes(type));
+  }
+  if (value === 'all') return [...EVENT_TYPE_FILTER_OPTIONS];
+  return EVENT_TYPE_FILTER_OPTIONS.includes(value) ? [value] : [];
+};
+
+const isEventTypeSelected = (filterValue, eventType) => {
+  return normalizeEventTypeFilter(filterValue).includes(eventType);
+};
+
+const setEventTypeFilterValue = (targetRef, targetType, checked) => {
+  if (!EVENT_TYPE_FILTER_OPTIONS.includes(targetType)) return;
+  const next = new Set(normalizeEventTypeFilter(targetRef.value));
+  if (checked) next.add(targetType);
+  else next.delete(targetType);
+  targetRef.value = EVENT_TYPE_FILTER_OPTIONS.filter((type) => next.has(type));
+};
+
 const setBanEventTypeFilter = (targetType, checked) => {
-  if (checked) {
-    banEventTypeFilter.value = targetType;
-    return;
-  }
-  if (banEventTypeFilter.value === targetType) {
-    banEventTypeFilter.value = 'all';
-  }
+  setEventTypeFilterValue(banEventTypeFilter, targetType, checked);
 };
 
 const setBannerEventTypeFilter = (targetType, checked) => {
-  if (checked) {
-    bannerEventTypeFilter.value = targetType;
-    return;
-  }
-  if (bannerEventTypeFilter.value === targetType) {
-    bannerEventTypeFilter.value = 'all';
-  }
+  setEventTypeFilterValue(bannerEventTypeFilter, targetType, checked);
 };
 
 const setLimitedBanEventTypeFilter = (targetType, checked) => {
-  if (checked) {
-    limitedBanEventTypeFilter.value = targetType;
-    return;
-  }
-  if (limitedBanEventTypeFilter.value === targetType) {
-    limitedBanEventTypeFilter.value = 'all';
-  }
+  setEventTypeFilterValue(limitedBanEventTypeFilter, targetType, checked);
 };
 
 const setFesLimitedBanEventTypeFilter = (targetType, checked) => {
-  if (checked) {
-    fesLimitedBanEventTypeFilter.value = targetType;
-    return;
-  }
-  if (fesLimitedBanEventTypeFilter.value === targetType) {
-    fesLimitedBanEventTypeFilter.value = 'all';
-  }
+  setEventTypeFilterValue(fesLimitedBanEventTypeFilter, targetType, checked);
 };
 
 const limitedBanCountMap = computed(() => {
@@ -6371,7 +6456,7 @@ const limitedBanCountMap = computed(() => {
     if (eid > maxEid) return;
 
     const eventType = String(ev?.event_type || '').trim();
-    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+    if (!isEventTypeSelected(typeFilter, eventType)) return;
 
     if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
 
@@ -6395,7 +6480,7 @@ const limitedBanLastEventIdMap = computed(() => {
     if (eid > maxEid) return;
 
     const eventType = String(ev?.event_type || '').trim();
-    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+    if (!isEventTypeSelected(typeFilter, eventType)) return;
 
     if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
 
@@ -6448,7 +6533,7 @@ const fesLimitedBanCountMap = computed(() => {
     if (!targetEventIds.has(eid)) return;
 
     const eventType = String(ev?.event_type || '').trim();
-    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+    if (!isEventTypeSelected(typeFilter, eventType)) return;
 
     const bannerName = normalizeBannerName(ev?.banner);
     if (!CHAR_ORDER[bannerName]) return;
@@ -6471,7 +6556,7 @@ const fesLimitedBanLastEventIdMap = computed(() => {
     if (!targetEventIds.has(eid)) return;
 
     const eventType = String(ev?.event_type || '').trim();
-    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+    if (!isEventTypeSelected(typeFilter, eventType)) return;
 
     const bannerName = normalizeBannerName(ev?.banner);
     if (!CHAR_ORDER[bannerName]) return;
@@ -6495,7 +6580,7 @@ const bannerCountMap = computed(() => {
 
     const eventType = String(ev?.event_type || '').trim();
     if (!['箱活', '混活'].includes(eventType)) return;
-    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+    if (!isEventTypeSelected(typeFilter, eventType)) return;
 
     const bannerName = normalizeBannerName(ev?.banner);
     if (!CHAR_ORDER[bannerName]) return;
@@ -6519,7 +6604,7 @@ const bannerLastEventIdMap = computed(() => {
 
     const eventType = String(ev?.event_type || '').trim();
     if (!['箱活', '混活'].includes(eventType)) return;
-    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+    if (!isEventTypeSelected(typeFilter, eventType)) return;
 
     const bannerName = normalizeBannerName(ev?.banner);
     if (!CHAR_ORDER[bannerName]) return;
@@ -6840,6 +6925,16 @@ const matchDuoEventFilters = (event, filters) => {
 };
 
 const duoFiltersIncludeFes = (filters) => getDuoFilterSet(filters).has('fes');
+const duoFiltersLimitedOnly = (filters) => getDuoFilterSet(filters).has('limited');
+const duoFiltersOwnUnitVsOnly = (filters) => getDuoFilterSet(filters).has('ownVs');
+
+const isDuoLimitedCard = (card) => {
+  const cardType = String(card?.Type || '').trim().toLowerCase();
+  if (cardType === 'limited') return true;
+  if (cardType === 'collab' || cardType === 'collab_t') return true;
+  if (cardType === 'wl1' || cardType === 'wl2' || cardType === 'wl3') return true;
+  return isFesCardType(cardType);
+};
 
 const isDuoEventWithinLimit = (event) => {
   if (shouldSkipPredictEvent(event)) return false;
@@ -6874,50 +6969,158 @@ const normalizeDuoParticipantName = (name) => {
   return baseName;
 };
 
-const getDuoEventParticipantNames = (event, options = {}) => {
-  const names = new Set();
-  const bannerName = normalizeDuoParticipantName(event?.banner);
-  if (bannerName) names.add(bannerName);
+const getDuoParticipantName = (participant) => (
+  typeof participant === 'string'
+    ? normalizeDuoParticipantName(participant)
+    : normalizeDuoParticipantName(participant?.name)
+);
+
+const getDuoParticipantVsUnit = (participant) => (
+  typeof participant === 'string'
+    ? ''
+    : String(participant?.vsUnit || '').trim().toLowerCase()
+);
+
+const getDuoCardVsUnit = (card, name) => {
+  if (!VS_NAMES.includes(name)) return '';
+  const aff = String(card?.Affiliation || '').trim().toLowerCase();
+  return DUO_OC_UNITS.includes(aff) ? aff : '';
+};
+
+const makeDuoParticipantEntry = (nameRaw, source = null) => {
+  const name = normalizeDuoParticipantName(nameRaw);
+  if (!name) return null;
+  const sourceUnit = String(source?.unit || '').trim().toLowerCase();
+  return {
+    name,
+    vsUnit: VS_NAMES.includes(name) && DUO_OC_UNITS.includes(sourceUnit) ? sourceUnit : ''
+  };
+};
+
+const makeDuoCardParticipantEntry = (card) => {
+  const name = normalizeDuoParticipantName(card?.Name);
+  if (!name) return null;
+  return {
+    name,
+    vsUnit: getDuoCardVsUnit(card, name)
+  };
+};
+
+const dedupeDuoParticipantEntries = (entries) => {
+  const seen = new Set();
+  return (Array.isArray(entries) ? entries : []).filter((entry) => {
+    const name = getDuoParticipantName(entry);
+    if (!name) return false;
+    const key = `${name}::${getDuoParticipantVsUnit(entry)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const getDuoEventParticipantEntries = (event, options = {}) => {
+  const entries = [];
   const includeFes = options?.includeFes === true;
+  const limitedOnly = options?.limitedOnly === true;
+  if (!limitedOnly) {
+    const bannerName = normalizeDuoParticipantName(event?.banner);
+    const bannerEntry = makeDuoParticipantEntry(bannerName, { unit: event?.unit });
+    if (bannerEntry) entries.push(bannerEntry);
+  }
 
   getDuoEventCards(event).forEach((card) => {
     if (isDuoFesCard(card) && !includeFes) return;
-    const name = normalizeDuoParticipantName(card?.Name);
-    if (name) names.add(name);
+    if (limitedOnly && !isDuoLimitedCard(card)) return;
+    const entry = makeDuoCardParticipantEntry(card);
+    if (entry) entries.push(entry);
   });
 
+  return dedupeDuoParticipantEntries(entries);
+};
+
+const getDuoEventParticipantNames = (event, options = {}) => {
+  const names = new Set();
+  getDuoEventParticipantEntries(event, options).forEach((entry) => {
+    const name = getDuoParticipantName(entry);
+    if (name) names.add(name);
+  });
   return [...names];
 };
 
 const getDuoPoolParticipantNames = (event, options = {}) => {
   const names = new Set();
   getDuoPoolParticipantGroups(event, options).forEach((group) => {
-    group.forEach((name) => names.add(name));
+    group.forEach((entry) => {
+      const name = getDuoParticipantName(entry);
+      if (name) names.add(name);
+    });
   });
   return [...names];
 };
 
 const getDuoPoolParticipantGroups = (event, options = {}) => {
   const includeFes = options?.includeFes === true;
+  const limitedOnly = options?.limitedOnly === true;
   const fourStarCards = getDuoEventCards(event).filter((card) => {
     if (String(card?.Rarity || '').trim() !== '4') return;
     if (isDuoFesCard(card) && !includeFes) return false;
+    if (limitedOnly && !isDuoLimitedCard(card)) return false;
     return true;
   });
-  const toNames = (cards) => {
-    const names = new Set();
-    cards.forEach((card) => {
-      const name = normalizeDuoParticipantName(card?.Name);
-      if (name) names.add(name);
-    });
-    return [...names];
+  const toEntries = (cards) => {
+    return dedupeDuoParticipantEntries(cards.map(makeDuoCardParticipantEntry).filter(Boolean));
   };
 
-  if (!isEarlySplitFesEvent(event)) return [toNames(fourStarCards)].filter((group) => group.length);
+  if (!isEarlySplitFesEvent(event)) return [toEntries(fourStarCards)].filter((group) => group.length);
 
-  const normalNames = toNames(fourStarCards.filter((card) => !isDuoFesCard(card)));
-  const fesNames = includeFes ? toNames(fourStarCards.filter((card) => isDuoFesCard(card))) : [];
-  return [normalNames, fesNames].filter((group) => group.length);
+  const normalEntries = toEntries(fourStarCards.filter((card) => !isDuoFesCard(card)));
+  const fesEntries = includeFes ? toEntries(fourStarCards.filter((card) => isDuoFesCard(card))) : [];
+  return [normalEntries, fesEntries].filter((group) => group.length);
+};
+
+const getDuoFesParticipantNames = (event) => {
+  const entries = [];
+  getDuoEventCards(event).forEach((card) => {
+    if (!isDuoFesCard(card)) return;
+    const entry = makeDuoCardParticipantEntry(card);
+    if (entry) entries.push(entry);
+  });
+  return dedupeDuoParticipantEntries(entries);
+};
+
+const shouldCountDuoParticipantPair = (aEntry, bEntry, options = {}) => {
+  if (options?.ownUnitVsOnly !== true) return true;
+  const a = getDuoParticipantName(aEntry);
+  const b = getDuoParticipantName(bEntry);
+  const aIsVs = VS_NAMES.includes(a);
+  const bIsVs = VS_NAMES.includes(b);
+  if (aIsVs === bIsVs) return true;
+  const ocName = aIsVs ? b : a;
+  const vsEntry = aIsVs ? aEntry : bEntry;
+  const ocUnit = getUnitByChar(ocName);
+  return !!ocUnit && getDuoParticipantVsUnit(vsEntry) === ocUnit;
+};
+
+const addDuoGroupsToMap = (map, groups, valueFactory = null, options = {}) => {
+  (Array.isArray(groups) ? groups : []).forEach((participants) => {
+    if (!Array.isArray(participants) || participants.length < 2) return;
+    for (let i = 0; i < participants.length; i += 1) {
+      for (let j = i + 1; j < participants.length; j += 1) {
+        const aEntry = participants[i];
+        const bEntry = participants[j];
+        const a = getDuoParticipantName(aEntry);
+        const b = getDuoParticipantName(bEntry);
+        if (!a || !b || a === b) continue;
+        if (!shouldCountDuoParticipantPair(aEntry, bEntry, options)) continue;
+        const key = makeDuoPairKey(a, b);
+        if (typeof valueFactory === 'function') {
+          map.set(key, valueFactory(key));
+        } else {
+          map.set(key, (map.get(key) || 0) + 1);
+        }
+      }
+    }
+  });
 };
 
 const makeDuoPairKey = (a, b) => {
@@ -6947,26 +7150,23 @@ const getDuoEventSortTime = (event) => {
 const buildDuoCountMap = (mode, filters) => {
   const map = new Map();
   const includeFes = duoFiltersIncludeFes(filters);
+  const limitedOnly = duoFiltersLimitedOnly(filters);
+  const ownUnitVsOnly = duoFiltersOwnUnitVsOnly(filters);
   (props.allEvents || []).forEach((event) => {
     if (!isDuoEventWithinLimit(event)) return;
-    if (!matchDuoEventFilters(event, filters)) return;
+    const eventMatchesFilters = matchDuoEventFilters(event, filters);
 
-    const groups = mode === 'event'
-      ? [getDuoEventParticipantNames(event, { includeFes })]
-      : getDuoPoolParticipantGroups(event, { includeFes });
+    if (eventMatchesFilters) {
+      const groups = mode === 'event'
+        ? [getDuoEventParticipantEntries(event, { includeFes, limitedOnly })]
+        : getDuoPoolParticipantGroups(event, { includeFes, limitedOnly });
+      addDuoGroupsToMap(map, groups, null, { ownUnitVsOnly });
+      return;
+    }
 
-    groups.forEach((names) => {
-      if (names.length < 2) return;
-      for (let i = 0; i < names.length; i += 1) {
-        for (let j = i + 1; j < names.length; j += 1) {
-          const a = names[i];
-          const b = names[j];
-          if (!a || !b || a === b) continue;
-          const key = makeDuoPairKey(a, b);
-          map.set(key, (map.get(key) || 0) + 1);
-        }
-      }
-    });
+    if (includeFes) {
+      addDuoGroupsToMap(map, [getDuoFesParticipantNames(event)], null, { ownUnitVsOnly });
+    }
   });
   return map;
 };
@@ -6974,8 +7174,13 @@ const buildDuoCountMap = (mode, filters) => {
 const buildDuoLastPoolMap = (filters) => {
   const map = new Map();
   const includeFes = duoFiltersIncludeFes(filters);
+  const limitedOnly = duoFiltersLimitedOnly(filters);
+  const ownUnitVsOnly = duoFiltersOwnUnitVsOnly(filters);
   (props.allEvents || [])
-    .filter((event) => isDuoEventWithinLimit(event) && matchDuoEventFilters(event, filters))
+    .filter((event) => (
+      isDuoEventWithinLimit(event)
+      && (matchDuoEventFilters(event, filters) || includeFes)
+    ))
     .sort((a, b) => {
       const dt = getDuoEventSortTime(a) - getDuoEventSortTime(b);
       if (dt !== 0) return dt;
@@ -6983,28 +7188,28 @@ const buildDuoLastPoolMap = (filters) => {
     })
     .forEach((event) => {
       const eventRef = buildDuoEventRef(event);
-      const groups = getDuoPoolParticipantGroups(event, { includeFes });
-      groups.forEach((names) => {
-        if (names.length < 2) return;
-        for (let i = 0; i < names.length; i += 1) {
-          for (let j = i + 1; j < names.length; j += 1) {
-            const a = names[i];
-            const b = names[j];
-            if (!a || !b || a === b) continue;
-            map.set(makeDuoPairKey(a, b), {
-              eventRef,
-              eventLabel: getNonBanEventMark(eventRef),
-              date: eventRef.date
-            });
-          }
-        }
-      });
+      const eventMatchesFilters = matchDuoEventFilters(event, filters);
+      const groups = eventMatchesFilters
+        ? getDuoPoolParticipantGroups(event, { includeFes, limitedOnly })
+        : [getDuoFesParticipantNames(event)];
+      addDuoGroupsToMap(map, groups, () => {
+        return {
+          eventRef,
+          eventLabel: getNonBanEventMark(eventRef),
+          date: eventRef.date
+        };
+      }, { ownUnitVsOnly });
     });
   return map;
 };
 
 const getDuoPairCount = (map, rowName, colName) => {
   if (!rowName || !colName || rowName === colName) return null;
+  if (rowName === DUO_VS_TOTAL_KEY || colName === DUO_VS_TOTAL_KEY) {
+    const otherName = rowName === DUO_VS_TOTAL_KEY ? colName : rowName;
+    if (!otherName || otherName === DUO_VS_TOTAL_KEY || VS_NAMES.includes(otherName)) return null;
+    return duoVsNames.value.reduce((sum, vsName) => sum + (map.get(makeDuoPairKey(otherName, vsName)) || 0), 0);
+  }
   return map.get(makeDuoPairKey(rowName, colName)) || 0;
 };
 
@@ -7026,6 +7231,21 @@ const duoUnitCharacters = computed(() => {
 });
 
 const buildDuoCharMeta = (name) => {
+  if (name === DUO_VS_TOTAL_KEY) {
+    return {
+      key: DUO_VS_TOTAL_KEY,
+      name: DUO_VS_TOTAL_KEY,
+      title: 'VS',
+      isVs: true,
+      isVsTotal: true,
+      shortName: 'VS',
+      avatarSrc: '/elements/vs.png',
+      color: UNIT_COLORS.vs || '#111827',
+      unit: 'vs',
+      tint: hexToRgba(UNIT_COLORS.vs || '#111827', 0.1),
+      unitTint: hexToRgba(UNIT_COLORS.vs || '#111827', 0.14)
+    };
+  }
   const baseName = normalizeCharName(name);
   const isVs = VS_NAMES.includes(baseName);
   return {
@@ -7209,18 +7429,25 @@ const getDuoUnitPairRows = (unitNames, lastMap) => {
 const duoUnitRows = computed(() => DUO_OC_UNITS.map((unit) => {
   const unitNames = duoUnitCharacters.value[unit] || [];
   const unitFilters = getDuoUnitPoolFilters(unit);
+  const unitLimitedOnly = duoFiltersLimitedOnly(unitFilters);
   const unitShowCardImages = getDuoUnitShowCardImages(unit);
   const unitCountMap = duoUnitPoolCountMaps.value[unit] || duoUnitPoolCountMap.value;
   const unitLastPoolMap = duoUnitLastPoolMaps.value[unit] || duoUnitLastPoolMap.value;
+  const isDesktopCardMode = unitShowCardImages && !isNavTopLayout.value;
+  const matrixColumns = unitLimitedOnly
+    ? (isDesktopCardMode ? unitNames : [...unitNames, ...duoVsNames.value, DUO_VS_TOTAL_KEY])
+    : (isDesktopCardMode ? unitNames : [...unitNames, ...duoVsNames.value]);
+  const matrixRows = unitLimitedOnly
+    ? (isDesktopCardMode ? [...unitNames, ...duoVsNames.value, DUO_VS_TOTAL_KEY] : unitNames)
+    : (isDesktopCardMode ? [...unitNames, ...duoVsNames.value] : unitNames);
   return {
     id: `duo-unit-${unit}`,
     unit,
     title: getUnitNavTitle(unit),
     filters: unitFilters,
+    isLimitedOnly: unitLimitedOnly,
     showCardImages: unitShowCardImages,
-    matrix: unitShowCardImages && !isNavTopLayout.value
-      ? buildDuoMatrixData(unitNames, [...unitNames, ...duoVsNames.value], unitCountMap)
-      : buildDuoMatrixData([...unitNames, ...duoVsNames.value], unitNames, unitCountMap),
+    matrix: buildDuoMatrixData(matrixColumns, matrixRows, unitCountMap),
     lastRows: getDuoUnitPairRows(unitNames, unitLastPoolMap)
   };
 }));
@@ -8091,13 +8318,17 @@ const onRelatedLastRecordShowCardImagesChange = (event) => {
   }, anchorEl);
 };
 
+const hasMixedBooleanValues = (values) => values.some(Boolean) && values.some((value) => !value);
+
+const getIntervalPanelShowCardImageValues = () => [
+  !!relatedLastRecordShowCardImages.value,
+  !!intervalFourShowCardImages.value,
+  !!intervalLimitedShowCardImages.value,
+  !!intervalBanShowCardImages.value
+];
+
 const intervalPanelShowCardImagesAll = computed({
-  get: () => (
-    !!relatedLastRecordShowCardImages.value
-    && !!intervalFourShowCardImages.value
-    && !!intervalLimitedShowCardImages.value
-    && !!intervalBanShowCardImages.value
-  ),
+  get: () => getIntervalPanelShowCardImageValues().every(Boolean),
   set: (value) => {
     const checked = !!value;
     relatedLastRecordShowCardImages.value = checked;
@@ -8107,14 +8338,20 @@ const intervalPanelShowCardImagesAll = computed({
   }
 });
 
+const intervalPanelShowCardImagesIndeterminate = computed(() => (
+  hasMixedBooleanValues(getIntervalPanelShowCardImageValues())
+));
+
+const getSpecialPanelShowCardImageValues = () => [
+  !!vsUnitLastFourShowCardImages.value,
+  !!vsUnitFourCountShowCardImages.value,
+  !!vsUnitScoreShowCardImages.value,
+  !!vsOriginalStatShowCardImages.value,
+  !!fesRecordShowCardImages.value
+];
+
 const specialPanelShowCardImagesAll = computed({
-  get: () => (
-    !!vsUnitLastFourShowCardImages.value
-    && !!vsUnitFourCountShowCardImages.value
-    && !!vsUnitScoreShowCardImages.value
-    && !!vsOriginalStatShowCardImages.value
-    && !!fesRecordShowCardImages.value
-  ),
+  get: () => getSpecialPanelShowCardImageValues().every(Boolean),
   set: (value) => {
     const checked = !!value;
     vsUnitLastFourShowCardImages.value = checked;
@@ -8125,19 +8362,33 @@ const specialPanelShowCardImagesAll = computed({
   }
 });
 
+const specialPanelShowCardImagesIndeterminate = computed(() => (
+  hasMixedBooleanValues(getSpecialPanelShowCardImageValues())
+));
+
 const onIntervalPanelShowAllCardImagesChange = (event) => {
   const checked = !!event?.target?.checked;
+  const shouldResetDefault = intervalPanelShowCardImagesIndeterminate.value;
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
-    intervalPanelShowCardImagesAll.value = checked;
+    intervalPanelShowCardImagesAll.value = shouldResetDefault ? false : checked;
+    if (shouldResetDefault && event?.target) {
+      event.target.checked = false;
+      event.target.indeterminate = false;
+    }
   }, anchorEl);
 };
 
 const onSpecialPanelShowAllCardImagesChange = (event) => {
   const checked = !!event?.target?.checked;
+  const shouldResetDefault = specialPanelShowCardImagesIndeterminate.value;
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
-    specialPanelShowCardImagesAll.value = checked;
+    specialPanelShowCardImagesAll.value = shouldResetDefault ? false : checked;
+    if (shouldResetDefault && event?.target) {
+      event.target.checked = false;
+      event.target.indeterminate = false;
+    }
   }, anchorEl);
 };
 
@@ -8148,19 +8399,67 @@ const getDuoFilterTargetRef = (targetKey) => {
   return null;
 };
 
+const getOrderedDuoFilterValues = (values) => {
+  const set = new Set(Array.isArray(values) ? values : []);
+  return DUO_FILTER_OPTIONS
+    .map((option) => option.value)
+    .filter((option) => set.has(option));
+};
+
+const syncDuoUnitGlobalFiltersFromUnitFilters = () => {
+  duoUnitPoolFilters.value = DUO_FILTER_OPTIONS
+    .map((option) => option.value)
+    .filter((value) => DUO_OC_UNITS.every((unit) => getDuoUnitPoolFilters(unit).includes(value)));
+};
+
+const isDuoUnitGlobalFilterChecked = (optionValue) => {
+  const value = String(optionValue || '').trim();
+  if (!value) return false;
+  return DUO_OC_UNITS.every((unit) => getDuoUnitPoolFilters(unit).includes(value));
+};
+
+const isDuoUnitGlobalFilterIndeterminate = (optionValue) => {
+  const value = String(optionValue || '').trim();
+  if (!value) return false;
+  const selectedCount = DUO_OC_UNITS
+    .filter((unit) => getDuoUnitPoolFilters(unit).includes(value))
+    .length;
+  return selectedCount > 0 && selectedCount < DUO_OC_UNITS.length;
+};
+
+const resetDuoUnitGlobalFilterOptionToDefault = (optionValue) => {
+  const value = String(optionValue || '').trim();
+  if (!value) return;
+  const defaultChecked = DEFAULT_DUO_UNIT_POOL_FILTERS.includes(value);
+  DUO_OC_UNITS.forEach((unit) => {
+    const next = new Set(getDuoUnitPoolFilters(unit));
+    if (defaultChecked) next.add(value);
+    else next.delete(value);
+    duoUnitPoolFiltersByUnit[unit] = getOrderedDuoFilterValues([...next]);
+  });
+  syncDuoUnitGlobalFiltersFromUnitFilters();
+};
+
 const onDuoFilterChange = (targetKey, optionValue, event) => {
   const checked = !!event?.target?.checked;
   const value = String(optionValue || '').trim();
   const targetRef = getDuoFilterTargetRef(targetKey);
   if (!value || !targetRef || !Array.isArray(targetRef.value)) return;
+  const shouldResetDefault = targetKey === 'unit' && isDuoUnitGlobalFilterIndeterminate(value);
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
+    if (shouldResetDefault) {
+      resetDuoUnitGlobalFilterOptionToDefault(value);
+      if (event?.target) {
+        event.target.checked = DEFAULT_DUO_UNIT_POOL_FILTERS.includes(value);
+        event.target.indeterminate = false;
+      }
+      return;
+    }
     const next = new Set(targetRef.value);
     if (checked) next.add(value);
     else next.delete(value);
-    targetRef.value = DUO_FILTER_OPTIONS
-      .map((option) => option.value)
-      .filter((option) => next.has(option));
+    targetRef.value = getOrderedDuoFilterValues([...next]);
     if (targetKey === 'unit') {
       DUO_OC_UNITS.forEach((unit) => {
         duoUnitPoolFiltersByUnit[unit] = [...targetRef.value];
@@ -8179,20 +8478,34 @@ const onDuoUnitFilterChange = (unit, optionValue, event) => {
     const next = new Set(getDuoUnitPoolFilters(key));
     if (checked) next.add(value);
     else next.delete(value);
-    duoUnitPoolFiltersByUnit[key] = DUO_FILTER_OPTIONS
-      .map((option) => option.value)
-      .filter((option) => next.has(option));
+    duoUnitPoolFiltersByUnit[key] = getOrderedDuoFilterValues([...next]);
+    syncDuoUnitGlobalFiltersFromUnitFilters();
   }, anchorEl);
 };
 
+const duoLastPoolShowCardImagesAll = computed(() => (
+  DUO_OC_UNITS.every((unit) => !!duoLastPoolShowCardImagesByUnit[unit])
+));
+
+const duoLastPoolShowCardImagesIndeterminate = computed(() => {
+  const values = DUO_OC_UNITS.map((unit) => !!duoLastPoolShowCardImagesByUnit[unit]);
+  return hasMixedBooleanValues(values);
+});
+
 const onDuoLastPoolShowCardImagesChange = (event) => {
   const checked = !!event?.target?.checked;
+  const shouldResetDefault = duoLastPoolShowCardImagesIndeterminate.value;
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
-    duoLastPoolShowCardImages.value = checked;
+    const next = shouldResetDefault ? false : checked;
+    duoLastPoolShowCardImages.value = next;
     DUO_OC_UNITS.forEach((unit) => {
-      duoLastPoolShowCardImagesByUnit[unit] = checked;
+      duoLastPoolShowCardImagesByUnit[unit] = next;
     });
+    if (shouldResetDefault && event?.target) {
+      event.target.checked = false;
+      event.target.indeterminate = false;
+    }
   }, anchorEl);
 };
 
@@ -8203,6 +8516,7 @@ const onDuoUnitLastPoolShowCardImagesChange = (unit, event) => {
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
   void withInteractionPinnedPosition(() => {
     duoLastPoolShowCardImagesByUnit[key] = checked;
+    duoLastPoolShowCardImages.value = duoLastPoolShowCardImagesAll.value;
   }, anchorEl);
 };
 
@@ -10890,7 +11204,7 @@ const banIntervalRecords = computed(() => {
     if (eid > maxEid) return;
     const eventType = String(ev?.event_type || '').trim();
     if (EXCLUDED_PERIOD_EVENT_TYPES.has(eventType)) return;
-    if (typeFilter !== 'all' && eventType !== typeFilter) return;
+    if (!isEventTypeSelected(typeFilter, eventType)) return;
     const name = normalizeBannerName(ev?.banner);
     if (!CHAR_ORDER[name]) return;
     if (VS_NAMES.includes(name)) return;
@@ -10905,9 +11219,14 @@ const banIntervalRecords = computed(() => {
     });
   });
 
-  return Object.keys(bucket)
+  const selectedTypes = normalizeEventTypeFilter(typeFilter);
+  const rowNames = selectedTypes.length === 0
+    ? Object.keys(CHAR_ORDER).filter((name) => !VS_NAMES.includes(name))
+    : Object.keys(bucket);
+
+  return rowNames
     .map((name) => {
-      const events = bucket[name].sort((a, b) => a.id - b.id);
+      const events = (bucket[name] || []).sort((a, b) => a.id - b.id);
       if (!events.length) {
         return { name, shortest: null, longest: null };
       }
@@ -12823,6 +13142,28 @@ defineExpose({
   gap: 6px;
 }
 
+.duo-block-head {
+  align-items: flex-start;
+}
+
+.duo-block-head .block-head-left {
+  width: 100%;
+  min-width: 0;
+}
+
+.duo-block-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.duo-block-title-row h3 {
+  margin: 0;
+}
+
 .duo-unit-title {
   display: inline-flex;
   align-items: center;
@@ -12865,6 +13206,11 @@ defineExpose({
 }
 
 .duo-unit-export-btn-inline {
+  display: none;
+  margin-left: auto;
+}
+
+.duo-unit-export-btn-matrix-mobile {
   display: none;
   margin-left: auto;
 }
@@ -12916,6 +13262,24 @@ defineExpose({
   height: 100%;
   min-width: 0;
   table-layout: fixed;
+}
+
+.duo-unit-table.duo-unit-limited-table th,
+.duo-unit-table.duo-unit-limited-table td {
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+.duo-unit-table.duo-unit-limited-table .duo-head-avatar,
+.duo-unit-table.duo-unit-limited-table .mini-avatar {
+  width: 22px;
+  height: 22px;
+}
+
+.duo-unit-table .duo-head-avatar,
+.duo-unit-table .mini-avatar {
+  width: 22px;
+  height: 22px;
 }
 
 .duo-unit-table thead th,
@@ -13888,15 +14252,6 @@ td.record-char {
   position: relative;
   top: 0px;
   accent-color: #14b8a6;
-}
-
-.duo-unit-row .stats-checkbox {
-  position: relative;
-  top: 2px;
-}
-
-.duo-unit-row .stats-checkbox input[type='checkbox'] {
-  top: 0;
 }
 
 .fes-record-table {
@@ -15441,6 +15796,27 @@ td.record-char {
     display: none;
   }
 
+  .duo-unit-card-matrix .duo-unit-subhead {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .duo-unit-card-matrix .duo-unit-filter-row {
+    flex: 0 0 100%;
+    width: 100%;
+    gap: 3px;
+    row-gap: 3px;
+  }
+
+  .duo-unit-card-matrix .duo-unit-filter-row .stats-checkbox {
+    font-size: 0.62rem;
+  }
+
+  .duo-unit-export-btn-matrix-mobile {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
   .duo-unit-pair-grid {
     grid-template-columns: 1fr;
   }
@@ -15483,8 +15859,7 @@ td.record-char {
   }
 
   .duo-unit-export-btn-inline {
-    display: inline-flex;
-    margin-left: auto;
+    display: none;
   }
 
   .duo-table {
@@ -15563,8 +15938,8 @@ td.record-char {
 
   .duo-unit-table .duo-head-avatar,
   .duo-unit-table .mini-avatar {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
   }
 
   .duo-unit-table td.duo-num {
@@ -15982,10 +16357,6 @@ td.record-char {
     padding: 6px;
   }
 
-  .duo-unit-row .stats-checkbox {
-    top: 3px;
-  }
-
   .related-panel {
     --related-record-card-row-height: 78px;
     --rel-avatar-size: 24px;
@@ -16093,6 +16464,21 @@ td.record-char {
     padding: 0;
   }
 
+  .duo-unit-last-subhead .stats-checkbox {
+    position: relative;
+    top: 4px;
+  }
+
+  .duo-unit-card-matrix .duo-unit-filter-row {
+    gap: 2px;
+    row-gap: 2px;
+  }
+
+  .duo-unit-card-matrix .duo-unit-filter-row .stats-checkbox {
+    font-size: 0.6rem;
+    gap: 2px;
+  }
+
   .duo-unit-card-last {
     display: block;
     height: auto;
@@ -16114,8 +16500,8 @@ td.record-char {
 
   .duo-unit-table .duo-head-avatar,
   .duo-unit-table .mini-avatar {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
   }
 
   .duo-unit-table td.duo-num {
