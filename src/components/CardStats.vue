@@ -2387,6 +2387,120 @@
                 </tbody>
               </table>
             </div>
+
+            <div id="rel-special-limited-stat" data-scroll-anchor="rel-special-limited-stat" class="record-block special-limited-record-block">
+              <div class="block-head">
+                <div class="block-head-left">
+                  <h3>{{ getRelatedRecordTitle('rel-special-limited-stat') }}</h3>
+                  <label class="support-wl-toggle fes-card-mode-toggle stats-checkbox export-hide">
+                    <input :checked="specialLimitedShowCardImages" type="checkbox" @change="onSpecialLimitedShowCardImagesChange" />
+                    <span>显示卡面</span>
+                  </label>
+                </div>
+                <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-special-limited-stat', '特殊统计_特殊限定统计')">PNG</button>
+              </div>
+              <div
+                class="special-limited-matrix"
+                :class="{ 'is-card-mode': specialLimitedShowCardImages, 'has-cfes-double': specialLimitedHasDoubleCfes }"
+              >
+                <template v-for="unitGroup in specialLimitedUnitGroups" :key="`special-limited-group-wrap-${unitGroup.unit}`">
+                  <span
+                    v-for="breakClass in unitGroup.breakBeforeClasses"
+                    :key="`special-limited-break-${unitGroup.unit}-${breakClass}`"
+                    class="special-limited-line-break"
+                    :class="breakClass"
+                    aria-hidden="true"
+                  ></span>
+                  <div
+                    class="special-limited-unit-segment"
+                    :class="[
+                      `special-limited-segment-${unitGroup.index}`,
+                      { 'has-cfes-double': hasSpecialLimitedDoubleCfes(unitGroup) }
+                    ]"
+                    :style="{ '--special-limited-unit-cols': unitGroup.characters.length, '--special-limited-unit-color': unitGroup.color }"
+                  >
+                    <div class="special-limited-unit-spacer" aria-hidden="true"></div>
+                    <div class="special-limited-unit-band" :style="{ backgroundColor: unitGroup.tint }">
+                      <img :src="unitLogoMap[unitGroup.unit]" class="special-limited-unit-logo" :alt="unitGroup.unit" />
+                    </div>
+                    <div class="special-limited-head-spacer" aria-hidden="true"></div>
+                    <div
+                      v-for="char in unitGroup.characters"
+                      :key="`special-limited-head-${unitGroup.unit}-${char.name}`"
+                      class="special-limited-char-head"
+                      :style="{ '--special-limited-char-color': char.color, '--special-limited-char-tint': char.tint }"
+                      :title="char.name"
+                    >
+                      <img :src="`/chibi_s/${getCharAbbr(char.name)}.webp`" class="special-limited-char-avatar" :style="{ borderColor: char.color }" :alt="char.name" />
+                    </div>
+                    <template v-for="row in specialLimitedRows" :key="`special-limited-row-${unitGroup.unit}-${row.key}`">
+                      <div class="special-limited-row-label" :class="`is-${row.key}`">
+                        <span>{{ row.label }}</span>
+                      </div>
+                      <div
+                        v-for="char in unitGroup.characters"
+                        :key="`special-limited-cell-${row.key}-${char.name}`"
+                        class="special-limited-data-cell"
+                        :class="{
+                          'is-empty': !specialLimitedMatrix[row.key]?.[char.name]?.cards?.length,
+                          'is-multi': (specialLimitedMatrix[row.key]?.[char.name]?.cards?.length || 0) > 1
+                        }"
+                        :style="{ '--special-limited-char-color': char.color, '--special-limited-char-tint': char.tint, '--special-limited-char-soft': char.softTint, '--special-limited-char-empty': char.emptyTint }"
+                        :title="specialLimitedMatrix[row.key]?.[char.name]?.title || `${row.label} ${char.name}`"
+                      >
+                        <template v-if="specialLimitedShowCardImages">
+                          <div v-if="specialLimitedMatrix[row.key]?.[char.name]?.cards?.length" class="special-limited-card-stack">
+                            <div
+                              v-for="card in specialLimitedMatrix[row.key][char.name].cards"
+                              :key="`special-limited-card-${row.key}-${char.name}-${card.cardId || card.orderId}`"
+                              class="fes-card-thumb special-limited-card-thumb"
+                            >
+                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
+                              <img
+                                v-if="card.imageSrc"
+                                :src="card.imageSrc"
+                                :alt="`${char.name} ${row.label} 卡面`"
+                                class="fes-card-thumb-img media-load-shimmer"
+                                loading="lazy"
+                                decoding="async"
+                                @load="onMediaImageLoad"
+                                @error="onMediaImageError"
+                              />
+                              <span v-if="!card.imageSrc" class="special-limited-card-fallback">{{ getCharSingleMark(char.name) }}</span>
+                              <img
+                                v-if="ATTRS.includes(card.attr)"
+                                :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                                class="fes-card-thumb-attr"
+                                :alt="ATTR_LABELS[card.attr]"
+                                :title="ATTR_LABELS[card.attr]"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            </div>
+                          </div>
+                          <span v-else class="score-empty">-</span>
+                        </template>
+                        <template v-else>
+                          <div v-if="specialLimitedMatrix[row.key]?.[char.name]?.cards?.length" class="special-limited-attr-stack">
+                            <template v-for="card in specialLimitedMatrix[row.key][char.name].cards" :key="`special-limited-attr-${row.key}-${char.name}-${card.cardId || card.orderId}`">
+                              <img
+                                v-if="ATTRS.includes(card.attr)"
+                                :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                                class="special-limited-attr-icon"
+                                :alt="ATTR_LABELS[card.attr]"
+                                :title="ATTR_LABELS[card.attr]"
+                              />
+                            </template>
+                            <span v-if="!specialLimitedMatrix[row.key][char.name].cards.some((card) => ATTRS.includes(card.attr))" class="score-empty">-</span>
+                          </div>
+                          <span v-else class="score-empty">-</span>
+                        </template>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -3175,6 +3289,7 @@ const lineupShowCardImages = ref(false);
 const supportShowCardImages = ref(false);
 const relatedLastRecordShowCardImages = ref(false);
 const fesRecordShowCardImages = ref(false);
+const specialLimitedShowCardImages = ref(false);
 const intervalFourShowCardImages = ref(false);
 const intervalLimitedShowCardImages = ref(false);
 const intervalBanShowCardImages = ref(false);
@@ -3506,6 +3621,13 @@ const FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
 const VS_UNIT_SORT_ORDER = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 const VS_ORIGINAL_STAT_TYPES = ['大罪', 'CFES', 'BFES', 'WL1', 'WL2', 'WL3', '其他'];
 const RELATED_FES_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'];
+const SPECIAL_LIMITED_STAT_TYPES = Object.freeze([
+  { key: 'cfes', label: 'CFES' },
+  { key: 'bfes', label: 'BFES' },
+  { key: 'wl1', label: 'WL1' },
+  { key: 'wl2', label: 'WL2' },
+  { key: 'wl3', label: 'WL3' }
+]);
 const SUPPORT_UNITS = ['vs', 'ln', 'mmj', 'vbs', 'ws', 'nc'];
 const LINEUP_NAV_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'];
 const SUPPORT_NAV_UNITS = ['vs', 'ln', 'mmj', 'vbs', 'ws', 'nc'];
@@ -4038,7 +4160,8 @@ const SPECIAL_STAT_ITEMS = [
   { id: 'rel-vs-unit-score', title: '团分统计' },
   { id: 'rel-vs-original-stat', title: '原V统计' },
   { id: 'rel-cfes-stat', title: 'CFES统计' },
-  { id: 'rel-bfes-stat', title: 'BFES统计' }
+  { id: 'rel-bfes-stat', title: 'BFES统计' },
+  { id: 'rel-special-limited-stat', title: '特殊限定统计' }
 ];
 
 const DUO_STAT_ITEMS = [
@@ -5066,9 +5189,39 @@ const applyTableColumnWidths = (tableEl, widths) => {
   tableEl.style.maxWidth = 'none';
 };
 
+const parseCssPx = (value) => {
+  const parsed = Number.parseFloat(String(value || '0'));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getHorizontalBoxChrome = (style) => (
+  parseCssPx(style?.paddingLeft)
+  + parseCssPx(style?.paddingRight)
+  + parseCssPx(style?.borderLeftWidth)
+  + parseCssPx(style?.borderRightWidth)
+);
+
+const getTightFlexContentWidth = (el) => {
+  if (!(el instanceof HTMLElement)) return 0;
+  const style = window.getComputedStyle(el);
+  const visibleChildren = Array.from(el.children).filter((child) => {
+    if (!(child instanceof HTMLElement)) return false;
+    const childStyle = window.getComputedStyle(child);
+    return childStyle.display !== 'none' && childStyle.visibility !== 'hidden';
+  });
+  const gap = parseCssPx(style.columnGap || style.gap);
+  const childrenWidth = visibleChildren.reduce((sum, child) => (
+    sum + Math.max(child.scrollWidth, child.getBoundingClientRect().width)
+  ), 0);
+  const gapsWidth = Math.max(0, visibleChildren.length - 1) * gap;
+  return childrenWidth + gapsWidth + getHorizontalBoxChrome(style);
+};
+
 const syncRecordBlockLayoutForExport = (sourceBlock, cloneBlock) => {
   if (!(sourceBlock instanceof HTMLElement) || !(cloneBlock instanceof HTMLElement)) return 0;
   let expandedWidth = Math.max(sourceBlock.clientWidth, sourceBlock.scrollWidth);
+  const isSpecialLimitedBlock = cloneBlock.classList.contains('special-limited-record-block')
+    || cloneBlock.querySelector('.special-limited-matrix');
   const sourceTables = sourceBlock.querySelectorAll('table');
   const cloneTables = cloneBlock.querySelectorAll('table');
 
@@ -5109,7 +5262,7 @@ const syncRecordBlockLayoutForExport = (sourceBlock, cloneBlock) => {
   cloneBlock.style.maxHeight = 'none';
   const expandedHeight = Math.max(sourceBlockHeight, cloneBlock.scrollHeight, cloneBlock.clientHeight);
   cloneBlock.style.height = 'auto';
-  cloneBlock.style.minHeight = `${Math.max(1, Math.ceil(expandedHeight))}px`;
+  cloneBlock.style.minHeight = isSpecialLimitedBlock ? '0' : `${Math.max(1, Math.ceil(expandedHeight))}px`;
   cloneBlock.style.width = `${Math.max(1, Math.ceil(expandedWidth))}px`;
   cloneBlock.style.minWidth = `${Math.max(1, Math.ceil(expandedWidth))}px`;
   cloneBlock.style.maxWidth = 'none';
@@ -5607,6 +5760,14 @@ const prepareExportClone = async (targetEl) => {
   syncCloneFormControlsWithSource(targetEl, clone);
   syncCloneBackgroundStylesWithSource(targetEl, clone);
   syncSingleCardFillStylesWithSource(targetEl, clone);
+  if (clone.classList.contains('special-limited-matrix')) {
+    clone.classList.add('is-export-flat');
+  }
+  clone.querySelectorAll('.special-limited-matrix').forEach((matrixEl) => {
+    if (matrixEl instanceof HTMLElement) {
+      matrixEl.classList.add('is-export-flat');
+    }
+  });
   if (targetEl.classList.contains('lineup-card') || targetEl.classList.contains('support-card') || targetEl.classList.contains('attr-summary-card')) {
     const explicitFill = resolveSingleCardFillFromSource(targetEl);
     if (explicitFill) {
@@ -5799,6 +5960,38 @@ const prepareExportClone = async (targetEl) => {
   host.appendChild(clone);
   document.body.appendChild(host);
   await waitNextPaint();
+
+  const specialLimitedExportMatrix = clone.querySelector('.special-limited-matrix.is-export-flat');
+  if (specialLimitedExportMatrix instanceof HTMLElement) {
+    clone.style.height = 'auto';
+    clone.style.minHeight = '0';
+    specialLimitedExportMatrix.style.height = 'auto';
+    specialLimitedExportMatrix.style.minHeight = '0';
+    const blockHead = clone.querySelector('.block-head');
+    const flatMatrixWidth = Math.max(
+      specialLimitedExportMatrix.scrollWidth,
+      specialLimitedExportMatrix.clientWidth,
+      specialLimitedExportMatrix.getBoundingClientRect().width
+    );
+    const blockHeadWidth = blockHead instanceof HTMLElement
+      ? getTightFlexContentWidth(blockHead)
+      : 0;
+    const cloneBoxStyle = window.getComputedStyle(clone);
+    const exportChrome = cloneBoxStyle.boxSizing === 'border-box'
+      ? getHorizontalBoxChrome(cloneBoxStyle)
+      : 0;
+    const flatCloneWidth = Math.max(
+      Math.ceil(flatMatrixWidth + exportChrome),
+      Math.ceil(blockHeadWidth + exportChrome)
+    );
+    clone.style.width = `${Math.max(1, flatCloneWidth)}px`;
+    clone.style.minWidth = `${Math.max(1, flatCloneWidth)}px`;
+    clone.style.maxWidth = 'none';
+    await waitNextPaint();
+    clone.style.height = 'auto';
+    clone.style.minHeight = '0';
+  }
+
   const finalWidth = Math.max(clone.scrollWidth, clone.clientWidth, clone.getBoundingClientRect().width);
   const finalHeight = Math.max(clone.scrollHeight, clone.clientHeight, clone.getBoundingClientRect().height);
   clone.style.width = `${Math.max(1, Math.ceil(finalWidth))}px`;
@@ -8272,6 +8465,14 @@ const onFesRecordShowCardImagesChange = (event) => {
   }, anchorEl);
 };
 
+const onSpecialLimitedShowCardImagesChange = (event) => {
+  const checked = !!event?.target?.checked;
+  const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+  void withInteractionPinnedPosition(() => {
+    specialLimitedShowCardImages.value = checked;
+  }, anchorEl);
+};
+
 const onLineupShowCardImagesChange = (event) => {
   const checked = !!event?.target?.checked;
   const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
@@ -8347,7 +8548,8 @@ const getSpecialPanelShowCardImageValues = () => [
   !!vsUnitFourCountShowCardImages.value,
   !!vsUnitScoreShowCardImages.value,
   !!vsOriginalStatShowCardImages.value,
-  !!fesRecordShowCardImages.value
+  !!fesRecordShowCardImages.value,
+  !!specialLimitedShowCardImages.value
 ];
 
 const specialPanelShowCardImagesAll = computed({
@@ -8359,6 +8561,7 @@ const specialPanelShowCardImagesAll = computed({
     vsUnitScoreShowCardImages.value = checked;
     vsOriginalStatShowCardImages.value = checked;
     fesRecordShowCardImages.value = checked;
+    specialLimitedShowCardImages.value = checked;
   }
 });
 
@@ -10790,6 +10993,128 @@ const buildFesRecordMatrix = (fesType) => {
 
 const cfesRecordMatrix = computed(() => buildFesRecordMatrix('cfes'));
 const bfesRecordMatrix = computed(() => buildFesRecordMatrix('bfes'));
+const specialLimitedRows = SPECIAL_LIMITED_STAT_TYPES;
+const SPECIAL_LIMITED_TYPE_KEY_SET = new Set(SPECIAL_LIMITED_STAT_TYPES.map((row) => row.key));
+
+const getSpecialLimitedBreakBeforeClasses = (index) => {
+  if (index <= 1) return [];
+  const classes = ['break-6'];
+  if (index === 3 || index === 5) classes.push('break-10');
+  if (index === 4) classes.push('break-14');
+  return classes;
+};
+
+const specialLimitedUnitGroups = computed(() => (
+  RELATED_FES_UNITS
+    .map((unit, idx) => {
+      const characters = LINEUP_CHAR_NAMES.value
+        .filter((name) => getUnitByChar(name) === unit)
+        .map((name) => {
+          const charColor = getCharColor(name);
+          return {
+            name,
+            color: charColor,
+            tint: hexToRgba(charColor, 0.2),
+            softTint: hexToRgba(charColor, 0.1),
+            emptyTint: hexToRgba(charColor, 0.055)
+          };
+        });
+      const color = UNIT_COLORS[unit] || '#94a3b8';
+      return {
+        unit,
+        index: idx + 1,
+        color,
+        tint: hexToRgba(color, 0.12),
+        characters,
+        breakBeforeClasses: getSpecialLimitedBreakBeforeClasses(idx + 1)
+      };
+    })
+    .filter((group) => group.characters.length > 0)
+));
+
+const createSpecialLimitedMatrixSeed = () => Object.fromEntries(
+  SPECIAL_LIMITED_STAT_TYPES.map((row) => [
+    row.key,
+    Object.fromEntries(LINEUP_CHAR_NAMES.value.map((name) => [
+      name,
+      { cards: [], title: `${row.label} ${name}` }
+    ]))
+  ])
+);
+
+const getSpecialLimitedCardTitle = (rowLabel, charName, cards) => {
+  if (!Array.isArray(cards) || !cards.length) return `${rowLabel} ${charName}`;
+  const suffix = cards
+    .map((card) => {
+      const id = card.cardId ? `#${card.cardId}` : '';
+      const attr = ATTR_LABELS[card.attr] || card.attr || '-';
+      return `${id} ${attr}`.trim();
+    })
+    .filter(Boolean)
+    .join(' / ');
+  return `${rowLabel} ${charName}${suffix ? `：${suffix}` : ''}`;
+};
+
+const specialLimitedMatrix = computed(() => {
+  const matrix = createSpecialLimitedMatrixSeed();
+  const maxEid = safeMaxEventId.value;
+
+  (props.allCards || []).forEach((card) => {
+    if (!isCardWithinLimit(card, maxEid)) return;
+
+    const type = String(card?.Type || '').trim().toLowerCase();
+    if (!SPECIAL_LIMITED_TYPE_KEY_SET.has(type)) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+
+    const baseName = getCardBaseName(card?.Name);
+    if (!baseName || !CHAR_ORDER[baseName]) return;
+
+    const attr = normalizeAttr(card?.Attribute);
+    if (!ATTRS.includes(attr)) return;
+
+    const cardId = Number(String(card?.CardID || '').trim());
+    if (!Number.isFinite(cardId) || cardId <= 0) return;
+
+    const cell = matrix[type]?.[baseName];
+    if (!cell) return;
+
+    cell.cards.push({
+      cardId,
+      orderId: getCardProgressOrderId(card) || cardId,
+      attr,
+      imageSrc: buildCardImageSrc(cardId, baseName, { rarity: '4', card })
+    });
+  });
+
+  SPECIAL_LIMITED_STAT_TYPES.forEach((row) => {
+    LINEUP_CHAR_NAMES.value.forEach((name) => {
+      const cell = matrix[row.key]?.[name];
+      if (!cell) return;
+      cell.cards.sort((a, b) => {
+        const ao = Number(a?.orderId || 0);
+        const bo = Number(b?.orderId || 0);
+        if (ao !== bo) return ao - bo;
+        return ATTRS.indexOf(a?.attr) - ATTRS.indexOf(b?.attr);
+      });
+      cell.title = getSpecialLimitedCardTitle(row.label, name, cell.cards);
+    });
+  });
+
+  return matrix;
+});
+
+const specialLimitedHasDoubleCfes = computed(() => (
+  LINEUP_CHAR_NAMES.value.some((name) => (
+    (specialLimitedMatrix.value?.cfes?.[name]?.cards?.length || 0) > 1
+  ))
+));
+
+const hasSpecialLimitedDoubleCfes = (unitGroup) => (
+  Array.isArray(unitGroup?.characters)
+  && unitGroup.characters.some((char) => (
+    (specialLimitedMatrix.value?.cfes?.[char.name]?.cards?.length || 0) > 1
+  ))
+);
 
 const lastLimitedRecords = computed(() => {
   return Object.keys(charEventBuckets.value)
@@ -14384,6 +14709,564 @@ td.record-char {
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
   z-index: 3;
+}
+
+.related-panel .record-block.special-limited-record-block {
+  container-type: inline-size;
+  container-name: special-limited;
+  grid-column: 1 / -1;
+  overflow-x: visible;
+}
+
+.special-limited-matrix {
+  --special-limited-label-width: 42px;
+  --special-limited-card-size: 40px;
+  --special-limited-card-frame-size: var(--special-limited-card-size);
+  --special-limited-col-extra: 4px;
+  --special-limited-layout-guard: 8px;
+  --special-limited-card-fit-gap: 4px;
+  --special-limited-col-width: minmax(0, 1fr);
+  --special-limited-unit-band-height: 24px;
+  --special-limited-head-height: 42px;
+  --special-limited-cfes-height: 42px;
+  --special-limited-cfes-double-height: var(--special-limited-cfes-height);
+  --special-limited-data-height: 42px;
+  --special-limited-row-gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--special-limited-row-gap) 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.special-limited-matrix.is-card-mode {
+  --special-limited-card-size: 44px;
+  --special-limited-card-frame-size: var(--special-limited-card-size);
+  --special-limited-head-height: 44px;
+  --special-limited-data-height: calc(var(--special-limited-card-frame-size) + 8px);
+  --special-limited-cfes-height: var(--special-limited-data-height);
+  --special-limited-cfes-double-height: calc((var(--special-limited-card-frame-size) * 2) + 8px);
+}
+
+.special-limited-line-break {
+  display: none;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+}
+
+.special-limited-line-break.break-6 {
+  display: block;
+}
+
+.special-limited-unit-segment {
+  display: grid;
+  grid-template-columns: var(--special-limited-label-width) repeat(var(--special-limited-unit-cols), var(--special-limited-col-width));
+  grid-template-rows:
+    var(--special-limited-unit-band-height)
+    var(--special-limited-head-height)
+    var(--special-limited-cfes-height)
+    repeat(4, var(--special-limited-data-height));
+  flex: 0 0 100%;
+  overflow: hidden;
+  border: 1px solid #d9e2ef;
+  border-radius: var(--stats-radius-card);
+  background: #fff;
+}
+
+.special-limited-unit-spacer,
+.special-limited-head-spacer,
+.special-limited-row-label,
+.special-limited-char-head,
+.special-limited-data-cell,
+.special-limited-unit-band {
+  min-width: 0;
+  border-right: 1px solid #d9e2ef;
+  border-bottom: 1px solid #d9e2ef;
+}
+
+.special-limited-unit-spacer {
+  grid-column: 1;
+  grid-row: 1;
+  background: #f8fafc;
+}
+
+.special-limited-unit-band {
+  grid-column: 2 / -1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.special-limited-head-spacer {
+  grid-column: 1;
+  grid-row: 2;
+  background: #f8fafc;
+}
+
+.special-limited-unit-logo {
+  height: 20px;
+  max-width: calc(100% - 8px);
+  object-fit: contain;
+}
+
+.special-limited-char-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 1px;
+  background: linear-gradient(180deg, var(--special-limited-char-tint, #f8fafc) 0%, rgba(255, 255, 255, 0.92) 100%);
+}
+
+.special-limited-char-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.6px solid #d1d5db;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+}
+
+.special-limited-row-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  color: #0f172a;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  background: #f1f5f9;
+}
+
+.special-limited-row-label.is-cfes {
+  background: linear-gradient(135deg, rgba(253, 124, 193, 0.22), rgba(135, 192, 255, 0.22), rgba(248, 255, 135, 0.22));
+}
+
+.special-limited-row-label.is-bfes {
+  background: linear-gradient(135deg, rgba(255, 136, 196, 0.28), rgba(92, 177, 255, 0.24));
+}
+
+.special-limited-row-label.is-wl1,
+.special-limited-row-label.is-wl2,
+.special-limited-row-label.is-wl3 {
+  background: rgba(57, 197, 187, 0.16);
+}
+
+.special-limited-data-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: var(--special-limited-char-soft, rgba(255, 255, 255, 0.92));
+}
+
+.special-limited-data-cell.is-empty {
+  background: var(--special-limited-char-empty, #f8fafc);
+}
+
+.special-limited-attr-stack,
+.special-limited-card-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+}
+
+.special-limited-attr-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.special-limited-card-thumb {
+  --fes-card-frame-size: var(--special-limited-card-frame-size);
+}
+
+.special-limited-card-fallback {
+  position: absolute;
+  inset: 10%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.special-limited-matrix.is-card-mode.has-cfes-double .special-limited-unit-segment.has-cfes-double {
+  --special-limited-cfes-height: var(--special-limited-cfes-double-height);
+}
+
+@container special-limited (min-width: 520px) {
+  .special-limited-matrix:not(.is-card-mode) {
+    --special-limited-col-width: calc((100cqw - var(--special-limited-label-width) - var(--special-limited-layout-guard)) / 10);
+  }
+
+  .special-limited-matrix:not(.is-card-mode) .special-limited-line-break.break-6 {
+    display: none;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) .special-limited-line-break.break-10 {
+    display: block;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-4, .special-limited-segment-6) {
+    grid-template-columns: repeat(var(--special-limited-unit-cols), var(--special-limited-col-width));
+    flex: 0 0 auto;
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-1, .special-limited-segment-3, .special-limited-segment-5) {
+    flex: 0 0 auto;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-4, .special-limited-segment-6) :is(.special-limited-unit-spacer, .special-limited-head-spacer, .special-limited-row-label) {
+    display: none;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-4, .special-limited-segment-6) .special-limited-unit-band {
+    grid-column: 1 / -1;
+  }
+}
+
+@container special-limited (min-width: 700px) {
+  .special-limited-matrix:not(.is-card-mode) {
+    --special-limited-col-width: calc((100cqw - var(--special-limited-label-width) - var(--special-limited-layout-guard)) / 14);
+  }
+
+  .special-limited-matrix:not(.is-card-mode) .special-limited-line-break.break-10 {
+    display: none;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) .special-limited-line-break.break-14 {
+    display: block;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-5, .special-limited-segment-6) {
+    grid-template-columns: repeat(var(--special-limited-unit-cols), var(--special-limited-col-width));
+    flex: 0 0 auto;
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-5) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-3, .special-limited-segment-6) {
+    border-top-right-radius: var(--stats-radius-card);
+    border-bottom-right-radius: var(--stats-radius-card);
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-5, .special-limited-segment-6) :is(.special-limited-unit-spacer, .special-limited-head-spacer, .special-limited-row-label) {
+    display: none;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-5, .special-limited-segment-6) .special-limited-unit-band {
+    grid-column: 1 / -1;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) .special-limited-segment-4 {
+    grid-template-columns: var(--special-limited-label-width) repeat(var(--special-limited-unit-cols), var(--special-limited-col-width));
+    flex: 0 0 auto;
+    border-left: 1px solid #d9e2ef;
+    border-top-left-radius: var(--stats-radius-card);
+    border-bottom-left-radius: var(--stats-radius-card);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) .special-limited-segment-4 :is(.special-limited-unit-spacer, .special-limited-head-spacer) {
+    display: block;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) .special-limited-segment-4 .special-limited-row-label {
+    display: flex;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) .special-limited-segment-4 .special-limited-unit-band {
+    grid-column: 2 / -1;
+  }
+}
+
+@container special-limited (min-width: 940px) {
+  .special-limited-matrix:not(.is-card-mode) {
+    --special-limited-col-width: calc((100cqw - var(--special-limited-label-width) - var(--special-limited-layout-guard)) / 26);
+  }
+
+  .special-limited-matrix:not(.is-card-mode) .special-limited-line-break.break-14 {
+    display: none;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5, .special-limited-segment-6) {
+    grid-template-columns: repeat(var(--special-limited-unit-cols), var(--special-limited-col-width));
+    flex: 0 0 auto;
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-1, .special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5) {
+    flex: 0 0 auto;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) .special-limited-segment-6 {
+    border-top-right-radius: var(--stats-radius-card);
+    border-bottom-right-radius: var(--stats-radius-card);
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5, .special-limited-segment-6) :is(.special-limited-unit-spacer, .special-limited-head-spacer, .special-limited-row-label) {
+    display: none;
+  }
+
+  .special-limited-matrix:not(.is-card-mode) :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5, .special-limited-segment-6) .special-limited-unit-band {
+    grid-column: 1 / -1;
+  }
+}
+
+@container special-limited (min-width: 620px) {
+  .special-limited-matrix.is-card-mode {
+    --special-limited-col-width: calc((100cqw - var(--special-limited-label-width) - var(--special-limited-layout-guard)) / 10);
+    --special-limited-card-size: 54px;
+    --special-limited-card-frame-size: min(var(--special-limited-card-size), max(30px, calc(var(--special-limited-col-width) - var(--special-limited-card-fit-gap))));
+    --special-limited-head-height: 48px;
+    --special-limited-data-height: calc(var(--special-limited-card-frame-size) + 8px);
+    --special-limited-cfes-height: var(--special-limited-data-height);
+    --special-limited-cfes-double-height: calc((var(--special-limited-card-frame-size) * 2) + 10px);
+  }
+
+  .special-limited-matrix.is-card-mode.has-cfes-double :is(.special-limited-segment-5, .special-limited-segment-6) {
+    --special-limited-cfes-height: var(--special-limited-cfes-double-height);
+  }
+
+  .special-limited-matrix.is-card-mode .special-limited-line-break.break-6 {
+    display: none;
+  }
+
+  .special-limited-matrix.is-card-mode .special-limited-line-break.break-10 {
+    display: block;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-4, .special-limited-segment-6) {
+    grid-template-columns: repeat(var(--special-limited-unit-cols), var(--special-limited-col-width));
+    flex: 0 0 auto;
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-1, .special-limited-segment-3, .special-limited-segment-5) {
+    flex: 0 0 auto;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-4, .special-limited-segment-6) :is(.special-limited-unit-spacer, .special-limited-head-spacer, .special-limited-row-label) {
+    display: none;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-4, .special-limited-segment-6) .special-limited-unit-band {
+    grid-column: 1 / -1;
+  }
+}
+
+@container special-limited (min-width: 820px) {
+  .special-limited-matrix.is-card-mode {
+    --special-limited-col-width: calc((100cqw - var(--special-limited-label-width) - var(--special-limited-layout-guard)) / 14);
+  }
+
+  .special-limited-matrix.is-card-mode.has-cfes-double :is(.special-limited-segment-4, .special-limited-segment-5, .special-limited-segment-6) {
+    --special-limited-cfes-height: var(--special-limited-cfes-double-height);
+  }
+
+  .special-limited-matrix.is-card-mode .special-limited-line-break.break-10 {
+    display: none;
+  }
+
+  .special-limited-matrix.is-card-mode .special-limited-line-break.break-14 {
+    display: block;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-5, .special-limited-segment-6) {
+    grid-template-columns: repeat(var(--special-limited-unit-cols), var(--special-limited-col-width));
+    flex: 0 0 auto;
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-5) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-3, .special-limited-segment-6) {
+    border-top-right-radius: var(--stats-radius-card);
+    border-bottom-right-radius: var(--stats-radius-card);
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-5, .special-limited-segment-6) :is(.special-limited-unit-spacer, .special-limited-head-spacer, .special-limited-row-label) {
+    display: none;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-5, .special-limited-segment-6) .special-limited-unit-band {
+    grid-column: 1 / -1;
+  }
+
+  .special-limited-matrix.is-card-mode .special-limited-segment-4 {
+    grid-template-columns: var(--special-limited-label-width) repeat(var(--special-limited-unit-cols), var(--special-limited-col-width));
+    flex: 0 0 auto;
+    border-left: 1px solid #d9e2ef;
+    border-top-left-radius: var(--stats-radius-card);
+    border-bottom-left-radius: var(--stats-radius-card);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .special-limited-matrix.is-card-mode .special-limited-segment-4 :is(.special-limited-unit-spacer, .special-limited-head-spacer) {
+    display: block;
+  }
+
+  .special-limited-matrix.is-card-mode .special-limited-segment-4 .special-limited-row-label {
+    display: flex;
+  }
+
+  .special-limited-matrix.is-card-mode .special-limited-segment-4 .special-limited-unit-band {
+    grid-column: 2 / -1;
+  }
+}
+
+@container special-limited (min-width: 1200px) {
+  .special-limited-matrix.is-card-mode {
+    --special-limited-col-width: calc((100cqw - var(--special-limited-label-width) - var(--special-limited-layout-guard)) / 26);
+  }
+
+  .special-limited-matrix.is-card-mode.has-cfes-double .special-limited-unit-segment {
+    --special-limited-cfes-height: var(--special-limited-cfes-double-height);
+  }
+
+  .special-limited-matrix.is-card-mode .special-limited-line-break.break-14 {
+    display: none;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5, .special-limited-segment-6) {
+    grid-template-columns: repeat(var(--special-limited-unit-cols), var(--special-limited-col-width));
+    flex: 0 0 auto;
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-1, .special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5) {
+    flex: 0 0 auto;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .special-limited-matrix.is-card-mode .special-limited-segment-6 {
+    border-top-right-radius: var(--stats-radius-card);
+    border-bottom-right-radius: var(--stats-radius-card);
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5, .special-limited-segment-6) :is(.special-limited-unit-spacer, .special-limited-head-spacer, .special-limited-row-label) {
+    display: none;
+  }
+
+  .special-limited-matrix.is-card-mode :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5, .special-limited-segment-6) .special-limited-unit-band {
+    grid-column: 1 / -1;
+  }
+}
+
+.export-clone-root .special-limited-matrix.is-export-flat {
+  --special-limited-card-size: 40px;
+  --special-limited-card-frame-size: var(--special-limited-card-size);
+  --special-limited-col-width: calc(var(--special-limited-card-size) + var(--special-limited-col-extra));
+  --special-limited-head-height: 42px;
+  --special-limited-cfes-height: 42px;
+  --special-limited-cfes-double-height: var(--special-limited-cfes-height);
+  --special-limited-data-height: 42px;
+  flex-wrap: nowrap !important;
+  gap: 0 !important;
+  width: max-content !important;
+  max-width: none !important;
+}
+
+.export-clone-root .special-limited-matrix.is-card-mode.is-export-flat {
+  --special-limited-card-size: 54px;
+  --special-limited-card-frame-size: var(--special-limited-card-size);
+  --special-limited-col-width: calc(var(--special-limited-card-size) + var(--special-limited-col-extra));
+  --special-limited-head-height: 48px;
+  --special-limited-data-height: calc(var(--special-limited-card-frame-size) + 8px);
+  --special-limited-cfes-height: var(--special-limited-data-height);
+  --special-limited-cfes-double-height: calc((var(--special-limited-card-frame-size) * 2) + 10px);
+}
+
+.export-clone-root .special-limited-matrix.is-card-mode.is-export-flat.has-cfes-double .special-limited-unit-segment {
+  --special-limited-cfes-height: var(--special-limited-cfes-double-height);
+}
+
+.export-clone-root .special-limited-matrix.is-export-flat .special-limited-line-break {
+  display: none !important;
+}
+
+.export-clone-root .special-limited-matrix.is-export-flat :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5, .special-limited-segment-6) {
+  grid-template-columns: repeat(var(--special-limited-unit-cols), var(--special-limited-col-width)) !important;
+  flex: 0 0 auto !important;
+  border-left: 0 !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.export-clone-root .special-limited-matrix.is-export-flat :is(.special-limited-segment-1, .special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5) {
+  flex: 0 0 auto !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.export-clone-root .special-limited-matrix.is-export-flat :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5) {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.export-clone-root .special-limited-matrix.is-export-flat .special-limited-segment-6 {
+  border-top-right-radius: var(--stats-radius-card) !important;
+  border-bottom-right-radius: var(--stats-radius-card) !important;
+}
+
+.export-clone-root .special-limited-matrix.is-export-flat :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5, .special-limited-segment-6) :is(.special-limited-unit-spacer, .special-limited-head-spacer, .special-limited-row-label) {
+  display: none !important;
+}
+
+.export-clone-root .special-limited-matrix.is-export-flat :is(.special-limited-segment-2, .special-limited-segment-3, .special-limited-segment-4, .special-limited-segment-5, .special-limited-segment-6) .special-limited-unit-band {
+  grid-column: 1 / -1 !important;
 }
 
 .nuigurumi-table-wrap {
