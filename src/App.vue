@@ -343,9 +343,10 @@
       :class="{ 'history-mode': currentTab === 'history' }"
       @scroll.passive="handleContentScroll"
     >
-      <keep-alive>
+      <keep-alive v-if="isAppDataReady">
         <component 
           ref="tabComponentRef"
+          :key="currentTab"
           :is="tabs[currentTab]" 
           :all-events="currentTab === 'specialPredict' ? historyData : totalEventData" 
           :all-cards="totalCardsData"
@@ -366,6 +367,21 @@
           @sync-preview-event-id="handlePreviewSyncEventId"
         />
       </keep-alive>
+      <div
+        v-if="!isAppDataReady"
+        class="app-data-loading"
+        role="status"
+        aria-live="polite"
+        :aria-label="appDataLoadFailed ? '数据加载失败，请刷新重试' : '数据加载中'"
+      >
+        <div v-if="!appDataLoadFailed" class="app-data-loader" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <span v-else class="app-data-loading-error">数据加载失败，请刷新重试</span>
+      </div>
     </div>
 
     <button
@@ -385,6 +401,12 @@ import CardStats from './components/CardStats.vue';
 import EventHistory from './components/EventHistory.vue';
 import SongStats from './components/SongStats.vue';
 import SpecialPredictGenerator from './components/SpecialPredictGenerator.vue';
+import {
+  collectSmallStaticImageUrls,
+  getCommonSmallStaticImageUrls,
+  installSmallStaticImageWarmupObserver,
+  scheduleImageWarmup
+} from './utils/assets.js';
 
 // --- 界面切换逻辑 (恢复原样) ---
 const tabs = {
@@ -473,6 +495,10 @@ const hasAutoShownReleaseLogThisVisit = ref(false);
 let cleanupNoticeTimer = null;
 let screenshotExportModalAutoCloseTimer = null;
 let appVersionCheckTimer = null;
+let appVersionCheckDelayTimer = null;
+let cancelInitialAppVersionCheck = null;
+let cancelSmallImageWarmup = null;
+let stopSmallImageWarmupObserver = null;
 
 const APP_VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const APP_RELEASE_LOG_SKIP_KEY = 'pjsk_skip_release_log_build_id_v1';
@@ -625,6 +651,59 @@ const checkForAppUpdate = async () => {
   if (!hasAutoShownReleaseLogThisVisit.value && !isCurrentReleaseLogSkipped.value) {
     hasAutoShownReleaseLogThisVisit.value = true;
     openCurrentReleaseLogModal();
+  }
+};
+
+const isMobileLikeViewport = () => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
+};
+
+const scheduleInitialAppVersionCheck = () => {
+  if (typeof window === 'undefined') return;
+
+  const run = () => {
+    cancelInitialAppVersionCheck = null;
+    appVersionCheckDelayTimer = null;
+    void checkForAppUpdate();
+  };
+
+  if (typeof window.requestIdleCallback === 'function') {
+    const idleId = window.requestIdleCallback(run, { timeout: 3500 });
+    cancelInitialAppVersionCheck = () => window.cancelIdleCallback?.(idleId);
+    return;
+  }
+
+  appVersionCheckDelayTimer = window.setTimeout(run, 1800);
+  cancelInitialAppVersionCheck = () => {
+    if (appVersionCheckDelayTimer) window.clearTimeout(appVersionCheckDelayTimer);
+    appVersionCheckDelayTimer = null;
+  };
+};
+
+const scheduleSmallStaticImageWarmup = async () => {
+  if (typeof document === 'undefined') return;
+  await nextTick();
+
+  const root = document.body;
+  const mobileLike = isMobileLikeViewport();
+  const urls = [
+    ...getCommonSmallStaticImageUrls({ characters: charactersData.value }),
+    ...collectSmallStaticImageUrls(root)
+  ];
+
+  if (typeof cancelSmallImageWarmup === 'function') cancelSmallImageWarmup();
+  cancelSmallImageWarmup = scheduleImageWarmup(urls, {
+    concurrency: mobileLike ? 3 : 5,
+    timeoutMs: mobileLike ? 10000 : 7000,
+    smallOnly: true
+  });
+
+  if (!stopSmallImageWarmupObserver) {
+    stopSmallImageWarmupObserver = installSmallStaticImageWarmupObserver(root, {
+      concurrency: mobileLike ? 2 : 3,
+      timeoutMs: mobileLike ? 10000 : 7000
+    });
   }
 };
 
@@ -853,11 +932,107 @@ const baseCards = ref([]); // 新增：存储基础卡片库
 const songsData = ref([]);
 const charactersData = ref([]);
 const nuigurumiData = ref([]);
+const isAppDataReady = ref(false);
+const appDataLoadFailed = ref(false);
 const predictiveEvents = ref([]); // 用户填写的预测数据
 const draftPredictiveEvent = ref(null);
 const cleanedPatchNoticeCount = ref(0);
 const predictSources = ref([]);
 const activePredictSourceId = ref('');
+
+const DATA_CACHE_PREFIX = 'pjsk_public_data_cache_v1';
+const DATA_RESOURCE_DEFS = Object.freeze([
+  { key: 'events', url: '/data/pjsk_events.json' },
+  { key: 'cards', url: '/data/pjsk_cards.json' },
+  { key: 'songs', url: '/data/pjsk_songs.json' },
+  { key: 'characters', url: '/data/pjsk_characters.json' },
+  { key: 'nuigurumi', url: '/data/pjsk_nuigurumi.json' }
+]);
+
+const buildPublicDataCacheKey = (resourceKey, buildId = currentAppBuildId) => (
+  `${DATA_CACHE_PREFIX}:${String(buildId || 'dev')}:${resourceKey}`
+);
+
+const applyLoadedAppData = (loadedData) => {
+  if (!loadedData) return;
+  historyData.value = Array.isArray(loadedData.events) ? loadedData.events : [];
+  baseCards.value = Array.isArray(loadedData.cards) ? loadedData.cards : [];
+  songsData.value = Array.isArray(loadedData.songs) ? loadedData.songs : [];
+  charactersData.value = Array.isArray(loadedData.characters) ? loadedData.characters : [];
+  nuigurumiData.value = Array.isArray(loadedData.nuigurumi) ? loadedData.nuigurumi : [];
+  isAppDataReady.value = true;
+  appDataLoadFailed.value = false;
+  void scheduleSmallStaticImageWarmup();
+  scheduleStatsTopControlStateSync();
+};
+
+const readCachedPublicDataTexts = () => {
+  if (typeof localStorage === 'undefined' || !currentAppBuildId) return null;
+  try {
+    const resourceTexts = {};
+    for (const resource of DATA_RESOURCE_DEFS) {
+      const raw = localStorage.getItem(buildPublicDataCacheKey(resource.key));
+      if (!raw) return null;
+      resourceTexts[resource.key] = raw;
+    }
+    return resourceTexts;
+  } catch {
+    return null;
+  }
+};
+
+const arePublicDataTextsEqual = (leftTexts, rightTexts) => (
+  !!leftTexts
+  && !!rightTexts
+  && DATA_RESOURCE_DEFS.every((resource) => leftTexts[resource.key] === rightTexts[resource.key])
+);
+
+const cleanupOldPublicDataCaches = () => {
+  if (typeof localStorage === 'undefined') return;
+  const currentPrefix = `${DATA_CACHE_PREFIX}:${String(currentAppBuildId || 'dev')}:`;
+  try {
+    for (let idx = localStorage.length - 1; idx >= 0; idx -= 1) {
+      const key = localStorage.key(idx);
+      if (key && key.startsWith(`${DATA_CACHE_PREFIX}:`) && !key.startsWith(currentPrefix)) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // Cache cleanup is opportunistic; data loading must never depend on it.
+  }
+};
+
+const writePublicDataCache = (resourceTexts) => {
+  if (typeof localStorage === 'undefined' || !resourceTexts) return;
+  try {
+    DATA_RESOURCE_DEFS.forEach((resource) => {
+      const raw = resourceTexts[resource.key];
+      if (typeof raw === 'string' && raw) {
+        localStorage.setItem(buildPublicDataCacheKey(resource.key), raw);
+      }
+    });
+    cleanupOldPublicDataCaches();
+  } catch {
+    // Quota pressure should not block the app; the network data is already loaded.
+  }
+};
+
+const fetchPublicDataTexts = async () => {
+  const pairs = await Promise.all(DATA_RESOURCE_DEFS.map(async (resource) => {
+    const response = await fetch(resource.url);
+    if (!response.ok) throw new Error(`Failed to load ${resource.url}`);
+    return [resource.key, await response.text()];
+  }));
+  return Object.fromEntries(pairs);
+};
+
+const parsePublicDataTexts = (resourceTexts) => {
+  const loaded = {};
+  DATA_RESOURCE_DEFS.forEach((resource) => {
+    loaded[resource.key] = JSON.parse(resourceTexts[resource.key] || '[]');
+  });
+  return loaded;
+};
 
 const clonePredictList = (list) => JSON.parse(JSON.stringify(Array.isArray(list) ? list : []));
 
@@ -2108,20 +2283,6 @@ onMounted(async () => {
     persistPredictSources();
 
     // 同时请求活动、卡片、歌曲与角色数据
-    const [resEvents, resCards, resSongs, resCharacters, resNuigurumi] = await Promise.all([
-      fetch('/data/pjsk_events.json'),
-      fetch('/data/pjsk_cards.json'),
-      fetch('/data/pjsk_songs.json'),
-      fetch('/data/pjsk_characters.json'),
-      fetch('/data/pjsk_nuigurumi.json')
-    ]);
-    
-    historyData.value = await resEvents.json();
-    baseCards.value = await resCards.json();
-    songsData.value = await resSongs.json();
-    charactersData.value = await resCharacters.json();
-    nuigurumiData.value = await resNuigurumi.json();
-    scheduleStatsTopControlStateSync();
     let activeCleanedCount = 0;
     predictSources.value = (predictSources.value || []).map((source) => {
       const beforeList = Array.isArray(source?.predictiveEvents) ? source.predictiveEvents : [];
@@ -2143,9 +2304,24 @@ onMounted(async () => {
     }
     persistPredictSources();
     setCleanedPatchNoticeCount(activeCleanedCount, 4200);
+
+    const cachedPublicDataTexts = readCachedPublicDataTexts();
+    if (cachedPublicDataTexts) {
+      applyLoadedAppData(parsePublicDataTexts(cachedPublicDataTexts));
+    }
+
+    const publicDataTexts = await fetchPublicDataTexts();
+    if (!arePublicDataTextsEqual(cachedPublicDataTexts, publicDataTexts)) {
+      const loadedPublicData = parsePublicDataTexts(publicDataTexts);
+      applyLoadedAppData(loadedPublicData);
+    }
+    writePublicDataCache(publicDataTexts);
     
     console.log("数据加载成功:", historyData.value.length, "条活动,", baseCards.value.length, "张卡片");
   } catch (e) {
+    if (!isAppDataReady.value) {
+      appDataLoadFailed.value = true;
+    }
     console.error("加载失败:", e);
   }
 });
@@ -2589,9 +2765,10 @@ const handleGlobalPointerDown = (event) => {
 
 onMounted(() => {
   updateCompactTopNav();
+  void scheduleSmallStaticImageWarmup();
   releaseLogSkipBuildId.value = String(localStorage.getItem(APP_RELEASE_LOG_SKIP_KEY) || '').trim();
   syncReleaseLogSkipChecked();
-  void checkForAppUpdate();
+  scheduleInitialAppVersionCheck();
   if (typeof window !== 'undefined') {
     appVersionCheckTimer = window.setInterval(() => {
       void checkForAppUpdate();
@@ -2627,6 +2804,22 @@ onBeforeUnmount(() => {
   if (appVersionCheckTimer) {
     clearInterval(appVersionCheckTimer);
     appVersionCheckTimer = null;
+  }
+  if (typeof cancelInitialAppVersionCheck === 'function') {
+    cancelInitialAppVersionCheck();
+    cancelInitialAppVersionCheck = null;
+  }
+  if (appVersionCheckDelayTimer) {
+    clearTimeout(appVersionCheckDelayTimer);
+    appVersionCheckDelayTimer = null;
+  }
+  if (typeof cancelSmallImageWarmup === 'function') {
+    cancelSmallImageWarmup();
+    cancelSmallImageWarmup = null;
+  }
+  if (typeof stopSmallImageWarmupObserver === 'function') {
+    stopSmallImageWarmupObserver();
+    stopSmallImageWarmupObserver = null;
   }
 });
 
@@ -3096,6 +3289,66 @@ watch(isHistoryPredictEditorOpen, (open) => {
 .content-area.history-mode {
   padding: 0;
   overflow: hidden; 
+}
+
+.app-data-loading {
+  min-height: min(360px, 62vh);
+  display: grid;
+  place-items: center;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.app-data-loader {
+  display: inline-grid;
+  grid-template-columns: repeat(4, 8px);
+  align-items: end;
+  gap: 7px;
+  height: 34px;
+}
+
+.app-data-loader span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #14b8a6;
+  animation: app-data-loader-bounce 0.86s ease-in-out infinite;
+  transform-origin: 50% 100%;
+  opacity: 0.52;
+}
+
+.app-data-loader span:nth-child(2) {
+  background: #38bdf8;
+  animation-delay: 0.1s;
+}
+
+.app-data-loader span:nth-child(3) {
+  background: #a78bfa;
+  animation-delay: 0.2s;
+}
+
+.app-data-loader span:nth-child(4) {
+  background: #22c55e;
+  animation-delay: 0.3s;
+}
+
+.app-data-loading-error {
+  color: #b91c1c;
+}
+
+@keyframes app-data-loader-bounce {
+  0%,
+  100% {
+    transform: scaleY(1);
+    opacity: 0.5;
+  }
+
+  45% {
+    transform: scaleY(2.65);
+    opacity: 1;
+  }
 }
 
 button {

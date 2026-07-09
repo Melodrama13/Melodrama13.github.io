@@ -5333,6 +5333,25 @@ const cancelScrollCorrections = () => {
   scrollCorrectionToken += 1;
 };
 
+const scheduleBoundaryScrollCorrection = (getTargetTop) => {
+  const correctionToken = scrollCorrectionToken;
+  const correct = () => {
+    if (correctionToken !== scrollCorrectionToken) return;
+    const container = historyContainer.value;
+    if (!container) return;
+    const nextTop = Math.max(0, getTargetTop(container));
+    container.scrollTop = nextTop;
+    historyScrollTop.value = nextTop;
+    try {
+      sessionStorage.setItem(HISTORY_SCROLL_KEY, String(nextTop));
+    } catch (_) {}
+  };
+
+  setTimeout(correct, 360);
+  setTimeout(correct, 900);
+  setTimeout(correct, 1500);
+};
+
 const cancelActivationRestore = () => {
   activationRestoreToken += 1;
   activationRestoreTimeoutIds.forEach((timerId) => clearTimeout(timerId));
@@ -6610,6 +6629,7 @@ const scrollTo = (target) => {
     try {
       sessionStorage.setItem(HISTORY_SCROLL_KEY, '0');
     } catch (_) {}
+    scheduleBoundaryScrollCorrection(() => 0);
   } else if (target === 'bottom') {
     cancelScrollCorrections();
     clearActiveEventItem();
@@ -6619,6 +6639,7 @@ const scrollTo = (target) => {
     try {
       sessionStorage.setItem(HISTORY_SCROLL_KEY, String(bottomTop));
     } catch (_) {}
+    scheduleBoundaryScrollCorrection((targetContainer) => targetContainer.scrollHeight - targetContainer.clientHeight);
   } else if (target === 'current') {
     const now = spoilerNow.value;
     const pickLatestStartedEvent = (candidates) => {
