@@ -2243,7 +2243,7 @@ const preserveAnchorWhileLayoutChanges = (eventId, mutator) => {
 };
 
 // 2. 统一的内部滚动函数，解决筛选栏被顶走的问题
-const _internalScrollTo = (eventId, behavior = 'smooth', options = {}) => {
+const _internalScrollTo = (eventId, behavior = 'smooth') => {
   const idKey = normalizeEventId(eventId);
   if (!idKey) return false;
 
@@ -2251,11 +2251,7 @@ const _internalScrollTo = (eventId, behavior = 'smooth', options = {}) => {
   const el = findEventElementInContainer(idKey);
   if (!el || !container) return false;
   if (container.clientHeight <= 0 || container.getClientRects().length === 0) return false;
-  if (options?.setActive === false) {
-    forceRenderEventNeighborhood(idKey);
-  } else {
-    setActiveEventItem(idKey);
-  }
+  setActiveEventItem(idKey);
 
   // 获取筛选栏的高度作为偏移量
   const filterBar = container.querySelector('.filter-bar');
@@ -5600,14 +5596,14 @@ const toggleBirthdayRowsVisibility = () => toggleVisibilityWithViewportAnchor(hi
 const togglePreviewRowsVisibility = () => toggleVisibilityWithViewportAnchor(hidePreviewRows);
 const toggleCollabPoolsVisibility = () => toggleVisibilityWithViewportAnchor(hideCollabPools);
 
-const schedulePendingJumpAfterRender = (behavior = 'auto', retry = 8, options = {}) => {
+const schedulePendingJumpAfterRender = (behavior = 'auto', retry = 8) => {
   if (jumpRetryTimer) clearTimeout(jumpRetryTimer);
   jumpRetryTimer = window.setTimeout(() => {
     jumpRetryTimer = 0;
     nextTick(() => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          consumePendingJump(behavior, retry, options);
+          consumePendingJump(behavior, retry);
         });
       });
     });
@@ -5637,7 +5633,7 @@ watch([showFilter, isEditorOpen], () => {
   });
 }, { flush: 'post' });
 
-const consumePendingJump = (behavior = 'auto', retry = 8, options = {}) => {
+const consumePendingJump = (behavior = 'auto', retry = 8) => {
   const idKey = pendingJumpEventId.value;
   if (!idKey) return false;
 
@@ -5645,11 +5641,11 @@ const consumePendingJump = (behavior = 'auto', retry = 8, options = {}) => {
 
   const changedRenderKeys = forceRenderEventNeighborhood(idKey);
   if (changedRenderKeys && retry > 0) {
-    schedulePendingJumpAfterRender(behavior, retry - 1, options);
+    schedulePendingJumpAfterRender(behavior, retry - 1);
     return false;
   }
 
-  const ok = _internalScrollTo(idKey, behavior, options);
+  const ok = _internalScrollTo(idKey, behavior);
   if (ok) {
     if (pendingJumpSeq.value > 0) {
       lastHandledJumpSeq.value = pendingJumpSeq.value;
@@ -5667,7 +5663,7 @@ const consumePendingJump = (behavior = 'auto', retry = 8, options = {}) => {
   if (retry > 0) {
     if (jumpRetryTimer) clearTimeout(jumpRetryTimer);
     jumpRetryTimer = setTimeout(() => {
-      consumePendingJump(behavior, retry - 1, options);
+      consumePendingJump(behavior, retry - 1);
     }, 80);
   }
   return false;
@@ -5689,12 +5685,12 @@ const jumpToEventById = (eventId, behavior = 'auto') => {
   return consumePendingJump(behavior, 30);
 };
 
-const scrollToEventById = (eventId, behavior = 'auto', retry = 24, options = {}) => {
+const scrollToEventById = (eventId, behavior = 'auto', retry = 24) => {
   const idKey = normalizeEventId(eventId);
   if (!idKey) return false;
   pendingJumpEventId.value = idKey;
   pendingJumpSeq.value = 0;
-  return consumePendingJump(behavior, retry, options);
+  return consumePendingJump(behavior, retry);
 };
 
 const sanitizeExportBaseName = (name) => {
@@ -6625,11 +6621,7 @@ const scrollTo = (target) => {
     } catch (_) {}
   } else if (target === 'current') {
     const now = spoilerNow.value;
-    const pickLatestStartedEvent = (events) => {
-      const candidates = (events || []).filter(ev => {
-        if (!isNumericEventId(ev?.id)) return false;
-        return isEventStarted(ev, now);
-      });
+    const pickLatestStartedEvent = (candidates) => {
       if (!candidates.length) return null;
       return candidates.reduce((prev, curr) => {
         const prevTime = getDateValue(prev?.start_date);
@@ -6638,27 +6630,28 @@ const scrollTo = (target) => {
         return Number(curr.id) > Number(prev.id) ? curr : prev;
       });
     };
-    const currentEvent = pickLatestStartedEvent(props.allEvents || []);
-    const visibleCurrent = currentEvent && displayRows.value.some((row) => (
-      row.kind === 'event' && normalizeEventId(row.event?.id) === normalizeEventId(currentEvent.id)
-    ));
-    let targetEvent = visibleCurrent ? currentEvent : null;
+    const actualCurrentEvent = pickLatestStartedEvent((props.allEvents || []).filter(ev => {
+      if (!isNumericEventId(ev?.id)) return false;
+      return isEventStarted(ev, now);
+    }));
+    const candidates = displayRows.value
+      .filter((row) => row.kind === 'event')
+      .map((row) => row.event)
+      .filter((ev) => {
+        if (!isNumericEventId(ev?.id)) return false;
+        return isEventStarted(ev, now);
+      });
 
-    if (!targetEvent) {
-      targetEvent = pickLatestStartedEvent(displayRows.value
-        .filter((row) => row.kind === 'event')
-        .map((row) => row.event));
+    if (candidates.length > 0) {
+      const currentEvent = pickLatestStartedEvent(candidates);
+      const isActualCurrentVisible = normalizeEventId(currentEvent?.id) === normalizeEventId(actualCurrentEvent?.id);
+      scrollToEventById(currentEvent.id, 'smooth', 24);
+      if (!isActualCurrentVisible) {
+        clearActiveEventItem();
+        requestAnimationFrame(clearActiveEventItem);
+        setTimeout(clearActiveEventItem, 120);
+      }
     }
-
-    if (!targetEvent) {
-      clearActiveEventItem();
-      return;
-    }
-
-    if (!visibleCurrent) {
-      clearActiveEventItem();
-    }
-    scrollToEventById(targetEvent.id, 'smooth', 24, { setActive: !!visibleCurrent });
   }
 };
 
