@@ -6373,6 +6373,14 @@
         "characters": [
           "朝比奈真冬"
         ]
+      },
+      {
+        "vocal_id": 2045,
+        "type": "another_vocal",
+        "released_at": "2026/7/9",
+        "characters": [
+          "镜音铃"
+        ]
       }
     ]
   },
@@ -22274,7 +22282,8 @@
       "normal": 14,
       "hard": 19,
       "expert": 26,
-      "master": 29
+      "master": 29,
+      "append": 32
     },
     "vocals": [
       {
@@ -28814,6 +28823,14 @@
           "朝比奈真冬",
           "晓山瑞希"
         ]
+      },
+      {
+        "vocal_id": 2046,
+        "type": "another_vocal",
+        "released_at": "2026/7/9",
+        "characters": [
+          "东云绘名"
+        ]
       }
     ]
   },
@@ -34470,6 +34487,52 @@
     ]
   },
   {
+    "id": 754,
+    "title": "光",
+    "pronunciation": "ひかり",
+    "composer": "水野あつ",
+    "lyricist": "水野あつ",
+    "arranger": "小島英也",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-07-09 15:00:00",
+    "categories": [
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "nc"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 12,
+      "hard": 18,
+      "expert": 24,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1311,
+        "type": "original_song",
+        "released_at": "2026/7/9",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2047,
+        "type": "sekai",
+        "released_at": "2026/7/9",
+        "characters": [
+          "东云绘名",
+          "MEIKO",
+          "宵崎奏",
+          "朝比奈真冬",
+          "晓山瑞希"
+        ]
+      }
+    ]
+  },
+  {
     "id": 755,
     "title": "初音狂奏曲第01番「彗惺」",
     "pronunciation": "はつねきょうそうきょくだいいちばんすいせい",
@@ -34586,6 +34649,85 @@
         "released_at": "2026/6/15",
         "characters": [
           "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 758,
+    "title": "ラプス",
+    "pronunciation": "らぷす",
+    "composer": "kr-KuuRa",
+    "lyricist": "kr-KuuRa",
+    "arranger": "kr-KuuRa",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-07-17 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 13,
+      "hard": 17,
+      "expert": 24,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1315,
+        "type": "original_song",
+        "released_at": "2026/7/17",
+        "characters": [
+          "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 759,
+    "title": "ハナタバ",
+    "pronunciation": "はなたば",
+    "composer": "MIMI",
+    "lyricist": "MIMI",
+    "arranger": "MIMI",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-07-13 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vbs"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 11,
+      "hard": 17,
+      "expert": 25,
+      "master": 28
+    },
+    "vocals": [
+      {
+        "vocal_id": 1316,
+        "type": "original_song",
+        "released_at": "2026/7/13",
+        "characters": [
+          "可不"
+        ]
+      },
+      {
+        "vocal_id": 2048,
+        "type": "sekai",
+        "released_at": "2026/7/13",
+        "characters": [
+          "MEIKO",
+          "小豆泽心羽",
+          "白石杏"
         ]
       }
     ]
