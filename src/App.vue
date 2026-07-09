@@ -940,7 +940,8 @@ const cleanedPatchNoticeCount = ref(0);
 const predictSources = ref([]);
 const activePredictSourceId = ref('');
 
-const DATA_CACHE_PREFIX = 'pjsk_public_data_cache_v1';
+const LEGACY_DATA_LOCAL_STORAGE_CACHE_PREFIX = 'pjsk_public_data_cache_v1';
+const DATA_CACHE_PREFIX = 'pjsk_public_data_cache_v2';
 const DATA_RESOURCE_DEFS = Object.freeze([
   { key: 'events', url: '/data/pjsk_events.json' },
   { key: 'cards', url: '/data/pjsk_cards.json' },
@@ -949,8 +950,8 @@ const DATA_RESOURCE_DEFS = Object.freeze([
   { key: 'nuigurumi', url: '/data/pjsk_nuigurumi.json' }
 ]);
 
-const buildPublicDataCacheKey = (resourceKey, buildId = currentAppBuildId) => (
-  `${DATA_CACHE_PREFIX}:${String(buildId || 'dev')}:${resourceKey}`
+const buildPublicDataCacheName = (buildId = currentAppBuildId) => (
+  `${DATA_CACHE_PREFIX}:${String(buildId || 'dev')}`
 );
 
 const applyLoadedAppData = (loadedData) => {
@@ -966,14 +967,24 @@ const applyLoadedAppData = (loadedData) => {
   scheduleStatsTopControlStateSync();
 };
 
-const readCachedPublicDataTexts = () => {
-  if (typeof localStorage === 'undefined' || !currentAppBuildId) return null;
+const getPublicDataCache = async () => {
+  if (typeof window === 'undefined' || !currentAppBuildId || !('caches' in window)) return null;
+  try {
+    return await window.caches.open(buildPublicDataCacheName());
+  } catch {
+    return null;
+  }
+};
+
+const readCachedPublicDataTexts = async () => {
+  const cache = await getPublicDataCache();
+  if (!cache) return null;
   try {
     const resourceTexts = {};
     for (const resource of DATA_RESOURCE_DEFS) {
-      const raw = localStorage.getItem(buildPublicDataCacheKey(resource.key));
-      if (!raw) return null;
-      resourceTexts[resource.key] = raw;
+      const response = await cache.match(resource.url);
+      if (!response) return null;
+      resourceTexts[resource.key] = await response.text();
     }
     return resourceTexts;
   } catch {
@@ -987,31 +998,48 @@ const arePublicDataTextsEqual = (leftTexts, rightTexts) => (
   && DATA_RESOURCE_DEFS.every((resource) => leftTexts[resource.key] === rightTexts[resource.key])
 );
 
-const cleanupOldPublicDataCaches = () => {
+const cleanupLegacyPublicDataLocalStorageCache = () => {
   if (typeof localStorage === 'undefined') return;
-  const currentPrefix = `${DATA_CACHE_PREFIX}:${String(currentAppBuildId || 'dev')}:`;
   try {
     for (let idx = localStorage.length - 1; idx >= 0; idx -= 1) {
       const key = localStorage.key(idx);
-      if (key && key.startsWith(`${DATA_CACHE_PREFIX}:`) && !key.startsWith(currentPrefix)) {
+      if (key && key.startsWith(`${LEGACY_DATA_LOCAL_STORAGE_CACHE_PREFIX}:`)) {
         localStorage.removeItem(key);
       }
     }
+  } catch {
+    // Cleanup is opportunistic; prediction data must never depend on it.
+  }
+};
+
+const cleanupOldPublicDataCaches = async () => {
+  if (typeof window === 'undefined' || !currentAppBuildId || !('caches' in window)) return;
+  const currentName = buildPublicDataCacheName();
+  try {
+    const cacheNames = await window.caches.keys();
+    await Promise.all(cacheNames
+      .filter((name) => name.startsWith(`${DATA_CACHE_PREFIX}:`) && name !== currentName)
+      .map((name) => window.caches.delete(name)));
   } catch {
     // Cache cleanup is opportunistic; data loading must never depend on it.
   }
 };
 
-const writePublicDataCache = (resourceTexts) => {
-  if (typeof localStorage === 'undefined' || !resourceTexts) return;
+const writePublicDataCache = async (resourceTexts) => {
+  if (!resourceTexts) return;
+  const cache = await getPublicDataCache();
+  if (!cache) return;
   try {
-    DATA_RESOURCE_DEFS.forEach((resource) => {
+    await Promise.all(DATA_RESOURCE_DEFS.map((resource) => {
       const raw = resourceTexts[resource.key];
       if (typeof raw === 'string' && raw) {
-        localStorage.setItem(buildPublicDataCacheKey(resource.key), raw);
+        return cache.put(resource.url, new Response(raw, {
+          headers: { 'content-type': 'application/json; charset=utf-8' }
+        }));
       }
-    });
-    cleanupOldPublicDataCaches();
+      return Promise.resolve();
+    }));
+    await cleanupOldPublicDataCaches();
   } catch {
     // Quota pressure should not block the app; the network data is already loaded.
   }
@@ -1115,8 +1143,12 @@ const normalizePredictSource = (source, index = 0) => {
 };
 
 const persistPredictSources = () => {
-  localStorage.setItem(PREDICT_SOURCES_KEY, JSON.stringify(predictSources.value));
-  localStorage.setItem(PREDICT_ACTIVE_KEY, String(activePredictSourceId.value || ''));
+  try {
+    localStorage.setItem(PREDICT_SOURCES_KEY, JSON.stringify(predictSources.value));
+    localStorage.setItem(PREDICT_ACTIVE_KEY, String(activePredictSourceId.value || ''));
+  } catch {
+    // Keep the in-memory prediction state even if storage is temporarily unavailable.
+  }
 };
 
 const activePredictSource = computed(() => {
@@ -2225,6 +2257,37 @@ const effectivePredictiveEvents = computed(() => {
   ]);
 });
 
+const sanitizeLoadedPredictSources = () => {
+  if (!(historyData.value || []).length) return;
+
+  let activeCleanedCount = 0;
+  predictSources.value = (predictSources.value || []).map((source) => {
+    const beforeList = Array.isArray(source?.predictiveEvents) ? source.predictiveEvents : [];
+    const canonical = sanitizeCanonicalPredictiveEvents(beforeList);
+    const shouldPreserveNonEmptySource = beforeList.length > 0 && canonical.length === 0;
+    const nextList = shouldPreserveNonEmptySource ? beforeList : canonical;
+    if (source.id === activePredictSourceId.value) {
+      activeCleanedCount = shouldPreserveNonEmptySource
+        ? 0
+        : Math.max(0, beforeList.length - canonical.length);
+    }
+    return {
+      ...source,
+      predictiveEvents: clonePredictList(nextList)
+    };
+  });
+
+  const activeSourceAfterMigration = activePredictSource.value || predictSources.value[0] || null;
+  if (activeSourceAfterMigration) {
+    activePredictSourceId.value = activeSourceAfterMigration.id;
+    predictiveEvents.value = clonePredictList(activeSourceAfterMigration.predictiveEvents);
+  } else {
+    predictiveEvents.value = [];
+  }
+  persistPredictSources();
+  setCleanedPatchNoticeCount(activeCleanedCount, 4200);
+};
+
 onMounted(async () => {
   try {
     predictUserName.value = normalizeUserName(localStorage.getItem(PREDICT_USERNAME_KEY) || 'user');
@@ -2283,39 +2346,21 @@ onMounted(async () => {
     persistPredictSources();
 
     // 同时请求活动、卡片、歌曲与角色数据
-    let activeCleanedCount = 0;
-    predictSources.value = (predictSources.value || []).map((source) => {
-      const beforeList = Array.isArray(source?.predictiveEvents) ? source.predictiveEvents : [];
-      const canonical = sanitizeCanonicalPredictiveEvents(beforeList);
-      if (source.id === activePredictSourceId.value) {
-        activeCleanedCount = Math.max(0, beforeList.length - canonical.length);
-      }
-      return {
-        ...source,
-        predictiveEvents: clonePredictList(canonical)
-      };
-    });
-    const activeSourceAfterMigration = activePredictSource.value || predictSources.value[0] || null;
-    if (activeSourceAfterMigration) {
-      activePredictSourceId.value = activeSourceAfterMigration.id;
-      predictiveEvents.value = clonePredictList(activeSourceAfterMigration.predictiveEvents);
-    } else {
-      predictiveEvents.value = [];
-    }
-    persistPredictSources();
-    setCleanedPatchNoticeCount(activeCleanedCount, 4200);
+    cleanupLegacyPublicDataLocalStorageCache();
 
-    const cachedPublicDataTexts = readCachedPublicDataTexts();
+    const cachedPublicDataTexts = await readCachedPublicDataTexts();
     if (cachedPublicDataTexts) {
       applyLoadedAppData(parsePublicDataTexts(cachedPublicDataTexts));
+      sanitizeLoadedPredictSources();
     }
 
     const publicDataTexts = await fetchPublicDataTexts();
     if (!arePublicDataTextsEqual(cachedPublicDataTexts, publicDataTexts)) {
       const loadedPublicData = parsePublicDataTexts(publicDataTexts);
       applyLoadedAppData(loadedPublicData);
+      sanitizeLoadedPredictSources();
     }
-    writePublicDataCache(publicDataTexts);
+    await writePublicDataCache(publicDataTexts);
     
     console.log("数据加载成功:", historyData.value.length, "条活动,", baseCards.value.length, "张卡片");
   } catch (e) {
