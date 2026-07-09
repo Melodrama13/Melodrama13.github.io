@@ -387,6 +387,7 @@
           <span></span>
           <span></span>
           <span></span>
+          <span></span>
         </div>
         <span v-else class="app-data-loading-error">数据加载失败，请刷新重试</span>
       </div>
@@ -490,6 +491,7 @@ let statsTopControlSyncRaf = 0;
 const currentAppBuildId = String(__APP_BUILD_ID__ || '').trim();
 const currentAppReleaseNotes = Array.isArray(__APP_RELEASE_NOTES__) ? __APP_RELEASE_NOTES__ : [];
 const currentAppUpdateKind = String(__APP_UPDATE_KIND__ || 'code').trim() === 'resource' ? 'resource' : 'code';
+const currentPublicDataVersion = String(__PUBLIC_DATA_VERSION__ || currentAppBuildId || '').trim();
 const remoteAppBuildId = ref('');
 const remoteAppReleaseNotes = ref([]);
 const remoteAppUpdateKind = ref('code');
@@ -657,6 +659,7 @@ const fetchRemoteVersionMeta = async () => {
     const data = await response.json();
     return {
       buildId: String(data?.buildId || '').trim(),
+      publicDataVersion: String(data?.publicDataVersion || '').trim(),
       releaseNotes: Array.isArray(data?.releaseNotes) ? data.releaseNotes : [],
       updateKind: String(data?.updateKind || '').trim() === 'resource' ? 'resource' : 'code'
     };
@@ -980,6 +983,7 @@ const activePredictSourceId = ref('');
 
 const LEGACY_DATA_LOCAL_STORAGE_CACHE_PREFIX = 'pjsk_public_data_cache_v1';
 const DATA_CACHE_PREFIX = 'pjsk_public_data_cache_v2';
+const DATA_CACHE_META_KEY = 'pjsk_public_data_cache_meta_v2';
 const DATA_RESOURCE_DEFS = Object.freeze([
   { key: 'events', url: '/data/pjsk_events.json' },
   { key: 'cards', url: '/data/pjsk_cards.json' },
@@ -988,15 +992,37 @@ const DATA_RESOURCE_DEFS = Object.freeze([
   { key: 'nuigurumi', url: '/data/pjsk_nuigurumi.json' }
 ]);
 
-const buildPublicDataCacheName = (buildId = currentAppBuildId) => (
-  `${DATA_CACHE_PREFIX}:${String(buildId || 'dev')}`
+const buildPublicDataCacheName = (dataVersion = currentPublicDataVersion) => (
+  `${DATA_CACHE_PREFIX}:${String(dataVersion || 'dev')}`
 );
 
 const buildVersionedPublicDataUrl = (resourceUrl) => (
-  currentAppBuildId
-    ? `${resourceUrl}?v=${encodeURIComponent(currentAppBuildId)}`
+  currentPublicDataVersion
+    ? `${resourceUrl}?v=${encodeURIComponent(currentPublicDataVersion)}`
     : resourceUrl
 );
+
+const readPublicDataCacheMeta = () => {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(DATA_CACHE_META_KEY) || 'null');
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const writePublicDataCacheMeta = () => {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(DATA_CACHE_META_KEY, JSON.stringify({
+      dataVersion: currentPublicDataVersion,
+      cacheName: buildPublicDataCacheName()
+    }));
+  } catch {
+    // Cache metadata is only an optimization; prediction data must never depend on it.
+  }
+};
 
 const applyLoadedAppData = (loadedData) => {
   if (!loadedData) return;
@@ -1012,7 +1038,7 @@ const applyLoadedAppData = (loadedData) => {
 };
 
 const getPublicDataCache = async () => {
-  if (typeof window === 'undefined' || !currentAppBuildId || !('caches' in window)) return null;
+  if (typeof window === 'undefined' || !currentPublicDataVersion || !('caches' in window)) return null;
   try {
     return await window.caches.open(buildPublicDataCacheName());
   } catch {
@@ -1020,20 +1046,58 @@ const getPublicDataCache = async () => {
   }
 };
 
+const readPublicDataTextsFromCache = async (cache, allowLooseMatch = false) => {
+  if (!cache) return null;
+  const cachedRequests = allowLooseMatch ? await cache.keys() : [];
+  const resourceTexts = {};
+  for (const resource of DATA_RESOURCE_DEFS) {
+    let response = await cache.match(buildVersionedPublicDataUrl(resource.url));
+    if (!response && allowLooseMatch) {
+      const looseRequest = cachedRequests.find((request) => {
+        try {
+          return new URL(request.url).pathname === resource.url;
+        } catch {
+          return false;
+        }
+      });
+      response = looseRequest ? await cache.match(looseRequest) : null;
+    }
+    if (!response) return null;
+    resourceTexts[resource.key] = await response.text();
+  }
+  return resourceTexts;
+};
+
 const readCachedPublicDataTexts = async () => {
   const cache = await getPublicDataCache();
-  if (!cache) return null;
   try {
-    const resourceTexts = {};
-    for (const resource of DATA_RESOURCE_DEFS) {
-      const response = await cache.match(buildVersionedPublicDataUrl(resource.url));
-      if (!response) return null;
-      resourceTexts[resource.key] = await response.text();
+    const currentTexts = await readPublicDataTextsFromCache(cache, true);
+    if (currentTexts) return currentTexts;
+
+    if (typeof window === 'undefined' || !('caches' in window)) return null;
+    const currentName = buildPublicDataCacheName();
+    const meta = readPublicDataCacheMeta();
+    if (meta?.dataVersion === currentPublicDataVersion && meta?.cacheName && meta.cacheName !== currentName) {
+      const matchingOldCache = await window.caches.open(meta.cacheName);
+      const matchingOldTexts = await readPublicDataTextsFromCache(matchingOldCache, true);
+      if (matchingOldTexts) return matchingOldTexts;
     }
-    return resourceTexts;
+
+    if (currentAppUpdateKind === 'resource') return null;
+
+    const cacheNames = await window.caches.keys();
+    const oldDataCacheNames = cacheNames
+      .filter((name) => name.startsWith(`${DATA_CACHE_PREFIX}:`) && name !== currentName)
+      .reverse();
+    for (const cacheName of oldDataCacheNames) {
+      const oldCache = await window.caches.open(cacheName);
+      const oldTexts = await readPublicDataTextsFromCache(oldCache, true);
+      if (oldTexts) return oldTexts;
+    }
   } catch {
     return null;
   }
+  return null;
 };
 
 const arePublicDataTextsEqual = (leftTexts, rightTexts) => (
@@ -1057,7 +1121,7 @@ const cleanupLegacyPublicDataLocalStorageCache = () => {
 };
 
 const cleanupOldPublicDataCaches = async () => {
-  if (typeof window === 'undefined' || !currentAppBuildId || !('caches' in window)) return;
+  if (typeof window === 'undefined' || !currentPublicDataVersion || !('caches' in window)) return;
   const currentName = buildPublicDataCacheName();
   try {
     const cacheNames = await window.caches.keys();
@@ -1083,6 +1147,7 @@ const writePublicDataCache = async (resourceTexts) => {
       }
       return Promise.resolve();
     }));
+    writePublicDataCacheMeta();
     await cleanupOldPublicDataCaches();
   } catch {
     // Quota pressure should not block the app; the network data is already loaded.
@@ -3401,52 +3466,157 @@ watch(isHistoryPredictEditorOpen, (open) => {
 }
 
 .app-data-loader {
-  display: inline-grid;
-  grid-template-columns: repeat(4, 8px);
-  align-items: end;
-  gap: 7px;
-  height: 34px;
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.28) 32%, rgba(255, 255, 255, 0.08) 70%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(148, 163, 184, 0.08));
+  box-shadow:
+    0 24px 62px rgba(15, 23, 42, 0.13),
+    0 0 0 1px rgba(255, 255, 255, 0.62),
+    inset 0 1px 10px rgba(255, 255, 255, 0.72),
+    inset 0 -20px 34px rgba(56, 189, 248, 0.09),
+    inset 12px 0 28px rgba(236, 72, 153, 0.06);
+  backdrop-filter: blur(18px) saturate(1.42);
+  -webkit-backdrop-filter: blur(18px) saturate(1.42);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.app-data-loader::before,
+.app-data-loader::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+.app-data-loader::before {
+  inset: 8px;
+  background: conic-gradient(from 0deg, #3b82f6, #22c55e, #ef476f, #f59e0b, #8b5cf6, #38bdf8, #ec4899, #3b82f6);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  padding: 2px;
+  opacity: 0.72;
+  animation: app-data-loader-spin 3.6s linear infinite;
+}
+
+.app-data-loader::after {
+  inset: 24px;
+  background:
+    radial-gradient(circle at 28% 26%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.62) 28%, transparent 48%),
+    conic-gradient(from 12deg, #65d8e8, #b69cff, #ff9eb7, #ffc56f, #92e99f, #9ab3ff, #65d8e8);
+  box-shadow:
+    0 0 0 7px rgba(255, 255, 255, 0.36),
+    0 10px 22px rgba(15, 23, 42, 0.13),
+    inset 0 1px 8px rgba(255, 255, 255, 0.5);
+  animation: app-data-loader-core 5.2s linear infinite;
 }
 
 .app-data-loader span {
-  width: 8px;
-  height: 8px;
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  margin: -6.5px;
   border-radius: 999px;
-  background: #14b8a6;
-  animation: app-data-loader-bounce 0.86s ease-in-out infinite;
-  transform-origin: 50% 100%;
-  opacity: 0.52;
+  background: var(--loader-dot-color);
+  box-shadow:
+    0 8px 18px rgba(15, 23, 42, 0.18),
+    inset 0 1px 3px rgba(255, 255, 255, 0.72);
+  transform: rotate(var(--loader-dot-angle)) translateX(29px) scale(1);
+  animation: app-data-loader-orbit 3.8s linear infinite;
+}
+
+.app-data-loader span:first-child {
+  --loader-dot-angle: -90deg;
+  --loader-dot-color: #3b82f6;
 }
 
 .app-data-loader span:nth-child(2) {
-  background: #38bdf8;
-  animation-delay: 0.1s;
+  --loader-dot-angle: -18deg;
+  --loader-dot-color: #22c55e;
 }
 
 .app-data-loader span:nth-child(3) {
-  background: #a78bfa;
-  animation-delay: 0.2s;
+  --loader-dot-angle: 54deg;
+  --loader-dot-color: #ef476f;
 }
 
 .app-data-loader span:nth-child(4) {
-  background: #22c55e;
-  animation-delay: 0.3s;
+  --loader-dot-angle: 126deg;
+  --loader-dot-color: #f59e0b;
+}
+
+.app-data-loader span:nth-child(5) {
+  --loader-dot-angle: 198deg;
+  --loader-dot-color: #8b5cf6;
 }
 
 .app-data-loading-error {
   color: #b91c1c;
 }
 
-@keyframes app-data-loader-bounce {
-  0%,
-  100% {
-    transform: scaleY(1);
-    opacity: 0.5;
+@keyframes app-data-loader-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes app-data-loader-core {
+  0% {
+    transform: rotate(0deg) scale(0.94);
+    border-radius: 52% 48% 45% 55%;
   }
 
-  45% {
-    transform: scaleY(2.65);
-    opacity: 1;
+  100% {
+    transform: rotate(-360deg) scale(0.94);
+    border-radius: 52% 48% 45% 55%;
+  }
+
+  50% {
+    transform: rotate(-180deg) scale(1.04);
+    border-radius: 44% 56% 54% 46%;
+  }
+}
+
+@keyframes app-data-loader-orbit {
+  0% {
+    transform: rotate(var(--loader-dot-angle)) translateX(29px) scale(0.9);
+    opacity: 0.72;
+  }
+
+  25% {
+    transform: rotate(calc(var(--loader-dot-angle) + 90deg)) translateX(29px) scale(1.12);
+    opacity: 0.98;
+  }
+
+  50% {
+    transform: rotate(calc(var(--loader-dot-angle) + 180deg)) translateX(29px) scale(0.94);
+    opacity: 0.8;
+  }
+
+  75% {
+    transform: rotate(calc(var(--loader-dot-angle) + 270deg)) translateX(29px) scale(1.1);
+    opacity: 0.96;
+  }
+
+  100% {
+    transform: rotate(calc(var(--loader-dot-angle) + 360deg)) translateX(29px) scale(0.9);
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-data-loader::before,
+  .app-data-loader::after,
+  .app-data-loader span {
+    animation-duration: 2.4s;
   }
 }
 

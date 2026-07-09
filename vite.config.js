@@ -1,8 +1,17 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { createHash } from 'node:crypto'
 import { execSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
 
 const buildId = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)
+const publicDataFiles = [
+  'public/data/pjsk_events.json',
+  'public/data/pjsk_cards.json',
+  'public/data/pjsk_songs.json',
+  'public/data/pjsk_characters.json',
+  'public/data/pjsk_nuigurumi.json'
+]
 const codeReleaseNotes = [
   '修复了部分bug。',
   '优化了UI细节。'
@@ -55,6 +64,20 @@ const updateKind = isJsonResourceOnlyBuild(changedFiles) || commitSubject === 'c
   ? 'resource'
   : 'code'
 const releaseNotes = updateKind === 'resource' ? resourceReleaseNotes : codeReleaseNotes
+const publicDataVersion = (() => {
+  try {
+    const hash = createHash('sha256')
+    publicDataFiles.forEach((file) => {
+      hash.update(file)
+      hash.update('\0')
+      if (existsSync(file)) hash.update(readFileSync(file))
+      hash.update('\0')
+    })
+    return hash.digest('hex').slice(0, 16)
+  } catch {
+    return buildId
+  }
+})()
 
 const versionManifestPlugin = () => ({
   name: 'pjsk-version-manifest',
@@ -63,7 +86,7 @@ const versionManifestPlugin = () => ({
     this.emitFile({
       type: 'asset',
       fileName: 'version.json',
-      source: JSON.stringify({ buildId, generatedAt: new Date().toISOString(), updateKind, releaseNotes }, null, 2)
+      source: JSON.stringify({ buildId, publicDataVersion, generatedAt: new Date().toISOString(), updateKind, releaseNotes }, null, 2)
     })
   }
 })
@@ -74,6 +97,7 @@ export default defineConfig({
   define: {
     __APP_BUILD_ID__: JSON.stringify(buildId),
     __APP_RELEASE_NOTES__: JSON.stringify(releaseNotes),
-    __APP_UPDATE_KIND__: JSON.stringify(updateKind)
+    __APP_UPDATE_KIND__: JSON.stringify(updateKind),
+    __PUBLIC_DATA_VERSION__: JSON.stringify(publicDataVersion)
   }
 })
