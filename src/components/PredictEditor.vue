@@ -925,7 +925,7 @@ const buildDraftPredictPayload = () => {
     predictAttr: form.predictAttr,
     bannerName: finalBannerName,
     selectedChars: processedChars,
-    event_title: `[棰勬祴] ${form.eventType}`
+    event_title: `[预测] ${form.eventType}`
   };
 };
 

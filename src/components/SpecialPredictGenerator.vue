@@ -501,7 +501,7 @@ const selectedSourceName = computed(() => String(selectedSource.value?.name || '
 
 const creditUserName = computed(() => String(props.predictUserName || '').trim() || selectedSourceName.value);
 
-const defaultCreditText = computed(() => `\u9884\u6d4b\uff1a${creditUserName.value}`);
+const defaultCreditText = computed(() => `预测：${creditUserName.value}`);
 
 const baseCardsByEventId = computed(() => {
   const map = new Map();

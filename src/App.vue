@@ -296,7 +296,7 @@
           <li v-for="(item, idx) in currentBuildReleaseNotes" :key="`release-log-${idx}`">{{ item }}</li>
         </ul>
         <img
-          v-if="showReleaseLogImage"
+          v-if="shouldRenderReleaseLogImage"
           :src="releaseLogImageSrc"
           class="app-release-log-image"
           alt="更新内容配图"
@@ -513,6 +513,8 @@ let stopSmallImageWarmupObserver = null;
 const APP_VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const APP_RELEASE_LOG_SKIP_KEY = 'pjsk_skip_release_log_build_id_v1';
 const APP_UPDATE_DEBUG_REMOTE_KEY = 'pjsk_debug_remote_build_id_v1';
+// Flip this to true if the release-log image should be shown again.
+const ENABLE_RELEASE_LOG_IMAGE = false;
 
 const appUpdateReleaseNotes = computed(() => {
   const list = Array.isArray(remoteAppReleaseNotes.value)
@@ -554,6 +556,10 @@ const releaseLogImageSrc = computed(() => (
   currentAppBuildId ? `/hello.jpg?v=${encodeURIComponent(currentAppBuildId)}` : '/hello.jpg'
 ));
 
+const shouldRenderReleaseLogImage = computed(() => (
+  ENABLE_RELEASE_LOG_IMAGE && showReleaseLogImage.value
+));
+
 const clearReleaseLogImageDelay = () => {
   if (releaseLogImageDelayTimer) {
     clearTimeout(releaseLogImageDelayTimer);
@@ -565,7 +571,7 @@ const scheduleReleaseLogImage = () => {
   clearReleaseLogImageDelay();
   showReleaseLogImage.value = false;
 
-  if (typeof window === 'undefined') return;
+  if (!ENABLE_RELEASE_LOG_IMAGE || typeof window === 'undefined') return;
   releaseLogImageDelayTimer = window.setTimeout(() => {
     releaseLogImageDelayTimer = null;
     showReleaseLogImage.value = true;
@@ -1529,11 +1535,11 @@ const getSourceEventTypeText = (event) => (
 );
 const isJsonTestEvent = (event) => {
   const type = getSourceEventTypeText(event).toLowerCase();
-  return type === '\u6d4b\u8bd5' || type === 'test' || type.includes('\u6d4b\u8bd5');
+  return type === '测试' || type === 'test' || type.includes('测试');
 };
 const isJsonWorldLinkFinalEvent = (event) => {
   const type = getSourceEventTypeText(event).toLowerCase().replace(/\s+/g, '');
-  return type.includes('\u7ec8\u7ae0') && (type.includes('wl') || type.includes('worldlink'));
+  return type.includes('终章') && (type.includes('wl') || type.includes('worldlink'));
 };
 const isPredictDisabledJsonEvent = (event) => isJsonTestEvent(event) || isJsonWorldLinkFinalEvent(event);
 

@@ -1718,11 +1718,11 @@ const getSourceEventType = (event) => (
 );
 const isEventTestByJson = (event) => {
   const type = getSourceEventType(event).toLowerCase();
-  return type === '\u6d4b\u8bd5' || type === 'test' || type.includes('\u6d4b\u8bd5');
+  return type === '测试' || type === 'test' || type.includes('测试');
 };
 const isEventWorldLinkFinalByJson = (event) => {
   const type = getSourceEventType(event).toLowerCase().replace(/\s+/g, '');
-  return type.includes('\u7ec8\u7ae0') && (type.includes('wl') || type.includes('worldlink'));
+  return type.includes('终章') && (type.includes('wl') || type.includes('worldlink'));
 };
 const isEventPredictDisabledByJson = (event) => isEventTestByJson(event) || isEventWorldLinkFinalByJson(event);
 const isEventOfficialRevealedByJson = (event) => hasNonEmptyText(getSourceEventTitle(event));
