@@ -295,7 +295,15 @@
         <ul class="app-update-log-list">
           <li v-for="(item, idx) in currentBuildReleaseNotes" :key="`release-log-${idx}`">{{ item }}</li>
         </ul>
-        <img src="/hello.jpg" class="app-release-log-image" alt="更新内容配图" loading="eager" fetchpriority="high" decoding="async" />
+        <img
+          v-if="showReleaseLogImage"
+          :src="releaseLogImageSrc"
+          class="app-release-log-image"
+          alt="更新内容配图"
+          loading="lazy"
+          fetchpriority="low"
+          decoding="async"
+        />
         <label class="app-release-log-skip-option">
           <input v-model="releaseLogSkipChecked" class="app-release-log-skip-checkbox" type="checkbox" />
           <span>此版本不再提示</span>
@@ -489,6 +497,7 @@ const hasAppUpdate = ref(false);
 const appUpdateDismissed = ref(false);
 const showAppUpdatePromptModal = ref(false);
 const showAppReleaseLogModal = ref(false);
+const showReleaseLogImage = ref(false);
 const releaseLogSkipBuildId = ref('');
 const releaseLogSkipChecked = ref(false);
 const hasAutoShownReleaseLogThisVisit = ref(false);
@@ -496,6 +505,7 @@ let cleanupNoticeTimer = null;
 let screenshotExportModalAutoCloseTimer = null;
 let appVersionCheckTimer = null;
 let appVersionCheckDelayTimer = null;
+let releaseLogImageDelayTimer = null;
 let cancelInitialAppVersionCheck = null;
 let cancelSmallImageWarmup = null;
 let stopSmallImageWarmupObserver = null;
@@ -539,6 +549,28 @@ const appUpdatePromptSubtitle = computed(() => (
 const currentReleaseLogTitle = computed(() => (
   currentAppUpdateKind === 'resource' ? '更新资源' : '新版内容'
 ));
+
+const releaseLogImageSrc = computed(() => (
+  currentAppBuildId ? `/hello.jpg?v=${encodeURIComponent(currentAppBuildId)}` : '/hello.jpg'
+));
+
+const clearReleaseLogImageDelay = () => {
+  if (releaseLogImageDelayTimer) {
+    clearTimeout(releaseLogImageDelayTimer);
+    releaseLogImageDelayTimer = null;
+  }
+};
+
+const scheduleReleaseLogImage = () => {
+  clearReleaseLogImageDelay();
+  showReleaseLogImage.value = false;
+
+  if (typeof window === 'undefined') return;
+  releaseLogImageDelayTimer = window.setTimeout(() => {
+    releaseLogImageDelayTimer = null;
+    showReleaseLogImage.value = true;
+  }, 1400);
+};
 
 const showAppUpdateBanner = computed(() => {
   return hasAppUpdate.value && !appUpdateDismissed.value;
@@ -954,6 +986,12 @@ const buildPublicDataCacheName = (buildId = currentAppBuildId) => (
   `${DATA_CACHE_PREFIX}:${String(buildId || 'dev')}`
 );
 
+const buildVersionedPublicDataUrl = (resourceUrl) => (
+  currentAppBuildId
+    ? `${resourceUrl}?v=${encodeURIComponent(currentAppBuildId)}`
+    : resourceUrl
+);
+
 const applyLoadedAppData = (loadedData) => {
   if (!loadedData) return;
   historyData.value = Array.isArray(loadedData.events) ? loadedData.events : [];
@@ -982,7 +1020,7 @@ const readCachedPublicDataTexts = async () => {
   try {
     const resourceTexts = {};
     for (const resource of DATA_RESOURCE_DEFS) {
-      const response = await cache.match(resource.url);
+      const response = await cache.match(buildVersionedPublicDataUrl(resource.url));
       if (!response) return null;
       resourceTexts[resource.key] = await response.text();
     }
@@ -1033,7 +1071,7 @@ const writePublicDataCache = async (resourceTexts) => {
     await Promise.all(DATA_RESOURCE_DEFS.map((resource) => {
       const raw = resourceTexts[resource.key];
       if (typeof raw === 'string' && raw) {
-        return cache.put(resource.url, new Response(raw, {
+        return cache.put(buildVersionedPublicDataUrl(resource.url), new Response(raw, {
           headers: { 'content-type': 'application/json; charset=utf-8' }
         }));
       }
@@ -1047,7 +1085,7 @@ const writePublicDataCache = async (resourceTexts) => {
 
 const fetchPublicDataTexts = async () => {
   const pairs = await Promise.all(DATA_RESOURCE_DEFS.map(async (resource) => {
-    const response = await fetch(resource.url);
+    const response = await fetch(buildVersionedPublicDataUrl(resource.url));
     if (!response.ok) throw new Error(`Failed to load ${resource.url}`);
     return [resource.key, await response.text()];
   }));
@@ -2858,6 +2896,7 @@ onBeforeUnmount(() => {
     clearTimeout(appVersionCheckDelayTimer);
     appVersionCheckDelayTimer = null;
   }
+  clearReleaseLogImageDelay();
   if (typeof cancelSmallImageWarmup === 'function') {
     cancelSmallImageWarmup();
     cancelSmallImageWarmup = null;
@@ -2880,6 +2919,15 @@ watch(predictUserName, (newVal) => {
   if (!compact || isEditingPredictUserName.value) return;
   relabelLocalSourcesByUser(compact);
   persistPredictSources();
+});
+
+watch(showAppReleaseLogModal, (open) => {
+  if (open) {
+    scheduleReleaseLogImage();
+    return;
+  }
+  clearReleaseLogImageDelay();
+  showReleaseLogImage.value = false;
 });
 
 watch(sourceMenuOpen, async (open) => {
