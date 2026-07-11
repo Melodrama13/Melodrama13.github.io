@@ -4529,6 +4529,12 @@ const loadImageForCanvasExport = (src, timeoutMs = 8000) => {
     img.onload = () => finish(img);
     img.onerror = () => finish(null);
     try {
+      // Anvo's fill export draws these images directly onto a canvas.  They
+      // must be fetched in CORS mode even when an equivalent image is already
+      // visible in the page, otherwise toBlob() can fail with a tainted canvas
+      // on the deployed site.
+      img.crossOrigin = 'anonymous';
+      img.referrerPolicy = 'no-referrer';
       img.decoding = 'async';
       img.loading = 'eager';
     } catch (_) {
@@ -4538,7 +4544,35 @@ const loadImageForCanvasExport = (src, timeoutMs = 8000) => {
     img.src = url;
   });
   canvasExportImageCache.set(url, task);
+  void task.then((image) => {
+    // A transient network failure must not poison every later export in the
+    // same tab. Successful decoded images remain reusable.
+    if (!image && canvasExportImageCache.get(url) === task) {
+      canvasExportImageCache.delete(url);
+    }
+  });
   return task;
+};
+
+const getDisplayedCanvasExportImages = () => {
+  const images = new Map();
+  const root = document.getElementById('panel-another-vocal');
+  if (!(root instanceof HTMLElement)) return images;
+  root.querySelectorAll('img').forEach((img) => {
+    if (!(img instanceof HTMLImageElement) || !img.complete || img.naturalWidth <= 0) return;
+    const url = String(img.currentSrc || img.getAttribute('src') || '').trim();
+    if (!url) return;
+    let isSameOrigin = true;
+    try {
+      const parsed = new URL(url, window.location.href);
+      isSameOrigin = parsed.origin === window.location.origin
+        || ['data:', 'blob:'].includes(parsed.protocol);
+    } catch (_) {
+      isSameOrigin = true;
+    }
+    if (isSameOrigin || img.crossOrigin === 'anonymous') images.set(url, img);
+  });
+  return images;
 };
 
 const drawCanvasRoundRectPath = (ctx, x, y, width, height, radius) => {
@@ -4644,23 +4678,34 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
       });
     });
 
-    const imageMap = new Map();
+    // Reuse already-decoded, CORS-safe images from the live Anvo panel first.
+    // This avoids downloading hundreds of visible jackets for a second time.
+    const imageMap = getDisplayedCanvasExportImages();
     const entries = [...imageUrls];
+    const missingEntries = entries.filter((src) => !imageMap.has(src));
     let loadedCount = 0;
-    await Promise.allSettled(entries.map(async (src) => {
-      if (cancelContext.isCancelled()) throw new Error('export-cancelled');
-      const img = await loadImageForCanvasExport(src, 10000);
-      imageMap.set(src, img);
-      loadedCount += 1;
-      if (loadedCount % 60 === 0) {
-        setScreenshotModalState({
-          state: 'capturing',
-          title: '截图中',
-          message: `正在载入 Anvo 曲绘资源 ${loadedCount}/${entries.length}`,
-          cancelTask: cancelContext.cancel
-        });
+    let cursor = 0;
+    const workerCount = Math.min(12, missingEntries.length);
+    const workers = Array.from({ length: workerCount }, async () => {
+      while (cursor < missingEntries.length) {
+        const index = cursor;
+        cursor += 1;
+        if (cancelContext.isCancelled()) throw new Error('export-cancelled');
+        const src = missingEntries[index];
+        const img = await loadImageForCanvasExport(src, 10000);
+        imageMap.set(src, img);
+        loadedCount += 1;
+        if (loadedCount % 60 === 0) {
+          setScreenshotModalState({
+            state: 'capturing',
+            title: '截图中',
+            message: `正在载入 Anvo 曲绘资源 ${loadedCount}/${missingEntries.length}`,
+            cancelTask: cancelContext.cancel
+          });
+        }
       }
-    }));
+    });
+    await Promise.allSettled(workers);
 
     if (cancelContext.isCancelled()) throw new Error('export-cancelled');
 
