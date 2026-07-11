@@ -406,7 +406,7 @@
                         >
                           <div v-if="slot.type === 'card'" class="festival-card-image-thumb">
                             <img :src="`/elements/card_frame_${slot.card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img
+                            <img crossorigin="anonymous"
                               v-if="slot.card.imageSrc"
                               :src="slot.card.imageSrc"
                               :alt="`${slot.card.label} 卡面`"
@@ -451,7 +451,7 @@
                         >
                           <div class="festival-card-image-thumb">
                             <img :src="`/elements/card_frame_${card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img
+                            <img crossorigin="anonymous"
                               v-if="card.imageSrc"
                               :src="card.imageSrc"
                               :alt="`${card.label} 卡面`"
@@ -495,7 +495,7 @@
                         >
                           <div class="festival-card-image-thumb">
                             <img :src="`/elements/card_frame_${card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img
+                            <img crossorigin="anonymous"
                               v-if="card.imageSrc"
                               :src="card.imageSrc"
                               :alt="`${card.label} 卡面`"
@@ -545,7 +545,7 @@
                           </div>
                           <div v-else-if="slot.type === 'card'" class="festival-card-image-thumb">
                             <img :src="`/elements/card_frame_${slot.card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img
+                            <img crossorigin="anonymous"
                               v-if="slot.card.imageSrc"
                               :src="slot.card.imageSrc"
                               :alt="`${slot.card.label} 卡面`"
@@ -663,7 +663,7 @@
                     <td v-if="relatedLastRecordShowCardImages" class="related-last-card-cell">
                       <div v-if="row.cardImageSrc" class="lineup-slot-card related-last-card-thumb">
                         <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                        <img
+                        <img crossorigin="anonymous"
                           :src="row.cardImageSrc"
                           :alt="`${row.name} 卡面`"
                           class="lineup-slot-card-img media-load-shimmer"
@@ -727,7 +727,7 @@
                     <td v-if="relatedLastRecordShowCardImages" class="related-last-card-cell">
                       <div v-if="row.cardImageSrc" class="lineup-slot-card related-last-card-thumb">
                         <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                        <img
+                        <img crossorigin="anonymous"
                           :src="row.cardImageSrc"
                           :alt="`${row.name} 卡面`"
                           class="lineup-slot-card-img media-load-shimmer"
@@ -793,7 +793,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.longestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.longestStartCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -816,7 +816,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.longestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.longestEndCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -895,7 +895,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.shortestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.shortestStartCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -918,7 +918,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.shortestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.shortestEndCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -997,7 +997,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.longestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.longestStartCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -1020,7 +1020,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.longestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.longestEndCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -1099,7 +1099,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.shortestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.shortestStartCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -1122,7 +1122,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.shortestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.shortestEndCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -1219,7 +1219,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.longestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.longestStartCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -1242,7 +1242,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.longestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.longestEndCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -1339,7 +1339,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.shortestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.shortestStartCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -1362,7 +1362,7 @@
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.shortestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 :src="row.shortestEndCardImageSrc"
                                 :alt="`${row.name} 卡面`"
                                 class="lineup-slot-card-img media-load-shimmer"
@@ -1574,7 +1574,7 @@
                               >
                                 <div v-if="card.imageSrc" class="lineup-slot-card related-last-card-thumb duo-last-card-thumb">
                                   <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                                  <img
+                                  <img crossorigin="anonymous"
                                     :src="card.imageSrc"
                                     class="lineup-slot-card-img media-load-shimmer"
                                     :alt="`${card.name} 卡面`"
@@ -1821,7 +1821,7 @@
                     <td v-if="vsUnitLastFourShowCardImages" class="related-last-card-cell">
                       <div v-if="row.cardImageSrc" class="lineup-slot-card related-last-card-thumb">
                         <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                        <img
+                        <img crossorigin="anonymous"
                           :src="row.cardImageSrc"
                           :alt="`${row.label} 卡面`"
                           class="lineup-slot-card-img media-load-shimmer"
@@ -1931,7 +1931,7 @@
                             :title="`${row.label} #${card.cardId || '-'}`"
                           >
                             <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img
+                            <img crossorigin="anonymous"
                               v-if="card.imageSrc"
                               :src="card.imageSrc"
                               :alt="`${row.label} 卡面`"
@@ -2034,7 +2034,7 @@
                           :title="`${name} #${card.cardId || '-'}`"
                         >
                           <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                          <img
+                          <img crossorigin="anonymous"
                             v-if="card.imageSrc"
                             :src="card.imageSrc"
                             :alt="`${name} 卡面`"
@@ -2107,7 +2107,7 @@
                           :title="`${card.name} #${card.cardId || '-'}`"
                         >
                           <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                          <img
+                          <img crossorigin="anonymous"
                             v-if="card.imageSrc"
                             :src="card.imageSrc"
                             :alt="`${card.name} 卡面`"
@@ -2157,7 +2157,7 @@
                             :title="`${name} #${card.cardId || '-'}`"
                           >
                             <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img
+                            <img crossorigin="anonymous"
                               v-if="card.imageSrc"
                               :src="card.imageSrc"
                               :alt="`${name} 卡面`"
@@ -2250,7 +2250,7 @@
                           :title="`${card.name} #${card.cardId || '-'}`"
                         >
                           <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                          <img
+                          <img crossorigin="anonymous"
                             v-if="card.imageSrc"
                             :src="card.imageSrc"
                             :alt="`${card.name} 卡面`"
@@ -2346,7 +2346,7 @@
                           :title="`${card.name} #${card.cardId || '-'}`"
                         >
                           <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                          <img
+                          <img crossorigin="anonymous"
                             v-if="card.imageSrc"
                             :src="card.imageSrc"
                             :alt="`${card.name} 卡面`"
@@ -2456,7 +2456,7 @@
                               class="fes-card-thumb special-limited-card-thumb"
                             >
                               <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img
+                              <img crossorigin="anonymous"
                                 v-if="card.imageSrc"
                                 :src="card.imageSrc"
                                 :alt="`${char.name} ${row.label} 卡面`"
@@ -2567,7 +2567,7 @@
                     <template v-if="lineupShowCardImages">
                       <div class="lineup-slot-card">
                         <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                        <img
+                        <img crossorigin="anonymous"
                           v-if="getLineupSlotCardImageSrc(slot)"
                           :src="getLineupSlotCardImageSrc(slot)"
                           :alt="`${slot.name} 卡面`"
@@ -2611,7 +2611,7 @@
                       <template v-if="lineupShowCardImages">
                         <div class="lineup-slot-card">
                           <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                          <img
+                          <img crossorigin="anonymous"
                             v-if="getLineupSlotCardImageSrc(slot)"
                             :src="getLineupSlotCardImageSrc(slot)"
                             :alt="`${slot.name} 卡面`"
@@ -2695,7 +2695,7 @@
                     <template v-if="supportShowCardImages">
                       <div class="lineup-slot-card">
                         <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                        <img
+                        <img crossorigin="anonymous"
                           v-if="getLineupSlotCardImageSrc(slot)"
                           :src="getLineupSlotCardImageSrc(slot)"
                           :alt="`${slot.name} 卡面`"
@@ -3116,7 +3116,7 @@
                         :title="member.cardId ? `${member.name} #${member.cardId}` : member.name"
                       >
                         <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                        <img
+                        <img crossorigin="anonymous"
                           v-if="member.cardImageSrc"
                           :src="member.cardImageSrc"
                           :alt="`${member.name} 卡面`"
@@ -3175,7 +3175,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, reactive } from 'vue';
 import { toCanvas } from 'html-to-image';
-import { buildAssetUrl, prepareCanvasSafeImageCache } from '../utils/assets.js';
+import { buildAssetUrl } from '../utils/assets.js';
 import { isCardImageReleased, isEventStarted } from '../utils/spoilerGuard.js';
 import {
   clampHostScrollTop,
@@ -5520,6 +5520,7 @@ const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((
   try {
     img.decoding = 'async';
     img.loading = 'eager';
+    img.crossOrigin = 'anonymous';
     img.referrerPolicy = 'no-referrer';
   } catch (_) {
     // Ignore unsupported attributes.
@@ -6117,7 +6118,6 @@ const runExportElementPng = async (id, title, options = {}) => {
   let restoreFrozenCssVars = () => {};
   let restoreHiddenLiveControls = () => {};
   try {
-    prepareCanvasSafeImageCache(targetEl);
     const sourceImages = Array.from(targetEl.querySelectorAll('img'));
     sourceImages.forEach((imgEl) => {
       if (!(imgEl instanceof HTMLImageElement)) return;

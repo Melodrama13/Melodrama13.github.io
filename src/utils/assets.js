@@ -96,41 +96,14 @@ export const buildAssetUrl = (assetPath) => {
   }
 
   const normalizedPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
-  return assetBaseUrl ? `${assetBaseUrl}${normalizedPath}` : normalizedPath;
-};
+  if (!assetBaseUrl) return normalizedPath;
 
-export const prepareCanvasSafeImageCache = (rootEl) => {
-  if (typeof window === 'undefined' || typeof HTMLImageElement === 'undefined' || !(rootEl instanceof HTMLElement)) {
-    return 0;
-  }
-
-  let updated = 0;
-  rootEl.querySelectorAll('img').forEach((imgEl) => {
-    if (!(imgEl instanceof HTMLImageElement)) return;
-    const rawSrc = String(imgEl.currentSrc || imgEl.getAttribute('src') || '').trim();
-    if (!rawSrc) return;
-
-    let parsed;
-    try {
-      parsed = new URL(rawSrc, window.location.href);
-    } catch {
-      return;
-    }
-    if (!/^https?:$/i.test(parsed.protocol) || parsed.origin === window.location.origin) return;
-
-    // A normal cross-origin <img> can leave an opaque HTTP-cache entry. Give
-    // capture requests a stable URL variant loaded in CORS mode, so subsequent
-    // exports can reuse a canvas-safe cache instead of adding a random query on
-    // every render.
-    parsed.searchParams.set('_capture_cors', '1');
-    const canvasSafeSrc = parsed.toString();
-    if (imgEl.crossOrigin === 'anonymous' && imgEl.src === canvasSafeSrc) return;
-    imgEl.crossOrigin = 'anonymous';
-    imgEl.setAttribute('crossorigin', 'anonymous');
-    imgEl.src = canvasSafeSrc;
-    updated += 1;
-  });
-  return updated;
+  // R2 media used to be loaded without CORS. Keep one stable URL variant for
+  // canvas-safe responses so old opaque browser-cache entries cannot poison
+  // html-to-image, while normal page loads and later exports still share cache.
+  const url = new URL(`${assetBaseUrl}${normalizedPath}`);
+  url.searchParams.set('_cors', '1');
+  return url.toString();
 };
 
 const getUrlPathname = (url) => {

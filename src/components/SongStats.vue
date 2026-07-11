@@ -228,7 +228,7 @@
                             @click="showSongImageTitle($event, song.songName || '-', { songId: song.songId })"
                           >
                             <div :class="['song-jacket-media', 'song-duo-song-jacket-item', { 'is-3d-frame': song.has3d }]">
-                              <img
+                              <img crossorigin="anonymous"
                                 v-if="song.jacketUrl"
                                 :src="song.jacketUrl"
                                 :alt="`${song.songName || '歌曲'} 封面`"
@@ -412,7 +412,7 @@
                           @click="showSongImageTitle($event, song.songName || '-', { songId: song.songId })"
                         >
                           <div :class="['song-jacket-media', 'song-duo-song-jacket-item', 'song-oc-event-jacket', { 'is-3d-frame': song.has3d }]">
-                            <img
+                            <img crossorigin="anonymous"
                               v-if="song.jacketUrl"
                               :src="song.jacketUrl"
                               :alt="`${song.songName || '歌曲'} 封面`"
@@ -629,7 +629,7 @@
                         @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                       >
                         <div class="song-jacket-media song-duo-song-jacket-item">
-                          <img
+                          <img crossorigin="anonymous"
                             v-if="song.jacketUrl"
                             :src="song.jacketUrl"
                             :alt="`${song.title || '歌曲'} 封面`"
@@ -744,7 +744,7 @@
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
-                              <img
+                              <img crossorigin="anonymous"
                                 v-if="song.jacketUrl"
                                 :src="song.jacketUrl"
                                 :alt="`${song.title || '歌曲'} 封面`"
@@ -933,7 +933,7 @@
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
-                              <img
+                              <img crossorigin="anonymous"
                                 v-if="song.jacketUrl"
                                 :src="song.jacketUrl"
                                 :alt="`${song.title || '歌曲'} 封面`"
@@ -971,7 +971,7 @@
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
-                              <img
+                              <img crossorigin="anonymous"
                                 v-if="song.jacketUrl"
                                 :src="song.jacketUrl"
                                 :alt="`${song.title || '歌曲'} 封面`"
@@ -1107,7 +1107,7 @@
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
-                              <img
+                              <img crossorigin="anonymous"
                                 v-if="song.jacketUrl"
                                 :src="song.jacketUrl"
                                 :alt="`${song.title || '歌曲'} 封面`"
@@ -1145,7 +1145,7 @@
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
-                              <img
+                              <img crossorigin="anonymous"
                                 v-if="song.jacketUrl"
                                 :src="song.jacketUrl"
                                 :alt="`${song.title || '歌曲'} 封面`"
@@ -1205,7 +1205,7 @@
                         @mouseleave="clearSongImageTitleToast"
                         @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                       >
-                        <img
+                        <img crossorigin="anonymous"
                           v-if="song.jacketUrl"
                           :src="song.jacketUrl"
                           :alt="`${song.title || '歌曲'} 封面`"
@@ -1331,7 +1331,7 @@
                       @mouseleave="clearSongImageTitleToast"
                       @click="showSongImageTitle($event, song.title || '-', { songId: song.id, compact: true })"
                     >
-                      <img
+                      <img crossorigin="anonymous"
                         v-if="song.jacketUrl"
                         :src="song.jacketUrl"
                         :alt="`${song.title || '歌曲'} 封面`"
@@ -1526,7 +1526,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toCanvas } from 'html-to-image';
 import { toHiragana, toRomaji } from 'wanakana';
-import { buildAssetUrl, prepareCanvasSafeImageCache } from '../utils/assets.js';
+import { buildAssetUrl } from '../utils/assets.js';
 import { isSongReleased } from '../utils/spoilerGuard.js';
 import {
   clampHostScrollTop,
@@ -5140,6 +5140,7 @@ const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((
   try {
     img.decoding = 'async';
     img.loading = 'eager';
+    img.crossOrigin = 'anonymous';
     img.referrerPolicy = 'no-referrer';
   } catch (_) {
     // Ignore unsupported attributes.
@@ -5464,7 +5465,6 @@ const exportElementPng = async (targetEl, title, options = {}) => {
   let restoreFrozenCssVars = () => {};
   let restoreHiddenLiveControls = () => {};
   try {
-    prepareCanvasSafeImageCache(targetEl);
     const sourceImages = Array.from(targetEl.querySelectorAll('img'));
     sourceImages.forEach((imgEl) => {
       if (!(imgEl instanceof HTMLImageElement)) return;
