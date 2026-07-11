@@ -405,11 +405,7 @@
 </template>
 
 <script setup>
-import { ref, computed, provide, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
-import CardStats from './components/CardStats.vue';
-import EventHistory from './components/EventHistory.vue';
-import SongStats from './components/SongStats.vue';
-import SpecialPredictGenerator from './components/SpecialPredictGenerator.vue';
+import { ref, shallowRef, computed, provide, onMounted, onBeforeUnmount, watch, nextTick, h, defineAsyncComponent } from 'vue';
 import {
   collectSmallStaticImageUrls,
   getCommonSmallStaticImageUrls,
@@ -418,11 +414,37 @@ import {
 } from './utils/assets.js';
 
 // --- 界面切换逻辑 (恢复原样) ---
+const TabLoadingIndicator = {
+  name: 'TabLoadingIndicator',
+  render() {
+    return h('div', {
+      class: 'app-data-loading app-tab-loading',
+      role: 'status',
+      'aria-label': '页面加载中'
+    }, [
+      h('div', { class: 'app-data-loader', 'aria-hidden': 'true' }, [
+        h('span'),
+        h('span'),
+        h('span'),
+        h('span'),
+        h('span')
+      ])
+    ]);
+  }
+};
+
+const createAsyncTab = (loader) => defineAsyncComponent({
+  loader,
+  delay: 0,
+  timeout: 30000,
+  loadingComponent: TabLoadingIndicator
+});
+
 const tabs = {
-  stats: CardStats,
-  history: EventHistory,
-  songs: SongStats,
-  specialPredict: SpecialPredictGenerator
+  stats: createAsyncTab(() => import('./components/CardStats.vue')),
+  history: createAsyncTab(() => import('./components/EventHistory.vue')),
+  songs: createAsyncTab(() => import('./components/SongStats.vue')),
+  specialPredict: createAsyncTab(() => import('./components/SpecialPredictGenerator.vue'))
 };
 const APP_CURRENT_TAB_KEY = 'pjsk_planner_current_tab_v1';
 const getInitialTab = () => {
@@ -511,6 +533,7 @@ let releaseLogImageDelayTimer = null;
 let cancelInitialAppVersionCheck = null;
 let cancelSmallImageWarmup = null;
 let stopSmallImageWarmupObserver = null;
+let cancelScheduledPublicDataCacheWrite = null;
 
 const APP_VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const APP_RELEASE_LOG_SKIP_KEY = 'pjsk_skip_release_log_build_id_v1';
@@ -968,11 +991,13 @@ watch(showStatsTopControlInNav, async (show) => {
 });
 
 // --- 数据管理逻辑 (新增预测支持) ---
-const historyData = ref([]);      // 既定的历史 JSON 数据
-const baseCards = ref([]); // 新增：存储基础卡片库
-const songsData = ref([]);
-const charactersData = ref([]);
-const nuigurumiData = ref([]);
+// Public JSON is replaced as a whole and never mutated in place. Keeping it
+// shallow avoids proxying every nested card/event before a tab can render.
+const historyData = shallowRef([]);      // 既定的历史 JSON 数据
+const baseCards = shallowRef([]); // 新增：存储基础卡片库
+const songsData = shallowRef([]);
+const charactersData = shallowRef([]);
+const nuigurumiData = shallowRef([]);
 const isAppDataReady = ref(false);
 const appDataLoadFailed = ref(false);
 const predictiveEvents = ref([]); // 用户填写的预测数据
@@ -1071,8 +1096,13 @@ const readPublicDataTextsFromCache = async (cache, allowLooseMatch = false) => {
 const readCachedPublicDataTexts = async () => {
   const cache = await getPublicDataCache();
   try {
-    const currentTexts = await readPublicDataTextsFromCache(cache, true);
-    if (currentTexts) return currentTexts;
+    // Only an exact versioned match can skip network revalidation. Loose matches
+    // are still useful for first paint during a cache migration, but may be stale.
+    const currentTexts = await readPublicDataTextsFromCache(cache);
+    if (currentTexts) return { texts: currentTexts, isCurrentVersion: true };
+
+    const looseCurrentTexts = await readPublicDataTextsFromCache(cache, true);
+    if (looseCurrentTexts) return { texts: looseCurrentTexts, isCurrentVersion: false };
 
     if (typeof window === 'undefined' || !('caches' in window)) return null;
     const currentName = buildPublicDataCacheName();
@@ -1080,7 +1110,7 @@ const readCachedPublicDataTexts = async () => {
     if (meta?.dataVersion === currentPublicDataVersion && meta?.cacheName && meta.cacheName !== currentName) {
       const matchingOldCache = await window.caches.open(meta.cacheName);
       const matchingOldTexts = await readPublicDataTextsFromCache(matchingOldCache, true);
-      if (matchingOldTexts) return matchingOldTexts;
+      if (matchingOldTexts) return { texts: matchingOldTexts, isCurrentVersion: false };
     }
 
     if (currentAppUpdateKind === 'resource') return null;
@@ -1092,7 +1122,7 @@ const readCachedPublicDataTexts = async () => {
     for (const cacheName of oldDataCacheNames) {
       const oldCache = await window.caches.open(cacheName);
       const oldTexts = await readPublicDataTextsFromCache(oldCache, true);
-      if (oldTexts) return oldTexts;
+      if (oldTexts) return { texts: oldTexts, isCurrentVersion: false };
     }
   } catch {
     return null;
@@ -1152,6 +1182,27 @@ const writePublicDataCache = async (resourceTexts) => {
   } catch {
     // Quota pressure should not block the app; the network data is already loaded.
   }
+};
+
+const schedulePublicDataCacheWrite = (resourceTexts) => {
+  if (!resourceTexts || typeof window === 'undefined') return;
+  if (typeof cancelScheduledPublicDataCacheWrite === 'function') {
+    cancelScheduledPublicDataCacheWrite();
+  }
+
+  const writeWhenIdle = () => {
+    cancelScheduledPublicDataCacheWrite = null;
+    void writePublicDataCache(resourceTexts);
+  };
+
+  if (typeof window.requestIdleCallback === 'function') {
+    const idleId = window.requestIdleCallback(writeWhenIdle, { timeout: 1800 });
+    cancelScheduledPublicDataCacheWrite = () => window.cancelIdleCallback?.(idleId);
+    return;
+  }
+
+  const timer = window.setTimeout(writeWhenIdle, 450);
+  cancelScheduledPublicDataCacheWrite = () => window.clearTimeout(timer);
 };
 
 const fetchPublicDataTexts = async () => {
@@ -2457,10 +2508,19 @@ onMounted(async () => {
     // 同时请求活动、卡片、歌曲与角色数据
     cleanupLegacyPublicDataLocalStorageCache();
 
-    const cachedPublicDataTexts = await readCachedPublicDataTexts();
+    const cachedPublicData = await readCachedPublicDataTexts();
+    const cachedPublicDataTexts = cachedPublicData?.texts || null;
     if (cachedPublicDataTexts) {
       applyLoadedAppData(parsePublicDataTexts(cachedPublicDataTexts));
       sanitizeLoadedPredictSources();
+    }
+
+    // A code-only release keeps the same publicDataVersion. Once that exact
+    // version is already in Cache API, fetching and writing the same JSON again
+    // only delays updates on slower mobile connections.
+    if (cachedPublicData?.isCurrentVersion) {
+      console.log("数据从当前版本缓存加载成功:", historyData.value.length, "条活动,", baseCards.value.length, "张卡片");
+      return;
     }
 
     const publicDataTexts = await fetchPublicDataTexts();
@@ -2469,7 +2529,7 @@ onMounted(async () => {
       applyLoadedAppData(loadedPublicData);
       sanitizeLoadedPredictSources();
     }
-    await writePublicDataCache(publicDataTexts);
+    schedulePublicDataCacheWrite(publicDataTexts);
     
     console.log("数据加载成功:", historyData.value.length, "条活动,", baseCards.value.length, "张卡片");
   } catch (e) {
@@ -2520,11 +2580,37 @@ const mergeWorldLinkCards = (baseCardsForEvent, predictCardsForEvent) => {
   return merged.sort((a, b) => b.Rarity - a.Rarity);
 };
 
+const baseCardsByEventId = computed(() => {
+  const cardsByEventId = new Map();
+  (baseCards.value || []).forEach((card) => {
+    const eventId = String(card?.EventID || '');
+    const cards = cardsByEventId.get(eventId);
+    if (cards) {
+      cards.push(card);
+    } else {
+      cardsByEventId.set(eventId, [card]);
+    }
+  });
+  return cardsByEventId;
+});
+
+const effectivePredictiveEventsById = computed(() => {
+  const eventsById = new Map();
+  (effectivePredictiveEvents.value || []).forEach((event) => {
+    const eventId = Number(event?.id);
+    // Keep the first entry to preserve the previous Array.find behavior.
+    if (Number.isFinite(eventId) && !eventsById.has(eventId)) {
+      eventsById.set(eventId, event);
+    }
+  });
+  return eventsById;
+});
+
 const totalEventData = computed(() => {
   // 1. 遍历所有的历史活动（包括你填好的 218 以前的坑）
   return historyData.value.map(jsonEvent => {
     // 2. 预测补丁默认按当前实际 ID 精确合并；插入型测试活动只在 reconcile 阶段重定向一次。
-    const patch = effectivePredictiveEvents.value.find(p => Number(p.id) === Number(jsonEvent.id));
+    const patch = effectivePredictiveEventsById.value.get(Number(jsonEvent.id));
     const forceOfficial = isJsonEventOfficialRevealed(jsonEvent) || isPredictDisabledJsonEvent(jsonEvent);
     const effectivePatch = forceOfficial ? null : patch;
     
@@ -2533,7 +2619,7 @@ const totalEventData = computed(() => {
     
     // 4. 关联卡片逻辑：
     // 既搜 JSON 里的基础卡，也加上预测补丁里的卡
-    const baseCardsForThisEvent = baseCards.value.filter(c => String(c.EventID) === String(event.id));
+    const baseCardsForThisEvent = baseCardsByEventId.value.get(String(event.id)) || [];
     const predictCardsForThisEvent = effectivePatch ? (effectivePatch.memberCards || []) : [];
     
     const isWorldLinkEvent = String(event?.event_type || '').trim() === 'World Link';
@@ -2971,6 +3057,10 @@ onBeforeUnmount(() => {
   if (typeof cancelSmallImageWarmup === 'function') {
     cancelSmallImageWarmup();
     cancelSmallImageWarmup = null;
+  }
+  if (typeof cancelScheduledPublicDataCacheWrite === 'function') {
+    cancelScheduledPublicDataCacheWrite();
+    cancelScheduledPublicDataCacheWrite = null;
   }
   if (typeof stopSmallImageWarmupObserver === 'function') {
     stopSmallImageWarmupObserver();

@@ -3244,8 +3244,8 @@ const vsOriginalStatShowCardImages = ref(false);
 const nuigurumiShowCardImages = ref(false);
 const nuigurumiHideCharNames = ref(true);
 const includeCollabRewardCards = ref(false);
-const useRewardCountForThreeStar = ref(true);
-const useRewardCountForTwoStar = ref(true);
+const useRewardCountForThreeStar = ref(false);
+const useRewardCountForTwoStar = ref(false);
 const hideDistCharNames = ref(true);
 const hideFestivalCharNames = ref(true);
 const festivalShowCardImages = ref(false);
@@ -3283,7 +3283,7 @@ const festivalMergeHigherRanksIndeterminate = computed(() => {
 const isMobileNav = ref(false);
 const isNavTopLayout = ref(false);
 const navTopLayoutPrev = ref(null);
-const supportUseOriginalVsTeam = ref(true);
+const supportUseOriginalVsTeam = ref(false);
 const supportEnableWlLineup = ref(false);
 const lineupShowCardImages = ref(false);
 const supportShowCardImages = ref(false);
@@ -5737,6 +5737,9 @@ const prepareExportClone = async (targetEl) => {
   const hasVisibleBg = sourceBgColor && sourceBgColor !== 'transparent' && sourceBgColor !== 'rgba(0, 0, 0, 0)';
   const clone = targetEl.cloneNode(true);
   clone.classList.add('export-clone-root');
+  if (!targetEl.closest('.duo-panel, .duo-unit-row, .duo-unit-section')) {
+    clone.classList.add('export-stable-header-layout');
+  }
   clone.style.position = 'relative';
   clone.style.left = '0';
   clone.style.top = '0';
@@ -5818,6 +5821,23 @@ const prepareExportClone = async (targetEl) => {
     .export-clone-root * {
       box-shadow: none !important;
       text-shadow: none !important;
+    }
+    /* html-to-image's foreignObject renderer can shrink inline-flex header
+       content even though the live clone has a single row. Give non-duo
+       exports an explicit flex basis before SVG serialization. */
+    .export-clone-root.export-stable-header-layout :is(.section-head-left, .block-head-left, .festival-head-left) {
+      display: flex !important;
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+      flex-wrap: nowrap !important;
+    }
+    .export-clone-root.export-stable-header-layout :is(.section-head-left, .block-head-left, .festival-head-left) > :is(h2, h3) {
+      flex: 0 0 auto !important;
+      white-space: nowrap !important;
+    }
+    .export-clone-root.export-stable-header-layout .head-inline-filters {
+      flex: 0 0 auto !important;
+      flex-wrap: nowrap !important;
     }
     .export-clone-root.export-single-card-fill-root {
       isolation: isolate !important;
@@ -8437,7 +8457,10 @@ const formatSupportTotal = (value) => {
 
 const lineupExpandedMap = ref({});
 
-const isLineupExpanded = (name) => !!lineupExpandedMap.value[String(name || '')];
+const isLineupExpanded = (name) => {
+  const key = String(name || '');
+  return !!key && lineupExpandedMap.value[key] !== false;
+};
 
 const lineupRowsWithOthers = computed(() => characterLineupRows.value.filter((row) => (row.otherPlans || []).length > 0));
 
@@ -8796,7 +8819,7 @@ const toggleLineupExpanded = (name, event = null) => {
   void withInteractionPinnedPosition(() => {
     lineupExpandedMap.value = {
       ...lineupExpandedMap.value,
-      [key]: !lineupExpandedMap.value[key]
+      [key]: !isLineupExpanded(key)
     };
   }, anchorEl);
 };
@@ -12698,6 +12721,19 @@ defineExpose({
   border-radius: 0;
   z-index: 1;
   background-color: #e5e7eb;
+}
+
+/* Support WL card cells reuse the FES attribute class, whose regular size
+   derives from --fes-card-frame-size. This container has no such variable,
+   so make the badge size relative to its own card instead of falling back to
+   the image's intrinsic dimensions. */
+.lineup-slot-card .fes-card-thumb-attr {
+  left: 3%;
+  top: 3%;
+  width: 27%;
+  height: 27%;
+  object-fit: contain;
+  z-index: 6;
 }
 
 .support-member-attr-icon {
