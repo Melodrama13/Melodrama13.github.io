@@ -3175,7 +3175,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, reactive } from 'vue';
 import { toCanvas } from 'html-to-image';
-import { buildAssetUrl } from '../utils/assets.js';
+import { buildAssetUrl, prepareCanvasSafeImageCache } from '../utils/assets.js';
 import { isCardImageReleased, isEventStarted } from '../utils/spoilerGuard.js';
 import {
   clampHostScrollTop,
@@ -6117,6 +6117,7 @@ const runExportElementPng = async (id, title, options = {}) => {
   let restoreFrozenCssVars = () => {};
   let restoreHiddenLiveControls = () => {};
   try {
+    prepareCanvasSafeImageCache(targetEl);
     const sourceImages = Array.from(targetEl.querySelectorAll('img'));
     sourceImages.forEach((imgEl) => {
       if (!(imgEl instanceof HTMLImageElement)) return;

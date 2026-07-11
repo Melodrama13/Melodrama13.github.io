@@ -1526,7 +1526,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toCanvas } from 'html-to-image';
 import { toHiragana, toRomaji } from 'wanakana';
-import { buildAssetUrl } from '../utils/assets.js';
+import { buildAssetUrl, prepareCanvasSafeImageCache } from '../utils/assets.js';
 import { isSongReleased } from '../utils/spoilerGuard.js';
 import {
   clampHostScrollTop,
@@ -5464,6 +5464,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
   let restoreFrozenCssVars = () => {};
   let restoreHiddenLiveControls = () => {};
   try {
+    prepareCanvasSafeImageCache(targetEl);
     const sourceImages = Array.from(targetEl.querySelectorAll('img'));
     sourceImages.forEach((imgEl) => {
       if (!(imgEl instanceof HTMLImageElement)) return;

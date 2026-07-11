@@ -99,6 +99,40 @@ export const buildAssetUrl = (assetPath) => {
   return assetBaseUrl ? `${assetBaseUrl}${normalizedPath}` : normalizedPath;
 };
 
+export const prepareCanvasSafeImageCache = (rootEl) => {
+  if (typeof window === 'undefined' || typeof HTMLImageElement === 'undefined' || !(rootEl instanceof HTMLElement)) {
+    return 0;
+  }
+
+  let updated = 0;
+  rootEl.querySelectorAll('img').forEach((imgEl) => {
+    if (!(imgEl instanceof HTMLImageElement)) return;
+    const rawSrc = String(imgEl.currentSrc || imgEl.getAttribute('src') || '').trim();
+    if (!rawSrc) return;
+
+    let parsed;
+    try {
+      parsed = new URL(rawSrc, window.location.href);
+    } catch {
+      return;
+    }
+    if (!/^https?:$/i.test(parsed.protocol) || parsed.origin === window.location.origin) return;
+
+    // A normal cross-origin <img> can leave an opaque HTTP-cache entry. Give
+    // capture requests a stable URL variant loaded in CORS mode, so subsequent
+    // exports can reuse a canvas-safe cache instead of adding a random query on
+    // every render.
+    parsed.searchParams.set('_capture_cors', '1');
+    const canvasSafeSrc = parsed.toString();
+    if (imgEl.crossOrigin === 'anonymous' && imgEl.src === canvasSafeSrc) return;
+    imgEl.crossOrigin = 'anonymous';
+    imgEl.setAttribute('crossorigin', 'anonymous');
+    imgEl.src = canvasSafeSrc;
+    updated += 1;
+  });
+  return updated;
+};
+
 const getUrlPathname = (url) => {
   const rawUrl = String(url || '').trim();
   if (!rawUrl) return '';
