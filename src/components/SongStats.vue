@@ -4922,11 +4922,13 @@ const sanitizeSongCloneForExport = (cloneRoot) => {
     node.classList.add('song-export-no-pseudo-label');
   });
 
-  // Prevent tainted canvas by skipping off-origin images in export clone.
+  // Keep explicitly CORS-enabled R2 jackets. Other off-origin images remain
+  // excluded so an unrelated external resource cannot taint the canvas.
   cloneRoot.querySelectorAll('img').forEach((imgEl) => {
     const src = String(imgEl?.getAttribute('src') || imgEl?.currentSrc || '').trim();
     if (!src) return;
     if (isRenderableSameOriginUrl(src)) return;
+    if (String(imgEl.crossOrigin || imgEl.getAttribute('crossorigin') || '').toLowerCase() === 'anonymous') return;
     imgEl.dataset.failed = '1';
     imgEl.style.display = 'none';
   });
