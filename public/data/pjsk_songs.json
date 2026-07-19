@@ -29120,6 +29120,14 @@
         ]
       },
       {
+        "vocal_id": 2049,
+        "type": "another_vocal",
+        "released_at": "2026/7/19",
+        "characters": [
+          "晓山瑞希"
+        ]
+      },
+      {
         "vocal_id": 1670,
         "type": "another_vocal",
         "released_at": "2025/8/22",
@@ -33471,6 +33479,14 @@
           "白石杏",
           "东云彰人"
         ]
+      },
+      {
+        "vocal_id": 2050,
+        "type": "another_vocal",
+        "released_at": "2026/7/19",
+        "characters": [
+          "青柳冬弥"
+        ]
       }
     ]
   },
@@ -34775,6 +34791,111 @@
           "凤笑梦",
           "草薙宁宁",
           "神代类"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 790,
+    "title": "ピッコーン！！",
+    "pronunciation": "ぴっこーん",
+    "composer": "椎名もた",
+    "lyricist": "椎名もた",
+    "arranger": "椎名もた",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-07-23 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 12,
+      "hard": 17,
+      "expert": 23,
+      "master": 27
+    },
+    "vocals": [
+      {
+        "vocal_id": 1347,
+        "type": "original_song",
+        "released_at": "2026/7/23",
+        "characters": [
+          "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 791,
+    "title": "シティライツ",
+    "pronunciation": "してぃらいつ",
+    "composer": "椎名もた",
+    "lyricist": "椎名もた",
+    "arranger": "椎名もた",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-07-22 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 12,
+      "hard": 16,
+      "expert": 24,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1348,
+        "type": "original_song",
+        "released_at": "2026/7/22",
+        "characters": [
+          "镜音铃"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 792,
+    "title": "アストロノーツ",
+    "pronunciation": "あすとろのーつ",
+    "composer": "椎名もた",
+    "lyricist": "椎名もた",
+    "arranger": "椎名もた",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-07-21 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 10,
+      "hard": 16,
+      "expert": 22,
+      "master": 25
+    },
+    "vocals": [
+      {
+        "vocal_id": 1349,
+        "type": "original_song",
+        "released_at": "2026/7/21",
+        "characters": [
+          "初音未来"
         ]
       }
     ]
