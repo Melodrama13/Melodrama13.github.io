@@ -34796,6 +34796,58 @@
     ]
   },
   {
+    "id": 765,
+    "title": "レム",
+    "pronunciation": "れむ",
+    "composer": "バルーン",
+    "lyricist": "バルーン",
+    "arranger": "-",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-07-29 20:15:00",
+    "categories": [
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "ln",
+      "vbs",
+      "ws",
+      "nc",
+      "vocaloid",
+      "other"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 11,
+      "hard": 17,
+      "expert": 22,
+      "master": 26
+    },
+    "vocals": [
+      {
+        "vocal_id": 1322,
+        "type": "original_song",
+        "released_at": "2026/7/29",
+        "characters": [
+          "flower",
+          "重音テト"
+        ]
+      },
+      {
+        "vocal_id": 2051,
+        "type": "sekai",
+        "released_at": "2026/7/29",
+        "characters": [
+          "天马咲希",
+          "青柳冬弥",
+          "神代类",
+          "晓山瑞希",
+          "KAITO"
+        ]
+      }
+    ]
+  },
+  {
     "id": 790,
     "title": "ピッコーン！！",
     "pronunciation": "ぴっこーん",
