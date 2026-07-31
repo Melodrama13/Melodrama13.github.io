@@ -25558,6 +25558,14 @@
         "characters": [
           "星乃一歌"
         ]
+      },
+      {
+        "vocal_id": 2053,
+        "type": "another_vocal",
+        "released_at": "2026/7/31",
+        "characters": [
+          "镜音连"
+        ]
       }
     ]
   },
@@ -34801,7 +34809,7 @@
     "pronunciation": "れむ",
     "composer": "バルーン",
     "lyricist": "バルーン",
-    "arranger": "-",
+    "arranger": "バルーン",
     "isNewlyWrittenMusic": true,
     "releaseDate": "2026-07-29 20:15:00",
     "categories": [
@@ -34829,8 +34837,8 @@
         "type": "original_song",
         "released_at": "2026/7/29",
         "characters": [
-          "flower",
-          "重音テト"
+          "重音テト",
+          "flower"
         ]
       },
       {
@@ -34843,6 +34851,52 @@
           "神代类",
           "晓山瑞希",
           "KAITO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 789,
+    "title": "天秤、指先で触れて",
+    "pronunciation": "てんびん、ゆびさきでふれて",
+    "composer": "卯花ロク",
+    "lyricist": "卯花ロク",
+    "arranger": "卯花ロク",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-07-31 15:00:00",
+    "categories": [
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "ln"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 13,
+      "hard": 18,
+      "expert": 24,
+      "master": 28
+    },
+    "vocals": [
+      {
+        "vocal_id": 1346,
+        "type": "original_song",
+        "released_at": "2026/7/31",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2052,
+        "type": "sekai",
+        "released_at": "2026/7/31",
+        "characters": [
+          "星乃一歌",
+          "镜音铃",
+          "天马咲希",
+          "望月穗波",
+          "日野森志步"
         ]
       }
     ]
@@ -34948,6 +35002,76 @@
         "released_at": "2026/7/21",
         "characters": [
           "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 794,
+    "title": "デロスサントス",
+    "pronunciation": "でろすさんとす",
+    "composer": "山本",
+    "lyricist": "山本",
+    "arranger": "山本",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-08-03 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 13,
+      "hard": 17,
+      "expert": 24,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1351,
+        "type": "original_song",
+        "released_at": "2026/8/3",
+        "characters": [
+          "重音テト"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 795,
+    "title": "一億年恋してる",
+    "pronunciation": "いちおくねんこいしてる",
+    "composer": "いのうつはSA",
+    "lyricist": "いのうつはSA",
+    "arranger": "いのうつはSA",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-08-04 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 13,
+      "hard": 17,
+      "expert": 26,
+      "master": 31
+    },
+    "vocals": [
+      {
+        "vocal_id": 1352,
+        "type": "original_song",
+        "released_at": "2026/8/4",
+        "characters": [
+          "ついなちゃん"
         ]
       }
     ]
