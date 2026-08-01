@@ -1,5 +1,6 @@
 const rawAssetBaseUrl = String(import.meta.env.VITE_ASSET_BASE_URL || '').trim();
 const assetBaseUrl = rawAssetBaseUrl.replace(/\/+$/, '');
+const ASSET_CORS_CACHE_VERSION = '2';
 
 const ABSOLUTE_URL_RE = /^(?:[a-z][a-z\d+\-.]*:)?\/\//i;
 const SMALL_STATIC_IMAGE_PATH_RE = /^\/(?:chibi_s|chars|elements|data\/icon|specialized)\//;
@@ -102,7 +103,7 @@ export const buildAssetUrl = (assetPath) => {
   // canvas-safe responses so old opaque browser-cache entries cannot poison
   // html-to-image, while normal page loads and later exports still share cache.
   const url = new URL(`${assetBaseUrl}${normalizedPath}`);
-  url.searchParams.set('_cors', '1');
+  url.searchParams.set('_cors', ASSET_CORS_CACHE_VERSION);
   return url.toString();
 };
 
@@ -123,7 +124,7 @@ const toImageCacheKey = (url) => {
   try {
     const base = typeof window !== 'undefined' && window.location ? window.location.href : 'http://localhost/';
     const parsed = new URL(rawUrl, base);
-    return `${parsed.origin}${parsed.pathname}`;
+    return `${parsed.origin}${parsed.pathname}${parsed.search}`;
   } catch {
     return rawUrl.split(/[?#]/, 1)[0];
   }
@@ -179,6 +180,9 @@ export const preloadImageUrl = (url, options = {}) => {
 
     image.decoding = 'async';
     image.loading = 'eager';
+    if (rawUrl.includes('_cors=')) {
+      image.crossOrigin = 'anonymous';
+    }
     image.onload = () => {
       if (typeof image.decode === 'function') {
         image.decode().then(() => finish(true), () => finish(true));

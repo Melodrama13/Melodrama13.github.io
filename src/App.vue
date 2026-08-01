@@ -511,6 +511,7 @@ const statsTopNavAvailable = ref(false);
 const statsTopAutoCurrentId = ref('');
 let statsTopControlSyncRaf = 0;
 const currentAppBuildId = String(__APP_BUILD_ID__ || '').trim();
+const isLocalDev = import.meta.env.DEV;
 const currentAppReleaseNotes = Array.isArray(__APP_RELEASE_NOTES__) ? __APP_RELEASE_NOTES__ : [];
 const currentAppUpdateKind = String(__APP_UPDATE_KIND__ || 'code').trim() === 'resource' ? 'resource' : 'code';
 const currentPublicDataVersion = String(__PUBLIC_DATA_VERSION__ || currentAppBuildId || '').trim();
@@ -1063,7 +1064,7 @@ const applyLoadedAppData = (loadedData) => {
 };
 
 const getPublicDataCache = async () => {
-  if (typeof window === 'undefined' || !currentPublicDataVersion || !('caches' in window)) return null;
+  if (isLocalDev || typeof window === 'undefined' || !currentPublicDataVersion || !('caches' in window)) return null;
   try {
     return await window.caches.open(buildPublicDataCacheName());
   } catch {
@@ -1094,6 +1095,7 @@ const readPublicDataTextsFromCache = async (cache, allowLooseMatch = false) => {
 };
 
 const readCachedPublicDataTexts = async () => {
+  if (isLocalDev) return null;
   const cache = await getPublicDataCache();
   try {
     // Only an exact versioned match can skip network revalidation. Loose matches
@@ -1185,7 +1187,7 @@ const writePublicDataCache = async (resourceTexts) => {
 };
 
 const schedulePublicDataCacheWrite = (resourceTexts) => {
-  if (!resourceTexts || typeof window === 'undefined') return;
+  if (isLocalDev || !resourceTexts || typeof window === 'undefined') return;
   if (typeof cancelScheduledPublicDataCacheWrite === 'function') {
     cancelScheduledPublicDataCacheWrite();
   }
@@ -1207,7 +1209,10 @@ const schedulePublicDataCacheWrite = (resourceTexts) => {
 
 const fetchPublicDataTexts = async () => {
   const pairs = await Promise.all(DATA_RESOURCE_DEFS.map(async (resource) => {
-    const response = await fetch(buildVersionedPublicDataUrl(resource.url));
+    const requestUrl = isLocalDev
+      ? `${resource.url}?dev=${Date.now()}`
+      : buildVersionedPublicDataUrl(resource.url);
+    const response = await fetch(requestUrl, isLocalDev ? { cache: 'no-store' } : undefined);
     if (!response.ok) throw new Error(`Failed to load ${resource.url}`);
     return [resource.key, await response.text()];
   }));
@@ -1635,6 +1640,12 @@ const onPredictUserBlur = () => {
 };
 
 const hasValidEventTitle = (value) => String(value || '').trim().length > 0;
+const getEventKey = (value) => String(value ?? '').trim().toLowerCase();
+const isC6FixedRosterEvent = (event) => {
+  if (getEventKey(event?.id) !== 'c6') return false;
+  const type = String(event?.source_event_type || event?.event_type || '').trim();
+  return type === '联动' && Number(event?.type_series_id) === 6;
+};
 const isJsonEventOfficialRevealed = (event) => {
   if (!event || typeof event !== 'object') return false;
   return hasValidEventTitle(event.event_title);
@@ -1733,6 +1744,7 @@ const resolveLegacyShiftedPredictEventId = (patch) => {
 };
 
 const resolvePredictEventIdForCurrentSchedule = (patch) => {
+  if (getEventKey(patch?.id) === 'c6') return 'c6';
   return resolvePredictEventIdByScheduleIndex(patch)
     ?? resolveLegacyShiftedPredictEventId(patch);
 };
@@ -1796,39 +1808,46 @@ const getPredictableEventIdRange = () => {
 };
 
 const getSourceEventById = (eventId) => {
-  const idNum = Number(eventId);
-  if (!Number.isFinite(idNum)) return null;
-  return (historyData.value || []).find((ev) => Number(ev?.id) === idNum) || null;
+  const key = getEventKey(eventId);
+  if (!key) return null;
+  return (historyData.value || []).find((ev) => getEventKey(ev?.id) === key) || null;
 };
 
 const retargetPredictMemberCards = (cards, eventId) => {
   if (!Array.isArray(cards)) return cards;
+  const targetId = isNumericEventIdValue(eventId) ? Number(eventId) : getEventKey(eventId);
   return cards.map((card, index) => {
     if (!card || typeof card !== 'object') return card;
     const next = {
       ...card,
-      EventID: Number(eventId)
+      EventID: targetId
     };
     const cardId = String(card.CardID || '').trim();
     if (cardId.startsWith('PRED-')) {
-      next.CardID = `PRED-${Number(eventId)}-${index}`;
+      next.CardID = `PRED-${targetId}-${index}`;
     }
     return next;
   });
 };
 
 const retargetPredictPatch = (patch, targetEvent) => {
-  const targetId = Number(targetEvent?.id);
-  if (!Number.isFinite(targetId)) return null;
-  const scheduleIndex = getNormalScheduleIndexByEventId(targetId);
-  return {
+  const targetKey = getEventKey(targetEvent?.id);
+  if (!targetKey) return null;
+  const targetId = isNumericEventIdValue(targetEvent?.id) ? Number(targetEvent.id) : targetKey;
+  const scheduleIndex = isNumericEventIdValue(targetId) ? getNormalScheduleIndexByEventId(targetId) : null;
+  const next = {
     ...(patch || {}),
     id: targetId,
     predict_schema_version: 3,
     ...(Number.isInteger(scheduleIndex) ? { predict_schedule_index: scheduleIndex } : {}),
-    predict_shift_count: getInsertedTestCountAtOrBefore(targetId),
+    ...(isNumericEventIdValue(targetId) ? { predict_shift_count: getInsertedTestCountAtOrBefore(targetId) } : {}),
     memberCards: retargetPredictMemberCards(patch?.memberCards, targetId)
   };
+  if (!isNumericEventIdValue(targetId)) {
+    delete next.predict_schedule_index;
+    delete next.predict_shift_count;
+  }
+  return next;
 };
 
 const resolvePredictPatchForCurrentSchedule = (patch) => {
@@ -1843,9 +1862,12 @@ const resolvePredictPatchForCurrentSchedule = (patch) => {
     return {
       patch: patchWithKey,
       sourceEvent,
-      key: String(Number(sourceEvent.id))
+      key: getEventKey(sourceEvent.id)
     };
   };
+
+  const directSourceEvent = getSourceEventById(patch.id);
+  if (isC6FixedRosterEvent(directSourceEvent)) return useTarget(patch.id);
 
   const scheduleTargetId = resolvePredictEventIdByScheduleIndex(patch);
   if (scheduleTargetId !== null) return useTarget(scheduleTargetId);
@@ -1880,12 +1902,27 @@ const normalizeWorldLinkPatch = (patch) => {
   };
 };
 
+const normalizeFixedRosterPatch = (patch) => {
+  if (!patch || typeof patch !== 'object') return patch;
+  const sourceEvent = getSourceEventById(patch.id);
+  if (!isC6FixedRosterEvent(sourceEvent)) return normalizeWorldLinkPatch(patch);
+  return {
+    ...patch,
+    id: 'c6',
+    event_type: sourceEvent.event_type,
+    gacha_type: sourceEvent.gacha_type,
+    type_series_id: sourceEvent.type_series_id,
+    banner: '',
+    unit: ''
+  };
+};
+
 const sanitizeScheduledPredictiveEvents = (list) => {
   const byKey = new Map();
   (list || []).forEach((ev) => {
     const resolved = resolvePredictPatchForCurrentSchedule(ev);
     if (!resolved) return;
-    byKey.set(resolved.key, normalizeWorldLinkPatch(resolved.patch));
+    byKey.set(resolved.key, normalizeFixedRosterPatch(resolved.patch));
   });
   return [...byKey.values()];
 };
@@ -2310,8 +2347,8 @@ const validateImportedPredictList = (list) => {
     if (!row || typeof row !== 'object') {
       return { ok: false, message: `第 ${i + 1} 条记录不是对象。` };
     }
-    const idNum = Number(row.id);
-    if (!Number.isFinite(idNum)) {
+    const idKey = getEventKey(row.id);
+    if (!Number.isFinite(Number(row.id)) && idKey !== 'c6') {
       return { ok: false, message: `第 ${i + 1} 条记录缺少有效 id。` };
     }
     if (row.memberCards != null && !Array.isArray(row.memberCards)) {
@@ -2325,8 +2362,8 @@ const validateImportedPredictList = (list) => {
 const applyImportedPredicts = (importedRawList, fileName = '') => {
   const normalizedImported = (importedRawList || []).map((item) => ({
     ...(item || {}),
-    id: Number(item?.id)
-  })).filter((item) => Number.isFinite(item.id));
+    id: getEventKey(item?.id) === 'c6' ? 'c6' : Number(item?.id)
+  })).filter((item) => Number.isFinite(item.id) || item.id === 'c6');
 
   const canonical = sanitizeCanonicalPredictiveEvents(normalizedImported);
   const cleaned = Math.max(0, normalizedImported.length - canonical.length);
@@ -2409,10 +2446,10 @@ const onImportDrop = async (event) => {
 const effectivePredictiveEvents = computed(() => {
   const saved = reconcilePredictiveEvents(predictiveEvents.value);
   const draft = draftPredictiveEvent.value;
-  if (!draft || !Number.isFinite(Number(draft?.id))) return saved;
-  const draftId = Number(draft.id);
+  const draftKey = getEventKey(draft?.id);
+  if (!draft || !draftKey) return saved;
   return reconcilePredictiveEvents([
-    ...saved.filter((item) => Number(item?.id) !== draftId),
+    ...saved.filter((item) => getEventKey(item?.id) !== draftKey),
     draft
   ]);
 });
@@ -2542,11 +2579,11 @@ onMounted(async () => {
 
 const normalizeText = (v) => String(v || '').trim().toLowerCase();
 
-const getWorldLinkCardKey = (card) => {
+const getFixedRosterCardKey = (card) => {
   return `${normalizeText(card?.Name)}|${normalizeText(card?.Affiliation)}|${String(card?.Rarity || '')}`;
 };
 
-const mergeWorldLinkCards = (baseCardsForEvent, predictCardsForEvent) => {
+const mergeFixedRosterCards = (baseCardsForEvent, predictCardsForEvent) => {
   if (!Array.isArray(baseCardsForEvent) || baseCardsForEvent.length === 0) return [];
   if (!Array.isArray(predictCardsForEvent) || predictCardsForEvent.length === 0) {
     return [...baseCardsForEvent].sort((a, b) => b.Rarity - a.Rarity);
@@ -2555,8 +2592,8 @@ const mergeWorldLinkCards = (baseCardsForEvent, predictCardsForEvent) => {
   const usedPredictIndexes = new Set();
 
   const findPredictForBase = (baseCard) => {
-    const baseKey = getWorldLinkCardKey(baseCard);
-    let idx = predictCardsForEvent.findIndex((c, i) => !usedPredictIndexes.has(i) && getWorldLinkCardKey(c) === baseKey);
+    const baseKey = getFixedRosterCardKey(baseCard);
+    let idx = predictCardsForEvent.findIndex((c, i) => !usedPredictIndexes.has(i) && getFixedRosterCardKey(c) === baseKey);
     if (idx === -1) {
       const baseName = normalizeText(baseCard?.Name);
       idx = predictCardsForEvent.findIndex((c, i) => !usedPredictIndexes.has(i) && normalizeText(c?.Name) === baseName);
@@ -2597,9 +2634,9 @@ const baseCardsByEventId = computed(() => {
 const effectivePredictiveEventsById = computed(() => {
   const eventsById = new Map();
   (effectivePredictiveEvents.value || []).forEach((event) => {
-    const eventId = Number(event?.id);
+    const eventId = getEventKey(event?.id);
     // Keep the first entry to preserve the previous Array.find behavior.
-    if (Number.isFinite(eventId) && !eventsById.has(eventId)) {
+    if (eventId && !eventsById.has(eventId)) {
       eventsById.set(eventId, event);
     }
   });
@@ -2610,7 +2647,7 @@ const totalEventData = computed(() => {
   // 1. 遍历所有的历史活动（包括你填好的 218 以前的坑）
   return historyData.value.map(jsonEvent => {
     // 2. 预测补丁默认按当前实际 ID 精确合并；插入型测试活动只在 reconcile 阶段重定向一次。
-    const patch = effectivePredictiveEventsById.value.get(Number(jsonEvent.id));
+    const patch = effectivePredictiveEventsById.value.get(getEventKey(jsonEvent.id));
     const forceOfficial = isJsonEventOfficialRevealed(jsonEvent) || isPredictDisabledJsonEvent(jsonEvent);
     const effectivePatch = forceOfficial ? null : patch;
     
@@ -2623,10 +2660,11 @@ const totalEventData = computed(() => {
     const predictCardsForThisEvent = effectivePatch ? (effectivePatch.memberCards || []) : [];
     
     const isWorldLinkEvent = String(event?.event_type || '').trim() === 'World Link';
+    const isFixedRosterEvent = isWorldLinkEvent || isC6FixedRosterEvent(jsonEvent);
     const combinedRawCards = [...baseCardsForThisEvent, ...predictCardsForThisEvent];
     const combinedCards = (effectivePatch && predictCardsForThisEvent.length > 0)
-      ? (isWorldLinkEvent
-        ? mergeWorldLinkCards(baseCardsForThisEvent, predictCardsForThisEvent)
+      ? (isFixedRosterEvent
+        ? mergeFixedRosterCards(baseCardsForThisEvent, predictCardsForThisEvent)
         : sortPredictedCardsForDisplay(combinedRawCards, event.banner))
       : combinedRawCards.sort((a, b) => b.Rarity - a.Rarity);
 
@@ -2774,7 +2812,8 @@ const isTeamWorldLink = (eventType, typeSeriesId) => {
 const buildPredictEventPatchFromPayload = (payload, options = {}) => {
   if (!payload || typeof payload !== 'object') return null;
   const { eventId, eventType, gachaType, predictAttr, bannerName: payloadBannerName, selectedChars, event_title } = payload;
-  const sourceEvent = historyData.value.find(e => Number(e.id) === Number(eventId));
+  const sourceEvent = getSourceEventById(eventId);
+  const fixedRosterCollab = isC6FixedRosterEvent(sourceEvent);
   if (!sourceEvent || isPredictDisabledJsonEvent(sourceEvent) || isJsonEventOfficialRevealed(sourceEvent)) {
     if (options?.warn !== false) {
       console.warn(`[predict] ignore save for event ${eventId}, not editable by source JSON`);
@@ -2782,7 +2821,7 @@ const buildPredictEventPatchFromPayload = (payload, options = {}) => {
     return null;
   }
 
-  const nextSid = getNextSeriesId();
+  const nextSid = fixedRosterCollab ? null : getNextSeriesId();
   const safeSelectedChars = Array.isArray(selectedChars) ? selectedChars : [];
   const isNonFesFourStar = (char) => {
     const rarity = String(char?.rarity || '').trim();
@@ -2796,25 +2835,33 @@ const buildPredictEventPatchFromPayload = (payload, options = {}) => {
     .filter(Boolean);
 
   const payloadBannerBaseName = getBaseBannerName(payloadBannerName);
-  const resolvedBannerName = eventType === 'World Link'
+  const resolvedBannerName = (eventType === 'World Link' || fixedRosterCollab)
     ? ''
     : (bannerCandidates.includes(payloadBannerBaseName)
       ? payloadBannerBaseName
       : (bannerCandidates[0] || ''));
 
-  if (eventType !== 'World Link' && !resolvedBannerName) {
+  if (eventType !== 'World Link' && !fixedRosterCollab && !resolvedBannerName) {
     if (options?.alertOnInvalid) {
       alert('保存失败：Ban主必须是队伍中的 4星非 FES 成员。');
     }
     return null;
   }
 
-  const nextTypeSeriesId = eventType === 'World Link'
+  const nextTypeSeriesId = fixedRosterCollab
+    ? sourceEvent.type_series_id
+    : eventType === 'World Link'
     ? (sourceEvent?.type_series_id ?? null)
     : getNextTypeSeriesId({ eventId, eventType, bannerName: resolvedBannerName });
   const teamWorldLink = isTeamWorldLink(eventType, nextTypeSeriesId ?? sourceEvent?.type_series_id);
 
-  const generatedCardsRaw = safeSelectedChars.map((char, index) => {
+  const sourceRosterCards = fixedRosterCollab
+    ? (baseCards.value || []).filter((card) => getEventKey(card?.EventID) === getEventKey(sourceEvent.id))
+    : [];
+  const generatedCardsRaw = (fixedRosterCollab ? sourceRosterCards : safeSelectedChars).map((sourceCardOrChar, index) => {
+    const char = fixedRosterCollab
+      ? (safeSelectedChars.find((item) => normalizeText(item?.name) === normalizeText(sourceCardOrChar?.Name)) || {})
+      : sourceCardOrChar;
     const rarity = char.rarity || "4";
     const isBfes = char.skillType === 'bfes_up' && rarity === '4';
     const isVsCard = isVsName(char.name);
@@ -2826,6 +2873,20 @@ const buildPredictEventPatchFromPayload = (payload, options = {}) => {
       cardType = 'limited';
     } else if (gachaType === 'ue' && rarity === '4') {
       cardType = 'ue';
+    }
+
+    if (fixedRosterCollab) {
+      return {
+        ...sourceCardOrChar,
+        Name: sourceCardOrChar.Name,
+        Rarity: '4',
+        EventID: 'c6',
+        GachaID: sourceCardOrChar.GachaID || 'c6',
+        Attribute: normalizeAttr(char.attr) || '-',
+        Skill: char.skillType || '-',
+        Type: sourceCardOrChar.Type || 'collab_t',
+        Affiliation: sourceCardOrChar.Affiliation || ''
+      };
     }
 
     return {
@@ -2841,7 +2902,7 @@ const buildPredictEventPatchFromPayload = (payload, options = {}) => {
     };
   });
 
-  const generatedCards = eventType === 'World Link'
+  const generatedCards = (eventType === 'World Link' || fixedRosterCollab)
     ? generatedCardsRaw
     : sortPredictedCardsForDisplay(generatedCardsRaw, resolvedBannerName);
 
@@ -2850,23 +2911,27 @@ const buildPredictEventPatchFromPayload = (payload, options = {}) => {
   const finalUnit = predictedUnit || sourceUnit;
   const worldLinkUnit = teamWorldLink ? finalUnit : '';
   const bannerCard = generatedCardsRaw.find((card) => getBaseBannerName(card?.Name) === resolvedBannerName && card?.SeriesID === nextSid);
-  const finalBanner = eventType === 'World Link'
+  const finalBanner = (eventType === 'World Link' || fixedRosterCollab)
     ? ''
     : buildBannerNameWithUnit(resolvedBannerName, bannerCard?.Affiliation);
 
   return {
-    id: Number(eventId),
+    id: fixedRosterCollab ? 'c6' : Number(eventId),
     predict_schema_version: 3,
-    predict_schedule_index: getNormalScheduleIndexByEventId(eventId),
-    predict_shift_count: getInsertedTestCountAtOrBefore(eventId),
+    ...(fixedRosterCollab ? {} : {
+      predict_schedule_index: getNormalScheduleIndexByEventId(eventId),
+      predict_shift_count: getInsertedTestCountAtOrBefore(eventId)
+    }),
     event_title: event_title,
-    event_type: eventType,
-    gacha_type: gachaType === 'limited' ? '普通限定' : (gachaType === 'ue' ? 'UE限定' : '常驻'),
+    event_type: fixedRosterCollab ? sourceEvent.event_type : eventType,
+    gacha_type: fixedRosterCollab
+      ? sourceEvent.gacha_type
+      : (gachaType === 'limited' ? '普通限定' : (gachaType === 'ue' ? 'UE限定' : '常驻')),
     type_series_id: nextTypeSeriesId,
     event_attribute: normalizeAttr(predictAttr),
     memberCards: generatedCards,
     banner: finalBanner,
-    unit: eventType === 'World Link' ? worldLinkUnit : finalUnit,
+    unit: fixedRosterCollab ? '' : (eventType === 'World Link' ? worldLinkUnit : finalUnit),
     isPredict: true
   };
 };
@@ -2876,104 +2941,12 @@ provide('updateDraftPredictEvent', (payload) => {
 });
 
 provide('savePredictEvent', (payload) => {
-  const { eventId, eventType, gachaType, predictAttr, bannerName: payloadBannerName, selectedChars, event_title } = payload;
-  const sourceEvent = historyData.value.find(e => Number(e.id) === Number(eventId));
-  if (!sourceEvent || isPredictDisabledJsonEvent(sourceEvent) || isJsonEventOfficialRevealed(sourceEvent)) {
-    console.warn(`[predict] ignore save for event ${eventId}, not editable by source JSON`);
-    return;
-  }
-  
-  const nextSid = getNextSeriesId();
-  const safeSelectedChars = Array.isArray(selectedChars) ? selectedChars : [];
-  const isNonFesFourStar = (char) => {
-    const rarity = String(char?.rarity || '').trim();
-    const skill = String(char?.skillType || '').trim().toLowerCase();
-    return rarity === '4' && !skill.includes('fes');
-  };
-
-  const bannerCandidates = safeSelectedChars
-    .filter((char) => isNonFesFourStar(char))
-    .map((char) => getBaseBannerName(char?.name))
-    .filter(Boolean);
-
-  const payloadBannerBaseName = getBaseBannerName(payloadBannerName);
-  const resolvedBannerName = eventType === 'World Link'
-    ? ''
-    : (bannerCandidates.includes(payloadBannerBaseName)
-      ? payloadBannerBaseName
-      : (bannerCandidates[0] || ''));
-
-  if (eventType !== 'World Link' && !resolvedBannerName) {
-    alert('保存失败：Ban主必须是队伍中的 4★ 非FES 成员。');
-    return;
-  }
-
-  const nextTypeSeriesId = eventType === 'World Link'
-    ? (sourceEvent?.type_series_id ?? null)
-    : getNextTypeSeriesId({ eventId, eventType, bannerName: resolvedBannerName });
-  const teamWorldLink = isTeamWorldLink(eventType, nextTypeSeriesId ?? sourceEvent?.type_series_id);
-
-  // 1. 内部卡片生成逻辑
-  const generatedCardsRaw = safeSelectedChars.map((char, index) => {
-    const rarity = char.rarity || "4";
-    const isBfes = char.skillType === 'bfes_up' && rarity === '4';
-    const isVsCard = isVsName(char.name);
-
-    let cardType = 'perm';
-    if (isBfes) {
-      cardType = 'bfes';
-    } else if (gachaType === 'limited' && rarity === '4') {
-      cardType = 'limited';
-    } else if (gachaType === 'ue' && rarity === '4') {
-      cardType = 'ue';
-    }
-
-    return {
-      CardID: `PRED-${eventId}-${index}`,
-      Name: char.name,
-      Rarity: rarity,
-      EventID: eventId,
-      Attribute: normalizeAttr(char.attr) || '-',
-      Skill: isBfes ? 'bfes_up' : (char.skillType || "-"),
-      Type: cardType,
-      // 重点：使用 PredictEditor 传过来的 Affiliation (已包含 VS 的单位逻辑)
-      Affiliation: (isBfes && isVsCard) ? 'vs' : (char.Affiliation || ""),
-      // Ban主作为 Banner
-      SeriesID: eventType === 'World Link' ? null : (getBaseBannerName(char?.name) === resolvedBannerName ? nextSid : null)
-    };
-  });
-
-  const generatedCards = eventType === 'World Link'
-    ? generatedCardsRaw
-    : sortPredictedCardsForDisplay(generatedCardsRaw, resolvedBannerName);
-
-  const predictedUnit = String(generatedCards?.[0]?.Affiliation || '').trim().toLowerCase();
-  const sourceUnit = String(sourceEvent?.unit || '').trim().toLowerCase();
-  const finalUnit = predictedUnit || sourceUnit;
-  const worldLinkUnit = teamWorldLink ? finalUnit : '';
-  const bannerCard = generatedCardsRaw.find((card) => getBaseBannerName(card?.Name) === resolvedBannerName && card?.SeriesID === nextSid);
-  const finalBanner = eventType === 'World Link'
-    ? ''
-    : buildBannerNameWithUnit(resolvedBannerName, bannerCard?.Affiliation);
-
-  const newPredictEvent = {
-    id: Number(eventId),
-    predict_schema_version: 3,
-    predict_schedule_index: getNormalScheduleIndexByEventId(eventId),
-    predict_shift_count: getInsertedTestCountAtOrBefore(eventId),
-    event_title: event_title,
-    event_type: eventType,
-    gacha_type: gachaType === 'limited' ? '普通限定' : (gachaType === 'ue' ? 'UE限定' : '常驻'),
-    type_series_id: nextTypeSeriesId,
-    event_attribute: normalizeAttr(predictAttr),
-    memberCards: generatedCards,
-    banner: finalBanner,
-    unit: eventType === 'World Link' ? worldLinkUnit : finalUnit,
-    isPredict: true // 必须标记，用于 PredictEditor 判断是否回显
-  };
-
-  // 更新逻辑
-  const index = predictiveEvents.value.findIndex(e => Number(resolvePredictEventIdForCurrentSchedule(e)) === newPredictEvent.id);
+  const newPredictEvent = buildPredictEventPatchFromPayload(payload, { alertOnInvalid: true });
+  if (!newPredictEvent) return;
+  const newEventKey = getEventKey(newPredictEvent.id);
+  const index = predictiveEvents.value.findIndex((event) => (
+    getEventKey(resolvePredictEventIdForCurrentSchedule(event)) === newEventKey
+  ));
   const updatedList = [...predictiveEvents.value]; 
   
   if (index > -1) {
@@ -2990,7 +2963,10 @@ provide('savePredictEvent', (payload) => {
 
 // 删除预测活动
 provide('deletePredictEvent', (id) => {
-  predictiveEvents.value = predictiveEvents.value.filter(e => Number(resolvePredictEventIdForCurrentSchedule(e)) !== Number(id));
+  const targetKey = getEventKey(id);
+  predictiveEvents.value = predictiveEvents.value.filter((event) => (
+    getEventKey(resolvePredictEventIdForCurrentSchedule(event)) !== targetKey
+  ));
 });
 
 const handleGlobalPointerDown = (event) => {

@@ -202,7 +202,7 @@
               <span class="special-date-text">{{ row.startDate || '-' }}</span>
               <span v-if="row.endDate" class="special-date-sep">~</span>
               <span v-if="row.endDate" class="special-date-text">{{ row.endDate }}</span>
-              <span class="special-event-id">#{{ row.id }}</span>
+              <span class="special-event-id">{{ row.isCollab ? '时间仅供参考' : `#${row.id}` }}</span>
             </div>
 
             <div class="special-detail-box" :style="row.detailStyle">
@@ -841,9 +841,14 @@ const isWorldLinkFinalEvent = (event) => {
   const type = getSourceEventTypeText(event).toLowerCase().replace(/\s+/g, '');
   return type.includes('终章') && (type.includes('wl') || type.includes('worldlink'));
 };
+const isC6FixedRosterEvent = (event) => (
+  normalizeId(event?.id).toLowerCase() === 'c6'
+  && getSourceEventTypeText(event) === '联动'
+  && Number(event?.type_series_id) === 6
+);
 const isPredictDisabledEvent = (event) => isTestEvent(event) || isWorldLinkFinalEvent(event);
 const isPredictableBaseEvent = (event) => (
-  Number.isFinite(Number(event?.id))
+  (Number.isFinite(Number(event?.id)) || isC6FixedRosterEvent(event))
   && !isPredictDisabledEvent(event)
   && !isOfficialRevealedEvent(event)
 );
@@ -952,6 +957,36 @@ const buildMemberGradient = (cards, fallbackColor) => {
   return `linear-gradient(135deg, ${stops})`;
 };
 
+const buildMemberBorderGradient = (cards, fallbackColor) => {
+  const colors = (Array.isArray(cards) ? cards : [])
+    .map((card) => charMap.value[getBaseName(card?.Name)]?.color)
+    .filter((color) => !!hexToRgb(color));
+  const unique = [...new Set(colors)];
+  if (unique.length === 0) return `linear-gradient(135deg, ${fallbackColor}, #ffffff, ${fallbackColor})`;
+  if (unique.length === 1) return `linear-gradient(135deg, ${unique[0]}, #ffffff, ${unique[0]})`;
+  const step = 100 / Math.max(1, unique.length - 1);
+  return `linear-gradient(135deg, ${unique.map((color, index) => `${color} ${Math.round(index * step)}%`).join(', ')})`;
+};
+
+const buildCollabMemberGradient = (cards, fallbackColor) => {
+  const colors = (Array.isArray(cards) ? cards : [])
+    .map((card) => charMap.value[getBaseName(card?.Name)]?.color)
+    .filter((color) => !!hexToRgb(color));
+  const unique = [...new Set(colors)];
+  if (unique.length === 0) {
+    const pale = mixHexWithWhite(fallbackColor, 0.54);
+    return `linear-gradient(135deg, ${pale}, #ffffff 52%, ${pale})`;
+  }
+  if (unique.length === 1) {
+    const pale = mixHexWithWhite(unique[0], 0.54);
+    return `linear-gradient(135deg, ${pale}, #ffffff 52%, ${pale})`;
+  }
+  const step = 100 / Math.max(1, unique.length - 1);
+  return `linear-gradient(135deg, ${unique.map((color, index) => (
+    `${mixHexWithWhite(color, 0.54)} ${Math.round(index * step)}%`
+  )).join(', ')})`;
+};
+
 const annotateCards = (cards, bannerName) => {
   const bannerBase = getBaseName(bannerName);
   return (Array.isArray(cards) ? cards : []).map((card) => ({
@@ -961,21 +996,63 @@ const annotateCards = (cards, bannerName) => {
   }));
 };
 
-const numericEvents = computed(() => (Array.isArray(props.allEvents) ? props.allEvents : [])
-  .filter((event) => Number.isFinite(Number(event?.id)))
-  .map((event, index) => ({
-    event,
-    index,
-    idNum: Number(event.id),
-    scheduleIndex: Number.isFinite(Number(event?.predict_schedule_index))
-      ? Number(event.predict_schedule_index)
-      : Number(event.id)
-  }))
-  .sort((a, b) => a.scheduleIndex - b.scheduleIndex || a.idNum - b.idNum || a.index - b.index));
+const numericEvents = computed(() => {
+  const allEvents = Array.isArray(props.allEvents) ? props.allEvents : [];
+  const numericRows = allEvents
+    .filter((event) => Number.isFinite(Number(event?.id)))
+    .map((event, index) => ({
+      event,
+      index,
+      idNum: Number(event.id),
+      scheduleIndex: Number.isFinite(Number(event?.predict_schedule_index))
+        ? Number(event.predict_schedule_index)
+        : Number(event.id)
+    }))
+    .sort((a, b) => a.scheduleIndex - b.scheduleIndex || a.idNum - b.idNum || a.index - b.index);
+
+  const fixedRosterRows = allEvents
+    .map((event, index) => ({ event, index }))
+    .filter(({ event }) => isC6FixedRosterEvent(event))
+    .map(({ event, index }) => {
+      const specialStart = parseYmd(event?.start_date);
+      const specialTime = specialStart ? Date.UTC(specialStart.year, specialStart.month - 1, specialStart.day) : NaN;
+      const rowsWithDates = numericRows.map((row) => {
+        const start = parseYmd(row.event?.start_date);
+        const end = parseYmd(row.event?.end_date || row.event?.start_date);
+        return {
+          row,
+          startTime: start ? Date.UTC(start.year, start.month - 1, start.day) : NaN,
+          endTime: end ? Date.UTC(end.year, end.month - 1, end.day) : NaN
+        };
+      });
+      const overlapping = rowsWithDates.find(({ startTime, endTime }) => (
+        Number.isFinite(specialTime)
+        && Number.isFinite(startTime)
+        && Number.isFinite(endTime)
+        && specialTime >= startTime
+        && specialTime <= endTime
+      ));
+      const previous = rowsWithDates
+        .filter(({ startTime }) => Number.isFinite(specialTime) && Number.isFinite(startTime) && startTime <= specialTime)
+        .at(-1);
+      const anchor = overlapping?.row || previous?.row || numericRows.at(-1) || null;
+      const anchorId = anchor?.idNum ?? 0;
+      return {
+        event,
+        index,
+        idNum: anchorId,
+        scheduleIndex: anchorId + 0.5
+      };
+    });
+
+  return [...numericRows, ...fixedRosterRows]
+    .sort((a, b) => a.scheduleIndex - b.scheduleIndex || a.idNum - b.idNum || a.index - b.index);
+});
 
 const predictableEventIds = computed(() => numericEvents.value
   .filter(({ event }) => isPredictableBaseEvent(event))
   .map(({ idNum }) => idNum)
+  .filter((id, index, ids) => ids.indexOf(id) === index)
   .sort((a, b) => a - b));
 
 const predictPatchById = computed(() => {
@@ -994,7 +1071,11 @@ const effectiveRange = computed(() => {
   void allRows;
   const minPredictableId = predictableEventIds.value[0] ?? null;
   const predictedIds = [...predictPatchById.value.keys()]
-    .map((key) => Number(key))
+    .map((key) => {
+      const numericId = Number(key);
+      if (Number.isFinite(numericId)) return numericId;
+      return numericEvents.value.find(({ event }) => normalizeId(event?.id) === key)?.idNum;
+    })
     .filter((id) => Number.isFinite(id))
     .sort((a, b) => a - b);
   const maxPredictedId = predictedIds[predictedIds.length - 1] ?? null;
@@ -1044,7 +1125,7 @@ const renderedRows = computed(() => {
 
   return numericEvents.value
     .filter(({ idNum }) => idNum >= range.start && idNum <= range.end)
-    .map(({ event: base, index }) => {
+    .map(({ event: base, index, scheduleIndex }) => {
       const idKey = normalizeId(base.id);
       const patch = predictPatchById.value.get(idKey) || null;
       if (!patch && !showUnpredictedRows.value) return null;
@@ -1056,6 +1137,7 @@ const renderedRows = computed(() => {
       const bfesCards = annotateCards(cards.filter(isBfesCard), bannerBase);
       const normalCards = annotateCards(cards.filter((card) => !isBfesCard(card)), bannerBase);
       const eventType = getEventType(event);
+      const isCollab = isC6FixedRosterEvent(event);
       const resolvedUnit = getEventUnit(event) || resolveUnitFromCards(cards);
       const colorName = bannerBase
         || getBaseName(normalCards.find((card) => !vsNameSet.value.has(getBaseName(card?.Name)))?.Name)
@@ -1063,26 +1145,30 @@ const renderedRows = computed(() => {
       const mainColor = charMap.value[colorName]?.color || '#14b8a6';
       const detailKind = eventType === 'World Link'
         ? 'wl'
-        : (eventType === '箱活' ? 'box' : (eventType === '混活' ? 'mixed' : 'unknown'));
-      const rowGradient = detailKind === 'wl'
+        : (isCollab ? 'collab' : (eventType === '箱活' ? 'box' : (eventType === '混活' ? 'mixed' : 'unknown')));
+      const rowGradient = detailKind === 'collab'
+        ? buildCollabMemberGradient(normalCards, mainColor)
+        : detailKind === 'wl'
         ? buildMemberGradient(normalCards, mainColor)
-        : `linear-gradient(115deg, ${rgbaFromHex(mainColor, 0.7)}, rgba(255, 255, 255, 0.74) 42%, ${rgbaFromHex(mainColor, 0.18)}), linear-gradient(90deg, ${rgbaFromHex(mainColor, 0.34)}, rgba(255, 255, 255, 0.65))`;
+        : `linear-gradient(115deg, ${rgbaFromHex(mainColor, 0.7)}, rgba(255, 255, 255, 0.74) 84%, ${rgbaFromHex(mainColor, 0.18)}), linear-gradient(90deg, ${rgbaFromHex(mainColor, 0.34)}, rgba(255, 255, 255, 0.65))`;
 
       return {
         key: `${idKey || 'unknown'}-${index}`,
         id: idKey || '-',
-        sortKey: Number.isFinite(Number(base.id)) ? Number(base.id) : 999999 + index,
-        rowClass: getRowLimitClass(event, cards),
+        sortKey: scheduleIndex,
+        rowClass: `${getRowLimitClass(event, cards)}${isCollab ? ' is-collab-event' : ''}`.trim(),
         startDate: formatDate(base.start_date || base.date || patch?.start_date || patch?.date),
         endDate: formatDate(base.end_date || patch?.end_date),
         eventType,
+        isCollab,
         detailKind,
         detailKindClass: `is-${detailKind}`,
         unitLabel: resolvedUnit.toUpperCase(),
         unitLogo: UNIT_LOGOS[resolvedUnit] || '',
-        seriesLabel: buildSeriesLabel(event),
+        seriesLabel: isCollab ? '' : buildSeriesLabel(event),
         detailStyle: {
           '--special-row-gradient': rowGradient,
+          '--special-collab-border-gradient': buildMemberBorderGradient(normalCards, mainColor),
           '--special-row-color-soft': rgbaFromHex(mainColor, 0.7),
           '--special-row-color-pale': rgbaFromHex(mainColor, 0.18),
           '--special-row-color-light': rgbaFromHex(mainColor, 0.34)
@@ -2007,6 +2093,14 @@ const SpecialCardCell = defineComponent({
   width: var(--special-detail-width);
   padding: 10px var(--special-detail-pad-x);
   background: var(--special-row-gradient);
+}
+
+.special-event-row.is-collab-event .special-date-box,
+.special-event-row.is-collab-event .special-detail-box {
+  border: 4px solid transparent;
+  background:
+    var(--special-row-gradient) padding-box,
+    var(--special-collab-border-gradient) border-box;
 }
 
 .special-detail-head {

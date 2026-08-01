@@ -19,13 +19,14 @@
           <button class="close-btn" @click="$emit('close')">×</button>
         </div>
         
-        <div class="global-config-bar" :class="{ 'has-banner': !isWorldLinkMode }">
+        <div class="global-config-bar" :class="{ 'has-banner': !isFixedRosterMode }">
           <div class="cfg-group">
             <label>活动类型</label>
             <select v-model="form.eventType" :disabled="form.isTypeLocked">
               <option value="箱活">箱活</option>
               <option value="混活">混活</option>
               <option v-if="form.isTypeLocked && form.eventType === 'World Link'" value="World Link">World Link</option>
+              <option v-if="form.isTypeLocked && form.eventType === '联动'" value="联动">联动</option>
             </select>
           </div>
           <div class="cfg-group">
@@ -34,6 +35,7 @@
               <option value="perm">常驻</option>
               <option value="limited">普通限定</option>
               <option value="ue">UE限定</option>
+              <option v-if="form.isGachaLocked && form.gachaType === 'collab'" value="collab">联动</option>
             </select>
           </div>
           <div class="cfg-group">
@@ -43,7 +45,7 @@
               <option v-for="a in ATTRS" :key="a" :value="a">{{ getAttrLabel(a) }}</option>
             </select>
           </div>
-          <div v-if="!isWorldLinkMode" class="cfg-group">
+          <div v-if="!isFixedRosterMode" class="cfg-group">
             <label>Ban主</label>
             <select v-model="form.bannerName" :disabled="bannerCandidates.length === 0">
               <option v-if="bannerCandidates.length === 0" value="">无可用</option>
@@ -57,7 +59,7 @@
       <div class="selected-section">
         <div class="section-title">
           <span>当前阵容 ({{ form.selectedChars.length }})</span>
-          <span class="tip">{{ isWorldLinkMode ? 'World Link 人选固定，无需 Ban主' : '第一个角色默认为 Ban主' }}</span>
+          <span class="tip">{{ fixedRosterTip }}</span>
         </div>
         
         <div class="selected-list" :key="selectedRenderKey">
@@ -117,7 +119,7 @@
         </div>
       </div>
 
-      <div v-if="!isWorldLinkMode" class="pool-section">
+      <div v-if="!isFixedRosterMode" class="pool-section">
         <div class="char-pool-grid">
           <div v-for="(abbr, name) in charMap" :key="name" 
                class="pool-item" 
@@ -133,7 +135,7 @@
         </div>
       </div>
       <div v-else class="pool-section wl-lock-note">
-        World Link 人选已固定，当前仅可调整属性。
+        {{ isFixedRosterCollabMode ? '联动人选、星级与组合已固定，当前仅可调整花色和技能。' : 'World Link 人选已固定，当前仅可调整属性。' }}
       </div>
 
       <div class="drawer-footer">
@@ -438,6 +440,18 @@ const handlePoolItemClick = (name) => {
 };
 
 const isWorldLinkMode = computed(() => form.eventType === 'World Link' && isWorldLinkTeamSeries(props.event));
+const isC6FixedRosterEvent = (eventLike) => {
+  if (String(eventLike?.id || '').trim().toLowerCase() !== 'c6') return false;
+  const type = String(eventLike?.source_event_type || eventLike?.event_type || '').trim();
+  return type === '联动' && Number(eventLike?.type_series_id) === 6;
+};
+const isFixedRosterCollabMode = computed(() => isC6FixedRosterEvent(props.event));
+const isFixedRosterMode = computed(() => isWorldLinkMode.value || isFixedRosterCollabMode.value);
+const fixedRosterTip = computed(() => {
+  if (isFixedRosterCollabMode.value) return 'C6 联动固定六人和 4★，无需 Ban主';
+  if (isWorldLinkMode.value) return 'World Link 人选固定，无需 Ban主';
+  return '第一个角色默认为 Ban主';
+});
 const isWorldLinkFinalChapter = computed(() => {
   const sid = Number(props.event?.type_series_id);
   return String(form.eventType || '').trim() === 'World Link' && sid === 3;
@@ -483,7 +497,7 @@ const isBannerEligibleChar = (char) => {
 const bannerCandidates = computed(() => form.selectedChars.filter((char) => isBannerEligibleChar(char)));
 
 const activeBannerName = computed(() => {
-  if (isWorldLinkMode.value) return '';
+  if (isFixedRosterMode.value) return '';
   const names = bannerCandidates.value.map((char) => String(char?.name || '').trim()).filter(Boolean);
   if (!names.length) return '';
   if (names.includes(form.bannerName)) return form.bannerName;
@@ -491,7 +505,7 @@ const activeBannerName = computed(() => {
 });
 
 const syncBannerName = () => {
-  if (isWorldLinkMode.value) {
+  if (isFixedRosterMode.value) {
     form.bannerName = '';
     return;
   }
@@ -502,7 +516,7 @@ const syncBannerName = () => {
 };
 
 const shouldMarkBannerCard = (char) => {
-  if (isWorldLinkMode.value) return false;
+  if (isFixedRosterMode.value) return false;
   return String(char?.name || '').trim() === String(activeBannerName.value || '').trim();
 };
 
@@ -516,6 +530,9 @@ const getBannerUnit = () => {
 };
 
 const getDisplayUnit = (char) => {
+  if (isFixedRosterCollabMode.value) {
+    return char?.selectedUnit || getOCUnit(char?.name);
+  }
   if (isBfesVsUnitLocked(char)) {
     return 'vs';
   }
@@ -529,7 +546,7 @@ const getDisplayUnit = (char) => {
 };
 
 const isVSUnitLocked = (char) => {
-  return isWorldLinkMode.value
+  return isFixedRosterMode.value
     || isBfesVsUnitLocked(char)
     || (form.eventType === '箱活' && VS_NAMES.includes(char.name) && !!getBannerUnit());
 };
@@ -561,7 +578,7 @@ const isSkillLocked = (char) => {
 };
 
 const isRarityLocked = (char) => {
-  return isWorldLinkMode.value || isForcedBfesInBox(char);
+  return isFixedRosterMode.value || isForcedBfesInBox(char);
 };
 
 const isAttrLocked = (char) => {
@@ -573,7 +590,7 @@ const isCharSelectable = (name) => {
 };
 
 const getCharDisableReason = (name) => {
-  if (isWorldLinkMode.value) return '';
+  if (isFixedRosterMode.value) return '';
   if (form.eventType !== '箱活') return '';
 
   const isFirstPick = form.selectedChars.length === 0;
@@ -717,8 +734,9 @@ watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
       source_event_type: sourceType,
       type_series_id: newVal.type_series_id
     });
+    const sourceIsFixedRosterCollab = isC6FixedRosterEvent(newVal);
     const hasFixedType = sourceType.length > 0
-      ? sourceIsTeamWorldLink
+      ? (sourceIsTeamWorldLink || sourceIsFixedRosterCollab)
       : (!newVal.isPredict && !!String(newVal.event_type || '').trim());
 
     const hasValidType = !!(newVal.event_type && newVal.event_type.trim().length > 0);
@@ -730,7 +748,9 @@ watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
     const sourceGacha = String(newVal.source_gacha_type || '').trim();
     const hasFixedGacha = sourceGacha.length > 0 || (!newVal.isPredict && !!String(newVal.gacha_type || '').trim());
     const currentGacha = hasFixedGacha ? sourceGacha : (newVal.gacha_type || '常驻');
-    form.gachaType = currentGacha === '普通限定'
+    form.gachaType = currentGacha === '联动'
+      ? 'collab'
+      : currentGacha === '普通限定'
       ? 'limited'
       : (currentGacha === 'UE限定' ? 'ue' : 'perm');
     form.isGachaLocked = hasFixedGacha;
@@ -738,11 +758,11 @@ watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
     form.predictAttr = normalizeAttr(newVal.event_attribute);
     form.bannerName = '';
 
-    if (newVal.memberCards && (newVal.isPredict || isWorldLinkMode.value)) {
+    if (newVal.memberCards && (newVal.isPredict || isFixedRosterMode.value)) {
       form.selectedChars = newVal.memberCards.map(card => ({
         name: card.Name,
         attr: normalizeAttr(card.Attribute) || '-',
-        rarity: card.Rarity,
+        rarity: sourceIsFixedRosterCollab ? '4' : card.Rarity,
         selectedUnit: card.Affiliation,
         skillType: card.Skill || '-'
       }));
@@ -850,7 +870,7 @@ watch(
 const isCharInList = (name) => form.selectedChars.some(c => c.name === name);
 
 const toggleChar = (name) => {
-  if (isWorldLinkMode.value) return;
+  if (isFixedRosterMode.value) return;
   if (!isCharSelectable(name) && !isCharInList(name)) {
     return;
   }
@@ -882,7 +902,7 @@ const toggleChar = (name) => {
 };
 
 const removeChar = (idx) => {
-  if (isWorldLinkMode.value) return;
+  if (isFixedRosterMode.value) return;
   form.selectedChars.splice(idx, 1);
   applyAllRules();
 };
@@ -894,7 +914,7 @@ const applyGlobalAttr = () => {
 const buildDraftPredictPayload = () => {
   if (!props.isOpen || !props.event) return null;
   const finalBannerName = String(activeBannerName.value || '').trim();
-  if (!isWorldLinkMode.value && !finalBannerName) return null;
+  if (!isFixedRosterMode.value && !finalBannerName) return null;
 
   const processedChars = form.selectedChars.map(char => {
     let finalUnit = char.selectedUnit;
@@ -964,7 +984,7 @@ onBeforeUnmount(() => {
 
 const submit = () => {
   const finalBannerName = String(activeBannerName.value || '').trim();
-  if (!isWorldLinkMode.value && !finalBannerName) {
+  if (!isFixedRosterMode.value && !finalBannerName) {
     alert('请先选择一个 Ban主。');
     return;
   }

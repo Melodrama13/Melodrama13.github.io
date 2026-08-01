@@ -893,6 +893,7 @@
                           :class="{ 'is-failed': isCardTooltipImageFailed(card, src) }"
                         >
                           <img
+                            crossorigin="anonymous"
                             :src="src"
                             class="card-tooltip-jacket media-load-shimmer"
                             :alt="`${card.Name || '角色'} 卡面`"
@@ -956,6 +957,7 @@
                           :class="{ 'is-failed': isCardTooltipImageFailed(card, src) }"
                         >
                           <img
+                            crossorigin="anonymous"
                             :src="src"
                             class="card-tooltip-jacket media-load-shimmer"
                             :alt="`${card.Name || '角色'} 卡面`"
@@ -1009,6 +1011,7 @@
                   <div class="song-tooltip-hero">
                     <div class="song-tooltip-jacket-wrap" :class="{ 'is-failed': !getSongTooltipImageSrc(row.event) }">
                       <img
+                        crossorigin="anonymous"
                         :src="getSongTooltipImageSrc(row.event)"
                         class="song-tooltip-jacket media-load-shimmer"
                         :alt="`${getSongTitleText(row.event) || '歌曲'} 曲绘`"
@@ -1097,6 +1100,7 @@
           </div>
           <div v-if="isBirthdayInfoOpen(row)" class="birthday-info-popover">
             <img
+              crossorigin="anonymous"
               v-if="getBirthdayCardImageSrc(row) && !isBirthdayCardImageFailed(row)"
               :src="getBirthdayCardImageSrc(row)"
               class="birthday-info-card media-load-shimmer"
@@ -1716,6 +1720,10 @@ const getSourceEventType = (event) => (
     ? String(event?.source_event_type || '').trim()
     : String(event?.event_type || '').trim()
 );
+const isC6FixedRosterEvent = (event) => {
+  if (String(event?.id || '').trim().toLowerCase() !== 'c6') return false;
+  return getSourceEventType(event) === '联动' && Number(event?.type_series_id) === 6;
+};
 const isEventTestByJson = (event) => {
   const type = getSourceEventType(event).toLowerCase();
   return type === '测试' || type === 'test' || type.includes('测试');
@@ -1750,6 +1758,9 @@ const getCurrentEventId = () => {
 
 const canOpenPredictEditor = (event) => {
   if (!event) return false;
+  if (isC6FixedRosterEvent(event)) {
+    return !isEventPredictDisabledByJson(event) && !isEventOfficialRevealedByJson(event);
+  }
   if (!isNumericEventId(event?.id)) return false;
   const eventId = Number(event.id);
   const currentId = Number(getCurrentEventId());
@@ -2320,7 +2331,8 @@ const openPredictEditor = (event) => {
       rarity: String(card?.Rarity || '').trim()
     })).filter((card) => card.name && !!CHAR_MAP.value[card.name])
     : [];
-  emit('sync-preview-event-id', Number(event.id));
+  const numericEventId = Number(event.id);
+  emit('sync-preview-event-id', Number.isFinite(numericEventId) ? numericEventId : null);
   preserveAnchorWhileLayoutChanges(event.id, () => {
     isEditorOpen.value = true;
   });
@@ -5927,6 +5939,7 @@ const preloadSingleHistoryImageUrlForCapture = (url, timeoutMs = 7000) => new Pr
   try {
     img.decoding = 'async';
     img.loading = 'eager';
+    img.crossOrigin = 'anonymous';
     img.referrerPolicy = 'no-referrer';
   } catch (_) {
     // Ignore unsupported attributes.
