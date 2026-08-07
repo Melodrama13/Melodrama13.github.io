@@ -5887,7 +5887,8 @@
       "normal": 14,
       "hard": 19,
       "expert": 27,
-      "master": 32
+      "master": 32,
+      "append": 34
     },
     "vocals": [
       {
@@ -28137,6 +28138,14 @@
         "characters": [
           "白石杏"
         ]
+      },
+      {
+        "vocal_id": 2055,
+        "type": "another_vocal",
+        "released_at": "2026/8/7",
+        "characters": [
+          "巡音流歌"
+        ]
       }
     ]
   },
@@ -32872,6 +32881,14 @@
           "桃井爱莉",
           "日野森雫"
         ]
+      },
+      {
+        "vocal_id": 2056,
+        "type": "another_vocal",
+        "released_at": "2026/8/7",
+        "characters": [
+          "桐谷遥"
+        ]
       }
     ]
   },
@@ -34513,6 +34530,98 @@
     ]
   },
   {
+    "id": 750,
+    "title": "ロスタイムメモリー",
+    "pronunciation": "ろすたいむめもりー",
+    "composer": "じん",
+    "lyricist": "じん",
+    "arranger": "じん",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-08-12 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vbs"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 14,
+      "hard": 18,
+      "expert": 27,
+      "master": 31
+    },
+    "vocals": [
+      {
+        "vocal_id": 1307,
+        "type": "original_song",
+        "released_at": "2026/8/12",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2059,
+        "type": "sekai",
+        "released_at": "2026/8/12",
+        "characters": [
+          "KAITO",
+          "小豆泽心羽",
+          "白石杏",
+          "东云彰人",
+          "青柳冬弥"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 751,
+    "title": "アディショナルメモリー",
+    "pronunciation": "あでぃしょなるめもりー",
+    "composer": "じん",
+    "lyricist": "じん",
+    "arranger": "じん",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-08-10 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "ln"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 14,
+      "hard": 18,
+      "expert": 27,
+      "master": 31
+    },
+    "vocals": [
+      {
+        "vocal_id": 1308,
+        "type": "original_song",
+        "released_at": "2026/8/10",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2057,
+        "type": "sekai",
+        "released_at": "2026/8/10",
+        "characters": [
+          "镜音连",
+          "星乃一歌",
+          "天马咲希",
+          "望月穗波",
+          "日野森志步"
+        ]
+      }
+    ]
+  },
+  {
     "id": 754,
     "title": "光",
     "pronunciation": "ひかり",
@@ -34800,6 +34909,52 @@
           "凤笑梦",
           "草薙宁宁",
           "神代类"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 764,
+    "title": "オツキミリサイタル",
+    "pronunciation": "おつきみりさいたる",
+    "composer": "じん",
+    "lyricist": "じん",
+    "arranger": "じん",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-08-11 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "mmj"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 18,
+      "expert": 25,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1321,
+        "type": "original_song",
+        "released_at": "2026/8/11",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2058,
+        "type": "sekai",
+        "released_at": "2026/8/11",
+        "characters": [
+          "镜音铃",
+          "花里实乃里",
+          "桐谷遥",
+          "桃井爱莉",
+          "日野森雫"
         ]
       }
     ]
