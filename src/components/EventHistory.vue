@@ -2203,54 +2203,24 @@ const findEventElementInContainer = (eventId) => {
   const container = historyContainer.value;
   if (!container) return null;
   const id = `event-${normalizeEventId(eventId)}`;
-  return Array.from(container.querySelectorAll('.event-item')).find((item) => item.id === id) || null;
+  const element = document.getElementById(id);
+  return element?.classList.contains('event-item') && container.contains(element) ? element : null;
 };
 
 
 const findRowElementInContainer = (rowId) => {
   const container = historyContainer.value;
   if (!container || !rowId) return null;
-  return Array.from(container.querySelectorAll('.event-item, .birthday-row, .preview-row')).find((item) => item.id === rowId) || null;
+  const element = document.getElementById(String(rowId));
+  if (!element || !container.contains(element)) return null;
+  return element.matches('.event-item, .birthday-row, .preview-row') ? element : null;
 };
 
 const preserveAnchorWhileLayoutChanges = (eventId, mutator) => {
-  const container = historyContainer.value;
-  if (!container) {
-    mutator();
-    return;
-  }
-
-  const anchorElBefore = findEventElementInContainer(eventId);
-  const beforeTop = anchorElBefore
-    ? (anchorElBefore.getBoundingClientRect().top - container.getBoundingClientRect().top)
-    : null;
-
+  const eventAnchor = getVisibleRowAnchorById(`event-${normalizeEventId(eventId)}`);
+  const anchor = eventAnchor || getViewportAnchor();
   mutator();
-
-  if (typeof beforeTop !== 'number') return;
-
-  // 多帧校正，覆盖抽屉动画与紧凑样式切换期间的连续重排。
-  const correctAnchor = () => {
-    const anchorElAfter = findEventElementInContainer(eventId);
-    if (!anchorElAfter) return;
-    const afterTop = anchorElAfter.getBoundingClientRect().top - container.getBoundingClientRect().top;
-    const delta = afterTop - beforeTop;
-    if (Math.abs(delta) > 2.5) {
-      container.scrollTop += delta;
-    }
-  };
-
-  nextTick(() => {
-    let frames = 12;
-    const tick = () => {
-      correctAnchor();
-      frames -= 1;
-      if (frames > 0) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    setTimeout(correctAnchor, 220);
-    setTimeout(correctAnchor, 420);
-  });
+  if (anchor) stabilizeViewportAnchor(anchor);
 };
 
 // 2. 统一的内部滚动函数，解决筛选栏被顶走的问题
@@ -2262,6 +2232,7 @@ const _internalScrollTo = (eventId, behavior = 'smooth') => {
   const el = findEventElementInContainer(idKey);
   if (!el || !container) return false;
   if (container.clientHeight <= 0 || container.getClientRects().length === 0) return false;
+  cancelViewportStabilization();
   setActiveEventItem(idKey);
 
   // 获取筛选栏的高度作为偏移量
@@ -4931,6 +4902,7 @@ const markVisibleEventRowsHeavy = () => {
   const top = containerRect.top - PROGRESSIVE_RENDER_VIEWPORT_BUFFER_PX;
   const bottom = containerRect.bottom + PROGRESSIVE_RENDER_VIEWPORT_BUFFER_PX;
   const keys = new Set();
+  const anchor = getViewportAnchor();
 
   container.querySelectorAll('.event-item').forEach((node) => {
     const rect = node.getBoundingClientRect();
@@ -4939,10 +4911,10 @@ const markVisibleEventRowsHeavy = () => {
     if (idKey) keys.add(`event-${idKey}`);
   });
 
-  updateViewportAnchor();
+  if (anchor) viewportAnchor.value = anchor;
   if (addProgressiveEventRenderKeys(keys)) {
     nextTick(() => {
-      restoreViewportAnchor();
+      if (anchor) restoreViewportAnchor(anchor);
     });
     if (!isProgressiveRenderPaused()) {
       scheduleProgressiveEventRender();
@@ -5340,9 +5312,25 @@ let filterAdaptFramesLeft = 0;
 let isHistoryPageActive = true;
 let activationRestoreToken = 0;
 let activationRestoreTimeoutIds = [];
+let viewportStabilizationToken = 0;
+let viewportStabilizationRafId = 0;
+let viewportStabilizationTimeoutIds = [];
+let isViewportStabilizing = false;
+
+const cancelViewportStabilization = () => {
+  viewportStabilizationToken += 1;
+  isViewportStabilizing = false;
+  if (viewportStabilizationRafId) {
+    cancelAnimationFrame(viewportStabilizationRafId);
+    viewportStabilizationRafId = 0;
+  }
+  viewportStabilizationTimeoutIds.forEach((timerId) => clearTimeout(timerId));
+  viewportStabilizationTimeoutIds = [];
+};
 
 const cancelScrollCorrections = () => {
   scrollCorrectionToken += 1;
+  cancelViewportStabilization();
 };
 
 const scheduleBoundaryScrollCorrection = (getTargetTop) => {
@@ -5483,28 +5471,93 @@ const saveHistoryScroll = ({ force = false, requireVisible = false } = {}) => {
 
 const handleHistoryScroll = () => {
   if (!isHistoryPageActive) return;
+  if (isViewportStabilizing) {
+    saveHistoryScroll();
+    return;
+  }
   updateViewportAnchor();
   scheduleVisibleEventRowsHeavy();
   saveHistoryScroll();
 };
 
-const getViewportAnchor = () => {
+const getViewportVisibleBounds = () => {
   const container = historyContainer.value;
   if (!container) return null;
 
-  const containerTop = container.getBoundingClientRect().top;
-  const nodes = container.querySelectorAll('.event-item, .birthday-row, .preview-row');
-  for (const node of nodes) {
-    const rect = node.getBoundingClientRect();
-    if (rect.bottom > containerTop + 24) {
-      if (!node.id) continue;
-      return {
-        id: node.id,
-        top: rect.top - containerTop
-      };
+  const containerRect = container.getBoundingClientRect();
+  const stickyRect = filterStickyRef.value?.getBoundingClientRect?.();
+  const top = Math.min(
+    containerRect.bottom,
+    Math.max(containerRect.top, stickyRect?.bottom || containerRect.top)
+  );
+  return {
+    containerTop: containerRect.top,
+    top,
+    bottom: containerRect.bottom,
+    focus: top + Math.max(0, containerRect.bottom - top) / 2
+  };
+};
+
+const getViewportAnchor = () => {
+  const container = historyContainer.value;
+  const bounds = getViewportVisibleBounds();
+  if (!container || !bounds) return null;
+
+  const activeId = currentActiveId.value ? `event-${normalizeEventId(currentActiveId.value)}` : '';
+  const activeNode = activeId ? findRowElementInContainer(activeId) : null;
+  if (activeNode) {
+    const rect = activeNode.getBoundingClientRect();
+    if (rect.bottom > bounds.top && rect.top < bounds.bottom) {
+      return { id: activeNode.id, top: rect.top - bounds.containerTop };
     }
   }
-  return null;
+
+  const containerRect = container.getBoundingClientRect();
+  const focusX = containerRect.left + containerRect.width / 2;
+  const maxProbeDistance = Math.max(0, (bounds.bottom - bounds.top) / 2 - 1);
+  const probeOffsets = [0, -16, 16, -40, 40, -80, 80]
+    .map((offset) => Math.max(-maxProbeDistance, Math.min(maxProbeDistance, offset)));
+  let fallbackRow = null;
+  for (const offset of probeOffsets) {
+    const elementsAtPoint = document.elementsFromPoint(focusX, bounds.focus + offset);
+    const eventNode = elementsAtPoint
+      .map((node) => node.closest?.('.event-item'))
+      .find((node) => node?.id && container.contains(node));
+    if (eventNode) {
+      return {
+        id: eventNode.id,
+        top: eventNode.getBoundingClientRect().top - bounds.containerTop
+      };
+    }
+    if (!fallbackRow) {
+      fallbackRow = elementsAtPoint
+        .map((node) => node.closest?.('.birthday-row, .preview-row'))
+        .find((node) => node?.id && container.contains(node)) || null;
+    }
+  }
+
+  let anchorNode = null;
+  let anchorDistance = Number.POSITIVE_INFINITY;
+  for (const node of container.querySelectorAll('.event-item')) {
+    if (!node.id) continue;
+    const rect = node.getBoundingClientRect();
+    if (rect.bottom <= bounds.top) continue;
+    if (rect.top >= bounds.bottom) break;
+    const distance = rect.top <= bounds.focus && rect.bottom >= bounds.focus
+      ? 0
+      : Math.min(Math.abs(rect.top - bounds.focus), Math.abs(rect.bottom - bounds.focus));
+    if (distance < anchorDistance || (distance === anchorDistance && node.classList.contains('event-item'))) {
+      anchorNode = node;
+      anchorDistance = distance;
+    }
+  }
+  if (!anchorNode) anchorNode = fallbackRow;
+  if (!anchorNode) return null;
+
+  return {
+    id: anchorNode.id,
+    top: anchorNode.getBoundingClientRect().top - bounds.containerTop
+  };
 };
 
 const updateViewportAnchor = () => {
@@ -5515,18 +5568,18 @@ const updateViewportAnchor = () => {
 
 const getVisibleRowAnchorById = (rowId) => {
   const container = historyContainer.value;
+  const bounds = getViewportVisibleBounds();
   const id = String(rowId || '').trim();
-  if (!container || !id) return null;
+  if (!container || !bounds || !id) return null;
 
   const el = findRowElementInContainer(id);
   if (!el) return null;
 
-  const containerTop = container.getBoundingClientRect().top;
   const rect = el.getBoundingClientRect();
-  if (rect.bottom <= containerTop || rect.top >= containerTop + container.clientHeight) return null;
+  if (rect.bottom <= bounds.top || rect.top >= bounds.bottom) return null;
   return {
     id,
-    top: rect.top - containerTop
+    top: rect.top - bounds.containerTop
   };
 };
 
@@ -5562,8 +5615,51 @@ const restoreViewportAnchor = (anchorOverride = null) => {
 
   const containerTop = container.getBoundingClientRect().top;
   const nextTop = el.getBoundingClientRect().top - containerTop;
-  container.scrollTop += (nextTop - anchor.top);
+  const delta = nextTop - anchor.top;
+  if (Math.abs(delta) >= 0.5) {
+    container.scrollTop += delta;
+  }
   saveHistoryScroll();
+  return true;
+};
+
+const stabilizeViewportAnchor = (anchor, { frames = 18, delays = [240, 520] } = {}) => {
+  if (!anchor?.id) return false;
+  cancelViewportStabilization();
+  const token = viewportStabilizationToken;
+  isViewportStabilizing = true;
+  const correct = () => {
+    if (token !== viewportStabilizationToken || !isHistoryPageActive) return false;
+    return restoreViewportAnchor(anchor);
+  };
+  const scheduleTimeout = (delay, isFinal = false) => {
+    const timerId = setTimeout(() => {
+      viewportStabilizationTimeoutIds = viewportStabilizationTimeoutIds.filter((id) => id !== timerId);
+      const restored = correct();
+      if (!isFinal) return;
+      isViewportStabilizing = false;
+      if (restored) {
+        viewportAnchor.value = { ...anchor };
+        saveHistoryScroll();
+      }
+      scheduleVisibleEventRowsHeavy();
+    }, delay);
+    viewportStabilizationTimeoutIds.push(timerId);
+  };
+
+  nextTick(() => {
+    if (token !== viewportStabilizationToken) return;
+    let framesLeft = Math.max(1, frames);
+    const tick = () => {
+      viewportStabilizationRafId = 0;
+      if (token !== viewportStabilizationToken) return;
+      correct();
+      framesLeft -= 1;
+      if (framesLeft > 0) viewportStabilizationRafId = requestAnimationFrame(tick);
+    };
+    viewportStabilizationRafId = requestAnimationFrame(tick);
+    delays.forEach((delay, index) => scheduleTimeout(delay, index === delays.length - 1));
+  });
   return true;
 };
 
@@ -5608,13 +5704,17 @@ const toggleVisibilityWithViewportAnchor = (targetRef) => {
     return;
   }
 
-  updateViewportAnchor();
+  cancelActivationRestore();
+  cancelScrollCorrections();
+  container.scrollTo({ top: container.scrollTop, behavior: 'auto' });
+  const anchor = getViewportAnchor();
+  if (anchor) viewportAnchor.value = anchor;
   const prevScrollTop = container.scrollTop;
   const prevScrollHeight = container.scrollHeight;
   targetRef.value = !targetRef.value;
 
   nextTick(() => {
-    const restored = restoreViewportAnchor();
+    const restored = anchor ? stabilizeViewportAnchor(anchor) : false;
     if (!restored) {
       const delta = container.scrollHeight - prevScrollHeight;
       container.scrollTop = Math.max(0, prevScrollTop + delta);
@@ -6654,6 +6754,8 @@ const scrollTo = (target) => {
     } catch (_) {}
     scheduleBoundaryScrollCorrection((targetContainer) => targetContainer.scrollHeight - targetContainer.clientHeight);
   } else if (target === 'current') {
+    cancelScrollCorrections();
+    container.scrollTo({ top: container.scrollTop, behavior: 'auto' });
     const now = spoilerNow.value;
     const pickLatestStartedEvent = (candidates) => {
       if (!candidates.length) return null;
@@ -6679,7 +6781,7 @@ const scrollTo = (target) => {
     if (candidates.length > 0) {
       const currentEvent = pickLatestStartedEvent(candidates);
       const isActualCurrentVisible = normalizeEventId(currentEvent?.id) === normalizeEventId(actualCurrentEvent?.id);
-      scrollToEventById(currentEvent.id, 'smooth', 24);
+      scrollToEventById(currentEvent.id, 'auto', 24);
       if (!isActualCurrentVisible) {
         clearActiveEventItem();
         requestAnimationFrame(clearActiveEventItem);
@@ -7909,6 +8011,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   min-width: 0; /* 防止子元素撑开 flex */
   touch-action: pan-y pinch-zoom;
   overscroll-behavior-x: contain;
+  overflow-anchor: none;
 }
 
 .event-history > h1 {
