@@ -2,6 +2,7 @@
   <Teleport to="body">
     <transition name="slide">
       <div
+        ref="drawerRef"
         v-if="isOpen"
         class="predict-drawer"
         :class="{ 'is-mobile-sheet': isMobileViewport }"
@@ -147,7 +148,7 @@
 </template>
 
 <script setup>
-import { reactive, inject, watch, computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { reactive, inject, watch, computed, ref, onMounted, onActivated, onDeactivated, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -159,6 +160,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'selection-change']);
 const savePredictEvent = inject('savePredictEvent');
 const updateDraftPredictEvent = inject('updateDraftPredictEvent', null);
+const drawerRef = ref(null);
 
 const ATTRS = ['Pure','Cool','Cute','Happy','Mysterious'];
 const ATTR_LABELS = {
@@ -726,6 +728,33 @@ const normalizeAttr = (attr) => {
 
 const getAttrLabel = (attr) => ATTR_LABELS[attr] || String(attr || '');
 
+const initialPredictionSnapshot = ref('');
+
+const serializePredictionForm = () => JSON.stringify({
+  eventType: String(form.eventType || '').trim(),
+  gachaType: String(form.gachaType || '').trim(),
+  predictAttr: normalizeAttr(form.predictAttr),
+  bannerName: String(form.bannerName || '').trim(),
+  selectedChars: form.selectedChars.map((char) => ({
+    name: String(char?.name || '').trim(),
+    attr: normalizeAttr(char?.attr) || '-',
+    rarity: String(char?.rarity || '').trim(),
+    selectedUnit: String(char?.selectedUnit || '').trim().toLowerCase(),
+    skillType: String(char?.skillType || '').trim().toLowerCase()
+  }))
+});
+
+const capturePredictionBaseline = () => {
+  initialPredictionSnapshot.value = serializePredictionForm();
+};
+
+const hasUnsavedChanges = () => Boolean(
+  props.isOpen
+    && props.event
+    && initialPredictionSnapshot.value
+    && serializePredictionForm() !== initialPredictionSnapshot.value
+);
+
 // 监听打开并初始化数据
 watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
   if (newVal && isOpen) {
@@ -778,6 +807,7 @@ watch([() => props.event, () => props.isOpen], ([newVal, isOpen]) => {
     }
 
     applyAllRules();
+    capturePredictionBaseline();
   }
 }, { immediate: true });
 
@@ -789,6 +819,19 @@ watch(() => props.isOpen, (open) => {
 onMounted(() => {
   updateMobileViewport();
   window.addEventListener('resize', updateMobileViewport);
+});
+
+const setDrawerPageVisibility = (visible) => {
+  if (!(drawerRef.value instanceof HTMLElement)) return;
+  drawerRef.value.style.display = visible ? '' : 'none';
+};
+
+onDeactivated(() => {
+  setDrawerPageVisibility(false);
+});
+
+onActivated(() => {
+  setDrawerPageVisibility(true);
 });
 
 onBeforeUnmount(() => {
@@ -911,42 +954,44 @@ const applyGlobalAttr = () => {
   applyAllRules();
 };
 
+const buildProcessedChars = () => form.selectedChars.map(char => {
+  let finalUnit = char.selectedUnit;
+  let finalSkill = char.skillType;
+
+  if (isVsFesSkillMode(char) && finalSkill !== ACTIVE_FES_SKILL_KEY) {
+    finalSkill = 'unit_score';
+  }
+
+  if (form.eventType === '箱活' && VS_NAMES.includes(char.name)) {
+    const bannerUnit = getBannerUnit();
+    if (bannerUnit) {
+      finalUnit = bannerUnit;
+    }
+  }
+
+  if (isBfesVsUnitLocked(char)) {
+    finalUnit = 'vs';
+  }
+
+  return { ...char, skillType: finalSkill, Affiliation: finalUnit };
+});
+
+const buildPredictPayload = () => ({
+  eventId: props.event.id,
+  eventType: form.eventType,
+  gachaType: form.gachaType,
+  predictAttr: form.predictAttr,
+  bannerName: String(activeBannerName.value || '').trim(),
+  selectedChars: buildProcessedChars(),
+  event_title: `[预测] ${form.eventType}`
+});
+
 const buildDraftPredictPayload = () => {
   if (!props.isOpen || !props.event) return null;
-  const finalBannerName = String(activeBannerName.value || '').trim();
-  if (!isFixedRosterMode.value && !finalBannerName) return null;
+  const payload = buildPredictPayload();
+  if (!isFixedRosterMode.value && !payload.bannerName) return null;
 
-  const processedChars = form.selectedChars.map(char => {
-    let finalUnit = char.selectedUnit;
-    let finalSkill = char.skillType;
-
-    if (isVsFesSkillMode(char) && finalSkill !== ACTIVE_FES_SKILL_KEY) {
-      finalSkill = 'unit_score';
-    }
-
-    if (form.eventType === '绠辨椿' && VS_NAMES.includes(char.name)) {
-      const bannerUnit = getBannerUnit();
-      if (bannerUnit) {
-        finalUnit = bannerUnit;
-      }
-    }
-
-    if (isBfesVsUnitLocked(char)) {
-      finalUnit = 'vs';
-    }
-
-    return { ...char, skillType: finalSkill, Affiliation: finalUnit };
-  });
-
-  return {
-    eventId: props.event.id,
-    eventType: form.eventType,
-    gachaType: form.gachaType,
-    predictAttr: form.predictAttr,
-    bannerName: finalBannerName,
-    selectedChars: processedChars,
-    event_title: `[预测] ${form.eventType}`
-  };
+  return payload;
 };
 
 const emitDraftPredictEvent = () => {
@@ -982,48 +1027,33 @@ onBeforeUnmount(() => {
   if (typeof updateDraftPredictEvent === 'function') updateDraftPredictEvent(null);
 });
 
-const submit = () => {
-  const finalBannerName = String(activeBannerName.value || '').trim();
-  if (!isFixedRosterMode.value && !finalBannerName) {
+const saveCurrentPrediction = ({ closeEditor = false } = {}) => {
+  const payload = buildPredictPayload();
+  if (!isFixedRosterMode.value && !payload.bannerName) {
     alert('请先选择一个 Ban主。');
-    return;
+    return false;
   }
 
-  const processedChars = form.selectedChars.map(char => {
-    let finalUnit = char.selectedUnit;
-    let finalSkill = char.skillType;
-
-    if (isVsFesSkillMode(char) && finalSkill !== ACTIVE_FES_SKILL_KEY) {
-      finalSkill = 'unit_score';
-    }
-
-    // 如果是箱活，VS 自动强制跟随第一个角色的 Unit
-    if (form.eventType === '箱活' && VS_NAMES.includes(char.name)) {
-      const bannerUnit = getBannerUnit();
-      if (bannerUnit) {
-        finalUnit = bannerUnit;
-      }
-    }
-
-    if (isBfesVsUnitLocked(char)) {
-      finalUnit = 'vs';
-    }
-
-    return { ...char, skillType: finalSkill, Affiliation: finalUnit };
-  });
-
   if (typeof updateDraftPredictEvent === 'function') updateDraftPredictEvent(null);
-  savePredictEvent({
-    eventId: props.event.id,
-    eventType: form.eventType,
-    gachaType: form.gachaType,
-    predictAttr: form.predictAttr,
-    bannerName: finalBannerName,
-    selectedChars: processedChars,
-    event_title: `[预测] ${form.eventType}`
-  });
-  emit('close');
+  savePredictEvent(payload);
+  capturePredictionBaseline();
+  if (closeEditor) emit('close');
+  return true;
 };
+
+const submit = () => saveCurrentPrediction({ closeEditor: true });
+
+const saveForEventSwitch = () => saveCurrentPrediction({ closeEditor: false });
+
+const discardDraftForEventSwitch = () => {
+  if (typeof updateDraftPredictEvent === 'function') updateDraftPredictEvent(null);
+};
+
+defineExpose({
+  hasUnsavedChanges,
+  saveForEventSwitch,
+  discardDraftForEventSwitch
+});
 </script>
 
 <style scoped>

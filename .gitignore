@@ -42,3 +42,6 @@ scripts/README.md
 
 # Extracted AI Memories
 copilot_memories/
+
+# Local temporary implementation plans (never publish)
+.codex-plans/

@@ -237,6 +237,18 @@
                 <img src="/elements/happy.png" class="preview-attr-head-icon" title="Happy" />
                 <img src="/elements/mysterious.png" class="preview-attr-head-icon" title="Mysterious" />
               </div>
+              <div
+                v-for="row in previewAttrFiveSummaryRows"
+                :key="`attr-five-summary-${row.key}`"
+                class="preview-attr-row preview-attr-summary-row"
+              >
+                <span class="preview-attr-summary-label">{{ row.label }}</span>
+                <span>{{ row.Pure }}</span>
+                <span>{{ row.Cool }}</span>
+                <span>{{ row.Cute }}</span>
+                <span>{{ row.Happy }}</span>
+                <span>{{ row.Mysterious }}</span>
+              </div>
               <div v-for="row in previewAttrFiveRows" :key="`attr-five-${row.name}`" class="preview-attr-row" :style="getPreviewAttrRowStyle(row.name)">
                 <img :src="`/chibi_s/${getCharAbbr(row.name)}.webp`" class="preview-attr-avatar" :title="row.name" />
                 <span>{{ row.Pure }}</span>
@@ -1120,6 +1132,7 @@
         </template>
       </div>
       <PredictEditor 
+        ref="predictEditorRef"
         v-if="isEditorOpen"
         :is-open="isEditorOpen" 
         :event="currentEditingEvent"
@@ -1131,6 +1144,39 @@
       />
     </div>
   </div>
+  <Teleport to="body">
+    <transition name="predict-switch-dialog">
+      <div
+        v-if="predictSwitchDialog.visible"
+        class="predict-switch-dialog-backdrop"
+        role="presentation"
+        @mousedown.self="resolvePredictSwitchDialog('cancel')"
+        @keydown.esc.prevent="resolvePredictSwitchDialog('cancel')"
+      >
+        <section
+          class="predict-switch-dialog-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="predict-switch-dialog-title"
+          tabindex="-1"
+        >
+          <div class="predict-switch-dialog-icon">!</div>
+          <div class="predict-switch-dialog-copy">
+            <h3 id="predict-switch-dialog-title">当前预测尚未保存</h3>
+            <p>
+              活动 <strong>#{{ predictSwitchDialog.currentEventKey }}</strong> 的临时改动尚未写入预测 JSON。是否先保存，再切换到
+              <strong>#{{ predictSwitchDialog.nextEventKey }}</strong>？
+            </p>
+          </div>
+          <div class="predict-switch-dialog-actions">
+            <button class="predict-switch-dialog-btn is-cancel" @click="resolvePredictSwitchDialog('cancel')">继续编辑</button>
+            <button class="predict-switch-dialog-btn is-discard" @click="resolvePredictSwitchDialog('discard')">不保存并切换</button>
+            <button ref="predictSwitchSaveBtnRef" class="predict-switch-dialog-btn is-save" @click="resolvePredictSwitchDialog('save')">保存并切换</button>
+          </div>
+        </section>
+      </div>
+    </transition>
+  </Teleport>
 </template>
 
 <script setup>
@@ -1773,6 +1819,14 @@ const canOpenPredictEditor = (event) => {
 const isEditorOpen = ref(false);
 const currentEditingEvent = ref(null);
 const lastFocusedEventId = ref(null);
+const predictEditorRef = ref(null);
+const predictSwitchSaveBtnRef = ref(null);
+const predictSwitchDialog = ref({
+  visible: false,
+  currentEventKey: '',
+  nextEventKey: ''
+});
+let pendingPredictSwitchResolve = null;
 const historyWrapperRef = ref(null);
 const filterStickyRef = ref(null);
 const filterBarRef = ref(null);
@@ -1961,7 +2015,7 @@ const resetPreviewPanelLayout = () => {
 };
 
 const getPreviewPanelBaseSize = (panelId) => {
-  if (panelId === 'attr-five') return { width: 188, height: 340 };
+  if (panelId === 'attr-five') return { width: 216, height: 340 };
   if (panelId === 'daily-lineup') return { width: 228, height: 390 };
   if (panelId === 'festival') return { width: 236, height: 350 };
   if (panelId === 'vs-last-four') return { width: 236, height: 242 };
@@ -2280,15 +2334,8 @@ const _internalScrollTo = (eventId, behavior = 'smooth') => {
   return true;
 };
 
-const openPredictEditor = (event) => {
-  if (!canOpenPredictEditor(event)) {
-    return;
-  }
-
-  if (isEditorOpen.value) {
-    return;
-  }
-
+const setPredictEditorEvent = (event) => {
+  const wasOpen = isEditorOpen.value;
   closeInlineTooltips();
   forceRenderEventRow(event.id);
   lastFocusedEventId.value = event.id;
@@ -2299,22 +2346,76 @@ const openPredictEditor = (event) => {
   currentEditingSelectionCards.value = Array.isArray(event?.memberCards)
     ? event.memberCards.map((card) => ({
       name: normalizeCharName(card?.Name),
-      rarity: String(card?.Rarity || '').trim()
+      rarity: String(card?.Rarity || '').trim(),
+      attr: normalizeAttr(card?.Attribute),
+      skillType: String(card?.Skill || '').trim().toLowerCase(),
+      selectedUnit: String(card?.Affiliation || '').trim().toLowerCase()
     })).filter((card) => card.name && !!CHAR_MAP.value[card.name])
     : [];
   const numericEventId = Number(event.id);
   emit('sync-preview-event-id', Number.isFinite(numericEventId) ? numericEventId : null);
-  preserveAnchorWhileLayoutChanges(event.id, () => {
-    isEditorOpen.value = true;
+  if (wasOpen) return;
+  preserveAnchorWhileLayoutChanges(event.id, () => { isEditorOpen.value = true; });
+};
+
+const resolvePredictSwitchDialog = (decision = 'cancel') => {
+  const resolve = pendingPredictSwitchResolve;
+  pendingPredictSwitchResolve = null;
+  predictSwitchDialog.value = {
+    visible: false,
+    currentEventKey: '',
+    nextEventKey: ''
+  };
+  if (typeof resolve === 'function') resolve(decision);
+};
+
+const requestPredictSwitchDecision = (currentEventKey, nextEventKey) => new Promise((resolve) => {
+  if (pendingPredictSwitchResolve) pendingPredictSwitchResolve('cancel');
+  pendingPredictSwitchResolve = resolve;
+  predictSwitchDialog.value = {
+    visible: true,
+    currentEventKey,
+    nextEventKey
+  };
+  nextTick(() => {
+    predictSwitchSaveBtnRef.value?.focus?.();
   });
+});
+
+const openPredictEditor = async (event) => {
+  if (!canOpenPredictEditor(event)) return false;
+
+  const nextEventKey = normalizeEventId(event?.id);
+  const currentEventKey = normalizeEventId(currentEditingEvent.value?.id);
+  if (isEditorOpen.value && nextEventKey === currentEventKey) return true;
+
+  if (isEditorOpen.value) {
+    const editor = predictEditorRef.value;
+    const hasChanges = editor?.hasUnsavedChanges?.() === true;
+    if (hasChanges) {
+      const decision = await requestPredictSwitchDecision(currentEventKey, nextEventKey);
+      if (decision === 'cancel') return false;
+      if (decision === 'save') {
+        const saved = editor?.saveForEventSwitch?.();
+        if (saved !== true) return false;
+      } else if (decision === 'discard') {
+        editor?.discardDraftForEventSwitch?.();
+      }
+    } else {
+      editor?.discardDraftForEventSwitch?.();
+    }
+  }
+
+  setPredictEditorEvent(event);
+  return true;
 };
 
 const openPredictEditorAfterTooltipClose = async (event) => {
   closeInlineTooltips();
   await nextTick();
   await new Promise((resolve) => requestAnimationFrame(resolve));
-  if (!canOpenPredictEditor(event) || isEditorOpen.value) return;
-  openPredictEditor(event);
+  if (!canOpenPredictEditor(event)) return;
+  await openPredictEditor(event);
 };
 
 const handleEventRowClick = (event, domEvent = null) => {
@@ -2330,7 +2431,7 @@ const handleEventRowClick = (event, domEvent = null) => {
     void openPredictEditorAfterTooltipClose(event);
     return;
   }
-  openPredictEditor(event);
+  void openPredictEditor(event);
 };
 
 const handleCloseEditor = () => {
@@ -2345,17 +2446,6 @@ const handleCloseEditor = () => {
   preserveAnchorWhileLayoutChanges(anchorId, () => {
     isEditorOpen.value = false;
   });
-  currentEditingSelectionNames.value = [];
-  currentEditingSelectionCards.value = [];
-  emit('sync-preview-event-id', null);
-};
-
-const closePredictEditorImmediately = () => {
-  if (!isEditorOpen.value && currentEditingSelectionNames.value.length === 0 && currentEditingSelectionCards.value.length === 0) {
-    return;
-  }
-  isEditorOpen.value = false;
-  currentEditingEvent.value = null;
   currentEditingSelectionNames.value = [];
   currentEditingSelectionCards.value = [];
   emit('sync-preview-event-id', null);
@@ -2654,14 +2744,19 @@ const appendPreviewCharAttrCharsFromCurrentLineup = () => {
   selectedPreviewCharAttrChars.value = next;
 };
 
-const handlePredictSelectionChange = (names) => {
-  const rawList = Array.isArray(names) ? names : [];
+const handlePredictSelectionChange = (items) => {
+  const rawList = Array.isArray(items) ? items : [];
   const cards = rawList
     .map((item) => {
       const rawName = typeof item === 'object' && item !== null ? item.name : item;
       return {
         name: normalizeCharName(rawName),
-        rarity: typeof item === 'object' && item !== null ? String(item?.rarity || '').trim() : ''
+        rarity: typeof item === 'object' && item !== null ? String(item?.rarity || '').trim() : '',
+        attr: typeof item === 'object' && item !== null ? normalizeAttr(item?.attr) : '',
+        skillType: typeof item === 'object' && item !== null ? String(item?.skillType || '').trim().toLowerCase() : '',
+        selectedUnit: typeof item === 'object' && item !== null
+          ? String(item?.selectedUnit || item?.Affiliation || '').trim().toLowerCase()
+          : ''
       };
     })
     .filter((card) => card.name && !!CHAR_MAP.value[card.name]);
@@ -2969,11 +3064,71 @@ const hasUnhandledJumpFromProps = () => {
   return !!normalizeEventId(props.jumpEventId);
 };
 
+const previewEventBySourceKey = computed(() => new Map(
+  (props.allEvents || [])
+    .map((event) => [normalizeEventId(event?.id), event])
+    .filter(([key]) => key)
+));
+
+const previewCutoffEvent = computed(() => {
+  const editingKey = normalizeEventId(currentEditingEvent.value?.id);
+  if (editingKey) {
+    return previewEventBySourceKey.value.get(editingKey) || currentEditingEvent.value;
+  }
+  const currentId = Number(getCurrentEventId());
+  if (!Number.isFinite(currentId) || currentId <= 0) return null;
+  return previewEventBySourceKey.value.get(String(currentId)) || null;
+});
+
 const previewMaxEventId = computed(() => {
-  const editingId = Number(currentEditingEvent.value?.id);
-  if (Number.isFinite(editingId) && editingId > 0) return editingId;
+  const cutoffEvent = previewCutoffEvent.value;
+  if (isNumericEventId(cutoffEvent?.id)) return Number(cutoffEvent.id);
+
+  if (cutoffEvent) {
+    const precedingNumericIds = (props.allEvents || [])
+      .filter((event) => isNumericEventId(event?.id))
+      .filter((event) => compareEventOrderAsc(event, cutoffEvent) <= 0)
+      .map((event) => Number(event.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+    if (precedingNumericIds.length > 0) return Math.max(...precedingNumericIds);
+  }
+
   const currentId = Number(getCurrentEventId());
   return Number.isFinite(currentId) && currentId > 0 ? currentId : Number.MAX_SAFE_INTEGER;
+});
+
+const previewEffectiveCards = computed(() => {
+  const sourceCards = [...(props.allCards || [])];
+  const editingKey = normalizeEventId(currentEditingEvent.value?.id);
+  if (!isEditorOpen.value || !editingKey) return sourceCards;
+
+  const sourceByName = new Map();
+  sourceCards.forEach((card) => {
+    if (normalizeEventId(card?.EventID) !== editingKey) return;
+    const name = normalizeCharName(card?.Name);
+    if (!name) return;
+    if (!sourceByName.has(name)) sourceByName.set(name, []);
+    sourceByName.get(name).push(card);
+  });
+
+  const liveCards = currentEditingSelectionCards.value.map((card, index) => {
+    const matched = sourceByName.get(card.name)?.shift() || {};
+    return {
+      ...matched,
+      CardID: matched?.CardID || `LIVE-${editingKey}-${index}`,
+      EventID: editingKey,
+      Name: card.name,
+      Rarity: card.rarity,
+      Attribute: normalizeAttr(card.attr) || '-',
+      Skill: card.skillType || '-',
+      Affiliation: card.selectedUnit || matched?.Affiliation || ''
+    };
+  });
+
+  return [
+    ...sourceCards.filter((card) => normalizeEventId(card?.EventID) !== editingKey),
+    ...liveCards
+  ];
 });
 
 const previewFestivalContext = computed(() => {
@@ -3011,7 +3166,7 @@ const previewFestivalRowsLocal = computed(() => {
     ])
   );
 
-  (props.allCards || []).forEach((card) => {
+  previewEffectiveCards.value.forEach((card) => {
     if (!isCardWithinPreviewLimit(card, maxId)) return;
     const eid = String(card?.EventID || '').trim();
     if (!isNumericEventId(eid)) return;
@@ -3119,11 +3274,27 @@ const previewFestivalIncludeFes = computed(() => {
 
 const previewFestivalShowFes = computed(() => canTogglePreviewFestivalFes(activePreviewFestivalName.value));
 
+const isEventWithinPreviewLimit = (event, maxId = previewMaxEventId.value) => {
+  const eventKey = normalizeEventId(event?.id);
+  if (!eventKey) return true;
+
+  const cutoffEvent = previewCutoffEvent.value;
+  if (cutoffEvent) return compareEventOrderAsc(event, cutoffEvent) <= 0;
+
+  if (isNumericEventId(eventKey)) return Number(eventKey) <= Number(maxId);
+  const cutoffDate = getEventIdCutoffDate(maxId);
+  const sourceDate = parseDateSafe(event?.start_date);
+  if (!cutoffDate || !sourceDate) return true;
+  return sourceDate <= cutoffDate;
+};
+
 const isCardWithinPreviewLimit = (card, maxId) => {
   const eidRaw = String(card?.EventID || '').trim();
   if (!eidRaw) return true;
+  const sourceEvent = previewEventBySourceKey.value.get(eidRaw);
+  if (sourceEvent) return isEventWithinPreviewLimit(sourceEvent, maxId);
   if (isNumericEventId(eidRaw)) return Number(eidRaw) <= Number(maxId);
-  const cutoffDate = getEventIdCutoffDate(maxId);
+  const cutoffDate = parseDateSafe(previewCutoffEvent.value?.start_date) || getEventIdCutoffDate(maxId);
   if (!cutoffDate) return true;
   const sourceDate = getCardSourceDate(card);
   if (!sourceDate) return true;
@@ -3167,16 +3338,14 @@ const previewVsLastFourMap = computed(() => {
 
   const eventDateById = {};
   (props.allEvents || []).forEach((event) => {
-    const eid = String(event?.id || '').trim();
-    if (!/^\d+$/.test(eid)) return;
-    if (Number(eid) > maxId) return;
+    const eid = normalizeEventId(event?.id);
+    if (!eid || !isEventWithinPreviewLimit(event, maxId)) return;
     eventDateById[eid] = getDateValue(event?.start_date);
   });
 
-  (props.allCards || []).forEach((card) => {
-    const eid = String(card?.EventID || '').trim();
-    if (!/^\d+$/.test(eid)) return;
-    if (Number(eid) > maxId) return;
+  previewEffectiveCards.value.forEach((card) => {
+    const eid = normalizeEventId(card?.EventID);
+    if (!eid || !isCardWithinPreviewLimit(card, maxId)) return;
     const rarity = String(card?.Rarity || '').trim();
     if (rarity !== '4') return;
     const name = String(card?.Name || '').trim().split(' ')[0];
@@ -3195,10 +3364,7 @@ const previewVsLastFourMap = computed(() => {
 });
 
 const previewReferenceDateValue = computed(() => {
-  const targetId = Number(previewMaxEventId.value);
-  if (!Number.isFinite(targetId) || targetId <= 0) return Date.now();
-  const target = (props.allEvents || []).find((event) => Number(event?.id) === targetId);
-  const t = getDateValue(target?.start_date);
+  const t = getDateValue(previewCutoffEvent.value?.start_date);
   return t > 0 ? t : Date.now();
 });
 
@@ -3244,7 +3410,7 @@ const previewVsUnitFourCountCompactRows = computed(() => {
     return PREVIEW_VS_NAMES.map((name) => rows[name]);
   }
 
-  (props.allCards || []).forEach((card) => {
+  previewEffectiveCards.value.forEach((card) => {
     if (!isCardWithinPreviewLimit(card, maxId)) return;
     if (String(card?.Rarity || '').trim() !== '4') return;
 
@@ -3289,7 +3455,7 @@ const previewVsUnitScoreRows = computed(() => {
     return PREVIEW_VS_NAMES.map((name) => rows[name]);
   }
 
-  (props.allCards || []).forEach((card) => {
+  previewEffectiveCards.value.forEach((card) => {
     if (!isCardWithinPreviewLimit(card, maxId)) return;
     const skill = String(card?.Skill || '').trim().toLowerCase();
     if (skill !== 'unit_score') return;
@@ -3338,7 +3504,7 @@ const previewVsOriginalRows = computed(() => {
     return PREVIEW_VS_ORIGINAL_STAT_TYPES.map((type) => rows[type]);
   }
 
-  (props.allCards || []).forEach((card) => {
+  previewEffectiveCards.value.forEach((card) => {
     if (!isCardWithinPreviewLimit(card, maxId)) return;
     if (String(card?.Rarity || '').trim() !== '4') return;
 
@@ -3502,7 +3668,7 @@ const previewStepProgressOrderMap = computed(() => {
     return rowMap[name];
   };
 
-  (props.allCards || []).forEach((card) => {
+  previewEffectiveCards.value.forEach((card) => {
     if (!isCardWithinPreviewLimit(card, maxId)) return;
     const name = String(card?.Name || '').trim();
     if (!name || name === '-' || name === 'CardID') return;
@@ -3631,7 +3797,7 @@ const comparePreviewStepCharByKey = (aName, bName, key) => {
 const previewCharStats = computed(() => {
   const stats = {};
   const maxId = previewMaxEventId.value;
-  (props.allCards || []).forEach((card) => {
+  previewEffectiveCards.value.forEach((card) => {
     const name = String(card?.Name || '').trim();
     if (!name || name === '-' || name === 'CardID') return;
     if (!isCardWithinPreviewLimit(card, maxId)) return;
@@ -3739,6 +3905,36 @@ const previewCharStats = computed(() => {
   });
 });
 
+const createPreviewAttrCountSeed = () => Object.fromEntries(
+  PREVIEW_ATTRS.map((attr) => [attr, 0])
+);
+
+const previewAttrFiveSummaryRows = computed(() => {
+  if (!selectedPreviewPanelIds.value.includes('attr-five')) return [];
+
+  const maxId = previewMaxEventId.value;
+  const eventCounts = createPreviewAttrCountSeed();
+  const fourStarCounts = createPreviewAttrCountSeed();
+
+  (props.allEvents || []).forEach((event) => {
+    if (!isEventWithinPreviewLimit(event, maxId)) return;
+    const attr = normalizeAttr(event?.event_attribute);
+    if (eventCounts[attr] !== undefined) eventCounts[attr] += 1;
+  });
+
+  previewEffectiveCards.value.forEach((card) => {
+    if (!isCardWithinPreviewLimit(card, maxId)) return;
+    if (String(card?.Rarity || '').trim() !== '4') return;
+    const attr = normalizeAttr(card?.Attribute);
+    if (fourStarCounts[attr] !== undefined) fourStarCounts[attr] += 1;
+  });
+
+  return [
+    { key: 'events', label: '活动', ...eventCounts },
+    { key: 'four-stars', label: '四星', ...fourStarCounts }
+  ];
+});
+
 const previewAttrFiveRows = computed(() => {
   if (!selectedPreviewPanelIds.value.includes('attr-five')) return [];
   const selected = selectedPreviewAttrChars.value;
@@ -3828,6 +4024,7 @@ const previewDailyLineupRows = computed(() => {
   const lineupMap = external?.groups?.dailyLineup || {};
   const canUseExternal = Number.isFinite(externalMaxId)
     && externalMaxId === Number(previewMaxEventId.value)
+    && !isEditorOpen.value
     && lineupMap
     && typeof lineupMap === 'object';
 
@@ -3936,7 +4133,7 @@ const previewDailyLineupRows = computed(() => {
     if (!Number.isFinite(maxId) || maxId <= 0) return {};
 
     const byNameAttr = {};
-    (props.allCards || []).forEach((card) => {
+    previewEffectiveCards.value.forEach((card) => {
       if (!isCardWithinPreviewLimit(card, maxId)) return;
       if (String(card?.Rarity || '').trim() !== '4') return;
 
@@ -4062,7 +4259,7 @@ const previewCharAttrRows = computed(() => {
     selectedPreviewCharAttrChars.value.map((name) => [name, createPreviewCharAttrSeed()])
   );
 
-  (props.allCards || []).forEach((card) => {
+  previewEffectiveCards.value.forEach((card) => {
     if (!isCardWithinPreviewLimit(card, maxId)) return;
     const baseName = normalizeCharName(card?.Name);
     if (!statsByName[baseName]) return;
@@ -4199,7 +4396,7 @@ const getPreviewStepsByKey = (key) => {
   const panelDef = PREVIEW_PANEL_DEFS.find((d) => d.statKey === resolvedKey);
   const external = props.statsPreviewData;
   const externalMaxId = Number(external?.maxEventId);
-  if (panelDef?.externalKey && Number.isFinite(externalMaxId) && externalMaxId === Number(previewMaxEventId.value)) {
+  if (panelDef?.externalKey && !isEditorOpen.value && Number.isFinite(externalMaxId) && externalMaxId === Number(previewMaxEventId.value)) {
     const groups = external?.groups?.[panelDef.externalKey];
     if (Array.isArray(groups) && groups.length > 0) {
       return groups.map((g) => ({
@@ -6595,8 +6792,8 @@ onMounted(() => {
 
 onDeactivated(() => {
   isHistoryPageActive = false;
+  resolvePredictSwitchDialog('cancel');
   cancelActivationRestore();
-  closePredictEditorImmediately();
   closeInlineTooltips();
   stopDragPreviewConfig();
   stopDragPreview();
@@ -6682,6 +6879,7 @@ onActivated(() => {
 });
 
 onBeforeUnmount(() => {
+  resolvePredictSwitchDialog('cancel');
   if (typeof window !== 'undefined') {
     if (window.pjskSetEventHistoryFullRender) delete window.pjskSetEventHistoryFullRender;
     if (window.pjskIsEventHistoryFullRender) delete window.pjskIsEventHistoryFullRender;
@@ -7180,6 +7378,170 @@ const getFestivalPreviewUnitLogo = (name) => {
   --history-active-border: rgba(94, 234, 212, 0.78);
 }
 
+.predict-switch-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9200;
+  display: grid;
+  place-items: center;
+  padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 28% 20%, rgba(153, 246, 228, 0.18), transparent 42%),
+    radial-gradient(circle at 78% 76%, rgba(125, 211, 252, 0.16), transparent 44%),
+    rgba(15, 23, 42, 0.24);
+  backdrop-filter: blur(12px) saturate(135%);
+  -webkit-backdrop-filter: blur(12px) saturate(135%);
+}
+
+.predict-switch-dialog-card {
+  position: relative;
+  isolation: isolate;
+  width: min(520px, calc(100vw - 36px));
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 26px;
+  padding: 24px;
+  color: #173042;
+  background:
+    linear-gradient(138deg, rgba(255, 255, 255, 0.82), rgba(236, 254, 255, 0.58) 48%, rgba(219, 234, 254, 0.50)),
+    rgba(255, 255, 255, 0.58);
+  box-shadow:
+    0 28px 80px rgba(15, 23, 42, 0.26),
+    0 8px 24px rgba(14, 165, 233, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    inset 0 -1px 0 rgba(148, 163, 184, 0.18);
+  backdrop-filter: blur(30px) saturate(185%);
+  -webkit-backdrop-filter: blur(30px) saturate(185%);
+}
+
+.predict-switch-dialog-card::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -42% 44% 36% -18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(94, 234, 212, 0.34), rgba(125, 211, 252, 0.06) 58%, transparent 72%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.predict-switch-dialog-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 15px;
+  color: #0f766e;
+  font-size: 1.2rem;
+  font-weight: 900;
+  background: linear-gradient(145deg, rgba(204, 251, 241, 0.92), rgba(186, 230, 253, 0.68));
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.predict-switch-dialog-copy h3 {
+  margin: 0 0 8px;
+  font-size: 1.08rem;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+}
+
+.predict-switch-dialog-copy p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.predict-switch-dialog-copy strong {
+  color: #0f766e;
+  font-weight: 850;
+}
+
+.predict-switch-dialog-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 22px;
+}
+
+.predict-switch-dialog-btn {
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 14px;
+  padding: 9px 12px;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 780;
+  line-height: 1.25;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 5px 14px rgba(15, 23, 42, 0.07);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.predict-switch-dialog-btn:hover {
+  transform: translateY(-1px);
+}
+
+.predict-switch-dialog-btn:focus-visible {
+  outline: 3px solid rgba(45, 212, 191, 0.30);
+  outline-offset: 2px;
+}
+
+.predict-switch-dialog-btn.is-discard {
+  color: #9f1239;
+  border-color: rgba(251, 113, 133, 0.30);
+  background: rgba(255, 241, 242, 0.66);
+}
+
+.predict-switch-dialog-btn.is-save {
+  color: #ffffff;
+  border-color: rgba(45, 212, 191, 0.70);
+  background: linear-gradient(145deg, rgba(13, 148, 136, 0.94), rgba(14, 165, 233, 0.82));
+  box-shadow: 0 9px 20px rgba(13, 148, 136, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.predict-switch-dialog-enter-active,
+.predict-switch-dialog-leave-active {
+  transition: opacity 180ms ease;
+}
+
+.predict-switch-dialog-enter-active .predict-switch-dialog-card,
+.predict-switch-dialog-leave-active .predict-switch-dialog-card {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;
+}
+
+.predict-switch-dialog-enter-from,
+.predict-switch-dialog-leave-to {
+  opacity: 0;
+}
+
+.predict-switch-dialog-enter-from .predict-switch-dialog-card,
+.predict-switch-dialog-leave-to .predict-switch-dialog-card {
+  opacity: 0;
+  transform: translateY(12px) scale(0.97);
+}
+
+@media (max-width: 520px) {
+  .predict-switch-dialog-card {
+    width: min(100%, 390px);
+    border-radius: 22px;
+    padding: 20px;
+  }
+
+  .predict-switch-dialog-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .predict-switch-dialog-btn.is-save {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+}
+
 .predict-preview-floating {
   position: static;
   z-index: 6200;
@@ -7546,7 +7908,7 @@ const getFestivalPreviewUnitLogo = (name) => {
 .preview-attr-head,
 .preview-attr-row {
   display: grid;
-  grid-template-columns: 26px repeat(5, 22px);
+  grid-template-columns: 30px repeat(5, 26px);
   align-items: center;
   justify-items: center;
   gap: 4px;
@@ -7577,6 +7939,25 @@ const getFestivalPreviewUnitLogo = (name) => {
   border: 1px solid rgba(255, 255, 255, 0.46);
   border-radius: 999px;
   padding: 2px;
+}
+
+.preview-attr-row > span:not(:first-child) {
+  min-width: 0;
+  overflow: visible;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-attr-summary-row {
+  background: rgba(241, 245, 249, 0.68);
+  border-color: rgba(148, 163, 184, 0.34);
+  color: #334155;
+  font-weight: 800;
+}
+
+.preview-attr-summary-label {
+  font-size: 0.68rem;
+  white-space: nowrap;
 }
 
 .preview-attr-avatar {
