@@ -419,6 +419,7 @@
               @focus="selectEventNote(row.id, row.sourceId)"
               @input="onEventNoteInput(row.id, $event, row.sourceId)"
               @blur="onEventNoteBlur(row.id, $event, row.sourceId)"
+              @beforeinput="onEventNoteBeforeInput(row.id, $event, row.sourceId)"
               @keydown="onEventNoteKeydown(row.id, $event, row.sourceId)"
             />
             </div>
@@ -611,6 +612,7 @@
                       @focus="selectEventNote(row.id, caseItem.noteSourceId)"
                       @input="onEventNoteInput(row.id, $event, caseItem.noteSourceId)"
                       @blur="onEventNoteBlur(row.id, $event, caseItem.noteSourceId)"
+                      @beforeinput="onEventNoteBeforeInput(row.id, $event, caseItem.noteSourceId)"
                       @keydown="onEventNoteKeydown(row.id, $event, caseItem.noteSourceId)"
                     />
                   </section>
@@ -1018,7 +1020,7 @@ const NOTE_ATTRIBUTE_COMMANDS = Object.freeze({
   mysterious: ['mysterious', '紫月', '紫']
 });
 const NOTE_UNIT_COMMANDS = Object.freeze({
-  ln: ['ln', 'leo/need'],
+  ln: ['ln', 'leoneed'],
   mmj: ['mmj', 'moremorejump'],
   vbs: ['vbs', 'vividbadsquad'],
   ws: ['ws', 'wxs', 'wonderlandsxshowtime'],
@@ -3104,20 +3106,53 @@ const renderEventNoteContent = (element, value) => {
   element.replaceChildren(fragment);
 };
 
+const isEventNoteBlockElement = (node) => (
+  node instanceof HTMLElement && ['DIV', 'P'].includes(node.tagName)
+);
+
+const isEventNotePlaceholderBreak = (node) => (
+  isEventNoteBlockElement(node)
+  && node.childNodes.length === 1
+  && node.firstChild instanceof HTMLElement
+  && node.firstChild.tagName === 'BR'
+);
+
+const serializeEventNoteChildren = (element) => {
+  const children = [...(element?.childNodes || [])];
+  let value = '';
+  let previousNode = null;
+  let previousContent = '';
+  children.forEach((node, index) => {
+    const content = serializeEventNoteNode(node);
+    if (
+      index > 0
+      && (isEventNoteBlockElement(previousNode) || isEventNoteBlockElement(node))
+      && !previousContent.endsWith('\n')
+    ) {
+      value += '\n';
+    }
+    value += content;
+    previousNode = node;
+    previousContent = content;
+  });
+  return value;
+};
+
 const serializeEventNoteNode = (node) => {
   if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
   if (!(node instanceof HTMLElement)) return '';
   if (node.matches('img.special-note-inline-icon[data-note-token]')) return node.dataset.noteToken || '';
   if (node.tagName === 'BR') return '\n';
-  const content = [...node.childNodes].map(serializeEventNoteNode).join('');
-  return ['DIV', 'P'].includes(node.tagName) ? `${content}\n` : content;
+  if (isEventNotePlaceholderBreak(node)) return '';
+  return serializeEventNoteChildren(node);
 };
 
-const serializeEventNoteElement = (element) => (
-  [...(element?.childNodes || [])]
-    .map(serializeEventNoteNode)
-    .join('')
-    .replace(/\n+$/u, '')
+const serializeEventNoteElement = (element) => serializeEventNoteChildren(element);
+
+const isEventNoteElementBeingEdited = (element) => (
+  !editorHistoryApplying
+  && typeof document !== 'undefined'
+  && document.activeElement === element
 );
 
 const setEventNoteElement = (eventId, element, sourceId = selectedSource.value?.id) => {
@@ -3129,6 +3164,7 @@ const setEventNoteElement = (eventId, element, sourceId = selectedSource.value?.
     return;
   }
   eventNoteElementMap.set(mapKey, element);
+  if (isEventNoteElementBeingEdited(element)) return;
   const text = String(getEventNote(id, sourceId).text ?? '');
   if (serializeEventNoteElement(element) !== text) renderEventNoteContent(element, text);
 };
@@ -3136,6 +3172,7 @@ const setEventNoteElement = (eventId, element, sourceId = selectedSource.value?.
 const syncEventNoteElements = async () => {
   await nextTick();
   eventNoteElementMap.forEach((element, key) => {
+    if (isEventNoteElementBeingEdited(element)) return;
     const separator = key.indexOf('|');
     const sourceId = key.slice(0, separator);
     const eventId = key.slice(separator + 1);
@@ -3238,9 +3275,8 @@ const deleteSelectedEventNoteIcons = (eventId, event, sourceId, element, selecti
   return true;
 };
 
-const deleteAdjacentEventNoteIcon = (eventId, event, sourceId, element, selection, range) => {
+const deleteAdjacentEventNoteIcon = (eventId, event, sourceId, element, selection, range, direction) => {
   if (!selection.isCollapsed) return false;
-  const direction = event.key === 'Backspace' ? 'backward' : 'forward';
   const icon = getAdjacentEventNoteIcon(element, range, direction);
   if (!icon?.parentNode) return false;
   event.preventDefault();
@@ -3270,26 +3306,25 @@ const deleteAdjacentEventNoteIcon = (eventId, event, sourceId, element, selectio
   return true;
 };
 
-const onEventNoteKeydown = (eventId, event, sourceId = selectedSource.value?.id) => {
-  if (!event || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+const getEventNoteInputSelection = (event) => {
   const element = event.currentTarget;
   const selection = window.getSelection();
-  if (!(element instanceof HTMLElement) || !selection || selection.rangeCount === 0) return;
+  if (!(element instanceof HTMLElement) || !selection || selection.rangeCount === 0) return null;
   const range = selection.getRangeAt(0);
-  if (!element.contains(range.commonAncestorContainer)) return;
-  if (event.key === 'Backspace' || event.key === 'Delete') {
-    if (deleteSelectedEventNoteIcons(eventId, event, sourceId, element, selection, range)) return;
-    deleteAdjacentEventNoteIcon(eventId, event, sourceId, element, selection, range);
-    return;
-  }
-  if (event.key !== ' ' || !selection.isCollapsed) return;
+  if (!element.contains(range.commonAncestorContainer)) return null;
+  return { element, selection, range };
+};
+
+const replaceEventNoteCommand = (eventId, event, sourceId, context) => {
+  const { element, selection, range } = context;
+  if (!selection.isCollapsed) return false;
   const textNode = range.startContainer;
-  if (textNode.nodeType !== Node.TEXT_NODE || !element.contains(textNode)) return;
+  if (textNode.nodeType !== Node.TEXT_NODE || !element.contains(textNode)) return false;
   const before = String(textNode.nodeValue || '').slice(0, range.startOffset);
   const match = before.match(/\/([^\s/]+)$/u);
-  if (!match) return;
+  if (!match) return false;
   const descriptor = resolveNoteIconCommand(match[1]);
-  if (!descriptor) return;
+  if (!descriptor) return false;
 
   event.preventDefault();
   event.stopPropagation();
@@ -3306,10 +3341,46 @@ const onEventNoteKeydown = (eventId, event, sourceId = selectedSource.value?.id)
   selection.removeAllRanges();
   selection.addRange(caretRange);
 
-  const note = ensureEventNote(eventId, sourceId);
-  if (!note) return;
-  note.text = serializeEventNoteElement(element);
-  saveCoverTextSettings();
+  persistEventNoteDomEdit(eventId, element, sourceId);
+  return true;
+};
+
+const deleteEventNoteIconFromInput = (eventId, event, sourceId, context, direction) => {
+  const { element, selection, range } = context;
+  if (deleteSelectedEventNoteIcons(eventId, event, sourceId, element, selection, range)) return true;
+  return deleteAdjacentEventNoteIcon(eventId, event, sourceId, element, selection, range, direction);
+};
+
+const onEventNoteBeforeInput = (eventId, event, sourceId = selectedSource.value?.id) => {
+  if (!event || event.isComposing) return;
+  const context = getEventNoteInputSelection(event);
+  if (!context) return;
+  if (event.inputType === 'insertText' && event.data === ' ') {
+    replaceEventNoteCommand(eventId, event, sourceId, context);
+    return;
+  }
+  if (event.inputType === 'deleteContentBackward') {
+    deleteEventNoteIconFromInput(eventId, event, sourceId, context, 'backward');
+  } else if (event.inputType === 'deleteContentForward') {
+    deleteEventNoteIconFromInput(eventId, event, sourceId, context, 'forward');
+  }
+};
+
+const onEventNoteKeydown = (eventId, event, sourceId = selectedSource.value?.id) => {
+  if (!event || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+  const context = getEventNoteInputSelection(event);
+  if (!context) return;
+  if (event.key === 'Backspace' || event.key === 'Delete') {
+    deleteEventNoteIconFromInput(
+      eventId,
+      event,
+      sourceId,
+      context,
+      event.key === 'Backspace' ? 'backward' : 'forward'
+    );
+    return;
+  }
+  if (event.key === ' ') replaceEventNoteCommand(eventId, event, sourceId, context);
 };
 
 const isDefaultCreditText = (value) => /^预测：\S+$/u.test(String(value || '').trim());
