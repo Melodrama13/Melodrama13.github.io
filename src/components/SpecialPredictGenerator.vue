@@ -26,8 +26,12 @@
     <section v-else class="special-generator-shell">
       <div class="special-toolbar">
         <div class="special-toolbar-row special-toolbar-row-main">
-        <div class="special-toolbar-group special-toolbar-source">
-          <label class="special-source-picker">
+        <div class="special-toolbar-group special-toolbar-source" :class="{ 'is-multi': isMultiCaseMode }">
+          <div class="special-predict-mode-toggle" aria-label="预测图模式">
+            <button type="button" :class="{ active: !isMultiCaseMode }" @click="setPredictionMode('single')">单一预测</button>
+            <button type="button" :class="{ active: isMultiCaseMode }" @click="setPredictionMode('multi')">多分支预测</button>
+          </div>
+          <label v-if="!isMultiCaseMode" class="special-source-picker">
             <span>数据源</span>
             <select v-model="selectedSourceId">
               <option
@@ -39,6 +43,42 @@
               </option>
             </select>
           </label>
+          <div v-else class="special-multi-source-picker">
+            <button class="special-multi-source-trigger" type="button" :class="{ active: multiSourceListOpen }" @click="multiSourceListOpen = !multiSourceListOpen">
+              <span>预测源</span>
+              <span>{{ selectedMultiSources.length }}/{{ normalizedSources.length }}</span>
+              <span class="special-multi-source-chevron" aria-hidden="true"></span>
+            </button>
+            <div v-if="multiSourceListOpen" class="special-multi-source-list" role="group" aria-label="多分支预测源">
+              <button
+                v-for="source in normalizedSources"
+                :key="source.id"
+                class="special-multi-source-option"
+                :class="{ active: getMultiSourceOrder(source.id) > 0 }"
+                type="button"
+                role="checkbox"
+                :data-source-id="source.id"
+                :aria-checked="getMultiSourceOrder(source.id) > 0"
+                @click="toggleMultiCaseSource(source.id)"
+              >
+                <span class="special-multi-source-order">{{ getMultiSourceOrder(source.id) || '' }}</span>
+                <span class="special-multi-source-name" :title="source.name">{{ source.name }}</span>
+                <span class="special-multi-source-count">{{ source.predictiveEvents.length }}</span>
+              </button>
+            </div>
+            <div v-else-if="selectedMultiSources.length === 0" class="special-multi-source-empty">展开列表并选择预测源。</div>
+          </div>
+        </div>
+
+        <div v-if="isMultiCaseMode" class="special-toolbar-group special-toolbar-page">
+          <label class="special-page-picker">
+            <span>图片</span>
+            <select :value="selectedPageConfigKey" @change="selectPageConfig($event.target.value)">
+              <option :value="ALL_PAGE_CONFIG_KEY">全部图</option>
+              <option v-for="page in monthlyMultiPages" :key="page.key" :value="page.key">{{ page.label }}（{{ page.rows.length }}期）</option>
+            </select>
+          </label>
+          <span class="special-page-scope-note">{{ selectedPageConfigKey === ALL_PAGE_CONFIG_KEY ? '修改将应用到全部月份' : '仅修改当前月份' }}</span>
         </div>
 
         <div class="special-toolbar-group special-toolbar-range">
@@ -249,7 +289,7 @@
             <input v-model.number="coverBgOpacity" type="number" min="0" max="100" step="5" inputmode="numeric" aria-label="图片透明度" @change="normalizeCoverBgOpacity" />
             <span>%</span>
           </label>
-          <button class="special-action-btn" type="button" :disabled="isExporting || renderedRows.length === 0" @click="exportPng">
+          <button class="special-action-btn" type="button" :disabled="isExporting || !hasRenderableRows" @click="exportPng">
             {{ isExporting ? '导出中...' : '导出 PNG' }}
           </button>
         </div>
@@ -259,7 +299,7 @@
       <div v-if="exportStatus" class="special-export-status">{{ exportStatus }}</div>
 
       <div ref="canvasWrapRef" class="special-canvas-wrap">
-        <div class="special-canvas-stage" :style="canvasStageStyle">
+        <div v-if="!isMultiCaseMode" class="special-canvas-stage" :style="canvasStageStyle">
         <div ref="canvasRef" class="special-canvas" :class="{ 'is-exporting': isExporting }" :style="canvasStyle" aria-label="特殊预测图预览" @pointerdown="onCanvasTextSelectionPointerDown">
           <div ref="coverPanelRef" class="special-cover-panel" :class="{ 'has-cover-image': coverBgUrl }" :style="coverStyle">
             <div v-if="coverBgUrl" class="special-cover-bg-image" :style="coverImageStyle" aria-hidden="true"></div>
@@ -313,7 +353,7 @@
               :class="['special-event-row', row.rowClass]"
               :style="row.detailStyle"
             >
-            <div class="special-date-box">
+            <div class="special-date-box" :style="eventMetaTextStyle">
               <span class="special-date-text">{{ row.startDate || '-' }}</span>
               <span v-if="row.endDate" class="special-date-sep">~</span>
               <span v-if="row.endDate" class="special-date-text">{{ row.endDate }}</span>
@@ -321,7 +361,7 @@
             </div>
 
             <div class="special-detail-box" :style="row.detailStyle">
-              <div class="special-detail-head" :class="row.detailKindClass">
+              <div class="special-detail-head" :class="row.detailKindClass" :style="eventMetaTextStyle">
                 <template v-if="row.detailKind === 'box' && row.unitLogo">
                   <img :src="row.unitLogo" class="special-unit-logo" :alt="row.unitLabel" />
                 </template>
@@ -366,19 +406,20 @@
               v-if="row.hasPrediction"
               class="special-event-note"
               :class="{
-                'is-selected': selectedEventNoteId === row.id,
-                'is-empty': !getEventNote(row.id).text
+                'is-selected': selectedEventNoteId === row.id && selectedEventNoteSourceId === row.sourceId,
+                'is-empty': !getEventNote(row.id, row.sourceId).text
               }"
               contenteditable="true"
               spellcheck="false"
               :aria-label="`${row.id}备注`"
               data-placeholder="点击添加备注"
-              :style="getEventNoteRenderStyle(row.id)"
-              :ref="(el) => setEventNoteElement(row.id, el)"
-              @pointerdown="selectEventNote(row.id)"
-              @focus="selectEventNote(row.id)"
-              @input="onEventNoteInput(row.id, $event)"
-              @blur="onEventNoteBlur(row.id, $event)"
+              :style="getEventNoteRenderStyle(row.id, row.sourceId)"
+              :ref="(el) => setEventNoteElement(row.id, el, row.sourceId)"
+              @pointerdown="selectEventNote(row.id, row.sourceId)"
+              @focus="selectEventNote(row.id, row.sourceId)"
+              @input="onEventNoteInput(row.id, $event, row.sourceId)"
+              @blur="onEventNoteBlur(row.id, $event, row.sourceId)"
+              @keydown="onEventNoteKeydown(row.id, $event, row.sourceId)"
             />
             </div>
           </template>
@@ -395,13 +436,207 @@
             :style="creditTextRenderStyle"
             @pointerdown="selectPredictorText"
             @focus="selectPredictorText"
-            @input="onCreditInput"
-            :ref="setCreditElement"
-          />
-        </div>
-        </div>
+          @input="onCreditInput"
+          :ref="setCreditElement"
+        />
       </div>
-    </section>
+      </div>
+        <template v-else>
+          <div
+            v-for="page in monthlyMultiPages"
+            :key="page.key"
+            class="special-canvas-stage"
+            :style="getMultiCanvasStageStyle(page.key)"
+          >
+            <div
+              :ref="(el) => setMultiCanvasElement(page.key, el)"
+              class="special-canvas is-multi-case"
+              :class="{ 'is-exporting': isExporting }"
+              :style="getPageCanvasStyle(page.key)"
+              :aria-label="`${page.label}多分支特殊预测图预览`"
+              @pointerdown="onCanvasTextSelectionPointerDown"
+            >
+              <div
+                :ref="(el) => setMultiCoverPanelElement(page.key, el)"
+                class="special-cover-panel"
+                :class="{ 'has-cover-image': !!getPageCoverBgUrl(page.key) }"
+                :style="coverStyle"
+              >
+                <div v-if="getPageCoverBgUrl(page.key)" class="special-cover-bg-image" :style="getPageCoverImageStyle(page.key)" aria-hidden="true"></div>
+                <div
+                  v-for="block in getPageCoverTextBlocks(page.key)"
+                  :key="`${page.key}-${block.id}`"
+                  class="special-cover-text-frame"
+                  :class="{
+                    'is-selected': isPageAppearanceActive(page.key) && selectedCoverTextId === block.id,
+                    'is-transforming': isPageAppearanceActive(page.key) && selectedCoverTextId === block.id && !!activeTextTransformMode
+                  }"
+                  :style="getCoverTextFrameStyle(block)"
+                  @pointerdown="selectPageCoverTextBlock(page.key, block)"
+                >
+                  <div
+                    class="special-cover-text"
+                    :class="[`is-align-${block.align || 'left'}`, { 'is-italic': block.italic }]"
+                    :contenteditable="isPageAppearanceActive(page.key)"
+                    :style="getPageCoverTextContentStyle(block, page.key)"
+                    :aria-label="block.name"
+                    spellcheck="false"
+                    :ref="(el) => setCoverTextElement(block, el, page.key)"
+                    @focus="selectPageCoverTextBlock(page.key, block)"
+                    @input="onCoverTextInput(block, $event, page.key)"
+                    @blur="onCoverTextBlur(block, $event, page.key)"
+                  />
+                  <button
+                    v-if="isPageAppearanceActive(page.key) && selectedCoverTextId === block.id"
+                    class="special-cover-move-handle"
+                    type="button"
+                    title="拖动文本框"
+                    aria-label="拖动文本框"
+                    @pointerdown="startCoverTextTransform(block, 'move', $event, page.key)"
+                  >•••</button>
+                  <button
+                    v-if="isPageAppearanceActive(page.key) && selectedCoverTextId === block.id"
+                    class="special-cover-resize-handle"
+                    type="button"
+                    title="缩放文本框"
+                    aria-label="缩放文本框"
+                    @pointerdown="startCoverTextTransform(block, 'resize', $event, page.key)"
+                  />
+                </div>
+              </div>
+
+              <div class="special-month-bar" :style="getPageMonthTextStyle(page.key)">{{ page.label }}</div>
+
+              <div
+                v-for="row in page.rows"
+                :key="row.key"
+                :class="['special-event-row', 'special-multi-event-row', row.rowClass]"
+                :style="row.detailStyle"
+              >
+                <div class="special-date-box" :style="getPageEventMetaTextStyle(page.key)">
+                  <span class="special-date-text">{{ row.startDate || '-' }}</span>
+                  <span v-if="row.endDate" class="special-date-sep">~</span>
+                  <span v-if="row.endDate" class="special-date-text">{{ row.endDate }}</span>
+                  <span class="special-event-id">{{ row.isCollab ? '时间仅供参考' : `#${row.id}` }}</span>
+                </div>
+
+                <div class="special-multi-case-grid" :class="{ 'is-single-case': row.cases.length === 1 }">
+                  <section
+                    v-for="caseItem in row.cases"
+                    :key="`${row.key}-${caseItem.sourceIds.join('-')}`"
+                    :class="[
+                      'special-case-card',
+                      caseItem.rowClass,
+                      {
+                        'is-manual-case': caseItem.isManual,
+                        'is-controls-visible': activeCaseControlKey === `${row.id}|${caseItem.caseKey}`
+                      }
+                    ]"
+                    :style="caseItem.detailStyle"
+                    :title="caseItem.sourceNames.join(' / ')"
+                    @pointerdown="activeCaseControlKey = `${row.id}|${caseItem.caseKey}`"
+                  >
+                    <div class="special-case-actions" aria-label="Case 操作">
+                      <button type="button" title="临时删除此 Case" aria-label="删除 Case" @click.stop="removeRenderedCase(row.id, caseItem)">−</button>
+                    </div>
+                    <div class="special-case-head" :class="caseItem.detailKindClass" :style="getPageEventMetaTextStyle(page.key)">
+                      <span class="special-case-label" :style="getPageCaseLabelStyle(page.key)">{{ caseItem.caseLabel }}</span>
+                      <img v-if="caseItem.detailKind === 'box' && caseItem.unitLogo" :src="caseItem.unitLogo" class="special-unit-logo" :alt="caseItem.unitLabel" />
+                      <img v-else-if="caseItem.detailKind === 'mixed'" src="/specialized/se.png" class="special-se-logo" alt="混活" />
+                      <span v-else-if="caseItem.detailKind === 'wl'" class="special-wl-text">World Link</span>
+                      <span v-else class="special-unknown-text">{{ caseItem.eventType || '待定' }}</span>
+                      <span v-if="caseItem.seriesLabel" class="special-series-label">{{ caseItem.seriesLabel }}</span>
+                    </div>
+
+                    <div class="special-case-member-grid">
+                      <template v-if="caseItem.isManual">
+                        <label
+                          v-for="slot in 8"
+                          :key="`manual-${row.key}-${caseItem.manualId}-${slot}`"
+                          class="special-manual-card-slot"
+                          :class="{ 'is-invalid': caseItem.commands[slot - 1] && !getManualCaseCard(caseItem, slot - 1) }"
+                        >
+                          <SpecialCardCell
+                            v-if="getManualCaseCard(caseItem, slot - 1)"
+                            :card="getManualCaseCard(caseItem, slot - 1)"
+                            :is-banner="false"
+                            :char-map="charMap"
+                            :vs-name-set="vsNameSet"
+                          />
+                          <div v-else class="special-case-card-placeholder" aria-hidden="true"></div>
+                          <input
+                            :value="caseItem.commands[slot - 1]"
+                            type="text"
+                            spellcheck="false"
+                            :aria-label="`Case ${caseItem.caseIndex + 1} 人选 ${slot}`"
+                            placeholder="ick-cute-4"
+                            @input="updateManualCaseCommand(row.id, caseItem.manualId, slot - 1, $event.target.value)"
+                          />
+                        </label>
+                      </template>
+                      <template v-else v-for="(card, idx) in getCaseMemberSlots(caseItem, row.cases.length === 1)" :key="`mc-${row.key}-${caseItem.caseIndex}-${idx}`">
+                        <SpecialCardCell v-if="card" :card="card" :is-banner="card.isBanner" :char-map="charMap" :vs-name-set="vsNameSet" />
+                        <div v-else class="special-case-card-placeholder" aria-hidden="true"></div>
+                      </template>
+                    </div>
+
+                    <div v-for="fesGroup in caseItem.fesGroups" :key="fesGroup.key" class="special-case-fes-row">
+                      <div class="special-case-fes-logo-cell">
+                        <img :src="fesGroup.logo" class="special-case-fes-logo" :alt="fesGroup.label" />
+                      </div>
+                      <SpecialCardCell
+                        v-for="(card, idx) in fesGroup.cards"
+                        :key="`mf-${row.key}-${caseItem.caseIndex}-${fesGroup.key}-${idx}`"
+                        :card="card"
+                        :is-banner="card.isBanner"
+                        :char-map="charMap"
+                        :vs-name-set="vsNameSet"
+                      />
+                    </div>
+
+                    <div
+                      v-if="caseItem.hasPrediction"
+                      class="special-case-note"
+                      :class="{
+                        'is-selected': selectedEventNoteId === row.id && selectedEventNoteSourceId === caseItem.noteSourceId,
+                        'is-empty': !getEventNote(row.id, caseItem.noteSourceId).text
+                      }"
+                      contenteditable="true"
+                      spellcheck="false"
+                      :aria-label="`${row.id}备注`"
+                      data-placeholder="点击添加备注"
+                      :style="getEventNoteRenderStyle(row.id, caseItem.noteSourceId)"
+                      :ref="(el) => setEventNoteElement(row.id, el, caseItem.noteSourceId)"
+                      @pointerdown="selectEventNote(row.id, caseItem.noteSourceId)"
+                      @focus="selectEventNote(row.id, caseItem.noteSourceId)"
+                      @input="onEventNoteInput(row.id, $event, caseItem.noteSourceId)"
+                      @blur="onEventNoteBlur(row.id, $event, caseItem.noteSourceId)"
+                      @keydown="onEventNoteKeydown(row.id, $event, caseItem.noteSourceId)"
+                    />
+                  </section>
+                </div>
+              </div>
+
+              <div
+                class="special-credit-box"
+                :class="{ 'is-selected': isPageAppearanceActive(page.key) && isPredictorTextMode }"
+                :contenteditable="isPageAppearanceActive(page.key)"
+                spellcheck="false"
+                aria-label="预测者署名"
+                :style="getPageCreditTextRenderStyle(page.key)"
+                @pointerdown="selectPagePredictor(page.key)"
+                @focus="selectPagePredictor(page.key)"
+                @input="onCreditInput"
+                :ref="(el) => setCreditElement(el, page.key)"
+              />
+            </div>
+          </div>
+          <div v-if="monthlyMultiPages.length === 0" class="special-multi-empty-canvas">
+            请选择预测 JSON，或调整活动范围。
+          </div>
+        </template>
+    </div>
+  </section>
   </div>
 </template>
 
@@ -428,11 +663,13 @@ const GLOBAL_COVER_TEXT_ID = '__global__';
 const PREDICTOR_TEXT_ID = '__predictor__';
 const ALL_EVENT_NOTES_ID = '__all_event_notes__';
 const EVENT_NOTE_ID_PREFIX = '__event_note__:';
+const ALL_PAGE_CONFIG_KEY = '__all_pages__';
 const CUSTOM_COLOR_KEY = '__custom';
 const FONT_DATABASE_NAME = 'pjsk_special_predict_fonts_v1';
 const FONT_DATABASE_STORE = 'fonts';
 const DEFAULT_CUSTOM_MONTH_COLOR = '#ffcaa6';
 const DEFAULT_CUSTOM_BACKGROUND_COLOR = '#c8c9e8';
+const CASE_LABEL_DARK_TEXT_LUMINANCE = 0.42;
 const GLOBAL_TEXT_STYLE_KEYS = Object.freeze([
   'fontFamily',
   'fontSize',
@@ -668,7 +905,10 @@ const createDefaultCoverTextBlocks = () => [
 const keyDraft = ref('');
 const lockError = ref('');
 const isUnlocked = ref(false);
+const predictionMode = ref('single');
 const selectedSourceId = ref('');
+const multiSourceIds = ref([]);
+const multiSourceListOpen = ref(false);
 const canvasRef = ref(null);
 const canvasWrapRef = ref(null);
 const coverPanelRef = ref(null);
@@ -687,13 +927,27 @@ const creditManuallyEdited = ref(false);
 const backgroundColorName = ref('');
 const customMonthColor = ref(DEFAULT_CUSTOM_MONTH_COLOR);
 const customBackgroundColor = ref(DEFAULT_CUSTOM_BACKGROUND_COLOR);
+const selectedPageConfigKey = ref(ALL_PAGE_CONFIG_KEY);
+const singlePageAppearance = ref(null);
+const allPageAppearance = ref(null);
+const pageAppearances = ref({});
 const selectedCoverTextId = ref(GLOBAL_COVER_TEXT_ID);
+const selectedEventNoteSourceId = ref('');
 const coverTextBlocks = ref(createDefaultCoverTextBlocks());
 const globalTextDraft = ref({});
 const allEventNotesDraft = ref({});
 const monthFontFamily = ref('inherit');
 const creditTextStyle = ref(createDefaultCreditTextStyle());
-const eventNotesBySource = ref({});
+const eventNotesByMode = ref({ single: {}, multi: {} });
+const eventNotesBySource = computed({
+  get: () => eventNotesByMode.value[predictionMode.value === 'multi' ? 'multi' : 'single'],
+  set: (value) => {
+    const mode = predictionMode.value === 'multi' ? 'multi' : 'single';
+    eventNotesByMode.value[mode] = value && typeof value === 'object' ? value : {};
+  }
+});
+const manualCaseEditsByEvent = ref({});
+const activeCaseControlKey = ref('');
 const customFontOptions = ref([]);
 const localFontStatus = ref('');
 const fontPlatform = detectFontPlatform();
@@ -704,18 +958,22 @@ const editorHistoryPending = ref(false);
 const previewScale = ref(1);
 const previewCanvasWidth = ref(0);
 const previewCanvasHeight = ref(0);
+const multiCanvasSizes = ref({});
 let previewResizeObserver = null;
 let lastCreditDefault = '';
 let exportStatusTimer = null;
 let localFontStatusTimer = null;
 const coverTextElementMap = new Map();
 const eventNoteElementMap = new Map();
-let creditElement = null;
+const creditElementMap = new Map();
+const multiCanvasElementMap = new Map();
+const multiCoverPanelElementMap = new Map();
 let coverTextSettingsReady = false;
 let activeTextTransform = null;
 let fontDatabasePromise = null;
 const customFontFaceMap = new Map();
 const coverBgAssetMap = new Map();
+const coverBgUrlMap = new Map();
 const EDITOR_HISTORY_LIMIT = 80;
 const EDITOR_HISTORY_CAPTURE_DELAY = 360;
 let editorHistoryReady = false;
@@ -723,6 +981,7 @@ let editorHistoryApplying = false;
 let editorHistoryTimer = null;
 let lastEditorHistoryState = null;
 let editorCompositionActive = false;
+let pageAppearanceApplying = false;
 
 const normalizeId = (value) => String(value ?? '').trim();
 const getBaseName = (name) => String(name || '').trim().split(/\s+/)[0] || '';
@@ -748,6 +1007,24 @@ const UNIT_LOGOS = {
   nc: '/elements/25時、ナイトコードで.webp',
   vs: '/elements/virtual_singer.webp'
 };
+
+const NOTE_ICON_TOKEN_PATTERN = /\[\[sp-icon:(attr|char|unit):([^\]]+)\]\]/g;
+const NOTE_ICON_TRIGGER_SPACE_VERSION = 2;
+const NOTE_ATTRIBUTE_COMMANDS = Object.freeze({
+  cute: ['cute', '粉花', '粉'],
+  cool: ['cool', '蓝星', '蓝'],
+  pure: ['pure', '绿草', '绿'],
+  happy: ['happy', '黄心', '橙心', '黄', '橙'],
+  mysterious: ['mysterious', '紫月', '紫']
+});
+const NOTE_UNIT_COMMANDS = Object.freeze({
+  ln: ['ln', 'leo/need'],
+  mmj: ['mmj', 'moremorejump'],
+  vbs: ['vbs', 'vividbadsquad'],
+  ws: ['ws', 'wxs', 'wonderlandsxshowtime'],
+  nc: ['nc', '25', '25ji', '25时'],
+  vs: ['vs', 'virtualsinger', '虚拟歌手']
+});
 
 const textToBytes = (text) => {
   const value = String(text || '');
@@ -857,15 +1134,100 @@ const normalizedSources = computed(() => (Array.isArray(props.predictSources) ? 
 
 const selectedSource = computed(() => normalizedSources.value.find((source) => source.id === selectedSourceId.value) || normalizedSources.value[0] || null);
 
+const isMultiCaseMode = computed(() => predictionMode.value === 'multi');
+
+const selectedMultiSources = computed(() => multiSourceIds.value
+  .map((id) => normalizedSources.value.find((source) => source.id === id))
+  .filter(Boolean));
+
+const activeCaseSources = computed(() => (
+  isMultiCaseMode.value
+    ? selectedMultiSources.value
+    : (selectedSource.value ? [selectedSource.value] : [])
+));
+
+const setPredictionMode = async (mode) => {
+  const nextMode = mode === 'multi' ? 'multi' : 'single';
+  if (nextMode === predictionMode.value) return;
+  commitPendingEditorHistory();
+  commitCurrentPageAppearance();
+  predictionMode.value = nextMode;
+  if (nextMode === 'multi' && multiSourceIds.value.length === 0) {
+    const preferred = selectedSource.value?.id || normalizedSources.value[0]?.id;
+    const second = normalizedSources.value.find((source) => source.id !== preferred)?.id;
+    multiSourceIds.value = [preferred, second].filter(Boolean);
+  }
+  if (nextMode === 'multi') multiSourceListOpen.value = true;
+  selectedCoverTextId.value = GLOBAL_COVER_TEXT_ID;
+  selectedEventNoteSourceId.value = '';
+  globalTextDraft.value = {};
+  allEventNotesDraft.value = {};
+  syncEventNotesWithSources(nextMode);
+  const nextAppearance = nextMode === 'single'
+    ? singlePageAppearance.value
+    : (selectedPageConfigKey.value === ALL_PAGE_CONFIG_KEY
+      ? allPageAppearance.value
+      : (pageAppearances.value[selectedPageConfigKey.value] || allPageAppearance.value));
+  applyPageAppearance(nextAppearance || createDefaultPageAppearance());
+  await Promise.all([
+    syncCoverTextElements(),
+    syncCreditElement(),
+    syncEventNoteElements()
+  ]);
+  updatePreviewScale();
+  saveCoverTextSettings();
+};
+
+const getMultiSourceOrder = (sourceId) => {
+  const index = multiSourceIds.value.indexOf(normalizeId(sourceId));
+  return index >= 0 ? index + 1 : 0;
+};
+
+const toggleMultiCaseSource = (sourceId) => {
+  const id = normalizeId(sourceId);
+  if (!id) return;
+  if (multiSourceIds.value.includes(id)) {
+    multiSourceIds.value = multiSourceIds.value.filter((item) => item !== id);
+  } else if (normalizedSources.value.some((source) => source.id === id)) {
+    multiSourceIds.value = [...multiSourceIds.value, id];
+  }
+};
+
 const eventNotes = computed(() => (
   eventNotesBySource.value[selectedSource.value?.id] || {}
 ));
 
-const activePredictiveEventIdSet = computed(() => new Set(
-  (selectedSource.value?.predictiveEvents || [])
-    .map((event) => normalizeId(event?.id))
-    .filter(Boolean)
-));
+const collectScopedMultiEventNotes = (pages, pageKey, notesBySource) => {
+  const scopedPages = pageKey === ALL_PAGE_CONFIG_KEY
+    ? pages
+    : pages.filter((page) => page.key === pageKey);
+  const notes = [];
+  const seen = new Set();
+  scopedPages.forEach((page) => {
+    page.rows.forEach((row) => {
+      row.cases.forEach((caseItem) => {
+        if (!caseItem.hasPrediction) return;
+        const sourceId = normalizeId(caseItem.noteSourceId);
+        const eventId = normalizeId(row.id);
+        const key = `${sourceId}|${eventId}`;
+        const note = notesBySource[sourceId]?.[eventId];
+        if (!note || seen.has(key)) return;
+        seen.add(key);
+        notes.push(note);
+      });
+    });
+  });
+  return notes;
+};
+
+const bulkEditableEventNotes = computed(() => {
+  if (!isMultiCaseMode.value) return Object.values(eventNotes.value);
+  return collectScopedMultiEventNotes(
+    monthlyMultiPages.value,
+    selectedPageConfigKey.value,
+    eventNotesBySource.value
+  );
+});
 
 const selectedSourceName = computed(() => String(selectedSource.value?.name || '').trim() || '未知用户');
 
@@ -892,8 +1254,23 @@ const charMap = computed(() => {
     map[name] = {
       abbr: String(char?.en_abbr || '').trim(),
       unit: normalizeUnit(char?.unit),
-      color: String(char?.color || '').trim()
+      color: String(char?.color || '').trim(),
+      zhName: name,
+      jaName: String(char?.ja_name || '').trim(),
+      singleMark: String(char?.single_mark || '').trim()
     };
+  });
+  return map;
+});
+
+const characterCommandMap = computed(() => {
+  const map = new Map();
+  Object.values(charMap.value).forEach((meta) => {
+    const aliases = [meta.zhName, meta.jaName, meta.singleMark, meta.abbr];
+    aliases.forEach((alias) => {
+      const key = String(alias || '').trim().toLowerCase();
+      if (key && !map.has(key)) map.set(key, meta);
+    });
   });
   return map;
 });
@@ -930,10 +1307,110 @@ const canvasStyle = computed(() => ({
   '--special-preview-scale': previewScale.value
 }));
 
+const getAppearanceMonthColor = (appearance) => {
+  if (appearance?.monthColorName === CUSTOM_COLOR_KEY) return appearance.customMonthColor || DEFAULT_CUSTOM_MONTH_COLOR;
+  return characterColorOptions.value.find((item) => item.name === appearance?.monthColorName)?.color
+    || characterColorOptions.value[0]?.color
+    || DEFAULT_CUSTOM_MONTH_COLOR;
+};
+
+const getAppearanceBackgroundColor = (appearance) => {
+  if (appearance?.backgroundColorName === CUSTOM_COLOR_KEY) return appearance.customBackgroundColor || DEFAULT_CUSTOM_BACKGROUND_COLOR;
+  return characterColorOptions.value.find((item) => item.name === appearance?.backgroundColorName)?.color
+    || characterColorOptions.value[1]?.color
+    || DEFAULT_CUSTOM_BACKGROUND_COLOR;
+};
+
+const getPageCanvasStyle = (pageKey) => {
+  const appearance = resolvePageAppearance(pageKey);
+  return {
+    '--special-month-fill': getAppearanceMonthColor(appearance),
+    '--special-canvas-bg': mixHexWithWhite(getAppearanceBackgroundColor(appearance), 0.32),
+    '--special-preview-scale': previewScale.value
+  };
+};
+
+const getPageCoverTextBlocks = (pageKey) => (
+  resolvePageAppearance(pageKey)?.blocks || []
+);
+
+const getPageCoverBgUrl = (pageKey) => {
+  const assetId = String(resolvePageAppearance(pageKey)?.coverBgAssetId || '');
+  return assetId ? (coverBgUrlMap.get(assetId) || '') : '';
+};
+
+const getPageCoverImageStyle = (pageKey) => {
+  const appearance = resolvePageAppearance(pageKey);
+  const url = getPageCoverBgUrl(pageKey);
+  return {
+    backgroundImage: url ? `url(${JSON.stringify(url)})` : 'none',
+    opacity: clampNumber(appearance?.coverBgOpacity, 100, 0, 100) / 100
+  };
+};
+
+const getPageMonthTextStyle = (pageKey) => ({
+  fontFamily: String(resolvePageAppearance(pageKey)?.monthFontFamily || 'inherit')
+});
+
+const getPageEventMetaTextStyle = (pageKey) => ({
+  fontFamily: String(resolvePageAppearance(pageKey)?.monthFontFamily || 'inherit')
+});
+
+const getReadableBlackOrWhite = (backgroundColor) => {
+  const rgb = hexToRgb(backgroundColor);
+  if (!rgb) return '#ffffff';
+  const toLinear = (channel) => {
+    const value = channel / 255;
+    return value <= 0.03928
+      ? value / 12.92
+      : ((value + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * toLinear(rgb.r)
+    + 0.7152 * toLinear(rgb.g)
+    + 0.0722 * toLinear(rgb.b);
+  return luminance >= CASE_LABEL_DARK_TEXT_LUMINANCE ? '#000000' : '#ffffff';
+};
+
+const getPageCaseLabelStyle = (pageKey) => {
+  const backgroundColor = getAppearanceMonthColor(resolvePageAppearance(pageKey));
+  return {
+    backgroundColor,
+    color: getReadableBlackOrWhite(backgroundColor)
+  };
+};
+
 const canvasStageStyle = computed(() => ({
   width: previewCanvasWidth.value ? `${Math.ceil(previewCanvasWidth.value * previewScale.value)}px` : undefined,
   height: previewCanvasHeight.value ? `${Math.ceil(previewCanvasHeight.value * previewScale.value)}px` : undefined
 }));
+
+const getMultiCanvasStageStyle = (pageKey) => {
+  const size = multiCanvasSizes.value[pageKey] || {};
+  return {
+    width: size.width ? `${Math.ceil(size.width * previewScale.value)}px` : undefined,
+    height: size.height ? `${Math.ceil(size.height * previewScale.value)}px` : undefined
+  };
+};
+
+const setMultiCanvasElement = (pageKey, element) => {
+  const key = normalizeId(pageKey);
+  if (!key) return;
+  const previous = multiCanvasElementMap.get(key);
+  if (previous && previous !== element) previewResizeObserver?.unobserve(previous);
+  if (element) {
+    multiCanvasElementMap.set(key, element);
+    previewResizeObserver?.observe(element);
+  } else {
+    multiCanvasElementMap.delete(key);
+  }
+};
+
+const setMultiCoverPanelElement = (pageKey, element) => {
+  const key = normalizeId(pageKey);
+  if (!key) return;
+  if (element) multiCoverPanelElementMap.set(key, element);
+  else multiCoverPanelElementMap.delete(key);
+};
 
 const availableFontOptions = computed(() => [
   ...COMMON_FONT_OPTIONS,
@@ -955,7 +1432,9 @@ const selectedEventNoteId = computed(() => (
     : ''
 ));
 const selectedEventNote = computed(() => (
-  selectedEventNoteId.value ? (eventNotes.value[selectedEventNoteId.value] || null) : null
+  selectedEventNoteId.value
+    ? (eventNotesBySource.value[selectedEventNoteSourceId.value || selectedSource.value?.id]?.[selectedEventNoteId.value] || null)
+    : null
 ));
 const isEventNoteMode = computed(() => !!selectedEventNote.value);
 const isAnyEventNoteMode = computed(() => isAllEventNotesMode.value || isEventNoteMode.value);
@@ -970,7 +1449,7 @@ const getCommonCoverTextProperty = (property) => {
 
 const isGlobalTextPropertyMixed = (property) => {
   if (isAllEventNotesMode.value) {
-    const notes = Object.values(eventNotes.value);
+    const notes = bulkEditableEventNotes.value;
     if (notes.length <= 1) return false;
     const firstValue = notes[0]?.[property];
     return notes.some((note) => !Object.is(note?.[property], firstValue));
@@ -1012,7 +1491,7 @@ const globalTextSettingsProxy = new Proxy({}, {
 });
 
 const getCommonEventNoteProperty = (property) => {
-  const notes = Object.values(eventNotes.value);
+  const notes = bulkEditableEventNotes.value;
   if (notes.length === 0) return createDefaultEventNote('')[property] ?? '';
   const firstValue = notes[0]?.[property];
   return notes.every((note) => Object.is(note?.[property], firstValue)) ? firstValue : '';
@@ -1033,7 +1512,7 @@ const allEventNotesSettingsProxy = new Proxy({}, {
       return true;
     }
     delete allEventNotesDraft.value[property];
-    Object.values(eventNotes.value).forEach((note) => {
+    bulkEditableEventNotes.value.forEach((note) => {
       note[property] = value;
     });
     return true;
@@ -1112,25 +1591,63 @@ const normalizeEventNote = (value, eventId) => {
   };
 };
 
-const getEventNote = (eventId) => {
-  const id = normalizeId(eventId);
-  return eventNotes.value[id] || createDefaultEventNote(id);
+const normalizeManualCaseEdits = (value) => {
+  if (!value || typeof value !== 'object') return {};
+  return Object.fromEntries(Object.entries(value).map(([eventId, edit]) => {
+    const normalizedEventId = normalizeId(eventId);
+    const removedCaseKeys = Array.isArray(edit?.removedCaseKeys)
+      ? [...new Set(edit.removedCaseKeys.map(normalizeId).filter(Boolean))]
+      : [];
+    const manualCases = Array.isArray(edit?.manualCases)
+      ? edit.manualCases.map((manualCase, index) => ({
+        id: normalizeId(manualCase?.id) || `manual-${normalizedEventId}-${index + 1}`,
+        afterCaseKey: normalizeId(manualCase?.afterCaseKey),
+        commands: Array.from({ length: 8 }, (_, slot) => String(manualCase?.commands?.[slot] || '')),
+        basePatch: manualCase?.basePatch && typeof manualCase.basePatch === 'object'
+          ? { ...manualCase.basePatch, memberCards: undefined }
+          : {}
+      }))
+      : [];
+    return [normalizedEventId, { removedCaseKeys, manualCases }];
+  }).filter(([eventId]) => eventId));
 };
 
-const ensureEventNote = (eventId) => {
-  const id = normalizeId(eventId);
-  if (!id || !activePredictiveEventIdSet.value.has(id)) return null;
-  const sourceId = selectedSource.value?.id;
-  if (!sourceId) return null;
-  if (!eventNotesBySource.value[sourceId]) eventNotesBySource.value[sourceId] = {};
-  if (!eventNotes.value[id]) eventNotes.value[id] = createDefaultEventNote(id);
-  return eventNotes.value[id];
+const getManualCaseNoteSourceId = (manualCaseId) => `__manual_case__:${normalizeId(manualCaseId)}`;
+
+const hasManualCaseNoteSource = (eventId, sourceId) => {
+  const prefix = '__manual_case__:';
+  const normalizedSourceId = normalizeId(sourceId);
+  if (!normalizedSourceId.startsWith(prefix)) return false;
+  const manualId = normalizedSourceId.slice(prefix.length);
+  return !!manualCaseEditsByEvent.value[normalizeId(eventId)]?.manualCases?.some((item) => item.id === manualId);
 };
 
-const syncEventNotesWithSources = () => {
+const getEventNote = (eventId, sourceId = selectedSource.value?.id) => {
+  const id = normalizeId(eventId);
+  const sourceNotes = eventNotesBySource.value[normalizeId(sourceId)] || {};
+  return sourceNotes[id] || createDefaultEventNote(id);
+};
+
+const ensureEventNote = (eventId, sourceId = selectedSource.value?.id) => {
+  const id = normalizeId(eventId);
+  const normalizedSourceId = normalizeId(sourceId);
+  const source = normalizedSources.value.find((item) => item.id === normalizedSourceId);
+  const hasPrediction = source?.predictiveEvents?.some((event) => normalizeId(event?.id) === id);
+  const isManualCase = hasManualCaseNoteSource(id, normalizedSourceId);
+  if (!id || !normalizedSourceId || (!hasPrediction && !isManualCase)) return null;
+  if (!eventNotesBySource.value[normalizedSourceId]) eventNotesBySource.value[normalizedSourceId] = {};
+  if (!eventNotesBySource.value[normalizedSourceId][id]) {
+    eventNotesBySource.value[normalizedSourceId][id] = createDefaultEventNote(id);
+  }
+  return eventNotesBySource.value[normalizedSourceId][id];
+};
+
+const syncEventNotesWithSources = (modeKey = predictionMode.value === 'multi' ? 'multi' : 'single') => {
+  const mode = modeKey === 'multi' ? 'multi' : 'single';
+  const existingBySource = eventNotesByMode.value[mode] || {};
   const nextBySource = {};
   normalizedSources.value.forEach((source) => {
-    const existingNotes = eventNotesBySource.value[source.id] || {};
+    const existingNotes = existingBySource[source.id] || {};
     const nextNotes = {};
     source.predictiveEvents.forEach((event) => {
       const id = normalizeId(event?.id);
@@ -1139,11 +1656,34 @@ const syncEventNotesWithSources = () => {
     });
     nextBySource[source.id] = nextNotes;
   });
-  eventNotesBySource.value = nextBySource;
-  const activeSourceNotes = nextBySource[selectedSource.value?.id] || {};
+  if (mode === 'multi') {
+    Object.entries(manualCaseEditsByEvent.value).forEach(([eventId, edit]) => {
+      edit.manualCases.forEach((manualCase) => {
+        const sourceId = getManualCaseNoteSourceId(manualCase.id);
+        const existing = existingBySource[sourceId]?.[eventId];
+        nextBySource[sourceId] = {
+          [eventId]: normalizeEventNote(existing, eventId)
+        };
+      });
+    });
+  }
+  eventNotesByMode.value[mode] = nextBySource;
+  if (mode !== (predictionMode.value === 'multi' ? 'multi' : 'single')) return;
+  const activeSourceNotes = nextBySource[selectedEventNoteSourceId.value || selectedSource.value?.id] || {};
   if (selectedEventNoteId.value && !activeSourceNotes[selectedEventNoteId.value]) {
     selectedCoverTextId.value = ALL_EVENT_NOTES_ID;
   }
+};
+
+const removeLegacyNoteIconTriggerSpaces = (notesByMode) => {
+  Object.values(notesByMode && typeof notesByMode === 'object' ? notesByMode : {}).forEach((notesBySource) => {
+    Object.values(notesBySource && typeof notesBySource === 'object' ? notesBySource : {}).forEach((notes) => {
+      Object.values(notes && typeof notes === 'object' ? notes : {}).forEach((note) => {
+        if (typeof note?.text !== 'string') return;
+        note.text = note.text.replace(/(\[\[sp-icon:(?:attr|char|unit):[^\]]+\]\])[ \t]/gu, '$1');
+      });
+    });
+  });
 };
 
 const getCoverTextFrameStyle = (block) => ({
@@ -1155,8 +1695,8 @@ const getCoverTextFrameStyle = (block) => ({
   opacity: clampNumber(block.opacity, 100, 10, 100) / 100
 });
 
-const getCoverTextContentStyle = (block) => {
-  const shadowColor = block.shadowColor || selectedMonthColor.value;
+const getCoverTextContentStyle = (block, monthColor = selectedMonthColor.value) => {
+  const shadowColor = block.shadowColor || monthColor;
   return {
     color: block.color || '#ffffff',
     fontFamily: String(block.fontFamily || 'inherit'),
@@ -1177,13 +1717,21 @@ const getCoverTextContentStyle = (block) => {
   };
 };
 
+const getPageCoverTextContentStyle = (block, pageKey) => (
+  getCoverTextContentStyle(block, getAppearanceMonthColor(resolvePageAppearance(pageKey)))
+);
+
 const monthTextStyle = computed(() => ({
   fontFamily: String(monthFontFamily.value || 'inherit')
 }));
 
-const creditTextRenderStyle = computed(() => {
-  const style = normalizeCreditTextStyle(creditTextStyle.value);
-  const shadowColor = style.shadowColor || selectedMonthColor.value;
+const eventMetaTextStyle = computed(() => ({
+  fontFamily: String(monthFontFamily.value || 'inherit')
+}));
+
+const buildCreditTextRenderStyle = (styleValue, monthColor) => {
+  const style = normalizeCreditTextStyle(styleValue);
+  const shadowColor = style.shadowColor || monthColor;
   return {
     color: style.color,
     fontFamily: style.fontFamily,
@@ -1199,10 +1747,22 @@ const creditTextRenderStyle = computed(() => {
       ? `0 2px 0 ${rgbaFromHex(shadowColor, 0.92)}, 0 0 6px ${rgbaFromHex(shadowColor, 0.9)}, 0 0 12px rgba(255, 255, 255, 0.58)`
       : 'none'
   };
-});
+};
 
-const getEventNoteRenderStyle = (eventId) => {
-  const style = normalizeEventNote(getEventNote(eventId), eventId);
+const creditTextRenderStyle = computed(() => (
+  buildCreditTextRenderStyle(creditTextStyle.value, selectedMonthColor.value)
+));
+
+const getPageCreditTextRenderStyle = (pageKey) => {
+  const appearance = resolvePageAppearance(pageKey);
+  return buildCreditTextRenderStyle(
+    appearance?.creditTextStyle,
+    getAppearanceMonthColor(appearance)
+  );
+};
+
+const getEventNoteRenderStyle = (eventId, sourceId = selectedSource.value?.id) => {
+  const style = normalizeEventNote(getEventNote(eventId, sourceId), eventId);
   const shadowColor = style.shadowColor || style.color;
   return {
     color: style.color,
@@ -1324,19 +1884,19 @@ const removeSelectedCoverTextBlock = () => {
 
 const resetEventNoteStyles = () => {
   if (isAllEventNotesMode.value) {
-    Object.entries(eventNotes.value).forEach(([id, note]) => {
-      eventNotes.value[id] = {
-        ...createDefaultEventNote(id),
+    bulkEditableEventNotes.value.forEach((note) => {
+      Object.assign(note, {
+        ...createDefaultEventNote(note.id),
         text: String(note?.text ?? '')
-      };
+      });
     });
     allEventNotesDraft.value = {};
   } else if (isEventNoteMode.value) {
     const id = selectedEventNoteId.value;
-    eventNotes.value[id] = {
+    Object.assign(selectedEventNote.value, {
       ...createDefaultEventNote(id),
-      text: String(eventNotes.value[id]?.text ?? '')
-    };
+      text: String(selectedEventNote.value?.text ?? '')
+    });
   }
   syncEventNoteElements();
   saveCoverTextSettings();
@@ -1344,11 +1904,11 @@ const resetEventNoteStyles = () => {
 
 const clearEventNoteText = () => {
   if (isAllEventNotesMode.value) {
-    Object.values(eventNotes.value).forEach((note) => {
+    bulkEditableEventNotes.value.forEach((note) => {
       note.text = '';
     });
   } else if (isEventNoteMode.value) {
-    eventNotes.value[selectedEventNoteId.value].text = '';
+    selectedEventNote.value.text = '';
   }
   syncEventNoteElements();
   saveCoverTextSettings();
@@ -1364,8 +1924,8 @@ const resetSelectedCoverTextBlock = () => {
     return;
   }
   if (isAllEventNotesMode.value) {
-    Object.keys(eventNotes.value).forEach((id) => {
-      eventNotes.value[id] = createDefaultEventNote(id);
+    bulkEditableEventNotes.value.forEach((note) => {
+      Object.assign(note, createDefaultEventNote(note.id));
     });
     allEventNotesDraft.value = {};
     syncEventNoteElements();
@@ -1374,7 +1934,7 @@ const resetSelectedCoverTextBlock = () => {
   }
   if (isEventNoteMode.value) {
     const id = selectedEventNoteId.value;
-    eventNotes.value[id] = createDefaultEventNote(id);
+    Object.assign(selectedEventNote.value, createDefaultEventNote(id));
     syncEventNoteElements();
     saveCoverTextSettings();
     return;
@@ -1438,75 +1998,114 @@ const normalizeCoverTextBlock = (block, fallback) => ({
 });
 
 const restoreDefaultCoverTextBlocks = () => {
-  coverTextBlocks.value = createDefaultCoverTextBlocks();
+  commitPendingEditorHistory();
+  const mode = isMultiCaseMode.value ? 'multi' : 'single';
+  const defaultAppearance = createDefaultPageAppearance();
+  if (mode === 'multi') {
+    selectedPageConfigKey.value = ALL_PAGE_CONFIG_KEY;
+    allPageAppearance.value = cloneEditorHistoryData(defaultAppearance);
+    pageAppearances.value = Object.fromEntries(
+      monthlyMultiPages.value.map((page) => [page.key, cloneEditorHistoryData(defaultAppearance)])
+    );
+    eventNotesByMode.value.multi = {};
+    manualCaseEditsByEvent.value = {};
+    activeCaseControlKey.value = '';
+  } else {
+    singlePageAppearance.value = cloneEditorHistoryData(defaultAppearance);
+    eventNotesByMode.value.single = {};
+  }
   selectedCoverTextId.value = GLOBAL_COVER_TEXT_ID;
+  selectedEventNoteSourceId.value = '';
   globalTextDraft.value = {};
-  monthFontFamily.value = 'inherit';
-  creditTextStyle.value = createDefaultCreditTextStyle();
-  eventNotesBySource.value = {};
   allEventNotesDraft.value = {};
-  syncEventNotesWithSources();
-  monthColorName.value = characterColorOptions.value[0]?.name || '';
-  backgroundColorName.value = characterColorOptions.value[1]?.name || '';
-  customMonthColor.value = DEFAULT_CUSTOM_MONTH_COLOR;
-  customBackgroundColor.value = DEFAULT_CUSTOM_BACKGROUND_COLOR;
-  coverBgOpacity.value = 100;
+  syncEventNotesWithSources(mode);
+  applyPageAppearance(defaultAppearance);
   syncCoverTextElements();
+  syncCreditElement();
   syncEventNoteElements();
+  saveCoverTextSettings();
 };
 
 const loadCoverTextSettings = () => {
   try {
     const raw = localStorage.getItem(COVER_TEXT_STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    const defaults = createDefaultCoverTextBlocks();
-    const loadedBlocks = Array.isArray(parsed?.blocks) ? parsed.blocks : [];
-    const normalized = loadedBlocks
-      .map((block, index) => normalizeCoverTextBlock(block, defaults[index] || defaults[0]))
-      .filter((block) => block.id);
-    if (normalized.length > 0) {
-      coverTextBlocks.value = normalized;
-      selectedCoverTextId.value = GLOBAL_COVER_TEXT_ID;
-      globalTextDraft.value = {};
-      syncCoverTextElements();
-    }
-    if (typeof parsed?.creditText === 'string') {
-      creditText.value = parsed.creditText;
-      creditManuallyEdited.value = typeof parsed?.creditManuallyEdited === 'boolean'
-        ? parsed.creditManuallyEdited
-        : !isDefaultCreditText(parsed.creditText);
-      syncCreditDefault();
-      syncCreditElement();
-    }
-    if (typeof parsed?.monthColorName === 'string') monthColorName.value = parsed.monthColorName;
-    if (typeof parsed?.backgroundColorName === 'string') backgroundColorName.value = parsed.backgroundColorName;
-    if (typeof parsed?.monthFontFamily === 'string') monthFontFamily.value = parsed.monthFontFamily || 'inherit';
-    if (parsed?.creditTextStyle && typeof parsed.creditTextStyle === 'object') {
-      creditTextStyle.value = normalizeCreditTextStyle(parsed.creditTextStyle);
-    }
-    if (parsed?.eventNotesBySource && typeof parsed.eventNotesBySource === 'object') {
-      eventNotesBySource.value = Object.fromEntries(
-        Object.entries(parsed.eventNotesBySource)
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      predictionMode.value = parsed?.predictionMode === 'multi' ? 'multi' : 'single';
+      if (Array.isArray(parsed?.multiSourceIds)) {
+        multiSourceIds.value = parsed.multiSourceIds.map(normalizeId).filter(Boolean);
+      }
+      manualCaseEditsByEvent.value = normalizeManualCaseEdits(parsed?.manualCaseEditsByEvent);
+
+      const legacyAppearance = normalizePageAppearance({
+        blocks: parsed?.blocks,
+        creditText: parsed?.creditText,
+        creditManuallyEdited: typeof parsed?.creditManuallyEdited === 'boolean'
+          ? parsed.creditManuallyEdited
+          : !isDefaultCreditText(parsed?.creditText),
+        monthFontFamily: parsed?.monthFontFamily,
+        creditTextStyle: parsed?.creditTextStyle,
+        monthColorName: parsed?.monthColorName,
+        backgroundColorName: parsed?.backgroundColorName,
+        customMonthColor: parsed?.customMonthColor,
+        customBackgroundColor: parsed?.customBackgroundColor,
+        coverBgAssetId: parsed?.coverBgAssetId,
+        coverBgFileName: parsed?.coverBgFileName,
+        coverBgOpacity: parsed?.coverBgOpacity
+      });
+      const legacyBaseAppearance = normalizePageAppearance(parsed?.allPageAppearance || legacyAppearance, legacyAppearance);
+      singlePageAppearance.value = normalizePageAppearance(
+        parsed?.singlePageAppearance || (predictionMode.value === 'single' ? legacyAppearance : legacyBaseAppearance),
+        legacyAppearance
+      );
+      allPageAppearance.value = normalizePageAppearance(parsed?.allPageAppearance || legacyBaseAppearance, legacyBaseAppearance);
+      pageAppearances.value = Object.fromEntries(
+        Object.entries(parsed?.pageAppearances && typeof parsed.pageAppearances === 'object' ? parsed.pageAppearances : {})
+          .map(([key, appearance]) => [normalizeId(key), normalizePageAppearance(appearance, allPageAppearance.value)])
+          .filter(([key]) => key)
+      );
+      selectedPageConfigKey.value = normalizeId(parsed?.selectedPageConfigKey) || ALL_PAGE_CONFIG_KEY;
+
+      const normalizeStoredNotes = (value) => Object.fromEntries(
+        Object.entries(value && typeof value === 'object' ? value : {})
           .map(([sourceId, notes]) => [normalizeId(sourceId), notes && typeof notes === 'object' ? notes : {}])
           .filter(([sourceId]) => sourceId)
       );
-      syncEventNotesWithSources();
-      syncEventNoteElements();
-    } else if (parsed?.eventNotes && typeof parsed.eventNotes === 'object' && selectedSource.value?.id) {
-      eventNotesBySource.value = { [selectedSource.value.id]: parsed.eventNotes };
-      syncEventNotesWithSources();
-      syncEventNoteElements();
-    }
-    if (typeof parsed?.customMonthColor === 'string' && hexToRgb(parsed.customMonthColor)) {
-      customMonthColor.value = parsed.customMonthColor;
-    }
-    if (typeof parsed?.customBackgroundColor === 'string' && hexToRgb(parsed.customBackgroundColor)) {
-      customBackgroundColor.value = parsed.customBackgroundColor;
+      const legacyNotes = parsed?.eventNotesBySource && typeof parsed.eventNotesBySource === 'object'
+        ? normalizeStoredNotes(parsed.eventNotesBySource)
+        : (parsed?.eventNotes && typeof parsed.eventNotes === 'object' && selectedSource.value?.id
+          ? { [selectedSource.value.id]: parsed.eventNotes }
+          : {});
+      const storedNotesByMode = parsed?.eventNotesByMode && typeof parsed.eventNotesByMode === 'object'
+        ? parsed.eventNotesByMode
+        : {};
+      eventNotesByMode.value = {
+        single: normalizeStoredNotes(storedNotesByMode.single ?? cloneEditorHistoryData(legacyNotes)),
+        multi: normalizeStoredNotes(storedNotesByMode.multi ?? cloneEditorHistoryData(legacyNotes))
+      };
+      if (parsed?.noteIconTriggerSpaceVersion !== NOTE_ICON_TRIGGER_SPACE_VERSION) {
+        removeLegacyNoteIconTriggerSpaces(eventNotesByMode.value);
+      }
     }
   } catch (error) {
     console.warn('[special-predict] failed to load cover text settings', error);
   } finally {
+    const defaultAppearance = createDefaultPageAppearance();
+    if (!singlePageAppearance.value) singlePageAppearance.value = cloneEditorHistoryData(defaultAppearance);
+    if (!allPageAppearance.value) allPageAppearance.value = cloneEditorHistoryData(defaultAppearance);
+    syncEventNotesWithSources('single');
+    syncEventNotesWithSources('multi');
+    const activeAppearance = isMultiCaseMode.value
+      ? (selectedPageConfigKey.value === ALL_PAGE_CONFIG_KEY
+        ? allPageAppearance.value
+        : (pageAppearances.value[selectedPageConfigKey.value] || allPageAppearance.value))
+      : singlePageAppearance.value;
+    applyPageAppearance(activeAppearance);
+    selectedCoverTextId.value = GLOBAL_COVER_TEXT_ID;
+    selectedEventNoteSourceId.value = '';
+    syncCoverTextElements();
+    syncCreditElement();
+    syncEventNoteElements();
     coverTextSettingsReady = true;
   }
 };
@@ -1514,7 +2113,14 @@ const loadCoverTextSettings = () => {
 const saveCoverTextSettings = () => {
   if (!coverTextSettingsReady) return;
   try {
+    commitCurrentPageAppearance();
     localStorage.setItem(COVER_TEXT_STORAGE_KEY, JSON.stringify({
+      predictionMode: predictionMode.value,
+      multiSourceIds: multiSourceIds.value,
+      selectedPageConfigKey: selectedPageConfigKey.value,
+      singlePageAppearance: singlePageAppearance.value,
+      allPageAppearance: allPageAppearance.value,
+      pageAppearances: pageAppearances.value,
       selectedId: selectedCoverTextId.value,
       blocks: coverTextBlocks.value,
       creditText: creditText.value,
@@ -1525,7 +2131,10 @@ const saveCoverTextSettings = () => {
       customBackgroundColor: customBackgroundColor.value,
       monthFontFamily: monthFontFamily.value,
       creditTextStyle: creditTextStyle.value,
-      eventNotesBySource: eventNotesBySource.value
+      eventNotesByMode: eventNotesByMode.value,
+      eventNotesBySource: eventNotesBySource.value,
+      noteIconTriggerSpaceVersion: NOTE_ICON_TRIGGER_SPACE_VERSION,
+      manualCaseEditsByEvent: manualCaseEditsByEvent.value
     }));
   } catch (error) {
     console.warn('[special-predict] failed to save cover text settings', error);
@@ -1533,10 +2142,10 @@ const saveCoverTextSettings = () => {
 };
 
 const applyCoverBgAsset = (assetId, fileName = '') => {
-  if (coverBgUrl.value) URL.revokeObjectURL(coverBgUrl.value);
   const file = assetId ? coverBgAssetMap.get(assetId) : null;
   coverBgAssetId.value = file ? assetId : '';
-  coverBgUrl.value = file ? URL.createObjectURL(file) : '';
+  if (file && !coverBgUrlMap.has(assetId)) coverBgUrlMap.set(assetId, URL.createObjectURL(file));
+  coverBgUrl.value = file ? (coverBgUrlMap.get(assetId) || '') : '';
   coverBgFileName.value = file ? (fileName || file.name || '') : '';
 };
 
@@ -1554,6 +2163,7 @@ const onCoverBgUpload = (event) => {
   if (!file) return;
   const assetId = `cover-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   coverBgAssetMap.set(assetId, file);
+  coverBgUrlMap.set(assetId, URL.createObjectURL(file));
   applyCoverBgAsset(assetId, file.name);
   coverBgOpacity.value = 100;
   event.target.value = '';
@@ -1561,13 +2171,12 @@ const onCoverBgUpload = (event) => {
 
 const cloneEditorHistoryData = (value) => JSON.parse(JSON.stringify(value));
 
-const captureEditorHistoryState = () => cloneEditorHistoryData({
+const capturePageAppearance = () => cloneEditorHistoryData({
   blocks: coverTextBlocks.value,
   creditText: creditText.value,
   creditManuallyEdited: creditManuallyEdited.value,
   monthFontFamily: monthFontFamily.value,
   creditTextStyle: creditTextStyle.value,
-  eventNotesBySource: eventNotesBySource.value,
   monthColorName: monthColorName.value,
   backgroundColorName: backgroundColorName.value,
   customMonthColor: customMonthColor.value,
@@ -1576,6 +2185,257 @@ const captureEditorHistoryState = () => cloneEditorHistoryData({
   coverBgFileName: coverBgFileName.value,
   coverBgOpacity: coverBgOpacity.value
 });
+
+const normalizePageAppearance = (value, fallback = null) => {
+  const source = value && typeof value === 'object' ? value : (fallback || capturePageAppearance());
+  const fallbackBlocks = createDefaultCoverTextBlocks();
+  const normalizedBlocks = (Array.isArray(source.blocks) ? source.blocks : fallbackBlocks)
+    .map((block, index) => normalizeCoverTextBlock(block, fallbackBlocks[index] || fallbackBlocks[0]))
+    .filter((block) => block.id);
+  return {
+    blocks: normalizedBlocks.length ? normalizedBlocks : fallbackBlocks,
+    creditText: String(source.creditText ?? defaultCreditText.value),
+    creditManuallyEdited: !!source.creditManuallyEdited,
+    monthFontFamily: String(source.monthFontFamily || 'inherit'),
+    creditTextStyle: normalizeCreditTextStyle(source.creditTextStyle),
+    monthColorName: String(source.monthColorName || characterColorOptions.value[0]?.name || ''),
+    backgroundColorName: String(source.backgroundColorName || characterColorOptions.value[1]?.name || ''),
+    customMonthColor: hexToRgb(source.customMonthColor) ? source.customMonthColor : DEFAULT_CUSTOM_MONTH_COLOR,
+    customBackgroundColor: hexToRgb(source.customBackgroundColor) ? source.customBackgroundColor : DEFAULT_CUSTOM_BACKGROUND_COLOR,
+    coverBgAssetId: coverBgAssetMap.has(String(source.coverBgAssetId || '')) ? String(source.coverBgAssetId) : '',
+    coverBgFileName: String(source.coverBgFileName || ''),
+    coverBgOpacity: Math.round(clampNumber(source.coverBgOpacity, 100, 0, 100))
+  };
+};
+
+const createDefaultPageAppearance = () => normalizePageAppearance({
+  blocks: createDefaultCoverTextBlocks(),
+  creditText: defaultCreditText.value,
+  creditManuallyEdited: false,
+  monthFontFamily: 'inherit',
+  creditTextStyle: createDefaultCreditTextStyle(),
+  monthColorName: characterColorOptions.value[0]?.name || '',
+  backgroundColorName: characterColorOptions.value[1]?.name || '',
+  customMonthColor: DEFAULT_CUSTOM_MONTH_COLOR,
+  customBackgroundColor: DEFAULT_CUSTOM_BACKGROUND_COLOR,
+  coverBgAssetId: '',
+  coverBgFileName: '',
+  coverBgOpacity: 100
+});
+
+const getActivePageAppearanceView = () => ({
+  blocks: coverTextBlocks.value,
+  creditText: creditText.value,
+  creditManuallyEdited: creditManuallyEdited.value,
+  monthFontFamily: monthFontFamily.value,
+  creditTextStyle: creditTextStyle.value,
+  monthColorName: monthColorName.value,
+  backgroundColorName: backgroundColorName.value,
+  customMonthColor: customMonthColor.value,
+  customBackgroundColor: customBackgroundColor.value,
+  coverBgAssetId: coverBgAssetId.value,
+  coverBgFileName: coverBgFileName.value,
+  coverBgOpacity: coverBgOpacity.value
+});
+
+const isPlainAppearanceObject = (value) => (
+  !!value && typeof value === 'object' && !Array.isArray(value)
+);
+
+const applyChangedAppearanceObject = (previous, next, target) => {
+  const result = cloneEditorHistoryData(isPlainAppearanceObject(target) ? target : {});
+  const previousObject = isPlainAppearanceObject(previous) ? previous : {};
+  const nextObject = isPlainAppearanceObject(next) ? next : {};
+  Object.keys({ ...previousObject, ...nextObject }).forEach((key) => {
+    const previousValue = previousObject[key];
+    const nextValue = nextObject[key];
+    if (JSON.stringify(previousValue) === JSON.stringify(nextValue)) return;
+    if (isPlainAppearanceObject(previousValue) && isPlainAppearanceObject(nextValue)) {
+      result[key] = applyChangedAppearanceObject(previousValue, nextValue, result[key]);
+    } else if (nextValue === undefined) {
+      delete result[key];
+    } else {
+      result[key] = cloneEditorHistoryData(nextValue);
+    }
+  });
+  return result;
+};
+
+const applyChangedCoverTextBlocks = (previousBlocks, nextBlocks, targetBlocks) => {
+  const previous = Array.isArray(previousBlocks) ? previousBlocks : [];
+  const next = Array.isArray(nextBlocks) ? nextBlocks : [];
+  const target = Array.isArray(targetBlocks) ? cloneEditorHistoryData(targetBlocks) : [];
+  const previousById = new Map(previous.map((block) => [normalizeId(block?.id), block]));
+  const nextById = new Map(next.map((block) => [normalizeId(block?.id), block]));
+  const targetById = new Map(target.map((block) => [normalizeId(block?.id), block]));
+
+  previousById.forEach((_block, id) => {
+    if (!nextById.has(id)) targetById.delete(id);
+  });
+  nextById.forEach((block, id) => {
+    if (!id) return;
+    if (!previousById.has(id)) {
+      targetById.set(id, cloneEditorHistoryData(block));
+      return;
+    }
+    targetById.set(id, applyChangedAppearanceObject(
+      previousById.get(id),
+      block,
+      targetById.get(id) || previousById.get(id)
+    ));
+  });
+
+  const orderedIds = [
+    ...target.map((block) => normalizeId(block?.id)).filter((id) => targetById.has(id)),
+    ...next.map((block) => normalizeId(block?.id)).filter((id) => targetById.has(id))
+  ];
+  return [...new Set(orderedIds)].map((id) => targetById.get(id));
+};
+
+const applyPageAppearanceDelta = (previous, next, target) => {
+  const previousAppearance = isPlainAppearanceObject(previous) ? previous : {};
+  const nextAppearance = isPlainAppearanceObject(next) ? next : {};
+  const result = cloneEditorHistoryData(isPlainAppearanceObject(target) ? target : previousAppearance);
+  Object.keys({ ...previousAppearance, ...nextAppearance }).forEach((property) => {
+    const previousValue = previousAppearance[property];
+    const nextValue = nextAppearance[property];
+    if (JSON.stringify(previousValue) === JSON.stringify(nextValue)) return;
+    if (property === 'blocks') {
+      result.blocks = applyChangedCoverTextBlocks(previousValue, nextValue, result.blocks);
+    } else if (isPlainAppearanceObject(previousValue) && isPlainAppearanceObject(nextValue)) {
+      result[property] = applyChangedAppearanceObject(previousValue, nextValue, result[property]);
+    } else if (nextValue === undefined) {
+      delete result[property];
+    } else {
+      result[property] = cloneEditorHistoryData(nextValue);
+    }
+  });
+  return result;
+};
+
+const commitCurrentPageAppearance = () => {
+  if (pageAppearanceApplying) return;
+  const snapshot = capturePageAppearance();
+  if (!isMultiCaseMode.value) {
+    singlePageAppearance.value = snapshot;
+    return;
+  }
+  const key = selectedPageConfigKey.value;
+  if (key === ALL_PAGE_CONFIG_KEY) {
+    const previous = allPageAppearance.value || snapshot;
+    allPageAppearance.value = snapshot;
+    const next = { ...pageAppearances.value };
+    monthlyMultiPages.value.forEach((page) => {
+      next[page.key] = applyPageAppearanceDelta(
+        previous,
+        snapshot,
+        next[page.key] || previous
+      );
+    });
+    pageAppearances.value = next;
+  } else if (key) {
+    pageAppearances.value = { ...pageAppearances.value, [key]: snapshot };
+  }
+};
+
+const applyPageAppearance = (appearance) => {
+  const modeFallback = isMultiCaseMode.value
+    ? allPageAppearance.value
+    : singlePageAppearance.value;
+  const normalized = normalizePageAppearance(
+    appearance || modeFallback || createDefaultPageAppearance(),
+    modeFallback || undefined
+  );
+  pageAppearanceApplying = true;
+  coverTextBlocks.value = cloneEditorHistoryData(normalized.blocks);
+  creditText.value = normalized.creditText;
+  creditManuallyEdited.value = normalized.creditManuallyEdited;
+  monthFontFamily.value = normalized.monthFontFamily;
+  creditTextStyle.value = normalizeCreditTextStyle(normalized.creditTextStyle);
+  monthColorName.value = normalized.monthColorName;
+  backgroundColorName.value = normalized.backgroundColorName;
+  customMonthColor.value = normalized.customMonthColor;
+  customBackgroundColor.value = normalized.customBackgroundColor;
+  coverBgOpacity.value = normalized.coverBgOpacity;
+  applyCoverBgAsset(normalized.coverBgAssetId, normalized.coverBgFileName);
+  pageAppearanceApplying = false;
+};
+
+const resolvePageAppearance = (pageKey) => {
+  const key = normalizeId(pageKey);
+  if (selectedPageConfigKey.value === key) {
+    return getActivePageAppearanceView();
+  }
+  return pageAppearances.value[key] || allPageAppearance.value || getActivePageAppearanceView();
+};
+
+const selectPageConfig = async (pageKey) => {
+  const nextKey = normalizeId(pageKey) || ALL_PAGE_CONFIG_KEY;
+  if (nextKey === selectedPageConfigKey.value) return;
+  commitPendingEditorHistory();
+  commitCurrentPageAppearance();
+  editorHistoryApplying = true;
+  selectedPageConfigKey.value = nextKey;
+  applyPageAppearance(nextKey === ALL_PAGE_CONFIG_KEY
+    ? allPageAppearance.value
+    : (pageAppearances.value[nextKey] || allPageAppearance.value));
+  await Promise.all([syncCoverTextElements(), syncCreditElement()]);
+  await updatePreviewScale();
+  lastEditorHistoryState = captureEditorHistoryState();
+  editorHistoryApplying = false;
+  saveCoverTextSettings();
+};
+
+const isPageAppearanceActive = (pageKey) => (
+  selectedPageConfigKey.value === ALL_PAGE_CONFIG_KEY
+  || selectedPageConfigKey.value === normalizeId(pageKey)
+);
+
+const selectPageCoverTextBlock = (pageKey, block) => {
+  if (!isPageAppearanceActive(pageKey)) {
+    void selectPageConfig(pageKey).then(() => {
+      const activeBlock = coverTextBlocks.value.find((item) => item.id === block?.id);
+      if (activeBlock) selectCoverTextBlock(activeBlock);
+    });
+    return;
+  }
+  selectCoverTextBlock(block);
+};
+
+const selectPagePredictor = (pageKey) => {
+  if (!isPageAppearanceActive(pageKey)) {
+    void selectPageConfig(pageKey).then(selectPredictorText);
+    return;
+  }
+  selectPredictorText();
+};
+
+const captureEditorHistoryState = () => {
+  commitCurrentPageAppearance();
+  return cloneEditorHistoryData({
+    predictionMode: predictionMode.value,
+    multiSourceIds: multiSourceIds.value,
+    selectedPageConfigKey: selectedPageConfigKey.value,
+    singlePageAppearance: singlePageAppearance.value,
+    allPageAppearance: allPageAppearance.value,
+    pageAppearances: pageAppearances.value,
+    blocks: coverTextBlocks.value,
+    creditText: creditText.value,
+    creditManuallyEdited: creditManuallyEdited.value,
+    monthFontFamily: monthFontFamily.value,
+    creditTextStyle: creditTextStyle.value,
+    eventNotesByMode: eventNotesByMode.value,
+    eventNotesBySource: eventNotesBySource.value,
+    manualCaseEditsByEvent: manualCaseEditsByEvent.value,
+    monthColorName: monthColorName.value,
+    backgroundColorName: backgroundColorName.value,
+    customMonthColor: customMonthColor.value,
+    customBackgroundColor: customBackgroundColor.value,
+    coverBgAssetId: coverBgAssetId.value,
+    coverBgFileName: coverBgFileName.value,
+    coverBgOpacity: coverBgOpacity.value
+  });
+};
 
 const resetEditorHistory = () => {
   if (editorHistoryTimer) {
@@ -1651,19 +2511,46 @@ const applyEditorHistoryState = async (state) => {
   if (!state) return;
   editorHistoryApplying = true;
   try {
-    coverTextBlocks.value = cloneEditorHistoryData(state.blocks || []);
-    creditText.value = String(state.creditText ?? '');
-    creditManuallyEdited.value = !!state.creditManuallyEdited;
-    monthFontFamily.value = String(state.monthFontFamily || 'inherit');
-    creditTextStyle.value = normalizeCreditTextStyle(state.creditTextStyle);
-    eventNotesBySource.value = cloneEditorHistoryData(state.eventNotesBySource || {});
-    monthColorName.value = String(state.monthColorName || '');
-    backgroundColorName.value = String(state.backgroundColorName || '');
-    customMonthColor.value = String(state.customMonthColor || DEFAULT_CUSTOM_MONTH_COLOR);
-    customBackgroundColor.value = String(state.customBackgroundColor || DEFAULT_CUSTOM_BACKGROUND_COLOR);
-    coverBgOpacity.value = Math.round(clampNumber(state.coverBgOpacity, 100, 0, 100));
-    applyCoverBgAsset(String(state.coverBgAssetId || ''), String(state.coverBgFileName || ''));
-    syncEventNotesWithSources();
+    predictionMode.value = state.predictionMode === 'multi' ? 'multi' : 'single';
+    multiSourceIds.value = Array.isArray(state.multiSourceIds)
+      ? state.multiSourceIds.map(normalizeId).filter(Boolean)
+      : [];
+    selectedPageConfigKey.value = normalizeId(state.selectedPageConfigKey) || ALL_PAGE_CONFIG_KEY;
+    const legacyAppearance = normalizePageAppearance(state);
+    singlePageAppearance.value = normalizePageAppearance(
+      state.singlePageAppearance || legacyAppearance,
+      legacyAppearance
+    );
+    allPageAppearance.value = normalizePageAppearance(
+      state.allPageAppearance || legacyAppearance,
+      legacyAppearance
+    );
+    pageAppearances.value = Object.fromEntries(
+      Object.entries(state.pageAppearances && typeof state.pageAppearances === 'object' ? state.pageAppearances : {})
+        .map(([key, appearance]) => [normalizeId(key), normalizePageAppearance(appearance, allPageAppearance.value)])
+        .filter(([key]) => key)
+    );
+    manualCaseEditsByEvent.value = normalizeManualCaseEdits(state.manualCaseEditsByEvent);
+    if (state.eventNotesByMode && typeof state.eventNotesByMode === 'object') {
+      eventNotesByMode.value = {
+        single: cloneEditorHistoryData(state.eventNotesByMode.single || {}),
+        multi: cloneEditorHistoryData(state.eventNotesByMode.multi || {})
+      };
+    } else {
+      const legacyNotes = cloneEditorHistoryData(state.eventNotesBySource || {});
+      eventNotesByMode.value = {
+        single: cloneEditorHistoryData(legacyNotes),
+        multi: cloneEditorHistoryData(legacyNotes)
+      };
+    }
+    syncEventNotesWithSources('single');
+    syncEventNotesWithSources('multi');
+    const activeAppearance = isMultiCaseMode.value
+      ? (selectedPageConfigKey.value === ALL_PAGE_CONFIG_KEY
+        ? allPageAppearance.value
+        : (pageAppearances.value[selectedPageConfigKey.value] || allPageAppearance.value))
+      : singlePageAppearance.value;
+    applyPageAppearance(activeAppearance);
     await Promise.all([
       syncCoverTextElements(),
       syncCreditElement(),
@@ -1797,13 +2684,26 @@ const loadPersistedFonts = async () => {
     coverTextBlocks.value.forEach((block) => {
       if (!validValues.has(block.fontFamily)) block.fontFamily = 'inherit';
     });
-    Object.values(eventNotesBySource.value).forEach((notes) => {
-      Object.values(notes).forEach((note) => {
-        if (!validValues.has(note.fontFamily)) note.fontFamily = 'inherit';
+    Object.values(eventNotesByMode.value).forEach((notesBySource) => {
+      Object.values(notesBySource).forEach((notes) => {
+        Object.values(notes).forEach((note) => {
+          if (!validValues.has(note.fontFamily)) note.fontFamily = 'inherit';
+        });
       });
     });
     if (!validValues.has(monthFontFamily.value)) monthFontFamily.value = 'inherit';
     if (!validValues.has(creditTextStyle.value.fontFamily)) creditTextStyle.value.fontFamily = 'inherit';
+    const normalizeAppearanceFonts = (appearance) => {
+      if (!appearance) return;
+      (appearance.blocks || []).forEach((block) => {
+        if (!validValues.has(block.fontFamily)) block.fontFamily = 'inherit';
+      });
+      if (!validValues.has(appearance.monthFontFamily)) appearance.monthFontFamily = 'inherit';
+      if (!validValues.has(appearance.creditTextStyle?.fontFamily)) appearance.creditTextStyle.fontFamily = 'inherit';
+    };
+    normalizeAppearanceFonts(singlePageAppearance.value);
+    normalizeAppearanceFonts(allPageAppearance.value);
+    Object.values(pageAppearances.value).forEach(normalizeAppearanceFonts);
   } catch (error) {
     console.warn('[special-predict] failed to load stored fonts', error);
   }
@@ -1870,13 +2770,26 @@ const deleteSelectedCustomFont = async () => {
   coverTextBlocks.value.forEach((block) => {
     if (block.fontFamily === option.value) block.fontFamily = 'inherit';
   });
-  Object.values(eventNotesBySource.value).forEach((notes) => {
-    Object.values(notes).forEach((note) => {
-      if (note.fontFamily === option.value) note.fontFamily = 'inherit';
+  Object.values(eventNotesByMode.value).forEach((notesBySource) => {
+    Object.values(notesBySource).forEach((notes) => {
+      Object.values(notes).forEach((note) => {
+        if (note.fontFamily === option.value) note.fontFamily = 'inherit';
+      });
     });
   });
   if (monthFontFamily.value === option.value) monthFontFamily.value = 'inherit';
   if (creditTextStyle.value.fontFamily === option.value) creditTextStyle.value.fontFamily = 'inherit';
+  const clearAppearanceFont = (appearance) => {
+    if (!appearance) return;
+    (appearance.blocks || []).forEach((block) => {
+      if (block.fontFamily === option.value) block.fontFamily = 'inherit';
+    });
+    if (appearance.monthFontFamily === option.value) appearance.monthFontFamily = 'inherit';
+    if (appearance.creditTextStyle?.fontFamily === option.value) appearance.creditTextStyle.fontFamily = 'inherit';
+  };
+  clearAppearanceFont(singlePageAppearance.value);
+  clearAppearanceFont(allPageAppearance.value);
+  Object.values(pageAppearances.value).forEach(clearAppearanceFont);
   customFontOptions.value = customFontOptions.value.filter((item) => item.id !== option.id);
   setLocalFontStatus(`已删除 ${option.label.replace(/^上传：/, '')}`);
 };
@@ -1896,16 +2809,29 @@ const selectPredictorText = () => {
   selectedCoverTextId.value = PREDICTOR_TEXT_ID;
 };
 
-const selectEventNote = (eventId) => {
+const selectEventNote = (eventId, sourceId = selectedSource.value?.id) => {
   if (isExporting.value) return;
-  const note = ensureEventNote(eventId);
-  if (note) selectedCoverTextId.value = `${EVENT_NOTE_ID_PREFIX}${note.id}`;
+  const normalizedSourceId = normalizeId(sourceId);
+  if (
+    !isMultiCaseMode.value
+    &&
+    normalizedSourceId
+    && normalizedSourceId !== selectedSourceId.value
+    && normalizedSources.value.some((source) => source.id === normalizedSourceId)
+  ) {
+    selectedSourceId.value = normalizedSourceId;
+  }
+  const note = ensureEventNote(eventId, normalizedSourceId);
+  if (note) {
+    selectedEventNoteSourceId.value = normalizedSourceId;
+    selectedCoverTextId.value = `${EVENT_NOTE_ID_PREFIX}${note.id}`;
+  }
 };
 
 const onCanvasTextSelectionPointerDown = (event) => {
   if (isExporting.value) return;
   const target = event?.target;
-  if (target instanceof Element && target.closest('.special-cover-text-frame, .special-credit-box, .special-event-note')) return;
+  if (target instanceof Element && target.closest('.special-cover-text-frame, .special-credit-box, .special-event-note, .special-case-note')) return;
   selectGlobalTextMode();
 };
 
@@ -1940,8 +2866,10 @@ const onCoverTextTransformMove = (event) => {
   }
 };
 
-const startCoverTextTransform = (block, mode, event) => {
-  const panel = coverPanelRef.value;
+const startCoverTextTransform = (block, mode, event, pageKey = '') => {
+  const panel = pageKey
+    ? multiCoverPanelElementMap.get(normalizeId(pageKey))
+    : coverPanelRef.value;
   if (!panel || !block || isExporting.value) return;
   const rect = panel.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
@@ -1995,7 +2923,7 @@ const onGlobalTextNudgeKeydown = (event) => {
 };
 
 const onGlobalEditorKeydown = (event) => {
-  const pageElement = canvasRef.value?.closest('.special-predict-page');
+  const pageElement = canvasWrapRef.value?.closest('.special-predict-page');
   if (!isUnlocked.value || !pageElement?.isConnected || isExporting.value) return;
   const modifierPressed = event.ctrlKey || event.metaKey;
   const key = String(event.key || '').toLowerCase();
@@ -2012,8 +2940,16 @@ const onGlobalEditorKeydown = (event) => {
   onGlobalTextNudgeKeydown(event);
 };
 
-const onCoverTextInput = (block, event) => {
-  block.text = event?.currentTarget?.innerText ?? '';
+const getEditableCoverTextBlock = (block, pageKey = '') => {
+  if (normalizeId(pageKey) && selectedPageConfigKey.value === ALL_PAGE_CONFIG_KEY) {
+    return coverTextBlocks.value.find((item) => item.id === block?.id) || block;
+  }
+  return block;
+};
+
+const onCoverTextInput = (block, event, pageKey = '') => {
+  const editableBlock = getEditableCoverTextBlock(block, pageKey);
+  editableBlock.text = event?.currentTarget?.innerText ?? '';
   saveCoverTextSettings();
 };
 
@@ -2029,21 +2965,23 @@ const renderCoverTextLines = (element, text) => {
   element.replaceChildren(fragment);
 };
 
-const onCoverTextBlur = (block, event) => {
+const onCoverTextBlur = (block, event, pageKey = '') => {
   const element = event?.currentTarget;
-  block.text = element?.innerText ?? block.text ?? '';
-  renderCoverTextLines(element, block.text);
+  const editableBlock = getEditableCoverTextBlock(block, pageKey);
+  editableBlock.text = element?.innerText ?? editableBlock.text ?? '';
+  renderCoverTextLines(element, editableBlock.text);
   saveCoverTextSettings();
 };
 
-const setCoverTextElement = (block, element) => {
+const setCoverTextElement = (block, element, pageKey = 'single') => {
   const id = String(block?.id || '');
   if (!id) return;
+  const mapKey = `${normalizeId(pageKey) || 'single'}|${id}`;
   if (!element) {
-    coverTextElementMap.delete(id);
+    coverTextElementMap.delete(mapKey);
     return;
   }
-  coverTextElementMap.set(id, element);
+  coverTextElementMap.set(mapKey, element);
   const text = String(block?.text ?? '');
   if (element.innerText !== text || !element.querySelector('.special-cover-text-line')) {
     renderCoverTextLines(element, text);
@@ -2052,61 +2990,325 @@ const setCoverTextElement = (block, element) => {
 
 const syncCoverTextElements = async () => {
   await nextTick();
-  coverTextBlocks.value.forEach((block) => {
-    const element = coverTextElementMap.get(block.id);
-    if (!element) return;
+  coverTextElementMap.forEach((element, key) => {
+    const separator = key.indexOf('|');
+    const pageKey = key.slice(0, separator);
+    const blockId = key.slice(separator + 1);
+    const blocks = pageKey === 'single' ? coverTextBlocks.value : getPageCoverTextBlocks(pageKey);
+    const block = blocks.find((item) => item.id === blockId);
+    if (!block) return;
     const text = String(block.text ?? '');
     if (element.innerText !== text) renderCoverTextLines(element, text);
   });
 };
 
-const setCreditElement = (element) => {
-  creditElement = element || null;
-  if (!creditElement) return;
-  const text = String(creditText.value ?? '');
-  if (creditElement.innerText !== text) creditElement.innerText = text;
+const setCreditElement = (element, pageKey = 'single') => {
+  const key = normalizeId(pageKey) || 'single';
+  if (!element) {
+    creditElementMap.delete(key);
+    return;
+  }
+  creditElementMap.set(key, element);
+  const appearance = key === 'single' ? getActivePageAppearanceView() : resolvePageAppearance(key);
+  const text = String(appearance?.creditText ?? '');
+  if (element.innerText !== text) element.innerText = text;
 };
 
 const syncCreditElement = async () => {
   await nextTick();
-  if (!creditElement) return;
-  const text = String(creditText.value ?? '');
-  if (creditElement.innerText !== text) creditElement.innerText = text;
-};
-
-const setEventNoteElement = (eventId, element) => {
-  const id = normalizeId(eventId);
-  if (!id) return;
-  if (!element) {
-    eventNoteElementMap.delete(id);
-    return;
-  }
-  eventNoteElementMap.set(id, element);
-  const text = String(getEventNote(id).text ?? '');
-  if (element.innerText !== text) element.innerText = text;
-};
-
-const syncEventNoteElements = async () => {
-  await nextTick();
-  Object.entries(eventNotes.value).forEach(([id, note]) => {
-    const element = eventNoteElementMap.get(id);
-    if (!element) return;
-    const text = String(note?.text ?? '');
+  creditElementMap.forEach((element, key) => {
+    const appearance = key === 'single' ? getActivePageAppearanceView() : resolvePageAppearance(key);
+    const text = String(appearance?.creditText ?? '');
     if (element.innerText !== text) element.innerText = text;
   });
 };
 
-const onEventNoteInput = (eventId, event) => {
-  const note = ensureEventNote(eventId);
+const getEventNoteElementKey = (eventId, sourceId = selectedSource.value?.id) => (
+  `${normalizeId(sourceId)}|${normalizeId(eventId)}`
+);
+
+const findNoteCommandAlias = (definitions, command) => (
+  Object.entries(definitions).find(([, aliases]) => aliases.includes(command))?.[0] || ''
+);
+
+const getNoteIconDescriptor = (kind, rawKey) => {
+  const key = String(rawKey || '').trim();
+  if (kind === 'attr' && Object.prototype.hasOwnProperty.call(NOTE_ATTRIBUTE_COMMANDS, key)) {
+    return { kind, key, src: `/elements/${key}.png`, alt: key, className: 'is-attribute' };
+  }
+  if (kind === 'unit' && Object.prototype.hasOwnProperty.call(NOTE_UNIT_COMMANDS, key)) {
+    return { kind, key, src: `/elements/${key}.png`, alt: key.toUpperCase(), className: 'is-unit' };
+  }
+  if (kind !== 'char') return null;
+  const separator = key.lastIndexOf('_');
+  const abbr = separator > 0 ? key.slice(0, separator) : key;
+  const unit = separator > 0 ? normalizeUnit(key.slice(separator + 1)) : '';
+  const meta = Object.values(charMap.value).find((item) => item.abbr.toLowerCase() === abbr.toLowerCase());
+  if (!meta) return null;
+  const suffix = meta.unit === 'vs' && unit && unit !== 'vs' ? `_${unit}` : '';
+  const fileName = suffix ? `${meta.abbr.toLowerCase()}${suffix}` : meta.abbr;
+  return {
+    kind,
+    key: suffix ? `${meta.abbr}${suffix}` : meta.abbr,
+    src: `/chibi_s/${fileName}.webp`,
+    alt: meta.zhName,
+    className: 'is-character'
+  };
+};
+
+const resolveNoteIconCommand = (rawCommand) => {
+  const command = String(rawCommand || '').trim().toLowerCase();
+  if (!command) return null;
+  const attribute = findNoteCommandAlias(NOTE_ATTRIBUTE_COMMANDS, command);
+  if (attribute) return getNoteIconDescriptor('attr', attribute);
+  const unit = findNoteCommandAlias(NOTE_UNIT_COMMANDS, command);
+  if (unit) return getNoteIconDescriptor('unit', unit);
+
+  const separator = command.lastIndexOf('_');
+  const characterAlias = separator > 0 ? command.slice(0, separator) : command;
+  const requestedUnit = separator > 0 ? command.slice(separator + 1) : '';
+  const meta = characterCommandMap.value.get(characterAlias);
+  if (!meta) return null;
+  if (requestedUnit && (meta.unit !== 'vs' || !Object.prototype.hasOwnProperty.call(NOTE_UNIT_COMMANDS, requestedUnit))) {
+    return null;
+  }
+  return getNoteIconDescriptor('char', requestedUnit ? `${meta.abbr}_${requestedUnit}` : meta.abbr);
+};
+
+const createEventNoteIconElement = (descriptor) => {
+  const image = document.createElement('img');
+  image.className = `special-note-inline-icon ${descriptor.className || ''}`.trim();
+  image.src = descriptor.src;
+  image.alt = descriptor.alt || '';
+  image.draggable = false;
+  image.contentEditable = 'false';
+  image.dataset.noteToken = `[[sp-icon:${descriptor.kind}:${descriptor.key}]]`;
+  return image;
+};
+
+const renderEventNoteContent = (element, value) => {
+  if (!element) return;
+  const text = String(value ?? '');
+  const fragment = document.createDocumentFragment();
+  let offset = 0;
+  const pattern = new RegExp(NOTE_ICON_TOKEN_PATTERN.source, 'g');
+  for (const match of text.matchAll(pattern)) {
+    if (match.index > offset) fragment.appendChild(document.createTextNode(text.slice(offset, match.index)));
+    const descriptor = getNoteIconDescriptor(match[1], match[2]);
+    fragment.appendChild(descriptor
+      ? createEventNoteIconElement(descriptor)
+      : document.createTextNode(match[0]));
+    offset = match.index + match[0].length;
+  }
+  if (offset < text.length) fragment.appendChild(document.createTextNode(text.slice(offset)));
+  element.replaceChildren(fragment);
+};
+
+const serializeEventNoteNode = (node) => {
+  if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+  if (!(node instanceof HTMLElement)) return '';
+  if (node.matches('img.special-note-inline-icon[data-note-token]')) return node.dataset.noteToken || '';
+  if (node.tagName === 'BR') return '\n';
+  const content = [...node.childNodes].map(serializeEventNoteNode).join('');
+  return ['DIV', 'P'].includes(node.tagName) ? `${content}\n` : content;
+};
+
+const serializeEventNoteElement = (element) => (
+  [...(element?.childNodes || [])]
+    .map(serializeEventNoteNode)
+    .join('')
+    .replace(/\n+$/u, '')
+);
+
+const setEventNoteElement = (eventId, element, sourceId = selectedSource.value?.id) => {
+  const id = normalizeId(eventId);
+  if (!id) return;
+  const mapKey = getEventNoteElementKey(id, sourceId);
+  if (!element) {
+    eventNoteElementMap.delete(mapKey);
+    return;
+  }
+  eventNoteElementMap.set(mapKey, element);
+  const text = String(getEventNote(id, sourceId).text ?? '');
+  if (serializeEventNoteElement(element) !== text) renderEventNoteContent(element, text);
+};
+
+const syncEventNoteElements = async () => {
+  await nextTick();
+  eventNoteElementMap.forEach((element, key) => {
+    const separator = key.indexOf('|');
+    const sourceId = key.slice(0, separator);
+    const eventId = key.slice(separator + 1);
+    const text = String(getEventNote(eventId, sourceId).text ?? '');
+    if (serializeEventNoteElement(element) !== text) renderEventNoteContent(element, text);
+  });
+};
+
+const onEventNoteInput = (eventId, event, sourceId = selectedSource.value?.id) => {
+  const note = ensureEventNote(eventId, sourceId);
   if (!note) return;
-  note.text = event?.currentTarget?.innerText ?? '';
+  note.text = serializeEventNoteElement(event?.currentTarget);
   saveCoverTextSettings();
 };
 
-const onEventNoteBlur = (eventId, event) => {
-  const note = ensureEventNote(eventId);
+const onEventNoteBlur = (eventId, event, sourceId = selectedSource.value?.id) => {
+  const note = ensureEventNote(eventId, sourceId);
   if (!note) return;
-  note.text = event?.currentTarget?.innerText ?? note.text ?? '';
+  note.text = serializeEventNoteElement(event?.currentTarget);
+  renderEventNoteContent(event?.currentTarget, note.text);
+  saveCoverTextSettings();
+};
+
+const isEventNoteIconElement = (node) => (
+  node instanceof HTMLElement
+  && node.matches('img.special-note-inline-icon[data-note-token]')
+);
+
+const getAdjacentEventNoteIcon = (element, range, direction) => {
+  const container = range.startContainer;
+  const offset = range.startOffset;
+  let candidate = null;
+  const getDeepestBoundaryNode = (node) => {
+    let current = node;
+    while (current?.nodeType === Node.ELEMENT_NODE && current.childNodes.length > 0) {
+      current = current.childNodes[direction === 'backward' ? current.childNodes.length - 1 : 0];
+    }
+    return current;
+  };
+  const getBoundarySibling = (node) => {
+    let current = node;
+    while (current && current !== element) {
+      const sibling = direction === 'backward' ? current.previousSibling : current.nextSibling;
+      if (sibling) return getDeepestBoundaryNode(sibling);
+      current = current.parentNode;
+    }
+    return null;
+  };
+  if (container.nodeType === Node.TEXT_NODE) {
+    const text = String(container.nodeValue || '');
+    if (direction === 'backward') {
+      if (offset === 0) {
+        candidate = getBoundarySibling(container);
+      } else if (
+        offset === 1
+        && /^[\s\u00a0]$/u.test(text.slice(0, 1))
+      ) {
+        candidate = getBoundarySibling(container);
+      }
+    } else if (offset === text.length) {
+      candidate = getBoundarySibling(container);
+    }
+  } else if (container.nodeType === Node.ELEMENT_NODE && element.contains(container)) {
+    candidate = getDeepestBoundaryNode(
+      container.childNodes[direction === 'backward' ? offset - 1 : offset] || null
+    );
+    if (!candidate) candidate = getBoundarySibling(container);
+  }
+  while (candidate?.nodeType === Node.TEXT_NODE && !candidate.nodeValue) {
+    candidate = getBoundarySibling(candidate);
+  }
+  if (
+    direction === 'backward'
+    && candidate?.nodeType === Node.TEXT_NODE
+    && /^[\s\u00a0]$/u.test(String(candidate.nodeValue || ''))
+  ) {
+    candidate = getBoundarySibling(candidate);
+  }
+  return isEventNoteIconElement(candidate) ? candidate : null;
+};
+
+const persistEventNoteDomEdit = (eventId, element, sourceId) => {
+  const note = ensureEventNote(eventId, sourceId);
+  if (!note) return;
+  note.text = serializeEventNoteElement(element);
+  saveCoverTextSettings();
+};
+
+const deleteSelectedEventNoteIcons = (eventId, event, sourceId, element, selection, range) => {
+  if (selection.isCollapsed) return false;
+  const selectedFragment = range.cloneContents();
+  if (!selectedFragment.querySelector?.('img.special-note-inline-icon[data-note-token]')) return false;
+  event.preventDefault();
+  event.stopPropagation();
+  range.deleteContents();
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  persistEventNoteDomEdit(eventId, element, sourceId);
+  return true;
+};
+
+const deleteAdjacentEventNoteIcon = (eventId, event, sourceId, element, selection, range) => {
+  if (!selection.isCollapsed) return false;
+  const direction = event.key === 'Backspace' ? 'backward' : 'forward';
+  const icon = getAdjacentEventNoteIcon(element, range, direction);
+  if (!icon?.parentNode) return false;
+  event.preventDefault();
+  event.stopPropagation();
+  const parent = icon.parentNode;
+  const iconIndex = Array.prototype.indexOf.call(parent.childNodes, icon);
+  let trailingNode = icon.nextSibling;
+  let trailingParent = parent;
+  while (!trailingNode && trailingParent && trailingParent !== element) {
+    trailingNode = trailingParent.nextSibling;
+    trailingParent = trailingParent.parentNode;
+  }
+  while (trailingNode?.nodeType === Node.ELEMENT_NODE && trailingNode.childNodes.length > 0) {
+    trailingNode = trailingNode.firstChild;
+  }
+  icon.remove();
+  if (trailingNode?.nodeType === Node.TEXT_NODE && /^[\s\u00a0]/u.test(String(trailingNode.nodeValue || ''))) {
+    trailingNode.deleteData(0, 1);
+    if (!trailingNode.nodeValue) trailingNode.remove();
+  }
+  const caretRange = document.createRange();
+  caretRange.setStart(parent, Math.min(iconIndex, parent.childNodes.length));
+  caretRange.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(caretRange);
+  persistEventNoteDomEdit(eventId, element, sourceId);
+  return true;
+};
+
+const onEventNoteKeydown = (eventId, event, sourceId = selectedSource.value?.id) => {
+  if (!event || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+  const element = event.currentTarget;
+  const selection = window.getSelection();
+  if (!(element instanceof HTMLElement) || !selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+  if (!element.contains(range.commonAncestorContainer)) return;
+  if (event.key === 'Backspace' || event.key === 'Delete') {
+    if (deleteSelectedEventNoteIcons(eventId, event, sourceId, element, selection, range)) return;
+    deleteAdjacentEventNoteIcon(eventId, event, sourceId, element, selection, range);
+    return;
+  }
+  if (event.key !== ' ' || !selection.isCollapsed) return;
+  const textNode = range.startContainer;
+  if (textNode.nodeType !== Node.TEXT_NODE || !element.contains(textNode)) return;
+  const before = String(textNode.nodeValue || '').slice(0, range.startOffset);
+  const match = before.match(/\/([^\s/]+)$/u);
+  if (!match) return;
+  const descriptor = resolveNoteIconCommand(match[1]);
+  if (!descriptor) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  const commandStart = range.startOffset - match[0].length;
+  const replacementRange = document.createRange();
+  replacementRange.setStart(textNode, commandStart);
+  replacementRange.setEnd(textNode, range.startOffset);
+  replacementRange.deleteContents();
+  const image = createEventNoteIconElement(descriptor);
+  replacementRange.insertNode(image);
+  const caretRange = document.createRange();
+  caretRange.setStartAfter(image);
+  caretRange.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(caretRange);
+
+  const note = ensureEventNote(eventId, sourceId);
+  if (!note) return;
+  note.text = serializeEventNoteElement(element);
   saveCoverTextSettings();
 };
 
@@ -2129,16 +3331,30 @@ const syncCreditDefault = () => {
 
 const updatePreviewScale = async () => {
   await nextTick();
-  const target = canvasRef.value;
   const wrap = canvasWrapRef.value;
-  if (!target || !wrap) return;
+  if (!wrap) return;
+  const targets = isMultiCaseMode.value
+    ? [...multiCanvasElementMap.entries()]
+    : (canvasRef.value ? [['single', canvasRef.value]] : []);
+  if (targets.length === 0) return;
+  const target = targets[0][1];
   const originalWidth = Math.ceil(target.offsetWidth || target.scrollWidth || target.getBoundingClientRect().width);
-  const originalHeight = Math.ceil(target.offsetHeight || target.scrollHeight || target.getBoundingClientRect().height);
-  if (!originalWidth || !originalHeight) return;
+  if (!originalWidth) return;
   const availableWidth = Math.max(1, Math.floor(wrap.clientWidth));
   previewCanvasWidth.value = originalWidth;
-  previewCanvasHeight.value = originalHeight;
   previewScale.value = Math.min(1, availableWidth / originalWidth);
+  if (isMultiCaseMode.value) {
+    const sizes = {};
+    targets.forEach(([key, element]) => {
+      sizes[key] = {
+        width: Math.ceil(element.offsetWidth || element.scrollWidth || element.getBoundingClientRect().width),
+        height: Math.ceil(element.offsetHeight || element.scrollHeight || element.getBoundingClientRect().height)
+      };
+    });
+    multiCanvasSizes.value = sizes;
+  } else {
+    previewCanvasHeight.value = Math.ceil(target.offsetHeight || target.scrollHeight || target.getBoundingClientRect().height);
+  }
 };
 
 const isBfesCard = (card) => {
@@ -2419,11 +3635,33 @@ const predictPatchById = computed(() => {
   return map;
 });
 
+const multiPredictPatchMaps = computed(() => new Map(
+  selectedMultiSources.value.map((source) => {
+    const patches = new Map();
+    source.predictiveEvents.forEach((patch) => {
+      const key = normalizeId(patch?.id);
+      if (key) patches.set(key, patch);
+    });
+    return [source.id, patches];
+  })
+));
+
+const activePredictedEventKeys = computed(() => {
+  const keys = new Set();
+  activeCaseSources.value.forEach((source) => {
+    source.predictiveEvents.forEach((patch) => {
+      const key = normalizeId(patch?.id);
+      if (key) keys.add(key);
+    });
+  });
+  return keys;
+});
+
 const effectiveRange = computed(() => {
   const allRows = numericEvents.value;
   void allRows;
   const minPredictableId = predictableEventIds.value[0] ?? null;
-  const predictedIds = [...predictPatchById.value.keys()]
+  const predictedIds = [...activePredictedEventKeys.value]
     .map((key) => {
       const numericId = Number(key);
       if (Number.isFinite(numericId)) return numericId;
@@ -2472,6 +3710,210 @@ const rangeEndPlaceholder = computed(() => {
   return Number.isFinite(value) ? String(value) : '截止ID';
 });
 
+const normalizeCaseSignatureValue = (value) => {
+  if (Array.isArray(value)) return value.map(normalizeCaseSignatureValue);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort((a, b) => a.localeCompare(b, 'en'))
+        .map((key) => [key, normalizeCaseSignatureValue(value[key])])
+    );
+  }
+  if (value === null || value === undefined) return '';
+  return typeof value === 'string' ? value.trim() : value;
+};
+
+const getCaseSignature = (cards) => (Array.isArray(cards) ? cards : [])
+  .map((card) => {
+    const includeSkill = isFesCard(card);
+    const comparable = Object.fromEntries(
+      Object.keys(card || {})
+        .filter((key) => includeSkill || key.toLowerCase() !== 'skill')
+        .sort((a, b) => a.localeCompare(b, 'en'))
+        .map((key) => [key, normalizeCaseSignatureValue(card[key])])
+    );
+    return JSON.stringify(comparable);
+  })
+  .sort((a, b) => a.localeCompare(b, 'zh-CN'))
+  .join('|');
+
+const sortCaseCards = (cards) => (Array.isArray(cards) ? cards : [])
+  .map((card, index) => ({ card, index }))
+  .sort((a, b) => {
+    const rarityDelta = Number(b.card?.Rarity || 0) - Number(a.card?.Rarity || 0);
+    return rarityDelta || a.index - b.index;
+  })
+  .map(({ card }) => card);
+
+const buildCaseMemberSlots = (cards) => {
+  const fourStars = (Array.isArray(cards) ? cards : []).filter((card) => Number(card?.Rarity) === 4);
+  const lowStars = (Array.isArray(cards) ? cards : []).filter((card) => Number(card?.Rarity) !== 4);
+  const slots = new Array(8).fill(null);
+  fourStars.slice(0, 4).forEach((card, index) => { slots[index] = card; });
+  [...fourStars.slice(4), ...lowStars].slice(0, 4).forEach((card, index) => { slots[index + 4] = card; });
+  return slots;
+};
+
+const getCaseMemberSlots = (caseItem, isSingleCase) => (
+  isSingleCase ? (caseItem?.normalCards || []) : (caseItem?.memberSlots || [])
+);
+
+const parseManualCaseCardCommand = (rawCommand, eventId, slotIndex) => {
+  const command = String(rawCommand || '').trim().toLowerCase();
+  if (!command) return null;
+  const parts = command.split('-').map((part) => part.trim()).filter(Boolean);
+  const character = characterCommandMap.value.get(parts[0]);
+  if (!character) return null;
+  const rarityIndex = parts.findIndex((part, index) => index > 0 && /^[1-4]$/u.test(part));
+  const rarity = rarityIndex >= 0 ? Number(parts[rarityIndex]) : NaN;
+  const attribute = parts
+    .slice(1)
+    .map((part) => findNoteCommandAlias(NOTE_ATTRIBUTE_COMMANDS, part))
+    .find(Boolean);
+  const requestedUnit = parts
+    .slice(1)
+    .map((part) => findNoteCommandAlias(NOTE_UNIT_COMMANDS, part))
+    .find(Boolean);
+  if (!Number.isFinite(rarity) || !attribute) return null;
+  return {
+    CardID: `MANUAL-${normalizeId(eventId)}-${slotIndex}`,
+    Name: character.zhName,
+    Affiliation: requestedUnit || character.unit || 'vs',
+    CardName: '手动 Case',
+    Rarity: rarity,
+    Type: 'normal',
+    Attribute: normalizeAttr(attribute),
+    Skill: '',
+    EventID: normalizeId(eventId)
+  };
+};
+
+const getManualCaseCard = (caseItem, slotIndex) => caseItem?.manualCards?.[slotIndex] || null;
+
+const ensureManualCaseEdit = (eventId) => {
+  const id = normalizeId(eventId);
+  if (!manualCaseEditsByEvent.value[id]) {
+    manualCaseEditsByEvent.value[id] = { removedCaseKeys: [], manualCases: [] };
+  }
+  return manualCaseEditsByEvent.value[id];
+};
+
+const addManualCase = (eventId, afterCase) => {
+  const id = normalizeId(eventId);
+  if (!id) return;
+  const edit = ensureManualCaseEdit(id);
+  const sourcePatch = multiPredictPatchMaps.value.get(afterCase?.sourceId)?.get(id) || {};
+  const { memberCards: _memberCards, ...basePatch } = sourcePatch;
+  const manualId = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  edit.manualCases.push({
+    id: manualId,
+    afterCaseKey: normalizeId(afterCase?.caseKey),
+    commands: new Array(8).fill(''),
+    basePatch
+  });
+  activeCaseControlKey.value = `${id}|manual:${manualId}`;
+  syncEventNotesWithSources();
+  saveCoverTextSettings();
+  nextTick(updatePreviewScale);
+};
+
+const removeRenderedCase = (eventId, caseItem) => {
+  const id = normalizeId(eventId);
+  const caseKey = normalizeId(caseItem?.caseKey);
+  if (!id || !caseKey) return;
+  const edit = ensureManualCaseEdit(id);
+  if (caseItem?.isManual) {
+    edit.manualCases = edit.manualCases.filter((item) => item.id !== caseItem.manualId);
+  } else if (!edit.removedCaseKeys.includes(caseKey)) {
+    edit.removedCaseKeys.push(caseKey);
+  }
+  activeCaseControlKey.value = '';
+  syncEventNotesWithSources();
+  saveCoverTextSettings();
+  nextTick(updatePreviewScale);
+};
+
+const updateManualCaseCommand = (eventId, manualId, slotIndex, value) => {
+  const edit = manualCaseEditsByEvent.value[normalizeId(eventId)];
+  const manualCase = edit?.manualCases?.find((item) => item.id === manualId);
+  if (!manualCase || slotIndex < 0 || slotIndex >= 8) return;
+  manualCase.commands[slotIndex] = String(value || '');
+};
+
+const buildFesGroups = (cards, bannerBase) => {
+  const groups = [];
+  const definitions = [
+    { key: 'bfes', label: 'BFES', logo: '/elements/bfes.webp' },
+    { key: 'cfes', label: 'CFES', logo: '/elements/cfes.webp' }
+  ];
+  definitions.forEach((definition) => {
+    const matched = annotateCards((Array.isArray(cards) ? cards : []).filter((card) => (
+      String(card?.Type || '').trim().toLowerCase() === definition.key
+    )), bannerBase);
+    if (matched.length > 0) groups.push({ ...definition, cards: matched.slice(0, 4) });
+  });
+  return groups;
+};
+
+const buildRenderedCase = ({ base, patch, source, caseIndex = 0, multi = false }) => {
+  const idKey = normalizeId(base?.id);
+  const event = { ...base, ...patch };
+  const cards = Array.isArray(patch?.memberCards)
+    ? patch.memberCards
+    : (baseCardsByEventId.value.get(idKey) || []);
+  const bannerBase = getBaseName(event.banner);
+  const fesGroups = multi ? buildFesGroups(cards, bannerBase) : [];
+  const bfesCards = multi ? [] : annotateCards(cards.filter(isBfesCard), bannerBase);
+  const normalSourceCards = multi
+    ? sortCaseCards(cards.filter((card) => !isFesCard(card)))
+    : cards.filter((card) => !isBfesCard(card));
+  const normalCards = annotateCards(normalSourceCards, bannerBase);
+  const memberSlots = multi ? buildCaseMemberSlots(normalCards) : normalCards;
+  const isCollab = isC6FixedRosterEvent(event);
+  const eventType = isCollab ? 'VOCALOID 联动' : getEventType(event);
+  const resolvedUnit = getEventUnit(event) || resolveUnitFromCards(cards);
+  const colorName = bannerBase
+    || getBaseName(normalCards.find((card) => !vsNameSet.value.has(getBaseName(card?.Name)))?.Name)
+    || getBaseName(normalCards[0]?.Name);
+  const mainColor = charMap.value[colorName]?.color || '#14b8a6';
+  const detailKind = eventType === 'World Link'
+    ? 'wl'
+    : (isCollab ? 'collab' : (eventType === '箱活' ? 'box' : (eventType === '混活' ? 'mixed' : 'unknown')));
+  const rowGradient = detailKind === 'collab'
+    ? buildCollabMemberGradient(normalCards, mainColor)
+    : detailKind === 'wl'
+    ? buildMemberGradient(normalCards, mainColor)
+    : `linear-gradient(115deg, ${rgbaFromHex(mainColor, 0.7)}, rgba(255, 255, 255, 0.74) 84%, ${rgbaFromHex(mainColor, 0.18)}), linear-gradient(90deg, ${rgbaFromHex(mainColor, 0.34)}, rgba(255, 255, 255, 0.65))`;
+  return {
+    caseIndex,
+    caseLabel: `Case ${caseIndex + 1}`,
+    sourceId: source?.id || '',
+    sourceName: source?.name || '',
+    sourceIds: source?.id ? [source.id] : [],
+    sourceNames: source?.name ? [source.name] : [],
+    eventType,
+    hasPrediction: !!patch,
+    isCollab,
+    detailKind,
+    detailKindClass: `is-${detailKind}`,
+    rowClass: `${getRowLimitClass(event, cards)}${isCollab ? ' is-collab-event' : ''}`.trim(),
+    unitLabel: resolvedUnit.toUpperCase(),
+    unitLogo: UNIT_LOGOS[resolvedUnit] || '',
+    seriesLabel: isCollab ? '' : buildSeriesLabel(event),
+    detailStyle: {
+      '--special-row-gradient': rowGradient,
+      '--special-collab-border-gradient': buildMemberBorderGradient(normalCards, mainColor),
+      '--special-row-color-soft': rgbaFromHex(mainColor, 0.7),
+      '--special-row-color-pale': rgbaFromHex(mainColor, 0.18),
+      '--special-row-color-light': rgbaFromHex(mainColor, 0.34)
+    },
+    normalCards: normalCards.slice(0, multi ? 8 : 6),
+    memberSlots,
+    bfesCards: bfesCards.slice(0, 4),
+    fesGroups
+  };
+};
+
 const renderedRows = computed(() => {
   const range = effectiveRange.value;
   if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) return [];
@@ -2482,53 +3924,15 @@ const renderedRows = computed(() => {
       const idKey = normalizeId(base.id);
       const patch = predictPatchById.value.get(idKey) || null;
       if (!patch && !showUnpredictedRows.value) return null;
-      const event = { ...base, ...patch };
-      const cards = Array.isArray(patch?.memberCards)
-        ? patch.memberCards
-        : (baseCardsByEventId.value.get(idKey) || []);
-      const bannerBase = getBaseName(event.banner);
-      const bfesCards = annotateCards(cards.filter(isBfesCard), bannerBase);
-      const normalCards = annotateCards(cards.filter((card) => !isBfesCard(card)), bannerBase);
-      const eventType = getEventType(event);
-      const isCollab = isC6FixedRosterEvent(event);
-      const resolvedUnit = getEventUnit(event) || resolveUnitFromCards(cards);
-      const colorName = bannerBase
-        || getBaseName(normalCards.find((card) => !vsNameSet.value.has(getBaseName(card?.Name)))?.Name)
-        || getBaseName(normalCards[0]?.Name);
-      const mainColor = charMap.value[colorName]?.color || '#14b8a6';
-      const detailKind = eventType === 'World Link'
-        ? 'wl'
-        : (isCollab ? 'collab' : (eventType === '箱活' ? 'box' : (eventType === '混活' ? 'mixed' : 'unknown')));
-      const rowGradient = detailKind === 'collab'
-        ? buildCollabMemberGradient(normalCards, mainColor)
-        : detailKind === 'wl'
-        ? buildMemberGradient(normalCards, mainColor)
-        : `linear-gradient(115deg, ${rgbaFromHex(mainColor, 0.7)}, rgba(255, 255, 255, 0.74) 84%, ${rgbaFromHex(mainColor, 0.18)}), linear-gradient(90deg, ${rgbaFromHex(mainColor, 0.34)}, rgba(255, 255, 255, 0.65))`;
+      const renderedCase = buildRenderedCase({ base, patch, source: selectedSource.value });
 
       return {
         key: `${idKey || 'unknown'}-${index}`,
         id: idKey || '-',
         sortKey: scheduleIndex,
-        rowClass: `${getRowLimitClass(event, cards)}${isCollab ? ' is-collab-event' : ''}`.trim(),
+        ...renderedCase,
         startDate: formatDate(base.start_date || base.date || patch?.start_date || patch?.date),
-        endDate: formatDate(base.end_date || patch?.end_date),
-        eventType,
-        hasPrediction: !!patch,
-        isCollab,
-        detailKind,
-        detailKindClass: `is-${detailKind}`,
-        unitLabel: resolvedUnit.toUpperCase(),
-        unitLogo: UNIT_LOGOS[resolvedUnit] || '',
-        seriesLabel: isCollab ? '' : buildSeriesLabel(event),
-        detailStyle: {
-          '--special-row-gradient': rowGradient,
-          '--special-collab-border-gradient': buildMemberBorderGradient(normalCards, mainColor),
-          '--special-row-color-soft': rgbaFromHex(mainColor, 0.7),
-          '--special-row-color-pale': rgbaFromHex(mainColor, 0.18),
-          '--special-row-color-light': rgbaFromHex(mainColor, 0.34)
-        },
-        normalCards: normalCards.slice(0, 6),
-        bfesCards: bfesCards.slice(0, 4)
+        endDate: formatDate(base.end_date || patch?.end_date)
       };
     })
     .filter(Boolean)
@@ -2543,17 +3947,183 @@ const renderedRows = computed(() => {
     });
 });
 
+const multiCaseRows = computed(() => {
+  const range = effectiveRange.value;
+  if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) return [];
+  return numericEvents.value
+    .filter(({ idNum }) => idNum >= range.start && idNum <= range.end)
+    .map(({ event: base, index, scheduleIndex }) => {
+      const idKey = normalizeId(base.id);
+      const groupedCases = new Map();
+      selectedMultiSources.value.forEach((source) => {
+        const patch = multiPredictPatchMaps.value.get(source.id)?.get(idKey) || null;
+        if (!patch) return;
+        const cards = Array.isArray(patch?.memberCards)
+          ? patch.memberCards
+          : (baseCardsByEventId.value.get(idKey) || []);
+        const signature = getCaseSignature(cards);
+        const existing = groupedCases.get(signature);
+        if (existing) {
+          existing.sourceIds.push(source.id);
+          existing.sourceNames.push(source.name);
+          return;
+        }
+        groupedCases.set(signature, buildRenderedCase({
+          base,
+          patch,
+          source,
+          caseIndex: groupedCases.size,
+          multi: true
+        }));
+      });
+      if (groupedCases.size === 0 && showUnpredictedRows.value && selectedMultiSources.value.length > 0) {
+        const source = selectedMultiSources.value[0];
+        groupedCases.set('__unpredicted__', buildRenderedCase({ base, patch: null, source, multi: true }));
+      }
+      const edit = manualCaseEditsByEvent.value[idKey] || { removedCaseKeys: [], manualCases: [] };
+      const removedKeys = new Set(edit.removedCaseKeys || []);
+      const cases = [...groupedCases.entries()]
+        .map(([signature, item]) => ({
+          ...item,
+          caseKey: `source:${signature}`,
+          noteSourceId: item.sourceIds.find((sourceId) => getEventNote(idKey, sourceId).text) || item.sourceId
+        }))
+        .filter((item) => !removedKeys.has(item.caseKey));
+
+      (edit.manualCases || []).forEach((manualCase) => {
+        const manualCards = Array.from({ length: 8 }, (_, slot) => (
+          parseManualCaseCardCommand(manualCase.commands?.[slot], idKey, slot)
+        ));
+        const noteSourceId = getManualCaseNoteSourceId(manualCase.id);
+        const renderedManualCase = {
+          ...buildRenderedCase({
+            base,
+            patch: {
+              ...(manualCase.basePatch || {}),
+              memberCards: manualCards.filter(Boolean)
+            },
+            source: { id: noteSourceId, name: '手动 Case' },
+            multi: true
+          }),
+          caseKey: `manual:${manualCase.id}`,
+          isManual: true,
+          manualId: manualCase.id,
+          afterCaseKey: manualCase.afterCaseKey,
+          commands: manualCase.commands,
+          manualCards,
+          memberSlots: manualCards,
+          noteSourceId
+        };
+        const afterIndex = cases.findIndex((item) => item.caseKey === manualCase.afterCaseKey);
+        let insertIndex = afterIndex >= 0 ? afterIndex + 1 : cases.length;
+        while (cases[insertIndex]?.isManual && cases[insertIndex].afterCaseKey === manualCase.afterCaseKey) insertIndex += 1;
+        cases.splice(insertIndex, 0, renderedManualCase);
+      });
+
+      cases.forEach((item, caseIndex) => {
+        item.caseIndex = caseIndex;
+        item.caseLabel = `Case ${caseIndex + 1}`;
+      });
+      if (cases.length === 0) return null;
+      const firstCase = cases[0];
+      const firstPatch = multiPredictPatchMaps.value.get(firstCase.sourceId)?.get(idKey) || null;
+      return {
+        key: `multi-${idKey || 'unknown'}-${index}`,
+        id: idKey || '-',
+        sortKey: scheduleIndex,
+        startDate: formatDate(base.start_date || base.date || firstPatch?.start_date || firstPatch?.date),
+        endDate: formatDate(base.end_date || firstPatch?.end_date),
+        isCollab: firstCase.isCollab,
+        rowClass: firstCase.rowClass,
+        detailStyle: firstCase.detailStyle,
+        cases
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.sortKey - b.sortKey);
+});
+
+const monthlyMultiPages = computed(() => {
+  const pages = [];
+  multiCaseRows.value.forEach((row) => {
+    const monthInfo = getMonthInfoFromDate(row.endDate || row.startDate) || { key: 'undated', label: '月份未定' };
+    let page = pages.find((item) => item.key === monthInfo.key);
+    if (!page) {
+      page = { key: monthInfo.key, label: monthInfo.label, rows: [] };
+      pages.push(page);
+    }
+    page.rows.push(row);
+  });
+  return pages;
+});
+
+const hasRenderableRows = computed(() => (
+  isMultiCaseMode.value ? monthlyMultiPages.value.length > 0 : renderedRows.value.length > 0
+));
+
 const sanitizeFileName = (value) => {
   const cleaned = String(value || '').trim().replace(/[\\/:*?"<>|]/g, '_').replace(/[.\s]+$/g, '');
-  return cleaned || 'pjsk-special-predict';
+  return cleaned || 'pjsk-predict';
 };
 
+const buildSpecialExportFileName = (sourceName, page, stamp) => [
+  sanitizeFileName(sourceName),
+  page ? sanitizeFileName(page.label) : '',
+  stamp
+].filter(Boolean).join('-') + '.png';
+
+const captureSpecialCanvas = async (target) => {
+  const exportWidth = Math.ceil(target.scrollWidth || target.getBoundingClientRect().width);
+  const exportHeight = Math.ceil(target.scrollHeight || target.getBoundingClientRect().height);
+  const canvas = await html2canvas(target, {
+    backgroundColor: '#ffffff',
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    imageTimeout: 12000,
+    width: exportWidth,
+    height: exportHeight,
+    windowWidth: Math.max(document.documentElement.clientWidth, exportWidth),
+    windowHeight: Math.max(document.documentElement.clientHeight, exportHeight)
+  });
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((result) => {
+      if (result) resolve(result);
+      else reject(new Error('toBlob failed'));
+    }, 'image/png');
+  });
+};
+
+const downloadSpecialBlob = (blob, fileName) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+};
+
+const resolveMultiExportPages = (
+  pages = monthlyMultiPages.value,
+  pageKey = selectedPageConfigKey.value
+) => (
+  pageKey === ALL_PAGE_CONFIG_KEY
+    ? pages
+    : pages.filter((page) => page.key === pageKey)
+);
+
 const exportPng = async () => {
-  const target = canvasRef.value;
-  if (!target || renderedRows.value.length === 0 || isExporting.value) return;
+  const exportTargets = isMultiCaseMode.value
+    ? resolveMultiExportPages()
+      .map((page) => ({ page, target: multiCanvasElementMap.get(page.key) }))
+      .filter((item) => !!item.target)
+    : (canvasRef.value ? [{ page: null, target: canvasRef.value }] : []);
+  if (exportTargets.length === 0 || !hasRenderableRows.value || isExporting.value) return;
 
   isExporting.value = true;
-  exportStatus.value = '正在生成 PNG...';
+  exportStatus.value = isMultiCaseMode.value ? '正在生成月度 PNG...' : '正在生成 PNG...';
   const savedPreviewScale = previewScale.value;
   const clearExportStatusLater = () => {
     if (exportStatusTimer) window.clearTimeout(exportStatusTimer);
@@ -2567,37 +4137,25 @@ const exportPng = async () => {
     await nextTick();
     if (document?.fonts?.ready) await document.fonts.ready;
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    const exportWidth = Math.ceil(target.scrollWidth || target.getBoundingClientRect().width);
-    const exportHeight = Math.ceil(target.scrollHeight || target.getBoundingClientRect().height);
-    const canvas = await html2canvas(target, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      imageTimeout: 12000,
-      width: exportWidth,
-      height: exportHeight,
-      windowWidth: Math.max(document.documentElement.clientWidth, exportWidth),
-      windowHeight: Math.max(document.documentElement.clientHeight, exportHeight)
-    });
-    const blob = await new Promise((resolve, reject) => {
-      canvas.toBlob((result) => {
-        if (result) resolve(result);
-        else reject(new Error('toBlob failed'));
-      }, 'image/png');
-    });
     const now = new Date();
     const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-    const sourceName = sanitizeFileName(selectedSource.value?.name || 'source');
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${sourceName}-special-predict-${stamp}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    exportStatus.value = 'PNG 已导出。';
+    const sourceName = sanitizeFileName(isMultiCaseMode.value
+      ? `多分支-${selectedMultiSources.value.length}源`
+      : (selectedSource.value?.name || 'source'));
+    for (let index = 0; index < exportTargets.length; index += 1) {
+      const { page, target } = exportTargets[index];
+      if (isMultiCaseMode.value) {
+        exportStatus.value = `正在生成 ${index + 1}/${exportTargets.length}：${page.label}`;
+      }
+      const blob = await captureSpecialCanvas(target);
+      downloadSpecialBlob(blob, buildSpecialExportFileName(sourceName, page, stamp));
+      if (index < exportTargets.length - 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+    }
+    exportStatus.value = isMultiCaseMode.value
+      ? `已导出 ${exportTargets.length} 张月度 PNG。`
+      : 'PNG 已导出。';
     clearExportStatusLater();
   } catch (error) {
     console.error('[special-predict] export failed', error);
@@ -2623,7 +4181,8 @@ watch(
     `${source.id}:${source.predictiveEvents.map((event) => normalizeId(event?.id)).filter(Boolean).join(',')}`
   )).join('|'),
   () => {
-    syncEventNotesWithSources();
+    syncEventNotesWithSources('single');
+    syncEventNotesWithSources('multi');
     syncEventNoteElements();
     if (editorHistoryReady) nextTick(resetEditorHistory);
   },
@@ -2634,7 +4193,10 @@ watch(
   selectedSourceId,
   () => {
     if (selectedCoverTextId.value.startsWith(EVENT_NOTE_ID_PREFIX)) {
-      selectedCoverTextId.value = ALL_EVENT_NOTES_ID;
+      selectedEventNoteSourceId.value = selectedSourceId.value;
+      if (!eventNotes.value[selectedEventNoteId.value]) {
+        selectedCoverTextId.value = ALL_EVENT_NOTES_ID;
+      }
     }
     allEventNotesDraft.value = {};
     syncEventNoteElements();
@@ -2652,8 +4214,31 @@ watch(
         ? activeId
         : (normalizedSources.value[0]?.id || '');
     }
+    const validIds = new Set(normalizedSources.value.map((source) => source.id));
+    multiSourceIds.value = multiSourceIds.value.filter((id) => validIds.has(id));
   },
   { immediate: true }
+);
+
+watch(
+  () => monthlyMultiPages.value.map((page) => page.key).join('|'),
+  () => {
+    const validKeys = new Set(monthlyMultiPages.value.map((page) => page.key));
+    const base = allPageAppearance.value || capturePageAppearance();
+    const next = { ...pageAppearances.value };
+    monthlyMultiPages.value.forEach((page) => {
+      if (!next[page.key]) next[page.key] = cloneEditorHistoryData(base);
+    });
+    pageAppearances.value = next;
+    if (
+      selectedPageConfigKey.value !== ALL_PAGE_CONFIG_KEY
+      && !validKeys.has(selectedPageConfigKey.value)
+    ) {
+      void selectPageConfig(ALL_PAGE_CONFIG_KEY);
+    }
+    updatePreviewScale();
+  },
+  { immediate: true, flush: 'post' }
 );
 
 watch(
@@ -2671,12 +4256,15 @@ watch(
 
 watch(
   [
+    predictionMode,
+    multiSourceIds,
     coverTextBlocks,
     creditText,
     creditManuallyEdited,
     monthFontFamily,
     creditTextStyle,
-    eventNotesBySource,
+    eventNotesByMode,
+    manualCaseEditsByEvent,
     monthColorName,
     backgroundColorName,
     customMonthColor,
@@ -2687,6 +4275,7 @@ watch(
   () => {
     saveCoverTextSettings();
     scheduleEditorHistoryCapture();
+    updatePreviewScale();
   },
   { deep: true }
 );
@@ -2714,8 +4303,11 @@ watch(
 watch(
   () => [
     isUnlocked.value,
+    isMultiCaseMode.value,
     renderedRows.value.length,
+    monthlyMultiPages.value.map((page) => `${page.key}:${page.rows.length}`).join('|'),
     selectedSourceId.value,
+    multiSourceIds.value.join('|'),
     showUnpredictedRows.value,
     coverBgUrl.value
   ],
@@ -2737,6 +4329,7 @@ onMounted(() => {
     previewResizeObserver = new ResizeObserver(() => updatePreviewScale());
     if (canvasWrapRef.value) previewResizeObserver.observe(canvasWrapRef.value);
     if (canvasRef.value) previewResizeObserver.observe(canvasRef.value);
+    multiCanvasElementMap.forEach((element) => previewResizeObserver.observe(element));
   }
   window.addEventListener('resize', updatePreviewScale);
   window.addEventListener('keydown', onGlobalEditorKeydown);
@@ -2763,7 +4356,8 @@ onBeforeUnmount(() => {
   }
   window.removeEventListener('resize', updatePreviewScale);
   window.removeEventListener('keydown', onGlobalEditorKeydown);
-  if (coverBgUrl.value) URL.revokeObjectURL(coverBgUrl.value);
+  coverBgUrlMap.forEach((url) => URL.revokeObjectURL(url));
+  coverBgUrlMap.clear();
   coverBgAssetMap.clear();
 });
 
@@ -2994,8 +4588,203 @@ const SpecialCardCell = defineComponent({
   flex: 1 1 auto;
 }
 
+.special-predict-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  padding: 2px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.special-predict-mode-toggle button {
+  min-width: 0;
+  min-height: 27px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.14s ease, background-color 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.special-predict-mode-toggle button.active {
+  background: rgba(20, 184, 166, 0.9);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(20, 184, 166, 0.2);
+}
+
+.special-predict-mode-toggle button:active {
+  transform: scale(0.97);
+  filter: brightness(0.94);
+}
+
+.special-multi-source-picker {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.special-multi-source-trigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #475569;
+  padding: 4px 9px 4px 11px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+}
+
+.special-multi-source-trigger span:nth-child(2) {
+  text-align: right;
+  color: #0f766e;
+}
+
+.special-multi-source-chevron {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 50%;
+  transition: transform 0.16s ease;
+}
+
+.special-multi-source-chevron::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  box-sizing: border-box;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.special-multi-source-trigger.active .special-multi-source-chevron {
+  transform: rotate(180deg);
+}
+
+.special-multi-source-list {
+  max-height: 190px;
+  display: grid;
+  gap: 4px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.special-multi-source-option {
+  min-width: 0;
+  min-height: 30px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.46);
+  color: #475569;
+  padding: 3px 7px 3px 4px;
+  font-size: 0.69rem;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.special-multi-source-option.active {
+  border-color: rgba(20, 184, 166, 0.48);
+  background: rgba(204, 251, 241, 0.6);
+  color: #0f766e;
+}
+
+.special-multi-source-order {
+  width: 21px;
+  height: 21px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.46);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.62);
+  color: transparent;
+  font-size: 0.63rem;
+  font-weight: 900;
+}
+
+.special-multi-source-option.active .special-multi-source-order {
+  border-color: rgba(20, 184, 166, 0.72);
+  background: rgba(20, 184, 166, 0.9);
+  color: #ffffff;
+}
+
+.special-multi-source-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.special-multi-source-count {
+  color: #94a3b8;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.special-multi-source-empty {
+  color: #64748b;
+  font-size: 0.68rem;
+  text-align: center;
+}
+
 .special-toolbar-range {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.special-toolbar-page {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+
+.special-page-picker {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.special-page-picker select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #0f172a;
+  padding: 5px 28px 5px 9px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.special-page-scope-note {
+  color: #64748b;
+  font-size: 0.64rem;
+  line-height: 1.2;
+  text-align: right;
 }
 
 .special-toolbar-range .special-toggle-field {
@@ -3638,6 +5427,9 @@ const SpecialCardCell = defineComponent({
   overflow-x: hidden;
   padding-bottom: 8px;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
   justify-content: center;
 }
 
@@ -3863,6 +5655,341 @@ const SpecialCardCell = defineComponent({
   border-radius: 18px;
 }
 
+.special-multi-case .special-cover-panel + .special-month-bar {
+  margin-top: -10px;
+}
+
+.special-multi-event-row {
+  grid-template-columns: var(--special-date-width) var(--special-detail-width);
+}
+
+.special-multi-case-grid {
+  min-width: 0;
+  width: var(--special-detail-width);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
+.special-multi-case-grid.is-single-case {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.special-case-card {
+  --special-card-size: 62px;
+  --special-card-gap: 4px;
+  position: relative;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(23, 49, 58, 0.12);
+  border-radius: 16px;
+  background: var(--special-row-gradient);
+  padding: 8px;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.08);
+}
+
+.special-case-actions {
+  position: absolute;
+  z-index: 8;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.special-case-card:hover .special-case-actions,
+.special-case-card.is-controls-visible .special-case-actions,
+.special-case-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.special-case-actions button {
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.52);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  color: #475569;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px) saturate(145%);
+  cursor: pointer;
+}
+
+.special-case-actions button:hover,
+.special-case-actions button:focus-visible {
+  border-color: rgba(20, 184, 166, 0.72);
+  background: rgba(204, 251, 241, 0.86);
+  color: #0f766e;
+  outline: none;
+}
+
+.special-case-card.is-limited-event {
+  border: 3px solid #ff4d4f;
+  padding: 6px;
+}
+
+.special-case-card.is-ue-event {
+  border: 3px solid #f59e0b;
+  padding: 6px;
+}
+
+.special-case-card.is-collab-event {
+  border: 4px solid transparent;
+  padding: 5px;
+  background:
+    var(--special-row-gradient) padding-box,
+    var(--special-collab-border-gradient) border-box;
+}
+
+.special-case-head {
+  min-width: 0;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.special-case-label {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #ffcaa6;
+  color: #ffffff;
+  padding: 3px 7px;
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.special-case-head .special-unit-logo {
+  min-width: 0;
+  max-width: 92px;
+  max-height: 24px;
+}
+
+.special-case-head .special-se-logo {
+  width: 46px;
+  height: 23px;
+}
+
+.special-case-head .special-wl-text,
+.special-case-head .special-unknown-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.76rem;
+}
+
+.special-case-head .special-series-label {
+  min-width: 0;
+  padding: 2px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.62rem;
+}
+
+.special-case-member-grid {
+  min-height: calc(var(--special-card-size) * 2 + var(--special-card-gap));
+  display: grid;
+  grid-template-columns: repeat(4, var(--special-card-size));
+  grid-auto-rows: var(--special-card-size);
+  gap: var(--special-card-gap);
+  justify-content: start;
+  align-content: start;
+}
+
+.special-multi-case-grid.is-single-case .special-case-member-grid {
+  min-height: var(--special-card-size);
+  grid-template-columns: repeat(8, var(--special-card-size));
+}
+
+.special-case-card-placeholder {
+  width: var(--special-card-size);
+  height: var(--special-card-size);
+  pointer-events: none;
+}
+
+.special-manual-card-slot {
+  position: relative;
+  width: var(--special-card-size);
+  height: var(--special-card-size);
+  min-width: 0;
+  display: block;
+  border: 1px dashed rgba(100, 116, 139, 0.42);
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.special-manual-card-slot.is-invalid {
+  border-color: rgba(239, 68, 68, 0.76);
+  background: rgba(254, 226, 226, 0.34);
+}
+
+.special-manual-card-slot input {
+  position: absolute;
+  z-index: 6;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  width: calc(100% - 4px);
+  height: 17px;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.52);
+  border-radius: 5px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.82);
+  color: #334155;
+  padding: 1px 3px;
+  font-size: 0.44rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
+}
+
+.special-manual-card-slot input:focus {
+  border-color: rgba(14, 165, 233, 0.88);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.special-case-fes-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, var(--special-card-size));
+  grid-auto-rows: var(--special-card-size);
+  align-items: center;
+  justify-content: start;
+  gap: var(--special-card-gap);
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.44);
+}
+
+.special-case-fes-logo-cell {
+  grid-column: span 2;
+  min-width: 0;
+  height: var(--special-card-size);
+  display: grid;
+  place-items: center;
+}
+
+.special-case-fes-logo {
+  max-width: calc(var(--special-card-size) * 2 + var(--special-card-gap) - 8px);
+  max-height: calc(var(--special-card-size) - 8px);
+  object-fit: contain;
+}
+
+.special-multi-case-grid.is-single-case .special-case-fes-row {
+  grid-template-columns: repeat(8, var(--special-card-size));
+}
+
+.special-case-note {
+  position: relative;
+  min-width: 0;
+  min-height: 28px;
+  box-sizing: border-box;
+  display: block;
+  margin-top: 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  outline: none;
+  padding: 3px 5px;
+  background: rgba(255, 255, 255, 0.12);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.special-case-note:not(.is-empty) {
+  align-content: center;
+}
+
+.special-case-note.is-empty {
+  height: 28px;
+  line-height: 20px !important;
+}
+
+.special-case-note.is-empty::before {
+  content: attr(data-placeholder);
+  color: #64748b;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.special-case-note.is-empty:hover::before,
+.special-case-note.is-empty:focus::before,
+.special-case-note.is-empty.is-selected::before {
+  opacity: 0.48;
+}
+
+.special-case-note.is-selected {
+  border-color: rgba(14, 165, 233, 0.92);
+  box-shadow: 0 0 0 1.5px rgba(14, 165, 233, 0.92), 0 0 0 3px rgba(255, 255, 255, 0.66);
+}
+
+:deep(.special-note-inline-icon) {
+  width: 1.18em;
+  height: 1.18em;
+  display: inline-block;
+  object-fit: contain;
+  vertical-align: -0.23em;
+  margin: 0;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+:deep(.special-note-inline-icon.is-character) {
+  width: 1.55em;
+  height: 1.55em;
+  vertical-align: -0.43em;
+}
+
+.special-canvas.is-exporting .special-case-note {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.special-canvas.is-exporting .special-case-actions,
+.special-canvas.is-exporting .special-manual-card-slot input {
+  display: none;
+}
+
+.special-canvas.is-exporting .special-case-note.is-empty::before {
+  content: none;
+}
+
+.special-multi-empty-canvas {
+  width: min(560px, 100%);
+  box-sizing: border-box;
+  border: 1px dashed rgba(148, 163, 184, 0.62);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #64748b;
+  padding: 36px 18px;
+  text-align: center;
+  font-size: 0.86rem;
+}
+
 .special-event-note {
   position: absolute;
   z-index: 3;
@@ -3871,9 +5998,7 @@ const SpecialCardCell = defineComponent({
   width: min(340px, calc(var(--special-detail-width) - 220px));
   min-height: 34px;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  display: block;
   border: 1px solid transparent;
   border-radius: 6px;
   outline: none;
@@ -3882,6 +6007,10 @@ const SpecialCardCell = defineComponent({
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   cursor: text;
+}
+
+.special-event-note:not(.is-empty) {
+  align-content: center;
 }
 
 .special-event-note.is-empty::before {
