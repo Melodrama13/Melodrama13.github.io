@@ -33884,6 +33884,53 @@
     ]
   },
   {
+    "id": 728,
+    "title": "スターダストレイン",
+    "pronunciation": "すたーだすとれいん",
+    "composer": "STEAKA",
+    "lyricist": "STEAKA",
+    "arranger": "STEAKA",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-08-15 22:05:00",
+    "categories": [
+      "3DMV",
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "mmj"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 12,
+      "hard": 17,
+      "expert": 24,
+      "master": 27
+    },
+    "vocals": [
+      {
+        "vocal_id": 1285,
+        "type": "original_song",
+        "released_at": "2026/8/15",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2060,
+        "type": "sekai",
+        "released_at": "2026/8/15",
+        "characters": [
+          "桐谷遥",
+          "KAITO",
+          "花里实乃里",
+          "桃井爱莉",
+          "日野森雫"
+        ]
+      }
+    ]
+  },
+  {
     "id": 732,
     "title": "天藍のアイスヘヴン",
     "pronunciation": "てんらんのあいすへゔん",
@@ -34618,6 +34665,98 @@
           "天马咲希",
           "望月穗波",
           "日野森志步"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 752,
+    "title": "アヤノの幸福理論",
+    "pronunciation": "あやののこうふくりろん",
+    "composer": "じん",
+    "lyricist": "じん",
+    "arranger": "じん",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-08-14 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "nc"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 11,
+      "hard": 16,
+      "expert": 22,
+      "master": 27
+    },
+    "vocals": [
+      {
+        "vocal_id": 1309,
+        "type": "original_song",
+        "released_at": "2026/8/14",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2062,
+        "type": "sekai",
+        "released_at": "2026/8/14",
+        "characters": [
+          "MEIKO",
+          "宵崎奏",
+          "朝比奈真冬",
+          "东云绘名",
+          "晓山瑞希"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 753,
+    "title": "空想フォレスト",
+    "pronunciation": "くうそうふぉれすと",
+    "composer": "じん",
+    "lyricist": "じん",
+    "arranger": "じん",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-08-13 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "ws"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 13,
+      "hard": 17,
+      "expert": 25,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1310,
+        "type": "original_song",
+        "released_at": "2026/8/13",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2061,
+        "type": "sekai",
+        "released_at": "2026/8/13",
+        "characters": [
+          "巡音流歌",
+          "天马司",
+          "凤笑梦",
+          "草薙宁宁",
+          "神代类"
         ]
       }
     ]
