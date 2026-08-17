@@ -28899,6 +28899,14 @@
           "凤笑梦",
           "神代类"
         ]
+      },
+      {
+        "vocal_id": 2063,
+        "type": "another_vocal",
+        "released_at": "2026/8/17",
+        "characters": [
+          "草薙宁宁"
+        ]
       }
     ]
   },
@@ -32280,6 +32288,22 @@
           "白石杏",
           "青柳冬弥"
         ]
+      },
+      {
+        "vocal_id": 2064,
+        "type": "another_vocal",
+        "released_at": "2026/8/17",
+        "characters": [
+          "东云彰人"
+        ]
+      },
+      {
+        "vocal_id": 2065,
+        "type": "another_vocal",
+        "released_at": "2026/8/17",
+        "characters": [
+          "镜音连"
+        ]
       }
     ]
   },
@@ -35368,6 +35392,42 @@
         "released_at": "2026/8/4",
         "characters": [
           "ついなちゃん"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 802,
+    "title": "君に贈る未来",
+    "pronunciation": "きみにおくるみらい",
+    "composer": "木瀬のん",
+    "lyricist": "木瀬のん",
+    "arranger": "木瀬のん",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-08-24 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 17,
+      "expert": 24,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1846,
+        "type": "original_song",
+        "released_at": "2026/8/24",
+        "characters": [
+          "初音未来",
+          "镜音铃"
         ]
       }
     ]
