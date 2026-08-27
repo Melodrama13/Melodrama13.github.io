@@ -35177,6 +35177,57 @@
     ]
   },
   {
+    "id": 788,
+    "title": "アンチサイノウ",
+    "pronunciation": "あんちさいのう",
+    "composer": "syudou",
+    "lyricist": "syudou",
+    "arranger": "syudou",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-08-27 20:15:00",
+    "categories": [
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "mmj",
+      "vbs",
+      "ws",
+      "nc",
+      "vocaloid",
+      "other"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 13,
+      "hard": 19,
+      "expert": 27,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1345,
+        "type": "original_song",
+        "released_at": "2026/8/27",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2066,
+        "type": "sekai",
+        "released_at": "2026/8/27",
+        "characters": [
+          "桃井爱莉",
+          "东云彰人",
+          "草薙宁宁",
+          "东云绘名",
+          "MEIKO"
+        ]
+      }
+    ]
+  },
+  {
     "id": 789,
     "title": "天秤、指先で触れて",
     "pronunciation": "てんびん、ゆびさきでふれて",
