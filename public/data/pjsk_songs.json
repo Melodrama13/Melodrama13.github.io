@@ -15987,6 +15987,14 @@
         "characters": [
           "青柳冬弥"
         ]
+      },
+      {
+        "vocal_id": 2067,
+        "type": "another_vocal",
+        "released_at": "2026/8/28",
+        "characters": [
+          "KAITO"
+        ]
       }
     ]
   },
@@ -25125,6 +25133,22 @@
           "东云彰人",
           "青柳冬弥"
         ]
+      },
+      {
+        "vocal_id": 2069,
+        "type": "another_vocal",
+        "released_at": "2026/8/28",
+        "characters": [
+          "小豆泽心羽"
+        ]
+      },
+      {
+        "vocal_id": 2068,
+        "type": "another_vocal",
+        "released_at": "2026/8/28",
+        "characters": [
+          "白石杏"
+        ]
       }
     ]
   },
@@ -26653,6 +26677,52 @@
         "released_at": "2025/10/31",
         "characters": [
           "KAITO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 550,
+    "title": "shake it!",
+    "pronunciation": "しぇいくいっと",
+    "composer": "emon(Tes.)",
+    "lyricist": "emon(Tes.)",
+    "arranger": "emon(Tes.)",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-09-01 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "mmj"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 12,
+      "hard": 18,
+      "expert": 24,
+      "master": 28
+    },
+    "vocals": [
+      {
+        "vocal_id": 1107,
+        "type": "original_song",
+        "released_at": "2026/9/1",
+        "characters": [
+          "初音未来",
+          "镜音铃",
+          "镜音连"
+        ]
+      },
+      {
+        "vocal_id": 2070,
+        "type": "sekai",
+        "released_at": "2026/9/1",
+        "characters": [
+          "镜音铃",
+          "花里实乃里",
+          "桐谷遥",
+          "桃井爱莉",
+          "日野森雫"
         ]
       }
     ]
@@ -35480,6 +35550,39 @@
         "characters": [
           "初音未来",
           "镜音铃"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 803,
+    "title": "空に免じて",
+    "pronunciation": "そらにめんじて",
+    "composer": "傘村トータ",
+    "lyricist": "傘村トータ",
+    "arranger": "島田昌典",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-08-28 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 12,
+      "hard": 16,
+      "expert": 22,
+      "master": 26
+    },
+    "vocals": [
+      {
+        "vocal_id": 1847,
+        "type": "original_song",
+        "released_at": "2026/8/28",
+        "characters": [
+          "初音未来"
         ]
       }
     ]
