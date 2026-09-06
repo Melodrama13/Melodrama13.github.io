@@ -21199,6 +21199,14 @@
         ]
       },
       {
+        "vocal_id": 2071,
+        "type": "another_vocal",
+        "released_at": "2026/9/6",
+        "characters": [
+          "凤笑梦"
+        ]
+      },
+      {
         "vocal_id": 1607,
         "type": "another_vocal",
         "released_at": "2025/4/22",
@@ -30182,6 +30190,22 @@
           "东云绘名",
           "晓山瑞希"
         ]
+      },
+      {
+        "vocal_id": 2072,
+        "type": "another_vocal",
+        "released_at": "2026/9/6",
+        "characters": [
+          "宵崎奏"
+        ]
+      },
+      {
+        "vocal_id": 2073,
+        "type": "another_vocal",
+        "released_at": "2026/9/6",
+        "characters": [
+          "MEIKO"
+        ]
       }
     ]
   },
@@ -35583,6 +35607,52 @@
         "released_at": "2026/8/28",
         "characters": [
           "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 804,
+    "title": "正解",
+    "pronunciation": "せいかい",
+    "composer": "雨良 Amala",
+    "lyricist": "雨良 Amala",
+    "arranger": "雨良 Amala",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-09-06 15:00:00",
+    "categories": [
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "vbs"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 13,
+      "hard": 18,
+      "expert": 27,
+      "master": 31
+    },
+    "vocals": [
+      {
+        "vocal_id": 1848,
+        "type": "original_song",
+        "released_at": "2026/9/6",
+        "characters": [
+          "重音テト"
+        ]
+      },
+      {
+        "vocal_id": 2074,
+        "type": "sekai",
+        "released_at": "2026/9/6",
+        "characters": [
+          "东云彰人",
+          "镜音铃",
+          "小豆泽心羽",
+          "白石杏",
+          "青柳冬弥"
         ]
       }
     ]
