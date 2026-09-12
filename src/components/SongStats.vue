@@ -575,8 +575,8 @@
             </article>
 
             <article id="panel-another-vocal" class="stats-section card-panel" data-scroll-anchor="panel-another-vocal">
-              <div class="section-head section-head-sub">
-                <div class="section-head-left">
+              <div class="section-head section-head-sub song-anvo-section-head">
+                <div class="section-head-left song-anvo-section-head-left">
                   <h2>{{ getSongSectionTitle('panel-another-vocal') }}</h2>
                   <label class="song-duo-image-toggle is-image-toggle">
                     <input :checked="anotherImageMode" type="checkbox" @change="onAnotherImageModeChange" />
@@ -585,6 +585,18 @@
                   <label v-if="canShowAnvoFillToggle" class="song-duo-image-toggle">
                     <input :checked="anvoFillDisplay" type="checkbox" @change="onAnvoFillDisplayChange" />
                     <span>铺满显示</span>
+                  </label>
+                  <label class="song-duo-image-toggle" title="多个筛选同时选中时需全部满足。">
+                    <input v-model="anvoCoverOnly" type="checkbox" />
+                    <span>仅翻唱</span>
+                  </label>
+                  <label class="song-duo-image-toggle" title="多个筛选同时选中时需全部满足。">
+                    <input v-model="anvoThreeDOnly" type="checkbox" />
+                    <span>仅3D</span>
+                  </label>
+                  <label class="song-duo-image-toggle" title="多个筛选同时选中时需全部满足。">
+                    <input v-model="anvoTwoDOnly" type="checkbox" />
+                    <span>仅2D</span>
                   </label>
                 </div>
                 <div class="section-head-actions">
@@ -1565,6 +1577,9 @@ const songPageSize = ref(10);
 const anotherCardModeMap = ref({});
 const anotherImageMode = ref(false);
 const anvoFillDisplay = ref(false);
+const anvoCoverOnly = ref(false);
+const anvoThreeDOnly = ref(false);
+const anvoTwoDOnly = ref(false);
 const duoCardExpandedMap = ref({});
 const duoNameCompactMap = ref({});
 const duoImageMode = ref(false);
@@ -3746,7 +3761,11 @@ const ocUniqueStats = computed(() => {
 const anotherVocalCards = computed(() => {
   const rowMap = new Map();
 
-  songsForStats.value.forEach((song) => {
+  songsForStats.value.filter((song) => [
+    [anvoCoverOnly.value, song.isNewlyWrittenMusic === false],
+    [anvoThreeDOnly.value, hasSong3DMVCategory(song)],
+    [anvoTwoDOnly.value, hasSong2DMVCategory(song)]
+  ].every(([selected, matched]) => !selected || matched)).forEach((song) => {
     song.vocals.forEach((vocal) => {
       if (normalizeCategoryKey(vocal?.type) !== 'another_vocal') return;
       const vocalId = normalizeSongId(vocal?.vocal_id);
@@ -6388,6 +6407,16 @@ watch(totalSongPages, (nextTotal) => {
 
 .song-duo-image-toggle input {
   margin: 0;
+}
+
+.song-anvo-section-head-left {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.song-anvo-section-head-left .song-duo-image-toggle {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .card-panel {
@@ -9369,6 +9398,19 @@ watch(totalSongPages, (nextTotal) => {
     --song-jacket-track-size: 68px;
     --song-duo-vs-icon-size: 20px;
     --song-duo-vs-icon-gap: 1px;
+  }
+
+  .song-anvo-section-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .song-anvo-section-head-left {
+    flex: 1 1 100%;
+  }
+
+  .song-anvo-section-head .section-head-actions {
+    margin-left: auto;
   }
 
   .song-col-jacket {

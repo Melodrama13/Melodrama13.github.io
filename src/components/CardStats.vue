@@ -120,6 +120,22 @@
                     团统计VS
                   </label>
                   <label
+                    v-if="panel.id === 'limited'"
+                    class="reward-collab-toggle stats-checkbox"
+                    title="勾选后，限定总数与限定间隔记录会计入WL3卡。"
+                  >
+                    <input v-model="limitedIncludeWl3" type="checkbox" />
+                    <span>{{ isMobileNav ? 'WL3' : '统计WL3' }}</span>
+                  </label>
+                  <label
+                    v-if="panel.id === 'limited'"
+                    class="reward-collab-toggle stats-checkbox"
+                    title="勾选后，限定总数与限定间隔记录会计入歌限卡。"
+                  >
+                    <input v-model="limitedIncludeSongLimited" type="checkbox" />
+                    <span>{{ isMobileNav ? '歌限' : '统计歌限' }}</span>
+                  </label>
+                  <label
                     v-if="panel.id === 'reward'"
                     class="reward-collab-toggle stats-checkbox"
                     title="勾选后，报酬统计会额外计入联动的二/三星卡。"
@@ -700,6 +716,14 @@
                     <input :checked="relatedLastRecordShowCardImages" type="checkbox" @change="onRelatedLastRecordShowCardImagesChange" />
                     显示卡面
                   </label>
+                  <label class="reward-collab-toggle stats-checkbox" title="勾选后，限定统计会计入WL3卡。">
+                    <input v-model="limitedIncludeWl3" type="checkbox" />
+                    <span>{{ isMobileNav ? 'WL3' : '统计WL3' }}</span>
+                  </label>
+                  <label class="reward-collab-toggle stats-checkbox" title="勾选后，限定统计会计入歌限卡。">
+                    <input v-model="limitedIncludeSongLimited" type="checkbox" />
+                    <span>{{ isMobileNav ? '歌限' : '统计歌限' }}</span>
+                  </label>
                 </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-limited', '间隔记录_上一次限定')">PNG</button>
               </div>
@@ -968,6 +992,14 @@
                     <input :checked="intervalLimitedShowCardImages" type="checkbox" @change="onIntervalLimitedShowCardImagesChange" />
                     显示卡面
                   </label>
+                  <label class="reward-collab-toggle stats-checkbox" title="勾选后，限定统计会计入WL3卡。">
+                    <input v-model="limitedIncludeWl3" type="checkbox" />
+                    <span>{{ isMobileNav ? 'WL3' : '统计WL3' }}</span>
+                  </label>
+                  <label class="reward-collab-toggle stats-checkbox" title="勾选后，限定统计会计入歌限卡。">
+                    <input v-model="limitedIncludeSongLimited" type="checkbox" />
+                    <span>{{ isMobileNav ? '歌限' : '统计歌限' }}</span>
+                  </label>
                 </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-long', '间隔记录_限定最长间隔')">PNG</button>
               </div>
@@ -1069,6 +1101,14 @@
                   <label class="fes-card-mode-toggle stats-checkbox">
                     <input :checked="intervalLimitedShowCardImages" type="checkbox" @change="onIntervalLimitedShowCardImagesChange" />
                     显示卡面
+                  </label>
+                  <label class="reward-collab-toggle stats-checkbox" title="勾选后，限定统计会计入WL3卡。">
+                    <input v-model="limitedIncludeWl3" type="checkbox" />
+                    <span>{{ isMobileNav ? 'WL3' : '统计WL3' }}</span>
+                  </label>
+                  <label class="reward-collab-toggle stats-checkbox" title="勾选后，限定统计会计入歌限卡。">
+                    <input v-model="limitedIncludeSongLimited" type="checkbox" />
+                    <span>{{ isMobileNav ? '歌限' : '统计歌限' }}</span>
                   </label>
                 </div>
                 <button class="card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-short', '间隔记录_限定最短间隔')">PNG</button>
@@ -3176,6 +3216,8 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, reactive } from 'vue';
 import { toCanvas } from 'html-to-image';
 import { buildAssetUrl } from '../utils/assets.js';
+import { getCardImageVariantForMode } from '../utils/cardImageVariants.js';
+import { shouldCountCardAsLimited } from '../utils/cardLimitedRules.js';
 import { isCardImageReleased, isEventStarted } from '../utils/spoilerGuard.js';
 import {
   clampHostScrollTop,
@@ -3194,18 +3236,6 @@ const props = defineProps({
   previewSyncEventId: { type: [Number, String], default: null }
 });
 const emit = defineEmits(['jump-to-event', 'stats-preview-update', 'stats-top-state-change']);
-
-const cardRarityByIdMap = computed(() => {
-  const result = {};
-  (props.allCards || []).forEach((card) => {
-    const cardId = Number(card?.CardID);
-    if (!Number.isFinite(cardId) || cardId <= 0) return;
-    const rarity = String(card?.Rarity || '').trim();
-    if (!rarity) return;
-    result[cardId] = rarity;
-  });
-  return result;
-});
 
 const cardByIdMap = computed(() => {
   const result = {};
@@ -3246,6 +3276,8 @@ const nuigurumiHideCharNames = ref(true);
 const includeCollabRewardCards = ref(false);
 const useRewardCountForThreeStar = ref(false);
 const useRewardCountForTwoStar = ref(false);
+const limitedIncludeWl3 = ref(false);
+const limitedIncludeSongLimited = ref(true);
 const hideDistCharNames = ref(true);
 const hideFestivalCharNames = ref(true);
 const festivalShowCardImages = ref(false);
@@ -3589,7 +3621,6 @@ const LINEUP_CHAR_NAMES = computed(() => {
 });
 const ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
 const SUPPORT_WL_ATTR = 'wl';
-const LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t']);//删去wl3为限定卡
 const FES_CARD_TYPES = new Set(['cfes', 'bfes']);
 const FES_SKILL_TYPES = new Set(['cfes', 'bfes_up']);
 const EXCLUDED_PERIOD_EVENT_TYPES = new Set(['测试']);
@@ -3599,6 +3630,7 @@ const SPECIAL_EVENT_KEY_LABELS = {
   c3: 'ES',
   c4: '东方',
   c5: '拓麻歌子',
+  c6: '歌限1',
   movie: '剧场版'
 };
 const ATTR_LABELS = {
@@ -6623,6 +6655,11 @@ const isEventRewardCard = (card, options = {}) => {
   return String(card?.Type || '').trim().toLowerCase() === 'collab';
 };
 
+const shouldIncludeCardInLimitedStats = (card) => shouldCountCardAsLimited(card, {
+  includeWl3: limitedIncludeWl3.value,
+  includeSongLimited: limitedIncludeSongLimited.value
+});
+
 const normalizeEventTypeFilter = (value) => {
   if (Array.isArray(value)) {
     return EVENT_TYPE_FILTER_OPTIONS.filter((type) => value.includes(type));
@@ -9019,8 +9056,8 @@ const processedStats = computed(() => {
       stats[name].lastRewardWithCollabOrderId = Math.max(Number(stats[name].lastRewardWithCollabOrderId || 0), progressOrderId);
     }
 
-    // 统计限定卡片 (含 Fes 和 联名限定)
-    if (LIMITED_TYPES.has(cardType)) {
+    // 统计限定卡片；WL3 与歌限由共享复选框状态控制。
+    if (shouldIncludeCardInLimitedStats(card)) {
       stats[name].limitedCount++;
       stats[name].lastLimitedOrderId = Math.max(Number(stats[name].lastLimitedOrderId || 0), progressOrderId);
     }
@@ -9136,7 +9173,7 @@ const distVsUnitSummaryByKey = computed(() => {
     if (rarity === '4') {
       addDistVsSummaryCount(summaryMap, unit, 'fourStarCount', orderId);
 
-      if (LIMITED_TYPES.has(cardType)) {
+      if (shouldIncludeCardInLimitedStats(card)) {
         addDistVsSummaryCount(summaryMap, unit, 'limitedCount', orderId);
       }
 
@@ -9941,7 +9978,7 @@ const charEventBuckets = computed(() => {
     if (String(card?.Rarity || '').trim() === '4') {
       buckets[name].four.add(sourceKey);
     }
-    if (LIMITED_TYPES.has(String(card?.Type || '').toLowerCase())) {
+    if (shouldIncludeCardInLimitedStats(card)) {
       buckets[name].limited.add(sourceKey);
     }
   });
@@ -10551,22 +10588,6 @@ function getCardFolderByName(name) {
   return CHAR_CARD_FOLDER_MAP.value[key] || '';
 }
 
-function getCardRarityTier(rarityValue) {
-  const rarityNum = Number(String(rarityValue || '').trim());
-  if (!Number.isFinite(rarityNum)) return 0;
-  return rarityNum;
-}
-
-function shouldUseAfterCardImage(cardId, rarityHint = '') {
-  if (navCardImageMode.value !== 'after') return false;
-  const idNum = Number(cardId);
-  const rarityRaw = String(rarityHint || cardRarityByIdMap.value[idNum] || '').trim();
-  const rarityTier = getCardRarityTier(rarityRaw);
-  // 1/2星卡没有花后图，即使选择花后模式也回退花前。
-  if (rarityTier > 0 && rarityTier <= 2) return false;
-  return true;
-}
-
 function buildCardImageSrc(cardId, baseName, options = {}) {
   const idNum = Number(cardId);
   if (!Number.isFinite(idNum) || idNum <= 0) return '';
@@ -10576,7 +10597,13 @@ function buildCardImageSrc(cardId, baseName, options = {}) {
   const folder = getCardFolderByName(baseName);
   if (!folder) return '';
 
-  const suffix = shouldUseAfterCardImage(idNum, options?.rarity) ? '_t' : '';
+  const variant = getCardImageVariantForMode(
+    idNum,
+    navCardImageMode.value,
+    options?.rarity || sourceCard?.Rarity,
+    sourceCard?.Type
+  );
+  const suffix = variant === 'after_training' ? '_t' : '';
   return buildAssetUrl(`/cards/${folder}/card${idNum}${suffix}.webp`);
 }
 
@@ -11215,8 +11242,7 @@ const relatedFourStarCardInfoMap = computed(() => buildRelatedRecordCardInfoMap(
 
 const relatedLimitedCardInfoMap = computed(() => buildRelatedRecordCardInfoMap((card) => {
   if (String(card?.Rarity || '').trim() !== '4') return false;
-  const cardType = String(card?.Type || '').trim().toLowerCase();
-  return LIMITED_TYPES.has(cardType);
+  return shouldIncludeCardInLimitedStats(card);
 }));
 
 const getRelatedRecordCardInfo = (name, eventRef, options = {}) => {

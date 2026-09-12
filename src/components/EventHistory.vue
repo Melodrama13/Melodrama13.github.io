@@ -1184,6 +1184,7 @@ import { ref, computed, inject, nextTick, watch, onMounted, onActivated, onDeact
 import PredictEditor from './PredictEditor.vue';
 import { toCanvas } from 'html-to-image';
 import { buildAssetUrl } from '../utils/assets.js';
+import { getCardImageVariants } from '../utils/cardImageVariants.js';
 import { isCardImageReleased, isEventStarted, isSongReleased } from '../utils/spoilerGuard.js';
 
 
@@ -7064,19 +7065,6 @@ const isCardTooltipImageEligible = (card) => {
   return true;
 };
 
-const shouldIncludeCardNormalImage = (cardId) => {
-  return Number(cardId) !== 1167;
-};
-
-const shouldIncludeCardTrainingImage = (card, cardId) => {
-  const typeRaw = String(card?.Type || '').trim().toLowerCase();
-  if (typeRaw === 'birthday') return false;
-  const rarity = Number(card?.Rarity);
-  if (Number.isFinite(rarity) && rarity <= 2) return false;
-  if (Number(cardId) === 1167) return true;
-  return true;
-};
-
 const getCardTooltipImageList = (card) => {
   if (!isCardTooltipImageEligible(card)) return [];
   if (!isCardImageReleased(card, spoilerNow.value)) return [];
@@ -7089,14 +7077,9 @@ const getCardTooltipImageList = (card) => {
   if (!folder) return [];
 
   const base = `/cards/${folder}/card${Math.trunc(cardId)}`;
-  const list = [];
-  if (shouldIncludeCardNormalImage(cardId)) {
-    list.push(buildAssetUrl(`${base}.webp`));
-  }
-  if (shouldIncludeCardTrainingImage(card, cardId)) {
-    list.push(buildAssetUrl(`${base}_t.webp`));
-  }
-  return list;
+  return getCardImageVariants(cardId, card?.Rarity, card?.Type).map((variant) => (
+    buildAssetUrl(`${base}${variant === 'after_training' ? '_t' : ''}.webp`)
+  ));
 };
 
 const getVisibleCardTooltipImageList = (card) => {

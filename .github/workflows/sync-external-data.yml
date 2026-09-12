@@ -143,6 +143,7 @@ jobs:
           aws s3api list-objects-v2 --bucket "$R2_BUCKET" --prefix cards/ --endpoint-url "$R2_ENDPOINT" --query "Contents[].Key" --output json > .media-cache/r2-cards.json
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
+          import { getCardImageVariants } from './src/utils/cardImageVariants.js';
 
           const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
           const asArray = (value) => Array.isArray(value) ? value : [];
@@ -187,20 +188,13 @@ jobs:
             [text(row?.zh_name), text(row?.ja_name)].filter(Boolean).forEach((name) => characterFolderByName.set(name, folder));
           }
 
-          const variantsForCard = (card) => {
-            const id = toId(card?.CardID);
-            if (id === 1167) return ['after_training'];
-            const rarity = text(card?.Rarity).toLowerCase();
-            if (['3', '4', 'rarity_3', 'rarity_4'].includes(rarity)) return ['normal', 'after_training'];
-            return ['normal'];
-          };
           const localName = (cardId, variant) => `card${cardId}${variant === 'after_training' ? '_t' : ''}.webp`;
 
           const cardRows = asArray(cards).filter((card) => toId(card?.CardID) !== null && text(card?.Bundle));
           for (const card of cardRows) {
             const id = toId(card?.CardID);
             const folder = characterFolderByName.get(text(card?.Name)) || '000unknown';
-            for (const variant of variantsForCard(card)) {
+            for (const variant of getCardImageVariants(id, card?.Rarity, card?.Type)) {
               if (!r2CardKeys.has(`cards/${folder}/${localName(id, variant)}`)) {
                 missingCards.push(card);
                 refuseLikelyFullSync();
