@@ -8756,28 +8756,9 @@ button:not(:disabled):active {
   flex: 0 0 auto;
 }
 
-.media-load-shimmer:not([data-loaded='1']) {
-  background-image: linear-gradient(110deg, #d1d5db 8%, #f3f4f6 18%, #d1d5db 33%);
-  background-size: 220% 100%;
-  animation: media-shimmer 1.05s linear infinite;
-}
-
-@keyframes media-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -40% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .media-load-shimmer:not([data-loaded='1']) {
-    animation: none;
-    background-image: none;
-    background-color: #d1d5db;
-  }
-}
+</style>
+<style scoped src="../styles/scoped/media-load-shimmer.css"></style>
+<style scoped>
 
 .birthday-info-content {
   min-width: 0;

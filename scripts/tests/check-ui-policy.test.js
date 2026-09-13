@@ -1,0 +1,127 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { inspectUiPolicy } from '../check-ui-policy.js';
+
+const navigationBasePath = 'src/styles/scoped/stats-navigation-base.css';
+const navigationResponsivePath = 'src/styles/scoped/stats-navigation-responsive.css';
+const shimmerPath = 'src/styles/scoped/media-load-shimmer.css';
+
+const navigationBase = '.stats-navigation { display: flex; }\n';
+const navigationResponsive = '@media (max-width: 520px) { .stats-navigation { gap: 4px; } }\n';
+const shimmer = ".media-load-shimmer:not([data-loaded='1']) { animation: shimmer 1s linear infinite; }\n";
+
+function scopedSource(path) {
+  return `<style scoped src="../${path.slice('src/'.length)}"></style>`;
+}
+
+function consumerSources({ card = true, song = true, event = true } = {}) {
+  const navigationSources = `${scopedSource(navigationBasePath)}\n${scopedSource(navigationResponsivePath)}`;
+  const shimmerSource = scopedSource(shimmerPath);
+
+  return {
+    'src/components/CardStats.vue': card ? `${navigationSources}\n${shimmerSource}` : '',
+    'src/components/SongStats.vue': song ? `${navigationSources}\n${shimmerSource}` : '',
+    'src/components/EventHistory.vue': event ? shimmerSource : '',
+  };
+}
+
+function inspectFixture(overrides = {}) {
+  const sources = new Map([
+    [navigationBasePath, navigationBase],
+    [navigationResponsivePath, navigationResponsive],
+    [shimmerPath, shimmer],
+    ...Object.entries(consumerSources()),
+    ...Object.entries(overrides),
+  ]);
+
+  return inspectUiPolicy({
+    files: [...sources.keys()],
+    readText: (file) => sources.get(file),
+  });
+}
+
+test('accepts the declared viewport widths', () => {
+  const diagnostics = inspectFixture({
+    'src/styles/allowed-widths.css': `
+      @media (max-width: 520px) { .a { color: red; } }
+      @media (min-width: 521px) { .b { color: red; } }
+      @media (max-width: 699px) { .c { color: red; } }
+      @media (min-width: 700px) { .d { color: red; } }
+      @media (max-width: 701px) { .e { color: red; } }
+      @media (max-width: 768px) { .f { color: red; } }
+      @media (min-width: 769px) { .g { color: red; } }
+      @media (max-width: 900px) { .h { color: red; } }
+      @media (min-width: 901px) { .i { color: red; } }
+      @media (max-width: 1200px) { .j { color: red; } }
+      @media (min-width: 1201px) { .k { color: red; } }
+      @media (min-width: 1360px) { .l { color: red; } }
+    `,
+  });
+
+  assert.deepEqual(diagnostics, []);
+});
+
+test('reports an undeclared viewport width with its file and line', () => {
+  const diagnostics = inspectFixture({
+    'src/styles/undeclared-width.css': '\n@media (max-width: 760px) { .a { color: red; } }',
+  });
+
+  assert.ok(diagnostics.includes('src/styles/undeclared-width.css:2: undeclared viewport width 760px'));
+});
+
+test('ignores container and non-viewport media conditions', () => {
+  const diagnostics = inspectFixture({
+    'src/styles/non-viewport-media.css': `
+      @container (min-width: 760px) { .a { color: red; } }
+      @media (prefers-reduced-motion: reduce) { .b { color: red; } }
+      @media (pointer: coarse) and (hover: none) { .c { color: red; } }
+    `,
+  });
+
+  assert.deepEqual(diagnostics, []);
+});
+
+test('requires both navigation fragments in CardStats and SongStats', () => {
+  const diagnostics = inspectFixture({
+    'src/components/CardStats.vue': scopedSource(shimmerPath),
+  });
+
+  assert.ok(diagnostics.some((diagnostic) => diagnostic.includes('CardStats.vue') && diagnostic.includes('stats-navigation-base.css')));
+  assert.ok(diagnostics.some((diagnostic) => diagnostic.includes('CardStats.vue') && diagnostic.includes('stats-navigation-responsive.css')));
+});
+
+test('requires the shimmer fragment in every shimmer consumer', () => {
+  const diagnostics = inspectFixture({
+    'src/components/EventHistory.vue': '',
+  });
+
+  assert.ok(diagnostics.some((diagnostic) => diagnostic.includes('EventHistory.vue') && diagnostic.includes('media-load-shimmer.css')));
+});
+
+test('rejects an unscoped shared source style', () => {
+  const diagnostics = inspectFixture({
+    'src/components/CardStats.vue': `
+      <style src="../styles/scoped/stats-navigation-base.css"></style>
+      ${scopedSource(navigationResponsivePath)}
+      ${scopedSource(shimmerPath)}
+    `,
+  });
+
+  assert.ok(diagnostics.some((diagnostic) => diagnostic.includes('CardStats.vue') && diagnostic.includes('unscoped') && diagnostic.includes('stats-navigation-base.css')));
+});
+
+test('rejects normalized shared rules that remain inline in a consumer', () => {
+  const diagnostics = inspectFixture({
+    'src/components/CardStats.vue': `
+      ${scopedSource(navigationBasePath)}
+      ${scopedSource(navigationResponsivePath)}
+      ${scopedSource(shimmerPath)}
+      <style scoped>
+        .stats-navigation {display: flex;}
+      </style>
+    `,
+  });
+
+  assert.ok(diagnostics.some((diagnostic) => diagnostic.includes('CardStats.vue') && diagnostic.includes('duplicate normalized shared rule') && diagnostic.includes('.stats-navigation')));
+});

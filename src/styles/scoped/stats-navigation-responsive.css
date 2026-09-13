@@ -1,0 +1,107 @@
+@media (min-width: 901px) and (max-width: 1200px) {
+  .stats-layout {
+    grid-template-columns: var(--stats-nav-width) 1fr;
+  }
+
+  .stats-layout.nav-collapsed {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .stats-layout,
+  .stats-layout.nav-collapsed {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .stats-layout:not(.nav-collapsed) .stats-main {
+    grid-column: auto;
+  }
+
+  .stats-layout.mobile-nav-open .floating-menu-btn {
+    background: #ef4444;
+    border-color: #b91c1c;
+    color: #ffffff;
+  }
+
+  .stats-nav {
+    position: static;
+    left: auto;
+    width: auto;
+    height: auto;
+    max-height: none;
+    top: auto;
+  }
+
+  .stats-nav.mobile-floating {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 58px);
+    left: 8px;
+    right: auto;
+    width: min(240px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
+    height: auto;
+    max-height: calc(100dvh - 70px);
+    z-index: 5090;
+    box-shadow: var(--stats-nav-glass-shadow);
+    background: var(--stats-nav-glass-bg);
+    backdrop-filter: var(--stats-nav-glass-blur);
+    -webkit-backdrop-filter: var(--stats-nav-glass-blur);
+    border: 1px solid var(--stats-nav-glass-border);
+    border-radius: var(--stats-nav-radius) !important;
+    overflow: hidden;
+  }
+
+  .stats-nav.mobile-floating .nav-quick-wrap {
+    flex: 0 1 auto;
+    max-height: min(70dvh, calc(100dvh - 220px));
+  }
+
+  .stats-nav.mobile-floating .nav-scroll {
+    flex: 0 1 auto;
+    max-height: inherit;
+  }
+
+  .stats-nav.mobile-floating.is-collapsed {
+    display: none;
+  }
+
+  .nav-scroll {
+    max-height: none;
+  }
+
+  .nav-group {
+    margin-bottom: 4px;
+  }
+
+  .nav-link {
+    min-height: 26px;
+    font-size: 0.72rem;
+    padding: 4px 8px;
+  }
+
+  .nav-link-sub {
+    margin-left: 6px;
+    width: calc(100% - 6px);
+    padding: 3px 8px;
+    text-indent: 0;
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .floating-menu-btn {
+    top: calc(env(safe-area-inset-top, 0px) + 58px);
+    width: 34px;
+    height: 34px;
+    z-index: 5100;
+  }
+
+  .nav-collapse-fab {
+    width: 30px;
+    min-height: 30px;
+    height: 30px;
+    z-index: 5101;
+  }
+}
