@@ -18,7 +18,7 @@
 src/styles/tokens.css → src/style.css → src/styles/primitives.css
 ```
 
-`tokens.css` 只提供 `:root` 下的 `--ui-*` 值，必须先加载，供基础样式、全局 primitive 和 SFC 样式解析。`style.css` 保留应用级基础规则。`primitives.css` 必须位于基础规则之后，以维持现有的 base-before-primitive cascade 顺序：通用 checkbox、pill、table 和 circle 规则在相同 selector 下继续拥有原来的后置优先级。不要把 primitives 改成全局 import，也不要用新的 Vue wrapper 改变 DOM 或 specificity。
+`tokens.css` 只提供 `:root` 下的 `--ui-*` 值，必须先加载，供基础样式、全局 primitive 和 SFC 样式解析。`style.css` 保留应用级基础规则。`primitives.css` 必须继续由 `src/main.js` 以全局 import 加载，并位于基础规则之后，以维持现有的 base-before-primitive cascade 顺序：通用 checkbox、pill、table 和 circle 规则在相同 selector 下继续拥有原来的后置优先级。禁止把 primitives 改成局部或 SFC import，也不要用新的 Vue wrapper 改变 DOM 或 specificity。
 
 ## 3. Token 分层
 
