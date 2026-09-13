@@ -45,3 +45,6 @@ copilot_memories/
 
 # Local temporary implementation plans (never publish)
 .codex-plans/
+
+# Local Git worktrees
+.worktrees/
