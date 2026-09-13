@@ -1,0 +1,34 @@
+:root {
+  --ui-shell-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.34) 52%, rgba(219, 234, 254, 0.24));
+  --ui-shell-glass-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(236, 254, 255, 0.46) 55%, rgba(219, 234, 254, 0.30));
+  --ui-shell-glass-border: rgba(255, 255, 255, 0.72);
+  --ui-shell-glass-shadow: 0 10px 30px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  --ui-shell-glass-shadow-soft: 0 5px 16px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  --ui-shell-active-bg: linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(45, 212, 191, 0.72) 52%, rgba(14, 165, 233, 0.58));
+  --ui-shell-active-border: rgba(94, 234, 212, 0.78);
+
+  --ui-stats-nav-radius: 28px;
+  --ui-stats-nav-inner-radius: 22px;
+  --ui-stats-control-radius: 12px;
+  --ui-stats-nav-width: 220px;
+  --ui-stats-nav-left: 44px;
+  --ui-stats-nav-top: 78px;
+  --ui-stats-nav-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.24) 42%, rgba(219, 234, 254, 0.18));
+  --ui-stats-nav-glass-border: rgba(255, 255, 255, 0.62);
+  --ui-stats-nav-glass-line: rgba(148, 163, 184, 0.26);
+  --ui-stats-nav-glass-shadow: 0 18px 46px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -1px 0 rgba(15, 23, 42, 0.04);
+  --ui-stats-nav-glass-blur: saturate(170%) blur(18px);
+  --ui-stats-nav-control-bg: rgba(255, 255, 255, 0.24);
+  --ui-stats-nav-control-bg-hover: rgba(255, 255, 255, 0.42);
+  --ui-stats-nav-active-bg: linear-gradient(135deg, rgba(191, 219, 254, 0.66), rgba(224, 242, 254, 0.34));
+  --ui-stats-nav-active-border: rgba(96, 165, 250, 0.58);
+
+  --ui-control-bg: #ffffff;
+  --ui-control-bg-hover: #f8fafc;
+  --ui-control-border: #cbd5e1;
+  --ui-control-border-hover: #94a3b8;
+  --ui-control-label: #334155;
+  --ui-control-label-muted: #475569;
+  --ui-motion-control: 0.16s ease;
+  --ui-motion-shimmer-duration: 1.05s;
+}

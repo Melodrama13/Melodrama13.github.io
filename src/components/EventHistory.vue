@@ -7352,13 +7352,13 @@ const getFestivalPreviewUnitLogo = (name) => {
   --eh-radius-card: 16px;
   --eh-radius-panel: 16px;
   --eh-radius-btn: 12px;
-  --history-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.34) 52%, rgba(219, 234, 254, 0.24));
-  --history-glass-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(236, 254, 255, 0.46) 55%, rgba(219, 234, 254, 0.30));
-  --history-glass-border: rgba(255, 255, 255, 0.72);
-  --history-glass-shadow: 0 10px 30px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.78);
-  --history-glass-shadow-soft: 0 5px 16px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.76);
-  --history-active-bg: linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(45, 212, 191, 0.72) 52%, rgba(14, 165, 233, 0.58));
-  --history-active-border: rgba(94, 234, 212, 0.78);
+  --history-glass-bg: var(--ui-shell-glass-bg);
+  --history-glass-bg-hover: var(--ui-shell-glass-bg-hover);
+  --history-glass-border: var(--ui-shell-glass-border);
+  --history-glass-shadow: var(--ui-shell-glass-shadow);
+  --history-glass-shadow-soft: var(--ui-shell-glass-shadow-soft);
+  --history-active-bg: var(--ui-shell-active-bg);
+  --history-active-border: var(--ui-shell-active-border);
 }
 
 .predict-switch-dialog-backdrop {

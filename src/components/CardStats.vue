@@ -11673,22 +11673,22 @@ defineExpose({
   min-height: 100dvh;
   --matrix-sticky-top: 0px;
   --stats-radius-panel: 28px;
-  --stats-nav-radius: 28px;
-  --stats-nav-inner-radius: 22px;
+  --stats-nav-radius: var(--ui-stats-nav-radius);
+  --stats-nav-inner-radius: var(--ui-stats-nav-inner-radius);
   --stats-radius-card: 22px;
-  --stats-radius-btn: 12px;
-  --stats-nav-width: 220px;
-  --stats-nav-left: 44px;
-  --stats-nav-top: 78px;
-  --stats-nav-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.24) 42%, rgba(219, 234, 254, 0.18));
-  --stats-nav-glass-border: rgba(255, 255, 255, 0.62);
-  --stats-nav-glass-line: rgba(148, 163, 184, 0.26);
-  --stats-nav-glass-shadow: 0 18px 46px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -1px 0 rgba(15, 23, 42, 0.04);
-  --stats-nav-glass-blur: saturate(170%) blur(18px);
-  --stats-nav-control-bg: rgba(255, 255, 255, 0.24);
-  --stats-nav-control-bg-hover: rgba(255, 255, 255, 0.42);
-  --stats-nav-active-bg: linear-gradient(135deg, rgba(191, 219, 254, 0.66), rgba(224, 242, 254, 0.34));
-  --stats-nav-active-border: rgba(96, 165, 250, 0.58);
+  --stats-radius-btn: var(--ui-stats-control-radius);
+  --stats-nav-width: var(--ui-stats-nav-width);
+  --stats-nav-left: var(--ui-stats-nav-left);
+  --stats-nav-top: var(--ui-stats-nav-top);
+  --stats-nav-glass-bg: var(--ui-stats-nav-glass-bg);
+  --stats-nav-glass-border: var(--ui-stats-nav-glass-border);
+  --stats-nav-glass-line: var(--ui-stats-nav-glass-line);
+  --stats-nav-glass-shadow: var(--ui-stats-nav-glass-shadow);
+  --stats-nav-glass-blur: var(--ui-stats-nav-glass-blur);
+  --stats-nav-control-bg: var(--ui-stats-nav-control-bg);
+  --stats-nav-control-bg-hover: var(--ui-stats-nav-control-bg-hover);
+  --stats-nav-active-bg: var(--ui-stats-nav-active-bg);
+  --stats-nav-active-border: var(--ui-stats-nav-active-border);
 }
 
 .pjsk-stats.matrix-sort-anchor-suppressed {

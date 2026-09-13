@@ -3117,13 +3117,13 @@ watch(isHistoryPredictEditorOpen, (open) => {
 }
 
 .nav-tabs {
-  --top-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.34) 52%, rgba(219, 234, 254, 0.24));
-  --top-glass-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(236, 254, 255, 0.46) 55%, rgba(219, 234, 254, 0.30));
-  --top-glass-border: rgba(255, 255, 255, 0.72);
-  --top-glass-shadow: 0 10px 30px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.78);
-  --top-glass-shadow-soft: 0 5px 16px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.76);
-  --top-active-bg: linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(45, 212, 191, 0.72) 52%, rgba(14, 165, 233, 0.58));
-  --top-active-border: rgba(94, 234, 212, 0.78);
+  --top-glass-bg: var(--ui-shell-glass-bg);
+  --top-glass-bg-hover: var(--ui-shell-glass-bg-hover);
+  --top-glass-border: var(--ui-shell-glass-border);
+  --top-glass-shadow: var(--ui-shell-glass-shadow);
+  --top-glass-shadow-soft: var(--ui-shell-glass-shadow-soft);
+  --top-active-bg: var(--ui-shell-active-bg);
+  --top-active-border: var(--ui-shell-active-border);
   display: flex;
   justify-content: flex-start;
   align-items: center;
