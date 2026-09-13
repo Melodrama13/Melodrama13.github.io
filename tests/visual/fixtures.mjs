@@ -301,7 +301,7 @@ export async function expectValidPng({ page, download, sourceRect, snapshotName 
   const height = bytes.readUInt32BE(20);
   expect(width).toBeGreaterThan(0);
   expect(height).toBeGreaterThan(0);
-  if (sourceRect && !sourceRect.ignoreAspectRatio) {
+  if (sourceRect) {
     expect(sourceRect.width).toBeGreaterThan(0);
     expect(sourceRect.height).toBeGreaterThan(0);
     expect(Math.abs(width / height - sourceRect.width / sourceRect.height)).toBeLessThanOrEqual(0.08);

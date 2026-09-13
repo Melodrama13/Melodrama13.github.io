@@ -14,18 +14,23 @@ const sourceRectOf = async (locator, name) => {
   return rect;
 };
 
-const validateDownload = async ({ page, sourceLocator, sourceName, buttonLocator, snapshotName, ignoreAspectRatio = false }) => {
+const validateDownload = async ({ page, sourceLocator, sourceName, buttonLocator, snapshotName }) => {
   const sourceRect = await sourceRectOf(sourceLocator, sourceName);
   const downloadPromise = page.waitForEvent('download', { timeout: 120_000 });
   await buttonLocator.click();
   const download = await downloadPromise;
-  await expectValidPng({
-    page,
-    download,
-    sourceRect: ignoreAspectRatio ? { ...sourceRect, ignoreAspectRatio: true } : sourceRect,
-    snapshotName
-  });
+  await expectValidPng({ page, download, sourceRect, snapshotName });
 };
+
+const historyExportSourceRect = (page) => page.waitForFunction(() => {
+  const cloneList = document.querySelector('.history-export-clone-host .history-export-list');
+  if (!cloneList) return null;
+  const rect = cloneList.getBoundingClientRect();
+  return {
+    width: Math.max(1, Math.ceil(cloneList.scrollWidth || cloneList.clientWidth || rect.width || 0)),
+    height: Math.max(1, Math.ceil(cloneList.scrollHeight || cloneList.clientHeight || rect.height || 0))
+  };
+}, null, { timeout: 120_000 });
 
 test('Card Stats PNG export produces a non-white html-to-image result', async ({ page }) => {
   await gotoUiState(page, { tab: 'stats', width: 1440, height: 1000 });
@@ -88,13 +93,22 @@ test('Event History predicted range export produces a non-white html-to-image re
   await rangeInputs.nth(0).fill('226');
   await rangeInputs.nth(1).fill('226');
   const historyList = page.locator('.history-list');
-  await validateDownload({
+  const sourceRect = await sourceRectOf(historyList, 'Event History list');
+  const exportSourceRectPromise = historyExportSourceRect(page);
+  const downloadPromise = page.waitForEvent('download', { timeout: 120_000 });
+  await page.locator('.source-export-confirm').getByRole('button', { name: /确认导出PNG/ }).click();
+  const exportSourceRectHandle = await exportSourceRectPromise;
+  const exportSourceRect = await exportSourceRectHandle.jsonValue();
+  expect(exportSourceRect.width, 'Event History exported-range width').toBeGreaterThan(0);
+  expect(exportSourceRect.height, 'Event History exported-range height').toBeGreaterThan(0);
+  expect(sourceRect.width, 'Event History pre-click source width').toBeGreaterThan(0);
+  expect(sourceRect.height, 'Event History pre-click source height').toBeGreaterThan(0);
+  const download = await downloadPromise;
+  await expectValidPng({
     page,
-    sourceLocator: historyList,
-    sourceName: 'Event History list',
-    buttonLocator: page.locator('.source-export-confirm').getByRole('button', { name: /确认导出PNG/ }),
-    snapshotName: 'history-predicted-export.png',
-    ignoreAspectRatio: true
+    download,
+    sourceRect: exportSourceRect,
+    snapshotName: 'history-predicted-export.png'
   });
 });
 
