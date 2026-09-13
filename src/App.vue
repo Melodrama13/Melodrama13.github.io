@@ -412,6 +412,7 @@ import {
   installSmallStaticImageWarmupObserver,
   scheduleImageWarmup
 } from './utils/assets.js';
+import { UI_BREAKPOINTS, isViewportAtMost, toMaxWidthMediaQuery } from './ui/breakpoints.js';
 
 // --- 界面切换逻辑 (恢复原样) ---
 const TabLoadingIndicator = {
@@ -721,7 +722,7 @@ const checkForAppUpdate = async () => {
 
 const isMobileLikeViewport = () => {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
-  return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
+  return window.matchMedia(`${toMaxWidthMediaQuery(UI_BREAKPOINTS.compactMax)}, (pointer: coarse)`).matches;
 };
 
 const scheduleInitialAppVersionCheck = () => {
@@ -1589,8 +1590,8 @@ const movePredictSource = (sourceId, delta) => {
 
 const updateCompactTopNav = () => {
   if (typeof window === 'undefined') return;
-  isCompactTopNav.value = window.innerWidth <= 900;
-  isStatsTopNavCompact.value = window.innerWidth <= 900;
+  isCompactTopNav.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
+  isStatsTopNavCompact.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
   scheduleStatsTopControlStateSync();
 };
 
@@ -1602,7 +1603,7 @@ const updateSourceMenuPosition = () => {
   const rect = trigger.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const compact = vw <= 900;
+  const compact = isViewportAtMost(vw, UI_BREAKPOINTS.compactMax);
   const minWidth = compact ? 250 : 320;
   const maxWidth = compact ? 360 : 420;
   const width = Math.max(Math.min(maxWidth, vw - 12), Math.min(minWidth, vw - 12));

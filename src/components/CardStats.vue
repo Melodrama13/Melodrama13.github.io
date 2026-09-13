@@ -3219,6 +3219,7 @@ import { buildAssetUrl } from '../utils/assets.js';
 import { getCardImageVariantForMode } from '../utils/cardImageVariants.js';
 import { shouldCountCardAsLimited } from '../utils/cardLimitedRules.js';
 import { isCardImageReleased, isEventStarted } from '../utils/spoilerGuard.js';
+import { UI_BREAKPOINTS, isViewportAtMost } from '../ui/breakpoints.js';
 import {
   clampHostScrollTop,
   createStatsNavigationHandlers,
@@ -4820,7 +4821,7 @@ function setNavCollapsed(nextCollapsed, preserveCenter = true) {
 
 const updateMobileNavState = () => {
   if (typeof window === 'undefined') return;
-  const isTopLayout = window.innerWidth <= 900;
+  const isTopLayout = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
   const prev = navTopLayoutPrev.value;
   const nextCollapsed = prev === null
     ? isTopLayout
@@ -4976,7 +4977,7 @@ const getCaptureDeviceTier = () => {
   const width = Number(window?.innerWidth || 0);
   const height = Number(window?.innerHeight || 0);
   const minSide = Math.min(width || Number.MAX_SAFE_INTEGER, height || Number.MAX_SAFE_INTEGER);
-  if (width < 1200) {
+  if (isViewportAtMost(width, UI_BREAKPOINTS.tabletMax)) {
     if (minSide >= 680) return 'tablet';
     return 'phone';
   }
@@ -5617,7 +5618,7 @@ const syncLineupCardModeRowLayout = () => {
   const rootEl = cardStatsRootRef.value;
   if (!(rootEl instanceof HTMLElement)) return;
   const viewportWidth = Number(window?.innerWidth || 0);
-  const shouldForce = viewportWidth > 0 && viewportWidth <= 1200;
+  const shouldForce = viewportWidth > 0 && isViewportAtMost(viewportWidth, UI_BREAKPOINTS.tabletMax);
   const rows = rootEl.querySelectorAll('.lineup-plan-row');
   rows.forEach((row) => {
     if (!(row instanceof HTMLElement)) return;
@@ -12171,7 +12172,7 @@ defineExpose({
   top: -1px;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .section-head.section-head-sub {
     align-items: center;
     margin-bottom: 8px;
@@ -15528,7 +15529,7 @@ td.record-char {
   z-index: 2;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .nuigurumi-table-wrap {
     overflow-x: visible;
   }

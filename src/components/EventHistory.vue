@@ -1186,6 +1186,7 @@ import { toCanvas } from 'html-to-image';
 import { buildAssetUrl } from '../utils/assets.js';
 import { getCardImageVariants } from '../utils/cardImageVariants.js';
 import { isCardImageReleased, isEventStarted, isSongReleased } from '../utils/spoilerGuard.js';
+import { UI_BREAKPOINTS, isViewportAtMost } from '../ui/breakpoints.js';
 
 
 // 2. 【新增】接收从 App.vue 传下来的总表（包含历史+预测）
@@ -1899,7 +1900,7 @@ const previewConfigPanelStyle = computed(() => {
 });
 
 const clampPreviewConfigPanelPos = (x, y) => {
-  const panelWidth = window.innerWidth <= 1000 ? 320 : 360;
+  const panelWidth = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.historyPreviewMax) ? 320 : 360;
   const maxX = Math.max(0, window.innerWidth - panelWidth - 6);
   const maxY = Math.max(0, window.innerHeight - 42);
   const minY = getPreviewDragMinY();
@@ -1970,7 +1971,7 @@ const handleDragPreviewConfigTouch = (event) => {
 
 const getPreviewDefaultPanelPosition = (idx = 0, avoidEditorDrawer = true) => {
   const slot = Number.isFinite(idx) ? idx : 0;
-  const isNarrow = window.innerWidth <= 1000;
+  const isNarrow = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.historyPreviewMax);
   const baseX = isNarrow
     ? PREVIEW_CONFIG_LEFT
     : (PREVIEW_CONFIG_LEFT + PREVIEW_CONFIG_WIDTH + PREVIEW_PANEL_X_GAP);
@@ -4919,7 +4920,8 @@ const setFullEventRenderMode = (enabled, options = {}) => {
 
 const isProgressiveTouchLayout = () => {
   if (typeof window === 'undefined') return false;
-  return window.innerWidth <= 1200 || window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches;
+  return isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.tabletMax)
+    || window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches;
 };
 
 const getProgressiveInitialRowCount = () => {
@@ -5605,7 +5607,7 @@ const applyMeasuredFilterFit = () => {
   const needsMobile = bar.scrollWidth > bar.clientWidth + 1;
   if (needsMobile !== isEditorFilterMobile.value) {
     isEditorFilterMobile.value = needsMobile;
-    isCompactFilterBar.value = window.innerWidth <= 900 || needsMobile;
+    isCompactFilterBar.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax) || needsMobile;
   }
 };
 
@@ -5629,7 +5631,7 @@ const scheduleMeasuredFilterFit = () => {
 const updateCompactFilterState = () => {
   if (!isHistoryPageActive) return;
   const viewportWidth = window.innerWidth;
-  const nextBottomMode = viewportWidth <= 900;
+  const nextBottomMode = isViewportAtMost(viewportWidth, UI_BREAKPOINTS.compactMax);
   isBottomPredictEditorMode.value = nextBottomMode;
 
   const historyWidth = getHistoryWidthWithEditor();
@@ -5638,7 +5640,7 @@ const updateCompactFilterState = () => {
 
   isEditorFilterTight.value = editorTight;
   isEditorFilterMobile.value = false;
-  isCompactFilterBar.value = viewportWidth <= 900;
+  isCompactFilterBar.value = isViewportAtMost(viewportWidth, UI_BREAKPOINTS.compactMax);
 
   if (editorTight) {
     nextTick(() => {
@@ -6419,7 +6421,7 @@ const getHistoryCaptureDeviceTier = () => {
   const width = Number(window?.innerWidth || 0);
   const height = Number(window?.innerHeight || 0);
   const minSide = Math.min(width || Number.MAX_SAFE_INTEGER, height || Number.MAX_SAFE_INTEGER);
-  if (width <= 900) {
+  if (isViewportAtMost(width, UI_BREAKPOINTS.compactMax)) {
     if (minSide >= 680) return 'tablet';
     return 'phone';
   }

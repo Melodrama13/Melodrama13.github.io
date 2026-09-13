@@ -1540,6 +1540,7 @@ import { toCanvas } from 'html-to-image';
 import { toHiragana, toRomaji } from 'wanakana';
 import { buildAssetUrl } from '../utils/assets.js';
 import { isSongReleased } from '../utils/spoilerGuard.js';
+import { UI_BREAKPOINTS, isViewportAbove, isViewportAtMost } from '../ui/breakpoints.js';
 import {
   clampHostScrollTop,
   createStatsNavigationHandlers,
@@ -2434,7 +2435,9 @@ const onAnotherImageModeChange = (event) => {
   }, anchorEl);
 };
 
-const canShowAnvoFillToggle = computed(() => anotherImageMode.value && viewportWidth.value > 1200);
+const canShowAnvoFillToggle = computed(() => (
+  anotherImageMode.value && isViewportAbove(viewportWidth.value, UI_BREAKPOINTS.tabletMax)
+));
 const isAnvoFillModeActive = computed(() => anvoFillDisplay.value && canShowAnvoFillToggle.value);
 
 const anvoMaxSongCount = computed(() => {
@@ -2570,7 +2573,7 @@ const updateMobileNavState = () => {
   if (typeof window === 'undefined') return;
   viewportWidth.value = window.innerWidth;
   viewportHeight.value = window.innerHeight;
-  const isTopLayout = window.innerWidth <= 900;
+  const isTopLayout = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
   const prev = navTopLayoutPrev.value;
   const nextCollapsed = prev === null
     ? isTopLayout
@@ -4829,7 +4832,7 @@ const getCaptureDeviceTier = () => {
   const width = Number(window?.innerWidth || 0);
   const height = Number(window?.innerHeight || 0);
   const minSide = Math.min(width || Number.MAX_SAFE_INTEGER, height || Number.MAX_SAFE_INTEGER);
-  if (width < 1200) {
+  if (isViewportAtMost(width, UI_BREAKPOINTS.tabletMax)) {
     if (minSide >= 680) return 'tablet';
     return 'phone';
   }
@@ -4981,7 +4984,8 @@ const sanitizeSongCloneForExport = (cloneRoot) => {
   // clone both the real text and pseudo text, so export uses one real label.
   cloneRoot.querySelectorAll('.song-duo-image-toggle.is-image-toggle > span').forEach((node) => {
     if (!(node instanceof HTMLElement)) return;
-    const compact = typeof window !== 'undefined' && window.innerWidth <= 900;
+    const compact = typeof window !== 'undefined'
+      && isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
     node.textContent = compact ? '曲绘' : '曲绘显示';
     node.classList.add('song-export-no-pseudo-label');
   });
@@ -5823,7 +5827,10 @@ const exportSongPanelPng = async (panelId, title) => {
     await waitNextPaint();
     const useAnvoFillCanvasMode = panelId === 'panel-another-vocal'
       && !!anotherImageMode.value
-      && (Number(window?.innerWidth || 0) < 1200 || isAnvoFillModeActive.value);
+      && (
+        isViewportAtMost(Number(window?.innerWidth || 0), UI_BREAKPOINTS.tabletMax)
+        || isAnvoFillModeActive.value
+      );
     if (useAnvoFillCanvasMode) {
       await exportAnvoFillCanvasPng(title, {
         taskLabel: title,

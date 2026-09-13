@@ -131,6 +131,18 @@ test('card stats compact captures the compact distribution panel', async ({ page
   });
 });
 
+test('card stats applies compact subsection rules through 768px', async ({ page }) => {
+  await gotoUiState(page, { tab: 'stats', width: 768, height: 800 });
+  await settleUi(page);
+  await expect(page.locator('.section-head.section-head-sub').first()).toHaveCSS('align-items', 'center');
+  await expect(page.locator('.nuigurumi-mobile-meta-head').first()).toHaveCSS('display', 'table-cell');
+
+  await page.setViewportSize({ width: 769, height: 800 });
+  await settleUi(page);
+  await expect(page.locator('.section-head.section-head-sub').first()).toHaveCSS('align-items', 'flex-start');
+  await expect(page.locator('.nuigurumi-mobile-meta-head').first()).toHaveCSS('display', 'none');
+});
+
 test('song stats captures the Anvo image panel and compact style contract', async ({ page }) => {
   await gotoUiState(page, { tab: 'songs', width: 1440, height: 1000 });
   await settleUi(page);

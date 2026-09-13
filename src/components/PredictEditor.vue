@@ -149,6 +149,7 @@
 
 <script setup>
 import { reactive, inject, watch, computed, ref, onMounted, onActivated, onDeactivated, onBeforeUnmount } from 'vue';
+import { UI_BREAKPOINTS, isViewportAtMost } from '../ui/breakpoints.js';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -249,7 +250,7 @@ const isWorldLinkTeamSeries = (eventLike) => {
   return Number.isFinite(sid) && sid > 0 && sid <= 3;
 };
 
-const MOBILE_BREAKPOINT = 900;
+const MOBILE_BREAKPOINT = UI_BREAKPOINTS.compactMax;
 const SHEET_MIN_VH = 26;
 const SHEET_MID_VH = 62;
 const SHEET_MAX_VH = 92;
@@ -311,7 +312,7 @@ const attachSheetTouchListeners = () => {
 };
 
 const updateMobileViewport = () => {
-  isMobileViewport.value = window.innerWidth <= MOBILE_BREAKPOINT;
+  isMobileViewport.value = isViewportAtMost(window.innerWidth, MOBILE_BREAKPOINT);
   if (!isMobileViewport.value) {
     sheetHeightVh.value = SHEET_MAX_VH;
     sheetDragState.value = { dragging: false, startY: 0, startVh: SHEET_MAX_VH };
