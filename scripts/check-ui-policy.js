@@ -328,7 +328,12 @@ function inspectSharedSources(sourceMap) {
 
   for (const sharedPath of Object.keys(SHARED_SOURCES)) {
     const sharedText = sourceMap.get(sharedPath);
-    sourceRules.set(sharedPath, typeof sharedText === 'string' ? collectCssRules(sharedText) : []);
+    if (typeof sharedText !== 'string') {
+      diagnostics.push(`missing shared source ${sharedPath}`);
+      sourceRules.set(sharedPath, []);
+      continue;
+    }
+    sourceRules.set(sharedPath, collectCssRules(sharedText));
   }
 
   for (const [sharedPath, consumers] of Object.entries(SHARED_SOURCES)) {

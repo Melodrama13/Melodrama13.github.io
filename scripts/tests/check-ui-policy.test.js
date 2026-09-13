@@ -73,6 +73,8 @@ test('reports an undeclared viewport width with its file and line', () => {
 test('ignores container and non-viewport media conditions', () => {
   const diagnostics = inspectFixture({
     'src/styles/non-viewport-media.css': `
+      /* @media (max-width: 760px) { .comment { color: red; } } */
+      .pseudo::before { content: "@media (max-width: 760px) { .string { color: red; } }"; }
       @container (min-width: 760px) { .a { color: red; } }
       @media (prefers-reduced-motion: reduce) { .b { color: red; } }
       @media (pointer: coarse) and (hover: none) { .c { color: red; } }
@@ -82,21 +84,41 @@ test('ignores container and non-viewport media conditions', () => {
   assert.deepEqual(diagnostics, []);
 });
 
-test('requires both navigation fragments in CardStats and SongStats', () => {
-  const diagnostics = inspectFixture({
-    'src/components/CardStats.vue': scopedSource(shimmerPath),
+for (const consumer of ['CardStats.vue', 'SongStats.vue']) {
+  test(`requires both navigation fragments in ${consumer}`, () => {
+    const file = `src/components/${consumer}`;
+    const diagnostics = inspectFixture({
+      [file]: scopedSource(shimmerPath),
+    });
+
+    assert.ok(diagnostics.some((diagnostic) => diagnostic.includes(consumer) && diagnostic.includes('stats-navigation-base.css')));
+    assert.ok(diagnostics.some((diagnostic) => diagnostic.includes(consumer) && diagnostic.includes('stats-navigation-responsive.css')));
+  });
+}
+
+for (const consumer of ['CardStats.vue', 'SongStats.vue', 'EventHistory.vue']) {
+  test(`requires the shimmer fragment in ${consumer}`, () => {
+    const file = `src/components/${consumer}`;
+    const diagnostics = inspectFixture({
+      [file]: '',
+    });
+
+    assert.ok(diagnostics.some((diagnostic) => diagnostic.includes(consumer) && diagnostic.includes('media-load-shimmer.css')));
+  });
+}
+
+test('reports a missing shared source even when its consumers declare it', () => {
+  const sources = new Map([
+    [navigationResponsivePath, navigationResponsive],
+    [shimmerPath, shimmer],
+    ...Object.entries(consumerSources()),
+  ]);
+  const diagnostics = inspectUiPolicy({
+    files: [...sources.keys()],
+    readText: (file) => sources.get(file),
   });
 
-  assert.ok(diagnostics.some((diagnostic) => diagnostic.includes('CardStats.vue') && diagnostic.includes('stats-navigation-base.css')));
-  assert.ok(diagnostics.some((diagnostic) => diagnostic.includes('CardStats.vue') && diagnostic.includes('stats-navigation-responsive.css')));
-});
-
-test('requires the shimmer fragment in every shimmer consumer', () => {
-  const diagnostics = inspectFixture({
-    'src/components/EventHistory.vue': '',
-  });
-
-  assert.ok(diagnostics.some((diagnostic) => diagnostic.includes('EventHistory.vue') && diagnostic.includes('media-load-shimmer.css')));
+  assert.ok(diagnostics.some((diagnostic) => diagnostic.includes('missing shared source') && diagnostic.includes(navigationBasePath)));
 });
 
 test('rejects an unscoped shared source style', () => {
