@@ -10644,6 +10644,14 @@
         "characters": [
           "白石杏"
         ]
+      },
+      {
+        "vocal_id": 1752,
+        "type": "another_vocal",
+        "released_at": "2026/9/14",
+        "characters": [
+          "镜音铃"
+        ]
       }
     ]
   },
@@ -27592,6 +27600,22 @@
         ]
       },
       {
+        "vocal_id": 2075,
+        "type": "another_vocal",
+        "released_at": "2026/9/14",
+        "characters": [
+          "东云彰人"
+        ]
+      },
+      {
+        "vocal_id": 2076,
+        "type": "another_vocal",
+        "released_at": "2026/9/14",
+        "characters": [
+          "青柳冬弥"
+        ]
+      },
+      {
         "vocal_id": 1818,
         "type": "streaming_live",
         "released_at": "",
@@ -35653,6 +35677,90 @@
           "小豆泽心羽",
           "白石杏",
           "青柳冬弥"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 809,
+    "title": "敗走",
+    "pronunciation": "はいそう",
+    "composer": "傘村トータ",
+    "lyricist": "傘村トータ",
+    "arranger": "たかぴぃ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-09-19 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 11,
+      "hard": 16,
+      "expert": 23,
+      "master": 27
+    },
+    "vocals": [
+      {
+        "vocal_id": 1853,
+        "type": "original_song",
+        "released_at": "2026/9/19",
+        "characters": [
+          "KAITO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 811,
+    "title": "ヘレディティ",
+    "pronunciation": "へれでぃてぃ",
+    "composer": "サツキ",
+    "lyricist": "サツキ",
+    "arranger": "サツキ",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-09-14 15:00:00",
+    "categories": [
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "ws"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 12,
+      "hard": 18,
+      "expert": 25,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1855,
+        "type": "original_song",
+        "released_at": "2026/9/14",
+        "characters": [
+          "初音未来",
+          "GUMI",
+          "IA",
+          "flower",
+          "可不",
+          "重音テト"
+        ]
+      },
+      {
+        "vocal_id": 2077,
+        "type": "sekai",
+        "released_at": "2026/9/14",
+        "characters": [
+          "草薙宁宁",
+          "巡音流歌",
+          "天马司",
+          "凤笑梦",
+          "神代类"
         ]
       }
     ]
