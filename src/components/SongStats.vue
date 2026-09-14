@@ -1541,8 +1541,11 @@ import { toHiragana, toRomaji } from 'wanakana';
 import { buildAssetUrl } from '../utils/assets.js';
 import { isSongReleased } from '../utils/spoilerGuard.js';
 import {
-  computeRenderTimeoutMs,
-  createRenderTaskTracker
+  PENDING_RENDER_BUSY_WAIT_MS,
+  RENDER_TASK_SETTLE_GRACE_MS,
+  buildRenderAttemptTimeouts,
+  createRenderTaskTracker,
+  withRenderTimeout
 } from '../utils/songCapturePolicy.js';
 import { UI_BREAKPOINTS, isViewportAbove, isViewportAtMost } from '../ui/breakpoints.js';
 import {
@@ -4993,30 +4996,6 @@ const sanitizeSongCloneForExport = (cloneRoot) => {
   });
 };
 
-const withRenderTimeout = async (promise, timeoutMs, cancelPromise = null) => {
-  let timer = 0;
-  try {
-    const raceTasks = [
-      promise,
-      new Promise((_, reject) => {
-        timer = window.setTimeout(() => {
-          reject(new Error(`render-timeout-${timeoutMs}`));
-        }, timeoutMs);
-      })
-    ];
-    if (cancelPromise) {
-      raceTasks.push(cancelPromise.then(() => {
-        throw new Error('export-cancelled');
-      }));
-    }
-    return await Promise.race(raceTasks);
-  } finally {
-    if (timer) {
-      clearTimeout(timer);
-    }
-  }
-};
-
 const waitPendingSongCaptureRenderTask = (maxWaitMs = 0) => songCaptureRenderTracker.wait(maxWaitMs);
 
 const startSongCaptureRenderTask = (createTask) => songCaptureRenderTracker.start(createTask);
@@ -5468,7 +5447,17 @@ const shouldCaptureLiveElementForExport = (targetEl, options = {}) => {
 };
 
 const exportElementPng = async (targetEl, title, options = {}) => {
-  await waitPendingSongCaptureRenderTask();
+  const previousIdle = await waitPendingSongCaptureRenderTask(PENDING_RENDER_BUSY_WAIT_MS);
+  if (!previousIdle) {
+    setScreenshotModalState({
+      state: 'failed',
+      title: '截图暂不可用',
+      message: '上一轮渲染仍在收尾，请稍后重试。',
+      retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
+      cancelTask: null
+    });
+    return;
+  }
   const exportLabel = String(options?.taskLabel || title || '当前模块');
   const deviceTier = getCaptureDeviceTier();
   const captureLiveElement = shouldCaptureLiveElementForExport(targetEl, options);
@@ -5557,29 +5546,26 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     const height = Math.max(1, Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0));
     const heavyMediaCount = countHeavyMediaNodes(renderEl);
     const pixelRatioPlan = buildCapturePixelRatioPlan(deviceTier);
+    const renderAttemptBudgets = buildRenderAttemptTimeouts({
+      deviceTier,
+      heavyMediaCount,
+      width,
+      height,
+      pixelRatioPlan
+    });
 
     let canvas = null;
     let lastRenderError = null;
 
-    for (let attemptIdx = 0; attemptIdx < pixelRatioPlan.length; attemptIdx += 1) {
-      const pixelRatio = pixelRatioPlan[attemptIdx];
+    for (let attemptIdx = 0; attemptIdx < renderAttemptBudgets.length; attemptIdx += 1) {
+      const { pixelRatio, timeoutMs: renderTimeoutMs } = renderAttemptBudgets[attemptIdx];
       const canvasWidth = Math.max(1, Math.round(width * pixelRatio));
       const canvasHeight = Math.max(1, Math.round(height * pixelRatio));
-      const renderTimeoutMs = Math.min(
-        56000,
-        Math.max(12000, Math.round(computeRenderTimeoutMs({
-          deviceTier,
-          heavyMediaCount,
-          width,
-          height,
-          scale: pixelRatio
-        }) * (1.35 + (attemptIdx * 0.25))))
-      );
 
       setScreenshotModalState({
         state: 'capturing',
         title: '截图中',
-        message: `[渲染中] ${exportLabel}（${width}x${height}，像素比 x${pixelRatio.toFixed(2)}，尝试 ${attemptIdx + 1}/${pixelRatioPlan.length}）`,
+        message: `[渲染中] ${exportLabel}（${width}x${height}，像素比 x${pixelRatio.toFixed(2)}，尝试 ${attemptIdx + 1}/${renderAttemptBudgets.length}）`,
         cancelTask: cancelContext.cancel
       });
 
@@ -5611,7 +5597,10 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           throw renderError;
         }
         if (isRenderTimeoutError(renderError)) {
-          await waitPendingSongCaptureRenderTask();
+          const previousIdle = await waitPendingSongCaptureRenderTask(RENDER_TASK_SETTLE_GRACE_MS);
+          if (!previousIdle) {
+            throw renderError;
+          }
           if (cancelContext.isCancelled()) {
             throw new Error('export-cancelled');
           }
