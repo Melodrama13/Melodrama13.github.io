@@ -44,11 +44,8 @@
     height: auto;
     max-height: calc(100dvh - 70px);
     z-index: 5090;
-    box-shadow: var(--stats-nav-glass-shadow);
-    background: var(--stats-nav-glass-bg);
-    backdrop-filter: var(--stats-nav-glass-blur);
-    -webkit-backdrop-filter: var(--stats-nav-glass-blur);
-    border: 1px solid var(--stats-nav-glass-border);
+    border-width: 1px;
+    border-style: solid;
     border-radius: var(--stats-nav-radius) !important;
     overflow: hidden;
   }

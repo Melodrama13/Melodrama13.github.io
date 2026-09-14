@@ -39,6 +39,24 @@ const restoreSongPill = (locator, state) => locator.evaluate((element, original)
   delete root.dataset.foundationTestSongRoot;
 }, state);
 
+const expectRefractiveStatsNav = async (page) => {
+  const navigation = page.locator('.stats-nav');
+  await expect(navigation).toHaveClass(/ui-liquid-glass--refractive/);
+  await expect(navigation).toHaveAttribute('data-liquid-glass-interactive', '');
+  await expect(navigation.locator('.nav-quick-wrap')).toHaveCSS('backdrop-filter', 'none');
+};
+
+const expectCompactRefractiveStatsNav = async (page) => {
+  const trigger = page.locator('.floating-menu-btn');
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveClass(/ui-liquid-glass--refractive/);
+  await expect(trigger).toHaveAttribute('data-liquid-glass-interactive', '');
+
+  await trigger.click();
+  await expect(page.locator('.stats-nav')).toBeVisible();
+  await expectRefractiveStatsNav(page);
+};
+
 test('foundation tokens and existing global controls retain their contracts', async ({ page }) => {
   await gotoUiState(page, { tab: 'songs', width: 1440, height: 1000 });
   await settleUi(page);
@@ -101,6 +119,26 @@ test('foundation tokens and existing global controls retain their contracts', as
   } finally {
     await cardExportButton.evaluate((element, disabled) => { element.disabled = disabled; }, cardWasDisabled);
   }
+});
+
+test('Card Stats navigation adopts the refractive liquid-glass contract on desktop and compact layouts', async ({ page }) => {
+  await gotoUiState(page, { tab: 'stats', width: 1440, height: 1000 });
+  await settleUi(page);
+  await expectRefractiveStatsNav(page);
+
+  await gotoUiState(page, { tab: 'stats', width: 390, height: 844 });
+  await settleUi(page);
+  await expectCompactRefractiveStatsNav(page);
+});
+
+test('Song Stats navigation adopts the refractive liquid-glass contract on desktop and compact layouts', async ({ page }) => {
+  await gotoUiState(page, { tab: 'songs', width: 1440, height: 1000 });
+  await settleUi(page);
+  await expectRefractiveStatsNav(page);
+
+  await gotoUiState(page, { tab: 'songs', width: 390, height: 844 });
+  await settleUi(page);
+  await expectCompactRefractiveStatsNav(page);
 });
 
 test('liquid glass capability states override stale inline refraction', async ({ page }) => {
