@@ -33,6 +33,11 @@ const SHARED_SOURCES = {
   ],
 };
 
+const MAIN_SOURCE = 'src/main.js';
+const LIQUID_GLASS_STYLE_SOURCE = 'src/styles/liquid-glass.css';
+const LIQUID_GLASS_FILTERS_SOURCE = 'src/components/ui/LiquidGlassFilters.vue';
+const LIQUID_GLASS_MATERIAL_SELECTOR = /(^|[^a-zA-Z0-9_-])\.ui-liquid-glass(?:--(?:refractive|regular|modal|chip))?(?![a-zA-Z0-9_-])/;
+
 function normalizePath(file) {
   return file.replaceAll('\\', '/');
 }
@@ -362,9 +367,71 @@ function inspectSharedSources(sourceMap) {
   return diagnostics;
 }
 
+export function inspectLiquidGlassGovernance(sourceMap) {
+  const diagnostics = [];
+  const mainSource = sourceMap.get(MAIN_SOURCE);
+  const appSource = sourceMap.get('src/App.vue');
+  const liquidGlassImport = /import\s+['"]\.\/styles\/liquid-glass\.css['"]\s*;?/g;
+  const styleImportOrder = [
+    /import\s+['"]\.\/styles\/tokens\.css['"]\s*;?/,
+    /import\s+['"]\.\/style\.css['"]\s*;?/,
+    /import\s+['"]\.\/styles\/liquid-glass\.css['"]\s*;?/,
+    /import\s+['"]\.\/styles\/primitives\.css['"]\s*;?/
+  ];
+
+  const liquidGlassImports = typeof mainSource === 'string' ? [...mainSource.matchAll(liquidGlassImport)] : [];
+  if (liquidGlassImports.length === 0) {
+    diagnostics.push(`${MAIN_SOURCE}: missing global liquid glass import`);
+  } else if (liquidGlassImports.length !== 1) {
+    diagnostics.push(`${MAIN_SOURCE}: liquid glass global import must appear exactly once`);
+  }
+
+  if (typeof mainSource === 'string') {
+    const importOffsets = styleImportOrder.map((pattern) => mainSource.search(pattern));
+    if (importOffsets.some((offset) => offset === -1) || importOffsets.some((offset, index) => index > 0 && offset <= importOffsets[index - 1])) {
+      diagnostics.push(`${MAIN_SOURCE}: liquid glass global import must follow tokens, style, liquid glass, primitives order`);
+    }
+  }
+
+  const filterImports = typeof appSource === 'string'
+    ? [...appSource.matchAll(/import\s+LiquidGlassFilters\s+from\s+['"]\.\/components\/ui\/LiquidGlassFilters\.vue['"]\s*;?/g)]
+    : [];
+  if (filterImports.length !== 1) {
+    diagnostics.push(`src/App.vue: LiquidGlassFilters must be imported exactly once`);
+  }
+
+  const filterHosts = typeof appSource === 'string'
+    ? [...appSource.matchAll(/<LiquidGlassFilters\b/g)]
+    : [];
+  if (filterHosts.length !== 1) {
+    diagnostics.push(`src/App.vue: LiquidGlassFilters must be mounted exactly once`);
+  }
+
+  for (const [file, text] of sourceMap) {
+    if (file === LIQUID_GLASS_STYLE_SOURCE || typeof text !== 'string') continue;
+    const blocks = file.endsWith('.vue')
+      ? extractStyleBlocks(text).map((block) => ({ ...block, rules: collectCssRules(block.content) }))
+      : [{ contentOffset: 0, rules: collectCssRules(text) }];
+
+    for (const block of blocks) {
+      for (const rule of block.rules) {
+        if (!LIQUID_GLASS_MATERIAL_SELECTOR.test(rule.selector)) continue;
+        const line = lineNumber(text, (block.contentOffset || 0) + rule.lineOffset);
+        diagnostics.push(`${file}:${line}: liquid glass material selector must stay centralized in ${LIQUID_GLASS_STYLE_SOURCE}`);
+      }
+    }
+  }
+
+  if (typeof sourceMap.get(LIQUID_GLASS_FILTERS_SOURCE) !== 'string') {
+    diagnostics.push(`missing liquid glass filter host source ${LIQUID_GLASS_FILTERS_SOURCE}`);
+  }
+
+  return diagnostics;
+}
+
 export function inspectUiPolicy({ files, readText }) {
   const normalizedFiles = [...new Set(files.map(normalizePath))]
-    .filter((file) => /^src\/.*\.(?:vue|css)$/i.test(file))
+    .filter((file) => /^src\/.*\.(?:vue|css)$/i.test(file) || file === MAIN_SOURCE)
     .sort();
   const sourceMap = new Map();
   const diagnostics = [];
@@ -377,6 +444,7 @@ export function inspectUiPolicy({ files, readText }) {
   }
 
   diagnostics.push(...inspectSharedSources(sourceMap));
+  diagnostics.push(...inspectLiquidGlassGovernance(sourceMap));
   return [...new Set(diagnostics)].sort();
 }
 
@@ -389,7 +457,7 @@ function collectSourceFiles(rootDir) {
       const absolutePath = path.join(directory, entry.name);
       if (entry.isDirectory()) {
         visit(absolutePath);
-      } else if (/\.(?:vue|css)$/i.test(entry.name)) {
+      } else if (/\.(?:vue|css)$/i.test(entry.name) || normalizePath(path.relative(rootDir, absolutePath)) === MAIN_SOURCE) {
         files.push(normalizePath(path.relative(rootDir, absolutePath)));
       }
     }

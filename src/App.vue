@@ -1,6 +1,11 @@
 <template>
   <div class="main-app">
-    <div class="nav-tabs" :class="{ 'is-stats-top-compact': isStatsTopNavCompact }">
+    <LiquidGlassFilters />
+    <div
+      v-liquid-glass
+      class="nav-tabs ui-liquid-glass ui-liquid-glass--refractive"
+      :class="{ 'is-stats-top-compact': isStatsTopNavCompact }"
+    >
       <button 
         :class="{ active: currentTab === 'stats' }" 
         @click="setCurrentTab('stats')"
@@ -406,6 +411,7 @@
 
 <script setup>
 import { ref, shallowRef, computed, provide, onMounted, onBeforeUnmount, watch, nextTick, h, defineAsyncComponent } from 'vue';
+import LiquidGlassFilters from './components/ui/LiquidGlassFilters.vue';
 import {
   collectSmallStaticImageUrls,
   getCommonSmallStaticImageUrls,
@@ -3130,11 +3136,8 @@ watch(isHistoryPredictEditorOpen, (open) => {
   align-items: center;
   gap: 15px;
   padding: 15px 25px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.32));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.72);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08), inset 0 -1px 0 rgba(148, 163, 184, 0.16);
-  backdrop-filter: saturate(170%) blur(18px);
-  -webkit-backdrop-filter: saturate(170%) blur(18px);
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
   z-index: 2000;
   flex: 0 0 auto;
   /* 移除 sticky，因为外层已经是 flex 布局，它自然就在最顶部 */
@@ -3273,8 +3276,6 @@ watch(isHistoryPredictEditorOpen, (open) => {
   border-radius: 999px;
   background: var(--top-glass-bg);
   box-shadow: var(--top-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   box-sizing: border-box;
 }
 
@@ -3290,8 +3291,6 @@ watch(isHistoryPredictEditorOpen, (open) => {
   border-radius: 999px;
   background: var(--top-glass-bg);
   box-shadow: var(--top-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   box-sizing: border-box;
 }
 
@@ -3709,8 +3708,6 @@ button.active {
   background: var(--top-glass-bg);
   color: #1e293b;
   box-shadow: var(--top-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
 }
 
 .nav-tabs > button.active,
@@ -3734,8 +3731,6 @@ button.active {
   border-radius: 999px;
   border: 1px solid rgba(255, 173, 210, 0.62);
   box-shadow: var(--top-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
 }
 
 .predict-cleanup-info {
@@ -3748,8 +3743,6 @@ button.active {
   background: linear-gradient(145deg, rgba(236, 253, 245, 0.72), rgba(255, 255, 255, 0.38));
   border: 1px solid rgba(167, 243, 208, 0.66);
   box-shadow: var(--top-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   padding: 4px 10px;
   border-radius: 999px;
 }

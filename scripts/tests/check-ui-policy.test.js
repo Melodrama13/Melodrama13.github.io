@@ -6,10 +6,37 @@ import { inspectUiPolicy } from '../check-ui-policy.js';
 const navigationBasePath = 'src/styles/scoped/stats-navigation-base.css';
 const navigationResponsivePath = 'src/styles/scoped/stats-navigation-responsive.css';
 const shimmerPath = 'src/styles/scoped/media-load-shimmer.css';
+const liquidGlassPath = 'src/styles/liquid-glass.css';
+const mainPath = 'src/main.js';
+const appPath = 'src/App.vue';
+const liquidGlassFiltersPath = 'src/components/ui/LiquidGlassFilters.vue';
 
 const navigationBase = '.stats-navigation { display: flex; }\n';
 const navigationResponsive = '@media (max-width: 520px) { .stats-navigation { gap: 4px; } }\n';
 const shimmer = ".media-load-shimmer:not([data-loaded='1']) { animation: shimmer 1s linear infinite; }\n";
+const liquidGlass = '.ui-liquid-glass { position: relative; }\n.ui-liquid-glass--regular { --ui-glass-surface-bg: #fff; }\n';
+const main = `
+import { createApp } from 'vue';
+import './styles/tokens.css';
+import './style.css';
+import './styles/liquid-glass.css';
+import './styles/primitives.css';
+import App from './App.vue';
+
+createApp(App).mount('#app');
+`;
+const app = `
+<template>
+  <div class="main-app">
+    <LiquidGlassFilters />
+  </div>
+</template>
+
+<script setup>
+import LiquidGlassFilters from './components/ui/LiquidGlassFilters.vue';
+</script>
+`;
+const liquidGlassFilters = '<template><svg id="ui-liquid-glass-filter-host"></svg></template>\n';
 
 function scopedSource(path) {
   return `<style scoped src="../${path.slice('src/'.length)}"></style>`;
@@ -31,6 +58,10 @@ function inspectFixture(overrides = {}) {
     [navigationBasePath, navigationBase],
     [navigationResponsivePath, navigationResponsive],
     [shimmerPath, shimmer],
+    [liquidGlassPath, liquidGlass],
+    [mainPath, main],
+    [appPath, app],
+    [liquidGlassFiltersPath, liquidGlassFilters],
     ...Object.entries(consumerSources()),
     ...Object.entries(overrides),
   ]);
@@ -146,4 +177,33 @@ test('rejects normalized shared rules that remain inline in a consumer', () => {
   });
 
   assert.ok(diagnostics.some((diagnostic) => diagnostic.includes('CardStats.vue') && diagnostic.includes('duplicate normalized shared rule') && diagnostic.includes('.stats-navigation')));
+});
+
+test('accepts the centralized liquid glass import, singleton host, and material selectors', () => {
+  assert.deepEqual(inspectFixture(), []);
+});
+
+test('rejects liquid glass governance violations outside the central material source', () => {
+  const diagnostics = inspectFixture({
+    [mainPath]: `
+      import { createApp } from 'vue';
+      import './styles/tokens.css';
+      import './style.css';
+      import './styles/primitives.css';
+    `,
+    [appPath]: `
+      <template><div class="main-app"></div></template>
+      <script setup>import LiquidGlassFilters from './components/ui/LiquidGlassFilters.vue';</script>
+    `,
+    'src/components/CardStats.vue': `
+      ${scopedSource(navigationBasePath)}
+      ${scopedSource(navigationResponsivePath)}
+      ${scopedSource(shimmerPath)}
+      <style scoped>.ui-liquid-glass--regular { background: white; }</style>
+    `,
+  });
+
+  assert.ok(diagnostics.some((message) => message.includes('missing global liquid glass import')));
+  assert.ok(diagnostics.some((message) => message.includes('LiquidGlassFilters must be mounted exactly once')));
+  assert.ok(diagnostics.some((message) => message.includes('liquid glass material selector must stay centralized')));
 });
