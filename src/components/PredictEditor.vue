@@ -4,7 +4,7 @@
       <div
         ref="drawerRef"
         v-if="isOpen"
-        class="predict-drawer"
+        class="predict-drawer ui-liquid-glass ui-liquid-glass--regular"
         :class="{ 'is-mobile-sheet': isMobileViewport }"
         :style="drawerStyle"
       >
@@ -1070,17 +1070,8 @@ defineExpose({
   padding: 0;
   color: #102033;
   overflow: hidden;
-  background:
-    linear-gradient(138deg, rgba(204, 251, 241, 0.28) 0%, rgba(186, 230, 253, 0.16) 38%, rgba(255, 255, 255, 0.12) 64%, rgba(240, 253, 250, 0.20) 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(236, 254, 255, 0.10));
-  border-left: 1px solid rgba(255, 255, 255, 0.66);
-  box-shadow:
-    -22px 0 42px rgba(15, 23, 42, 0.20),
-    inset 1px 0 0 rgba(255, 255, 255, 0.95),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88),
-    inset 0 -1px 0 rgba(148, 163, 184, 0.12);
-  backdrop-filter: saturate(190%) blur(30px);
-  -webkit-backdrop-filter: saturate(190%) blur(30px);
+  border-left-width: 1px;
+  border-left-style: solid;
   --pe-radius-card: 999px;
   --pe-radius-btn: 999px;
   --pe-glass-bg: linear-gradient(145deg, rgba(204, 251, 241, 0.34), rgba(186, 230, 253, 0.16) 50%, rgba(255, 255, 255, 0.12));
@@ -1092,18 +1083,6 @@ defineExpose({
   --pe-accent: #22b8ad;
   --pe-accent-strong: #0f9f96;
   --pe-danger: #ef4444;
-}
-
-.predict-drawer::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(104deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.18) 23%, transparent 48%),
-    linear-gradient(270deg, rgba(255, 255, 255, 0.58), transparent 18%);
-  mix-blend-mode: screen;
-  opacity: 0.82;
 }
 
 .predict-drawer > * {
@@ -1119,15 +1098,10 @@ defineExpose({
   width: 100vw;
   height: 62dvh;
   border-radius: 24px 24px 0 0;
-  border-left: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.88);
-  background:
-    linear-gradient(136deg, rgba(204, 251, 241, 0.46) 0%, rgba(186, 230, 253, 0.30) 42%, rgba(255, 255, 255, 0.28) 64%, rgba(240, 253, 250, 0.38) 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(236, 254, 255, 0.24));
-  box-shadow:
-    0 -20px 42px rgba(15, 23, 42, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    inset 0 -1px 0 rgba(148, 163, 184, 0.12);
+  border-left-width: 0;
+  border-left-style: none;
+  border-top-width: 1px;
+  border-top-style: solid;
   transition: height 0.16s ease;
   --pe-glass-bg: linear-gradient(145deg, rgba(204, 251, 241, 0.48), rgba(186, 230, 253, 0.24) 50%, rgba(255, 255, 255, 0.22));
   --pe-glass-bg-hover: linear-gradient(145deg, rgba(204, 251, 241, 0.62), rgba(125, 211, 252, 0.30) 54%, rgba(255, 255, 255, 0.28));

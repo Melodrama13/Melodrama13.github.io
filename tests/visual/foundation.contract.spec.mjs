@@ -57,6 +57,42 @@ const expectCompactRefractiveStatsNav = async (page) => {
   await expectRefractiveStatsNav(page);
 };
 
+const openUnsavedPredictSwitchDialog = async (page) => {
+  const eventRows = page.locator('.event-item');
+  const eventCount = await eventRows.count();
+  let editorRowIndex = -1;
+
+  for (let index = eventCount - 1; index >= Math.max(0, eventCount - 8); index -= 1) {
+    const row = eventRows.nth(index);
+    await row.scrollIntoViewIfNeeded();
+    await row.click();
+    if (await page.locator('.predict-drawer').isVisible()) {
+      editorRowIndex = index;
+      break;
+    }
+  }
+
+  expect(editorRowIndex).toBeGreaterThanOrEqual(0);
+
+  const attributeSelect = page.locator('.predict-drawer .global-config-bar select').nth(2);
+  const currentAttribute = await attributeSelect.inputValue();
+  const nextAttribute = await attributeSelect.locator('option').evaluateAll((options, current) => (
+    options.map((option) => option.value).find((value) => value !== current)
+  ), currentAttribute);
+  expect(nextAttribute).toBeTruthy();
+  await attributeSelect.selectOption(nextAttribute);
+
+  for (let index = eventCount - 1; index >= Math.max(0, eventCount - 8); index -= 1) {
+    if (index === editorRowIndex) continue;
+    const row = eventRows.nth(index);
+    await row.scrollIntoViewIfNeeded();
+    await row.click();
+    if (await page.locator('.predict-switch-dialog-card').isVisible()) return;
+  }
+
+  throw new Error('A second editable event did not open the existing unsaved-switch dialog');
+};
+
 test('foundation tokens and existing global controls retain their contracts', async ({ page }) => {
   await gotoUiState(page, { tab: 'songs', width: 1440, height: 1000 });
   await settleUi(page);
@@ -139,6 +175,26 @@ test('Song Stats navigation adopts the refractive liquid-glass contract on deskt
   await gotoUiState(page, { tab: 'songs', width: 390, height: 844 });
   await settleUi(page);
   await expectCompactRefractiveStatsNav(page);
+});
+
+test('history overlay controls adopt the shared liquid-glass tiers without nested menu filtering', async ({ page }) => {
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await settleUi(page);
+
+  await page.locator('.source-trigger').click();
+  const sourceMenu = page.locator('.source-menu');
+  await expect(sourceMenu).toHaveClass(/ui-liquid-glass--regular/);
+  await expect(sourceMenu.locator('.source-list')).toHaveCSS('backdrop-filter', 'none');
+
+  const filterBar = page.locator('.filter-bar');
+  await expect(filterBar).toHaveClass(/ui-liquid-glass--regular/);
+  await filterBar.locator('button[title="筛选面板"]').click();
+  const filterPanel = page.locator('.filter-panel');
+  await expect(filterPanel).toBeVisible();
+  await expect(filterPanel).toHaveClass(/ui-liquid-glass--regular/);
+
+  await openUnsavedPredictSwitchDialog(page);
+  await expect(page.locator('.predict-switch-dialog-card')).toHaveClass(/ui-liquid-glass--modal/);
 });
 
 test('liquid glass capability states override stale inline refraction', async ({ page }) => {

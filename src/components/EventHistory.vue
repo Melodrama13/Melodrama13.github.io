@@ -527,7 +527,7 @@
       <div ref="filterStickyRef" class="filter-sticky">
         <div
           ref="filterBarRef"
-          class="filter-bar"
+          class="filter-bar ui-liquid-glass ui-liquid-glass--regular"
           :class="{
             'is-compact': isCompactFilterBar,
             'is-editor-tight': isEditorFilterTight,
@@ -587,7 +587,7 @@
           </button>
         </div>
         <transition name="slide-fade">
-          <div v-if="showFilter" class="filter-panel">
+          <div v-if="showFilter" class="filter-panel ui-liquid-glass ui-liquid-glass--regular">
           <div class="filter-row filter-mode-row">
             <span class="row-label">模式</span>
             <div class="btn-group">
@@ -1154,7 +1154,7 @@
         @keydown.esc.prevent="resolvePredictSwitchDialog('cancel')"
       >
         <section
-          class="predict-switch-dialog-card"
+          class="predict-switch-dialog-card ui-liquid-glass ui-liquid-glass--modal"
           role="dialog"
           aria-modal="true"
           aria-labelledby="predict-switch-dialog-title"
@@ -7383,31 +7383,11 @@ const getFestivalPreviewUnitLogo = (name) => {
   isolation: isolate;
   width: min(520px, calc(100vw - 36px));
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-width: 1px;
+  border-style: solid;
   border-radius: 26px;
   padding: 24px;
   color: #173042;
-  background:
-    linear-gradient(138deg, rgba(255, 255, 255, 0.82), rgba(236, 254, 255, 0.58) 48%, rgba(219, 234, 254, 0.50)),
-    rgba(255, 255, 255, 0.58);
-  box-shadow:
-    0 28px 80px rgba(15, 23, 42, 0.26),
-    0 8px 24px rgba(14, 165, 233, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    inset 0 -1px 0 rgba(148, 163, 184, 0.18);
-  backdrop-filter: blur(30px) saturate(185%);
-  -webkit-backdrop-filter: blur(30px) saturate(185%);
-}
-
-.predict-switch-dialog-card::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: -42% 44% 36% -18%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(94, 234, 212, 0.34), rgba(125, 211, 252, 0.06) 58%, transparent 72%);
-  filter: blur(4px);
-  pointer-events: none;
 }
 
 .predict-switch-dialog-icon {
@@ -8416,12 +8396,9 @@ button:not(:disabled):active {
 .filter-bar {
   width: 100%;
   box-sizing: border-box;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.36) 52%, rgba(219, 234, 254, 0.26));
-  border: 1px solid var(--history-glass-border);
+  border-width: 1px;
+  border-style: solid;
   border-radius: 999px;
-  box-shadow: var(--history-glass-shadow);
-  backdrop-filter: saturate(170%) blur(18px);
-  -webkit-backdrop-filter: saturate(170%) blur(18px);
   padding: 8px 10px;
   display: flex;
   align-items: center;
@@ -8949,8 +8926,8 @@ button:not(:disabled):active {
 
 /* 筛选面板基础样式 */
 .filter-panel {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.38));
-  border: 1px solid var(--history-glass-border);
+  border-width: 1px;
+  border-style: solid;
   border-radius: calc(var(--eh-radius-panel) + 6px);
   position: absolute;
   left: 0;
@@ -8965,9 +8942,6 @@ button:not(:disabled):active {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: var(--history-glass-shadow);
-  backdrop-filter: saturate(170%) blur(18px);
-  -webkit-backdrop-filter: saturate(170%) blur(18px);
 }
 
 .filter-mode-row {

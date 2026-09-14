@@ -80,7 +80,7 @@
         <div
           v-if="sourceMenuOpen && showSourceDropdownInNav"
           ref="sourceMenuPanelRef"
-          class="source-menu source-menu-floating"
+          class="source-menu source-menu-floating ui-liquid-glass ui-liquid-glass--regular"
           :style="sourceMenuStyle"
           @pointerdown.stop
         >
@@ -280,7 +280,7 @@
     </div>
 
     <div v-if="showAppUpdatePromptDialog" class="app-update-modal-mask" @click.self="dismissAppUpdateBanner">
-      <div class="app-update-modal" role="dialog" aria-modal="true" aria-label="版本更新日志">
+      <div class="app-update-modal ui-liquid-glass ui-liquid-glass--modal" role="dialog" aria-modal="true" aria-label="版本更新日志">
         <div class="app-update-modal-title">{{ appUpdatePromptTitle }}</div>
         <div class="app-update-modal-subtitle">{{ appUpdatePromptSubtitle }}</div>
         <ul class="app-update-log-list">
@@ -294,7 +294,7 @@
     </div>
 
     <div v-if="showAppReleaseLogModal" class="app-update-modal-mask" @click.self="closeAppReleaseLogModal">
-      <div class="app-update-modal" role="dialog" aria-modal="true" aria-label="新版日志">
+      <div class="app-update-modal ui-liquid-glass ui-liquid-glass--modal" role="dialog" aria-modal="true" aria-label="新版日志">
         <div class="app-update-modal-title">{{ currentReleaseLogTitle }}</div>
         <div class="app-update-modal-subtitle">当前版本：{{ currentAppBuildId || '未知' }}</div>
         <ul class="app-update-log-list">
@@ -324,7 +324,7 @@
       class="app-screenshot-modal-mask"
       @click.self="closeScreenshotExportModal"
     >
-      <div class="app-screenshot-modal" :class="`is-${screenshotExportModalState}`" role="status" aria-live="polite">
+      <div class="app-screenshot-modal ui-liquid-glass ui-liquid-glass--modal" :class="`is-${screenshotExportModalState}`" role="status" aria-live="polite">
         <div class="app-screenshot-modal-head">
           <div class="app-screenshot-modal-head-main">
             <span
@@ -3191,10 +3191,9 @@ watch(isHistoryPredictEditorOpen, (open) => {
   width: min(520px, calc(100vw - 20px));
   max-height: min(78vh, 640px);
   overflow: auto;
+  border-width: 1px;
+  border-style: solid;
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.32);
   padding: 14px;
 }
 
@@ -3805,40 +3804,20 @@ button.active {
 }
 
 .source-menu {
-  --source-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.52), rgba(239, 246, 255, 0.24) 48%, rgba(219, 234, 254, 0.20));
-  --source-glass-bg-strong: linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(239, 246, 255, 0.22) 52%, rgba(226, 232, 240, 0.14));
   --source-glass-border: rgba(255, 255, 255, 0.76);
   --source-inner-border: rgba(148, 163, 184, 0.42);
-  --source-glass-edge: rgba(255, 255, 255, 0.88);
-  --source-glass-shadow: 0 18px 48px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(59, 130, 246, 0.055), inset 0 1px 0 rgba(255, 255, 255, 0.82), inset 0 -1px 0 rgba(15, 23, 42, 0.04);
   --source-glass-shadow-soft: 0 8px 22px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.78), inset 0 -1px 0 rgba(15, 23, 42, 0.035);
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
   min-width: 320px;
   max-width: min(92vw, 420px);
-  background: var(--source-glass-bg);
-  border: 1px solid var(--source-glass-border);
+  border-width: 1px;
+  border-style: solid;
   border-radius: 22px;
   padding: 10px;
-  box-shadow: var(--source-glass-shadow);
-  backdrop-filter: saturate(190%) blur(26px);
-  -webkit-backdrop-filter: saturate(190%) blur(26px);
   overflow: hidden;
   z-index: 2800;
-}
-
-.source-menu::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.10) 42%, rgba(147, 197, 253, 0.12) 68%, rgba(14, 165, 233, 0.06)),
-    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.72), transparent 36%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42);
-  mix-blend-mode: screen;
 }
 
 .source-menu > * {
@@ -3865,10 +3844,8 @@ button.active {
   padding: 6px 8px;
   border: 1px solid var(--source-glass-border);
   border-radius: 999px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(239, 246, 255, 0.22));
+  background: rgba(255, 255, 255, 0.22);
   box-shadow: var(--source-glass-shadow-soft);
-  backdrop-filter: saturate(180%) blur(18px);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
 }
 
 .source-menu-username-label {
@@ -3935,10 +3912,8 @@ button.active {
   margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 20px;
-  background: var(--source-glass-bg-strong);
+  background: rgba(255, 255, 255, 0.18);
   box-shadow: var(--source-glass-shadow-soft);
-  backdrop-filter: saturate(185%) blur(20px);
-  -webkit-backdrop-filter: saturate(185%) blur(20px);
 }
 
 .source-list:not(:has(.source-item-row + .source-item-row)) {
@@ -3952,14 +3927,12 @@ button.active {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(239, 246, 255, 0.20));
+  background: rgba(255, 255, 255, 0.18);
   border: 1px solid var(--source-inner-border);
   border-radius: 999px;
   padding: 6px 8px;
   font-size: 0.78rem;
   box-shadow: var(--source-glass-shadow-soft);
-  backdrop-filter: saturate(170%) blur(14px);
-  -webkit-backdrop-filter: saturate(170%) blur(14px);
 }
 
 .source-item-row {
@@ -4066,10 +4039,8 @@ button.active {
   margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 999px;
-  background: var(--source-glass-bg-strong);
+  background: rgba(255, 255, 255, 0.18);
   box-shadow: var(--source-glass-shadow-soft);
-  backdrop-filter: saturate(185%) blur(20px);
-  -webkit-backdrop-filter: saturate(185%) blur(20px);
 }
 
 .source-actions .io-btn {
@@ -4079,10 +4050,8 @@ button.active {
   font-size: 0.74rem;
   border-radius: 999px;
   border-color: var(--source-inner-border);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(239, 246, 255, 0.20));
+  background: rgba(255, 255, 255, 0.18);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.78);
-  backdrop-filter: saturate(170%) blur(12px);
-  -webkit-backdrop-filter: saturate(170%) blur(12px);
 }
 
 .nav-tabs > button:hover:not(.active),
@@ -4114,10 +4083,8 @@ button.active {
   padding: 5px 8px;
   border: 1px solid var(--source-inner-border, rgba(148, 163, 184, 0.42));
   border-radius: 999px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(239, 246, 255, 0.20));
+  background: rgba(255, 255, 255, 0.18);
   box-shadow: var(--source-glass-shadow-soft, inset 0 1px 0 rgba(255, 255, 255, 0.56));
-  backdrop-filter: saturate(175%) blur(14px);
-  -webkit-backdrop-filter: saturate(175%) blur(14px);
   margin-bottom: 8px;
   user-select: none;
 }
@@ -4129,14 +4096,12 @@ button.active {
 .source-export-status {
   font-size: 0.72rem;
   color: #0f766e;
-  background: linear-gradient(145deg, rgba(239, 246, 255, 0.48), rgba(255, 255, 255, 0.22));
+  background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: 999px;
   padding: 4px 8px;
   margin-bottom: 8px;
   box-shadow: var(--source-glass-shadow-soft, 0 5px 16px rgba(15, 23, 42, 0.08));
-  backdrop-filter: saturate(180%) blur(16px);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
 }
 
 .app-screenshot-modal-mask {
@@ -4156,25 +4121,10 @@ button.active {
   position: relative;
   overflow: hidden;
   width: min(420px, 100%);
+  border-width: 1px;
+  border-style: solid;
   border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(239, 246, 255, 0.32) 54%, rgba(219, 234, 254, 0.24));
-  box-shadow: 0 20px 54px rgba(15, 23, 42, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.82), inset 0 -1px 0 rgba(15, 23, 42, 0.04);
-  backdrop-filter: saturate(190%) blur(26px);
-  -webkit-backdrop-filter: saturate(190%) blur(26px);
   padding: 14px;
-}
-
-.app-screenshot-modal::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.12) 44%, rgba(147, 197, 253, 0.11)),
-    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.72), transparent 38%);
-  mix-blend-mode: screen;
 }
 
 .app-screenshot-modal > * {
@@ -4257,23 +4207,9 @@ button.active {
   border: 1px solid rgba(255, 255, 255, 0.66);
   border-radius: 20px;
   padding: 8px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.44), rgba(239, 246, 255, 0.22) 52%, rgba(226, 232, 240, 0.14));
+  background: rgba(255, 255, 255, 0.18);
   margin-bottom: 8px;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.78), inset 0 -1px 0 rgba(15, 23, 42, 0.035);
-  backdrop-filter: saturate(190%) blur(22px);
-  -webkit-backdrop-filter: saturate(190%) blur(22px);
-}
-
-.source-export-confirm::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.08) 48%, rgba(147, 197, 253, 0.10)),
-    radial-gradient(circle at 15% 0%, rgba(255, 255, 255, 0.64), transparent 36%);
-  mix-blend-mode: screen;
 }
 
 .source-export-confirm > * {
@@ -4314,8 +4250,6 @@ button.active {
   font-size: 0.74rem;
   background: rgba(248, 250, 252, 0.48);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 1px 8px rgba(15, 23, 42, 0.04);
-  backdrop-filter: saturate(160%) blur(10px);
-  -webkit-backdrop-filter: saturate(160%) blur(10px);
 }
 
 .source-export-range-input {
@@ -4327,8 +4261,6 @@ button.active {
   font-size: 0.74rem;
   background: rgba(248, 250, 252, 0.48);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 1px 8px rgba(15, 23, 42, 0.04);
-  backdrop-filter: saturate(160%) blur(10px);
-  -webkit-backdrop-filter: saturate(160%) blur(10px);
 }
 
 .source-export-range-sep {
@@ -4345,10 +4277,8 @@ button.active {
 
 .source-export-confirm-actions .io-btn {
   border-color: var(--source-inner-border, rgba(148, 163, 184, 0.42));
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(239, 246, 255, 0.20));
+  background: rgba(255, 255, 255, 0.18);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.78);
-  backdrop-filter: saturate(170%) blur(12px);
-  -webkit-backdrop-filter: saturate(170%) blur(12px);
 }
 
 .source-create-confirm {
@@ -4374,10 +4304,8 @@ button.active {
   border: 1px dashed rgba(148, 163, 184, 0.30);
   border-radius: 16px;
   padding: 5px 8px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.42), rgba(248, 250, 252, 0.22));
+  background: rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.50);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
 }
 
 .io-drop-zone.is-drag-over {

@@ -24,7 +24,7 @@
     </section>
 
     <section v-else class="special-generator-shell">
-      <div class="special-toolbar">
+      <div class="special-toolbar ui-liquid-glass ui-liquid-glass--regular">
         <div class="special-toolbar-row special-toolbar-row-main">
         <div class="special-toolbar-group special-toolbar-source" :class="{ 'is-multi': isMultiCaseMode }">
           <div class="special-predict-mode-toggle" aria-label="预测图模式">
@@ -4599,17 +4599,10 @@ const SpecialCardCell = defineComponent({
   overflow-y: auto;
   scrollbar-gutter: stable;
   box-sizing: border-box;
-  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-width: 1px;
+  border-style: solid;
   border-radius: 22px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(241, 245, 249, 0.46) 48%, rgba(219, 234, 254, 0.3)),
-    linear-gradient(135deg, rgba(186, 230, 253, 0.34), rgba(251, 207, 232, 0.24));
   padding: 8px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    0 12px 28px rgba(80, 85, 132, 0.14);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
 }
 
 .special-toolbar-row {
