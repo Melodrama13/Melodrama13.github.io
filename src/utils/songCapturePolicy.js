@@ -1,13 +1,40 @@
 export const MAX_RENDER_TIMEOUT_MS = 40_000;
 export const EXPORT_HARD_TIMEOUT_MS = 120_000;
-export const MAX_TOTAL_RENDER_BUDGET_MS = 88_000;
 export const MIN_EXPORT_MARGIN_MS = 10_000;
-export const RENDER_RESOURCE_WAIT_BUDGET_MS = 20_400;
+export const PRELOAD_PHASE_TIMEOUT_MS = 7_000;
+export const SOURCE_CAPTURE_READY_TIMEOUT_MS = 3_000;
+export const CLONE_CAPTURE_READY_TIMEOUT_MS = 3_400;
+export const PHONE_SOURCE_CAPTURE_READY_TIMEOUT_MS = 3_600;
+export const PHONE_CLONE_CAPTURE_READY_TIMEOUT_MS = 4_200;
+export const MAX_EVENT_RECOVERY_PRELOAD_PHASES = 1;
+
+export const getCaptureReadyTimeoutMs = ({ deviceTier = 'desktop', phase = 'source' } = {}) => {
+  const isPhone = deviceTier === 'phone';
+  if (phase === 'clone') {
+    return isPhone ? PHONE_CLONE_CAPTURE_READY_TIMEOUT_MS : CLONE_CAPTURE_READY_TIMEOUT_MS;
+  }
+  return isPhone ? PHONE_SOURCE_CAPTURE_READY_TIMEOUT_MS : SOURCE_CAPTURE_READY_TIMEOUT_MS;
+};
+
+export const getSongCaptureResourceWaitBudgetMs = ({
+  deviceTier = 'desktop',
+  includeEventRecovery = true
+} = {}) => {
+  const preloadPhaseCount = 2 + (includeEventRecovery ? MAX_EVENT_RECOVERY_PRELOAD_PHASES : 0);
+  return getCaptureReadyTimeoutMs({ deviceTier, phase: 'source' })
+    + getCaptureReadyTimeoutMs({ deviceTier, phase: 'clone' })
+    + (preloadPhaseCount * PRELOAD_PHASE_TIMEOUT_MS);
+};
+
+export const RENDER_RESOURCE_WAIT_BUDGET_MS = getSongCaptureResourceWaitBudgetMs({
+  deviceTier: 'phone',
+  includeEventRecovery: true
+});
+export const MAX_TOTAL_RENDER_BUDGET_MS = 80_000;
 export const MIN_RENDER_ATTEMPT_TIMEOUT_MS = 12_000;
 export const MAX_RENDER_ATTEMPT_TIMEOUT_MS = 56_000;
 export const RENDER_TASK_SETTLE_GRACE_MS = 800;
 export const PENDING_RENDER_BUSY_WAIT_MS = 800;
-export const PRELOAD_PHASE_TIMEOUT_MS = 7_000;
 
 export const createExportLifecycle = () => {
   let nextToken = 0;
@@ -48,6 +75,18 @@ export const waitForRenderTimeoutOutcome = async ({
   if (isCancelled()) return 'cancelled';
   return settled ? 'settled' : 'timed-out';
 };
+
+export const shouldRunCaptureRecoveryPreload = ({
+  eventLike = false,
+  attemptIndex = -1,
+  attemptCount = 0
+} = {}) => Boolean(
+  eventLike
+  && Number.isInteger(attemptIndex)
+  && Number.isInteger(attemptCount)
+  && attemptIndex >= 0
+  && attemptIndex < attemptCount - 1
+);
 
 export const preloadUrlsWithDeadline = async ({
   urls = [],

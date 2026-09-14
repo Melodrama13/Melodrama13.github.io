@@ -1547,7 +1547,9 @@ import {
   buildRenderAttemptTimeouts,
   createExportLifecycle,
   createRenderTaskTracker,
+  getCaptureReadyTimeoutMs,
   preloadUrlsWithDeadline,
+  shouldRunCaptureRecoveryPreload,
   waitForRenderTimeoutOutcome,
   withRenderTimeout
 } from '../utils/songCapturePolicy.js';
@@ -5524,7 +5526,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     });
 
     await waitForRenderableAssets(targetEl, {
-      maxWaitMs: deviceTier === 'phone' ? 3600 : 3000,
+      maxWaitMs: getCaptureReadyTimeoutMs({ deviceTier, phase: 'source' }),
       maxImages: Math.max(120, Math.min(1200, sourceImages.length + 80))
     });
     await preloadImageUrlsForCapture(targetEl, {
@@ -5564,7 +5566,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     });
 
     await waitForRenderableAssets(renderEl, {
-      maxWaitMs: deviceTier === 'phone' ? 4200 : 3400,
+      maxWaitMs: getCaptureReadyTimeoutMs({ deviceTier, phase: 'clone' }),
       maxImages: Math.max(180, Math.min(1400, cloneImages.length + 120))
     });
     await preloadImageUrlsForCapture(renderEl, {
@@ -5646,7 +5648,11 @@ const exportElementPng = async (targetEl, title, options = {}) => {
             throw renderError;
           }
         }
-        if (isEventLikeCaptureError(renderError)) {
+        if (shouldRunCaptureRecoveryPreload({
+          eventLike: isEventLikeCaptureError(renderError),
+          attemptIndex: attemptIdx,
+          attemptCount: renderAttemptBudgets.length
+        })) {
           hideTransientMediaForCapture(renderEl);
           await preloadImageUrlsForCapture(renderEl, {
             maxImages: 520,

@@ -12,6 +12,9 @@ import {
   computeRenderTimeoutMs,
   createRenderTaskTracker,
   createExportLifecycle,
+  getCaptureReadyTimeoutMs,
+  getSongCaptureResourceWaitBudgetMs,
+  shouldRunCaptureRecoveryPreload,
   preloadUrlsWithDeadline,
   waitForRenderTimeoutOutcome,
   withRenderTimeout
@@ -112,7 +115,7 @@ test('a later render request gets a bounded busy result while pending work remai
   assert.equal(tracker.hasPending(), false);
 });
 
-test('two quality-ordered render budgets plus resource waits stay below the hard test timeout', () => {
+test('phone readiness and one fallback recovery phase stay below the hard test timeout', () => {
   const attempts = buildRenderAttemptTimeouts({
     ...renderShape,
     heavyMediaCount: 100_000,
@@ -123,9 +126,36 @@ test('two quality-ordered render budgets plus resource waits stay below the hard
   assert.deepEqual(attempts.map((attempt) => attempt.pixelRatio), [2, 1]);
   assert.equal(attempts.length, 2);
   assert.ok(totalRenderBudget <= MAX_TOTAL_RENDER_BUDGET_MS);
+  assert.equal(getCaptureReadyTimeoutMs({ deviceTier: 'phone', phase: 'source' }), 3_600);
+  assert.equal(getCaptureReadyTimeoutMs({ deviceTier: 'phone', phase: 'clone' }), 4_200);
+  assert.equal(getCaptureReadyTimeoutMs({ deviceTier: 'desktop', phase: 'source' }), 3_000);
+  assert.equal(getCaptureReadyTimeoutMs({ deviceTier: 'desktop', phase: 'clone' }), 3_400);
+  assert.equal(getSongCaptureResourceWaitBudgetMs({ deviceTier: 'phone', includeEventRecovery: true }), 28_800);
+  assert.equal(getSongCaptureResourceWaitBudgetMs({ deviceTier: 'desktop', includeEventRecovery: true }), 27_400);
+  assert.equal(RENDER_RESOURCE_WAIT_BUDGET_MS, 28_800);
+  assert.ok(RENDER_RESOURCE_WAIT_BUDGET_MS > 20_400);
   assert.ok(
     totalRenderBudget + RENDER_RESOURCE_WAIT_BUDGET_MS
       <= EXPORT_HARD_TIMEOUT_MS - MIN_EXPORT_MARGIN_MS
+  );
+});
+
+test('event-like recovery preload is reserved only when a fallback attempt exists', () => {
+  assert.equal(
+    shouldRunCaptureRecoveryPreload({ eventLike: true, attemptIndex: 0, attemptCount: 2 }),
+    true
+  );
+  assert.equal(
+    shouldRunCaptureRecoveryPreload({ eventLike: true, attemptIndex: 1, attemptCount: 2 }),
+    false
+  );
+  assert.equal(
+    shouldRunCaptureRecoveryPreload({ eventLike: true, attemptIndex: 0, attemptCount: 1 }),
+    false
+  );
+  assert.equal(
+    shouldRunCaptureRecoveryPreload({ eventLike: false, attemptIndex: 0, attemptCount: 2 }),
+    false
   );
 });
 
