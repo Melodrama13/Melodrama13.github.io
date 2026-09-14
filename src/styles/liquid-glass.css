@@ -56,6 +56,29 @@ body {
   --ui-glass-surface-bg: var(--ui-glass-chip-bg-hover);
 }
 
+:root[data-ui-glass-mode='frosted'] .ui-liquid-glass {
+  -webkit-backdrop-filter: var(--ui-glass-surface-filter) !important;
+  backdrop-filter: var(--ui-glass-surface-filter) !important;
+}
+
+:root[data-ui-glass-mode='opaque'] .ui-liquid-glass {
+  background: #f8fafc !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+:root[data-ui-glass-mode='opaque'] .ui-liquid-glass::before,
+:root[data-ui-glass-motion='reduced'] .ui-liquid-glass::before {
+  display: none;
+}
+
+:root[data-ui-glass-motion='reduced'] body {
+  animation: none;
+  background-position: 50% 50%;
+}
+
 @keyframes ui-glass-ambient-drift {
   from {
     background-position: 48% 48%;
@@ -70,6 +93,10 @@ body {
   body {
     animation: none;
     background-position: 50% 50%;
+  }
+
+  .ui-liquid-glass::before {
+    display: none;
   }
 }
 
@@ -103,16 +130,24 @@ body {
 }
 
 @media (forced-colors: active) {
-  .ui-liquid-glass {
-    background: Canvas;
+  body {
     background-image: none;
-    border-color: CanvasText;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+    animation: none;
+    background-position: 50% 50%;
   }
 
+  :root[data-ui-glass-mode] .ui-liquid-glass,
+  .ui-liquid-glass {
+    background: Canvas !important;
+    background-image: none;
+    border-color: CanvasText !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  :root[data-ui-glass-mode] .ui-liquid-glass::before,
   .ui-liquid-glass::before {
-    display: none;
+    display: none !important;
   }
 }

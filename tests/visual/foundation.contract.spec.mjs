@@ -102,3 +102,83 @@ test('foundation tokens and existing global controls retain their contracts', as
     await cardExportButton.evaluate((element, disabled) => { element.disabled = disabled; }, cardWasDisabled);
   }
 });
+
+test('liquid glass capability states override stale inline refraction', async ({ page }) => {
+  await gotoUiState(page, { tab: 'stats', width: 1440, height: 1000 });
+  await settleUi(page);
+
+  const state = await page.locator('.nav-tabs').evaluate((surface) => {
+    const root = document.documentElement;
+    const readMaterial = (style, specular) => ({
+      backgroundColor: style.backgroundColor,
+      backgroundImage: style.backgroundImage,
+      boxShadow: style.boxShadow,
+      backdropFilter: style.backdropFilter,
+      specularDisplay: specular?.display
+    });
+    surface.style.backdropFilter = 'url(#stale-liquid-glass-filter)';
+    surface.style.webkitBackdropFilter = 'url(#stale-liquid-glass-filter)';
+
+    root.dataset.uiGlassMode = 'opaque';
+    const opaque = readMaterial(getComputedStyle(surface), getComputedStyle(surface, '::before'));
+
+    root.dataset.uiGlassMode = 'frosted';
+    const frosted = readMaterial(getComputedStyle(surface));
+
+    return {
+      opaque,
+      frosted: {
+        backgroundImage: frosted.backgroundImage,
+        backdropFilter: frosted.backdropFilter
+      }
+    };
+  });
+
+  expect(state.opaque).toEqual({
+    backgroundColor: 'rgb(248, 250, 252)',
+    backgroundImage: 'none',
+    boxShadow: 'none',
+    backdropFilter: 'none',
+    specularDisplay: 'none'
+  });
+  expect(state.frosted.backgroundImage).not.toBe('none');
+  expect(state.frosted.backdropFilter).not.toContain('url(');
+});
+
+test('liquid glass reduced motion freezes specular and ambient motion', async ({ page }) => {
+  await gotoUiState(page, { tab: 'stats', width: 1440, height: 1000 });
+  await settleUi(page);
+
+  const state = await page.locator('.nav-tabs').evaluate((surface) => {
+    const root = document.documentElement;
+    root.dataset.uiGlassMotion = 'reduced';
+    surface.style.setProperty('--ui-glass-pointer-x', '90%');
+    surface.style.setProperty('--ui-glass-pointer-y', '90%');
+
+    return {
+      backgroundImage: getComputedStyle(surface).backgroundImage,
+      specularDisplay: getComputedStyle(surface, '::before').display,
+      ambientAnimation: getComputedStyle(document.body).animationName
+    };
+  });
+
+  expect(state.backgroundImage).not.toBe('none');
+  expect(state.specularDisplay).toBe('none');
+  expect(state.ambientAnimation).toBe('none');
+});
+
+test('liquid glass forced colors removes the ambient gradients and animation', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' });
+  await gotoUiState(page, { tab: 'stats', width: 1440, height: 1000 });
+  await settleUi(page);
+
+  const state = await page.evaluate(() => ({
+    backgroundImage: getComputedStyle(document.body).backgroundImage,
+    ambientAnimation: getComputedStyle(document.body).animationName
+  }));
+
+  expect(state).toEqual({
+    backgroundImage: 'none',
+    ambientAnimation: 'none'
+  });
+});
