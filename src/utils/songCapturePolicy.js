@@ -7,6 +7,122 @@ export const MIN_RENDER_ATTEMPT_TIMEOUT_MS = 12_000;
 export const MAX_RENDER_ATTEMPT_TIMEOUT_MS = 56_000;
 export const RENDER_TASK_SETTLE_GRACE_MS = 800;
 export const PENDING_RENDER_BUSY_WAIT_MS = 800;
+export const PRELOAD_PHASE_TIMEOUT_MS = 7_000;
+
+export const createExportLifecycle = () => {
+  let nextToken = 0;
+  let activeToken = null;
+  let state = 'idle';
+
+  return {
+    begin: () => {
+      if (state !== 'idle') return null;
+      activeToken = ++nextToken;
+      state = 'active';
+      return activeToken;
+    },
+    isLive: (token) => state === 'active' && token === activeToken,
+    cancel: (token) => {
+      if (state !== 'active' || token !== activeToken) return false;
+      state = 'cancelled';
+      return true;
+    },
+    finish: (token) => {
+      if (token !== activeToken) return false;
+      state = 'idle';
+      activeToken = null;
+      return true;
+    }
+  };
+};
+
+export const waitForRenderTimeoutOutcome = async ({
+  isCancelled = () => false,
+  waitForSettle,
+  maxWaitMs = RENDER_TASK_SETTLE_GRACE_MS
+} = {}) => {
+  if (isCancelled()) return 'cancelled';
+  const settled = typeof waitForSettle === 'function'
+    ? await waitForSettle(maxWaitMs)
+    : true;
+  if (isCancelled()) return 'cancelled';
+  return settled ? 'settled' : 'timed-out';
+};
+
+export const preloadUrlsWithDeadline = async ({
+  urls = [],
+  concurrency = 8,
+  timeoutMs = 7_000,
+  phaseTimeoutMs = PRELOAD_PHASE_TIMEOUT_MS,
+  loadOne
+} = {}) => {
+  const uniqueUrls = [...new Set((Array.isArray(urls) ? urls : [])
+    .map((url) => String(url || '').trim())
+    .filter(Boolean))];
+  if (!uniqueUrls.length || typeof loadOne !== 'function') {
+    return { expired: false, started: 0, completed: 0, remaining: 0, aborted: 0 };
+  }
+
+  const safeConcurrency = Math.max(1, Math.floor(Number(concurrency) || 1));
+  const safePhaseTimeoutMs = Math.max(1, Number(phaseTimeoutMs) || PRELOAD_PHASE_TIMEOUT_MS);
+  let cursor = 0;
+  let expired = false;
+  let started = 0;
+  let completed = 0;
+  let aborted = 0;
+  let taskId = 0;
+  const activeTasks = new Map();
+  const expire = () => {
+    if (expired) return;
+    expired = true;
+    activeTasks.forEach(({ controller }) => {
+      try {
+        controller.abort();
+      } catch (_) {
+        // Ignore an abort race while the Image task is already settling.
+      }
+    });
+  };
+
+  const phaseTimer = setTimeout(expire, safePhaseTimeoutMs);
+  const nextUrl = () => {
+    if (expired || cursor >= uniqueUrls.length) return null;
+    const url = uniqueUrls[cursor];
+    cursor += 1;
+    started += 1;
+    return url;
+  };
+  const worker = async () => {
+    while (true) {
+      const url = nextUrl();
+      if (!url) return;
+      const controller = new AbortController();
+      const id = ++taskId;
+      activeTasks.set(id, { controller, url });
+      try {
+        const loaded = await loadOne(url, {
+          signal: controller.signal,
+          timeoutMs
+        });
+        if (loaded) completed += 1;
+      } finally {
+        if (controller.signal.aborted) aborted += 1;
+        activeTasks.delete(id);
+      }
+    }
+  };
+
+  const workers = Array.from({ length: Math.min(safeConcurrency, uniqueUrls.length) }, () => worker());
+  await Promise.allSettled(workers);
+  clearTimeout(phaseTimer);
+  return {
+    expired,
+    started,
+    completed,
+    remaining: uniqueUrls.length - cursor,
+    aborted
+  };
+};
 
 const toFiniteNumber = (value, fallback) => {
   const number = Number(value);

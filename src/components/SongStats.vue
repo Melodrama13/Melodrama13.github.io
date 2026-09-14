@@ -1542,9 +1542,13 @@ import { buildAssetUrl } from '../utils/assets.js';
 import { isSongReleased } from '../utils/spoilerGuard.js';
 import {
   PENDING_RENDER_BUSY_WAIT_MS,
+  PRELOAD_PHASE_TIMEOUT_MS,
   RENDER_TASK_SETTLE_GRACE_MS,
   buildRenderAttemptTimeouts,
+  createExportLifecycle,
   createRenderTaskTracker,
+  preloadUrlsWithDeadline,
+  waitForRenderTimeoutOutcome,
   withRenderTimeout
 } from '../utils/songCapturePolicy.js';
 import { UI_BREAKPOINTS, isViewportAbove, isViewportAtMost } from '../ui/breakpoints.js';
@@ -1622,6 +1626,8 @@ let statsMainInteractionHost = null;
 let lastInteractiveAnchorEl = null;
 let lastInteractiveAt = 0;
 const songCaptureRenderTracker = createRenderTaskTracker();
+const songExportLifecycle = createExportLifecycle();
+let activeSongExportToken = null;
 
 const DELETED_SONG_ID_SET = new Set([241, 290]);
 
@@ -4453,8 +4459,22 @@ const clearScreenshotModalAutoClose = () => {
   screenshotModalAutoCloseTimer = 0;
 };
 
+const resetScreenshotModalState = () => {
+  clearScreenshotModalAutoClose();
+  screenshotModalVisible.value = false;
+  screenshotModalState.value = 'idle';
+  screenshotModalTitle.value = '';
+  screenshotModalMessage.value = '';
+  screenshotModalRetryTask.value = null;
+  screenshotModalCancelTask.value = null;
+};
+
 const setScreenshotModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, cancelTask = null, autoCloseMs = 0 } = {}) => {
   clearScreenshotModalAutoClose();
+  if (state === 'idle') {
+    resetScreenshotModalState();
+    return;
+  }
   screenshotModalVisible.value = true;
   screenshotModalState.value = state;
   screenshotModalTitle.value = title;
@@ -4471,30 +4491,24 @@ const setScreenshotModalState = ({ state = 'capturing', title = '', message = ''
   }
 };
 
+const setSongExportModalState = (token, payload = {}) => {
+  if (!songExportLifecycle.isLive(token)) return false;
+  setScreenshotModalState(payload);
+  return true;
+};
+
 const closeScreenshotModal = () => {
   if (isExportingPng.value && screenshotModalState.value !== 'failed') return;
-  clearScreenshotModalAutoClose();
-  screenshotModalVisible.value = false;
-  screenshotModalState.value = 'idle';
-  screenshotModalTitle.value = '';
-  screenshotModalMessage.value = '';
-  screenshotModalRetryTask.value = null;
-  screenshotModalCancelTask.value = null;
+  resetScreenshotModalState();
 };
 
 const forceCancelScreenshotExport = () => {
   const task = screenshotModalCancelTask.value;
+  songExportLifecycle.cancel(activeSongExportToken);
   if (typeof task === 'function') {
     task();
   }
-  isExportingPng.value = false;
-  clearScreenshotModalAutoClose();
-  screenshotModalVisible.value = false;
-  screenshotModalState.value = 'idle';
-  screenshotModalTitle.value = '';
-  screenshotModalMessage.value = '';
-  screenshotModalRetryTask.value = null;
-  screenshotModalCancelTask.value = null;
+  resetScreenshotModalState();
 };
 
 const retryScreenshotExport = async () => {
@@ -4665,9 +4679,11 @@ const drawCanvasCircleImage = (ctx, img, cx, cy, radius) => {
 };
 
 const exportAnvoFillCanvasPng = async (title, options = {}) => {
+  const exportToken = options?.exportToken;
+  const setModal = (payload) => setSongExportModalState(exportToken, payload);
   const cards = anotherVocalCards.value || [];
   if (!cards.length) {
-    setScreenshotModalState({
+    setModal({
       state: 'failed',
       title: '截图失败',
       message: '没有可导出的 Anvo 数据。'
@@ -4690,7 +4706,7 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
   const height = outerPad * 2 + titleHeight + gridHeight;
   const pixelScale = 2;
 
-  setScreenshotModalState({
+  setModal({
     state: 'capturing',
     title: '截图中',
     message: `正在绘制 ${exportLabel} 铺满导出画布...`,
@@ -4724,7 +4740,7 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
         imageMap.set(src, img);
         loadedCount += 1;
         if (loadedCount % 60 === 0) {
-          setScreenshotModalState({
+          setModal({
             state: 'capturing',
             title: '截图中',
             message: `正在载入 Anvo 曲绘资源 ${loadedCount}/${missingEntries.length}`,
@@ -4796,7 +4812,7 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
       });
     });
 
-    setScreenshotModalState({
+    setModal({
       state: 'exporting',
       title: '导出图片',
       message: '正在生成 PNG 文件...',
@@ -4807,7 +4823,7 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
     const safeTitle = typeof sanitizeExportFileName === 'function' ? sanitizeExportFileName(`${title || 'Anvo'}_${ts}`) : `${title || 'Anvo'}_${ts}`;
     await triggerDownloadPng(canvas, safeTitle);
 
-    setScreenshotModalState({
+    setModal({
       state: 'success',
       title: '导出成功',
       message: `【${exportLabel}】已导出 PNG（耗时 ${Math.max(0, Math.round(performance.now() - startedAt))}ms）`,
@@ -4816,11 +4832,11 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
     });
   } catch (error) {
     if (isExportCancelledError(error)) {
-      setScreenshotModalState({ state: 'idle', title: '', message: '', cancelTask: null });
+      setModal({ state: 'idle', title: '', message: '', cancelTask: null });
       return;
     }
     const detail = getCaptureErrorText(error);
-    setScreenshotModalState({
+    setModal({
       state: 'failed',
       title: '截图失败',
       message: 'Anvo 铺满导出发生错误：' + detail.text,
@@ -5122,7 +5138,7 @@ const syncCloneBackgroundStylesWithSource = (sourceRoot, cloneRoot) => {
   }
 };
 
-const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((resolve) => {
+const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000, signal = null) => new Promise((resolve) => {
   const src = String(url || '').trim();
   if (!src) {
     resolve(false);
@@ -5130,13 +5146,24 @@ const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((
   }
   let done = false;
   let timer = 0;
+  let abortHandler = null;
   const img = new Image();
-  const finish = (ok) => {
+  const finish = (ok, aborted = false) => {
     if (done) return;
     done = true;
     if (timer) clearTimeout(timer);
     img.onload = null;
     img.onerror = null;
+    if (signal && abortHandler) {
+      signal.removeEventListener('abort', abortHandler);
+    }
+    if (aborted) {
+      try {
+        img.src = '';
+      } catch (_) {
+        // Ignore a browser-specific Image reset failure during abort cleanup.
+      }
+    }
     resolve(!!ok);
   };
   img.onload = () => finish(true);
@@ -5148,6 +5175,14 @@ const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((
     img.referrerPolicy = 'no-referrer';
   } catch (_) {
     // Ignore unsupported attributes.
+  }
+  abortHandler = () => finish(false, true);
+  if (signal) {
+    if (signal.aborted) {
+      abortHandler();
+      return;
+    }
+    signal.addEventListener('abort', abortHandler, { once: true });
   }
   timer = window.setTimeout(() => finish(false), timeoutMs);
   img.src = src;
@@ -5165,15 +5200,15 @@ const preloadImageUrlsForCapture = async (rootEl, options = {}) => {
   const uniq = [...new Set(srcList)];
   if (!uniq.length) return;
 
-  let cursor = 0;
-  const workers = Array.from({ length: Math.max(1, Math.min(concurrency, uniq.length)) }).map(async () => {
-    while (cursor < uniq.length) {
-      const idx = cursor;
-      cursor += 1;
-      await preloadSingleImageUrlForCapture(uniq[idx], timeoutMs);
-    }
+  return preloadUrlsWithDeadline({
+    urls: uniq,
+    concurrency,
+    timeoutMs,
+    phaseTimeoutMs: PRELOAD_PHASE_TIMEOUT_MS,
+    loadOne: (url, { signal, timeoutMs: singleTimeoutMs }) => (
+      preloadSingleImageUrlForCapture(url, singleTimeoutMs, signal)
+    )
   });
-  await Promise.allSettled(workers);
 };
 
 const hideTransientMediaForCapture = (rootEl) => {
@@ -5447,9 +5482,11 @@ const shouldCaptureLiveElementForExport = (targetEl, options = {}) => {
 };
 
 const exportElementPng = async (targetEl, title, options = {}) => {
+  const exportToken = options?.exportToken;
+  const setModal = (payload) => setSongExportModalState(exportToken, payload);
   const previousIdle = await waitPendingSongCaptureRenderTask(PENDING_RENDER_BUSY_WAIT_MS);
   if (!previousIdle) {
-    setScreenshotModalState({
+    setModal({
       state: 'failed',
       title: '截图暂不可用',
       message: '上一轮渲染仍在收尾，请稍后重试。',
@@ -5465,7 +5502,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
   const exportStartAt = performance.now();
   const formatElapsed = () => `${Math.max(0, Math.round(performance.now() - exportStartAt))}ms`;
 
-  setScreenshotModalState({
+  setModal({
     state: 'capturing',
     title: '截图中',
     message: '[初始化] 正在准备捕获 ' + exportLabel,
@@ -5500,7 +5537,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       throw new Error('export-cancelled');
     }
 
-    setScreenshotModalState({
+    setModal({
       state: 'capturing',
       title: '截图中',
       message: captureLiveElement ? '[布局中] 正在使用页面实时布局...' : '[克隆中] 正在准备导出布局...',
@@ -5562,7 +5599,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       const canvasWidth = Math.max(1, Math.round(width * pixelRatio));
       const canvasHeight = Math.max(1, Math.round(height * pixelRatio));
 
-      setScreenshotModalState({
+      setModal({
         state: 'capturing',
         title: '截图中',
         message: `[渲染中] ${exportLabel}（${width}x${height}，像素比 x${pixelRatio.toFixed(2)}，尝试 ${attemptIdx + 1}/${renderAttemptBudgets.length}）`,
@@ -5597,12 +5634,16 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           throw renderError;
         }
         if (isRenderTimeoutError(renderError)) {
-          const previousIdle = await waitPendingSongCaptureRenderTask(RENDER_TASK_SETTLE_GRACE_MS);
-          if (!previousIdle) {
-            throw renderError;
-          }
-          if (cancelContext.isCancelled()) {
+          const timeoutOutcome = await waitForRenderTimeoutOutcome({
+            isCancelled: cancelContext.isCancelled,
+            waitForSettle: waitPendingSongCaptureRenderTask,
+            maxWaitMs: RENDER_TASK_SETTLE_GRACE_MS
+          });
+          if (timeoutOutcome === 'cancelled') {
             throw new Error('export-cancelled');
+          }
+          if (timeoutOutcome === 'timed-out') {
+            throw renderError;
           }
         }
         if (isEventLikeCaptureError(renderError)) {
@@ -5621,7 +5662,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       throw lastRenderError || new Error('toCanvas returned null');
     }
 
-    setScreenshotModalState({
+    setModal({
       state: 'exporting',
       title: '导出图片',
       message: '[编码中] 正在生成 PNG 文件...',
@@ -5647,7 +5688,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       });
     }
 
-    setScreenshotModalState({
+    setModal({
       state: 'success',
       title: '导出成功',
       message: `【${exportLabel}】已导出 PNG（耗时 ${formatElapsed()}）`,
@@ -5656,7 +5697,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     });
   } catch (error) {
     if (isExportCancelledError(error)) {
-      setScreenshotModalState({
+      setModal({
         state: 'idle',
         title: '',
         message: '',
@@ -5666,7 +5707,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     }
     const detail = getCaptureErrorText(error);
     console.error('导出失败:', error);
-    setScreenshotModalState({
+    setModal({
       state: 'failed',
       title: '截图失败',
       message: '[失败] 导出发生错误: ' + detail.text,
@@ -5737,23 +5778,26 @@ const expandOcBookUnitsForExport = (targetUnit = '') => {
 
 const exportSongPanelPng = async (panelId, title) => {
   if (isExportingPng.value) return;
-  const targetEl = document.getElementById(panelId);
-  if (!targetEl) {
-    setScreenshotModalState({
-      state: 'failed',
-      title: '截图失败',
-      message: '未找到可导出的区域。'
-    });
-    return;
-  }
+  const exportToken = songExportLifecycle.begin();
+  if (exportToken === null) return;
+  activeSongExportToken = exportToken;
+  isExportingPng.value = true;
 
   const prevAnotherModes = snapshotAnotherCardModes();
   const prevDuoExpanded = snapshotDuoExpandedMap();
   const prevVsSongModes = snapshotVsSongCardModes();
   const prevOcBookExpanded = snapshotOcBookExpandedMap();
-  isExportingPng.value = true;
 
   try {
+    const targetEl = document.getElementById(panelId);
+    if (!targetEl) {
+      setSongExportModalState(exportToken, {
+        state: 'failed',
+        title: '截图失败',
+        message: '未找到可导出的区域。'
+      });
+      return;
+    }
     if (panelId === 'panel-another-vocal') {
       expandAnotherCardsForExport();
     } else if (panelId === 'panel-vs-song-stats') {
@@ -5775,11 +5819,13 @@ const exportSongPanelPng = async (panelId, title) => {
     if (useAnvoFillCanvasMode) {
       await exportAnvoFillCanvasPng(title, {
         taskLabel: title,
+        exportToken,
         retryTask: () => exportSongPanelPng(panelId, title)
       });
     } else {
       await exportElementPng(targetEl, title, {
         taskLabel: title,
+        exportToken,
         retryTask: () => exportSongPanelPng(panelId, title)
       });
     }
@@ -5791,6 +5837,10 @@ const exportSongPanelPng = async (panelId, title) => {
     vsSongCardModeMap.value = prevVsSongModes;
     ocBookUnitExpandedMap.value = prevOcBookExpanded;
     await nextTick();
+    songExportLifecycle.finish(exportToken);
+    if (activeSongExportToken === exportToken) {
+      activeSongExportToken = null;
+    }
     isExportingPng.value = false;
   }
 };
