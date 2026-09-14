@@ -29,6 +29,7 @@ const BLUR_STD_PER_RADIUS = 0.35;
 const FILTER_HOST_ID = 'ui-liquid-glass-filter-host';
 const elementCleanup = new WeakMap();
 const filterRegistry = new Map();
+const mountedSurfaceRefreshers = new Set();
 let nextFilterId = 0;
 
 export function isChromiumEngine(navigatorLike = {}) {
@@ -78,8 +79,12 @@ export function installLiquidGlassEnvironment({
       });
       root.dataset.uiGlassMotion = reducedMotionQuery?.matches ? 'reduced' : 'full';
     } catch {
-      root.dataset.uiGlassMode = LIQUID_GLASS_MODES.frosted;
-      root.dataset.uiGlassMotion = 'full';
+      runSafely(() => {
+        root.dataset.uiGlassMode = LIQUID_GLASS_MODES.frosted;
+        root.dataset.uiGlassMotion = 'full';
+      });
+    } finally {
+      refreshMountedSurfaces();
     }
   };
 
@@ -95,9 +100,10 @@ export function installLiquidGlassEnvironment({
   return () => {
     if (cleanedUp) return;
     cleanedUp = true;
-    for (const removeListener of removeListeners) removeListener();
-    delete root.dataset.uiGlassMode;
-    delete root.dataset.uiGlassMotion;
+    for (const removeListener of removeListeners) runSafely(removeListener);
+    runSafely(() => delete root.dataset.uiGlassMode);
+    runSafely(() => delete root.dataset.uiGlassMotion);
+    refreshMountedSurfaces();
   };
 }
 
@@ -115,9 +121,13 @@ export function buildLiquidGlassDisplacement({
   const pageWidth = Math.max(1, Number(viewportWidth) || 0);
   const pageHeight = Math.max(1, Number(viewportHeight) || 0);
   const fieldConfig = { ...GLASS_PRESET, ...config };
+  const longestEdge = Math.max(surfaceWidth, surfaceHeight);
+  if (longestEdge * 0.25 > MAX_MAP_EDGE) {
+    throw new RangeError(`Liquid glass surface exceeds the ${MAX_MAP_EDGE}px displacement-map cap`);
+  }
   const supersample = Math.max(
     0.25,
-    Math.min(SUPERSAMPLE, MAX_MAP_EDGE / Math.max(surfaceWidth, surfaceHeight))
+    Math.min(SUPERSAMPLE, MAX_MAP_EDGE / longestEdge)
   );
   const mapWidth = Math.max(1, Math.round(surfaceWidth * supersample));
   const mapHeight = Math.max(1, Math.round(surfaceHeight * supersample));
@@ -197,25 +207,30 @@ export const liquidGlassDirective = {
     let resizeObserver = null;
 
     const releaseCurrentFilter = () => {
-      releaseFilter(currentEntry);
+      const entry = currentEntry;
       currentEntry = null;
+      releaseFilter(entry);
+    };
+
+    const clearRefraction = () => {
+      runSafely(releaseCurrentFilter);
+      runSafely(() => setBackdropFilter(element, ''));
     };
 
     const rebuild = () => {
       rebuildFrame = null;
-      const bounds = readBounds(element);
-      if (!bounds) return;
-
-      setStyleProperty(element, '--ui-glass-surface-width', `${bounds.width}px`);
-      setStyleProperty(element, '--ui-glass-surface-height', `${bounds.height}px`);
-
-      if (!canUseRefraction(windowLike, documentLike)) {
-        releaseCurrentFilter();
-        setBackdropFilter(element, '');
-        return;
-      }
-
       try {
+        const bounds = readBounds(element);
+        if (!bounds) return;
+
+        setStyleProperty(element, '--ui-glass-surface-width', `${bounds.width}px`);
+        setStyleProperty(element, '--ui-glass-surface-height', `${bounds.height}px`);
+
+        if (!canUseRefraction(windowLike, documentLike)) {
+          clearRefraction();
+          return;
+        }
+
         const radius = resolveBorderRadius(element, windowLike, bounds.width, bounds.height);
         const field = buildLiquidGlassDisplacement({
           width: bounds.width,
@@ -227,18 +242,23 @@ export const liquidGlassDirective = {
         });
         if (currentEntry?.key === field.cacheKey && currentEntry.node?.isConnected) return;
 
-        releaseCurrentFilter();
+        clearRefraction();
         currentEntry = acquireFilter(documentLike, field, bounds.width, bounds.height, GLASS_PRESET);
         setBackdropFilter(element, currentEntry ? `url(#${currentEntry.id})` : '');
       } catch {
-        releaseCurrentFilter();
-        setBackdropFilter(element, '');
+        clearRefraction();
       }
     };
 
     const scheduleRebuild = () => {
-      if (rebuildFrame !== null) cancelFrame(rebuildFrame);
+      if (rebuildFrame !== null) runSafely(() => cancelFrame(rebuildFrame));
       rebuildFrame = requestFrame(rebuild);
+    };
+
+    const refreshSurface = () => {
+      if (rebuildFrame !== null) runSafely(() => cancelFrame(rebuildFrame));
+      rebuildFrame = null;
+      rebuild();
     };
 
     const writePointer = () => {
@@ -260,7 +280,7 @@ export const liquidGlassDirective = {
 
     const onPointerLeave = () => {
       pointer = null;
-      if (pointerFrame !== null) cancelFrame(pointerFrame);
+      if (pointerFrame !== null) runSafely(() => cancelFrame(pointerFrame));
       pointerFrame = null;
       setStyleProperty(element, '--ui-glass-pointer-x', '50%');
       setStyleProperty(element, '--ui-glass-pointer-y', '0%');
@@ -274,35 +294,45 @@ export const liquidGlassDirective = {
       }, 180) ?? null;
     };
 
-    element.setAttribute?.('data-liquid-glass-interactive', '');
-    element.addEventListener?.('pointermove', onPointerMove);
-    element.addEventListener?.('pointerleave', onPointerLeave);
-    if (typeof globalThis.ResizeObserver === 'function') {
-      resizeObserver = new globalThis.ResizeObserver(scheduleRebuild);
-      resizeObserver.observe(element);
-    }
-    windowLike?.addEventListener?.('resize', onWindowResize, { passive: true });
-    scheduleRebuild();
+    let cleanedUp = false;
+    const cleanup = () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      mountedSurfaceRefreshers.delete(refreshSurface);
+      for (const step of [
+        () => element.removeEventListener?.('pointermove', onPointerMove),
+        () => element.removeEventListener?.('pointerleave', onPointerLeave),
+        () => resizeObserver?.disconnect(),
+        () => windowLike?.removeEventListener?.('resize', onWindowResize),
+        () => resizeTimer !== null && globalThis.clearTimeout?.(resizeTimer),
+        () => pointerFrame !== null && cancelFrame(pointerFrame),
+        () => rebuildFrame !== null && cancelFrame(rebuildFrame),
+        releaseCurrentFilter,
+        () => element.removeAttribute?.('data-liquid-glass-interactive'),
+        () => setBackdropFilter(element, ''),
+        () => element.style?.removeProperty?.('--ui-glass-pointer-x'),
+        () => element.style?.removeProperty?.('--ui-glass-pointer-y'),
+        () => element.style?.removeProperty?.('--ui-glass-surface-width'),
+        () => element.style?.removeProperty?.('--ui-glass-surface-height'),
+        () => elementCleanup.delete(element)
+      ]) runSafely(step);
+    };
 
-    elementCleanup.set(element, () => {
-      element.removeEventListener?.('pointermove', onPointerMove);
-      element.removeEventListener?.('pointerleave', onPointerLeave);
-      resizeObserver?.disconnect();
-      windowLike?.removeEventListener?.('resize', onWindowResize);
-      if (resizeTimer !== null) globalThis.clearTimeout?.(resizeTimer);
-      if (pointerFrame !== null) cancelFrame(pointerFrame);
-      if (rebuildFrame !== null) cancelFrame(rebuildFrame);
-      releaseCurrentFilter();
-      element.removeAttribute?.('data-liquid-glass-interactive');
-      setBackdropFilter(element, '');
-      for (const property of [
-        '--ui-glass-pointer-x',
-        '--ui-glass-pointer-y',
-        '--ui-glass-surface-width',
-        '--ui-glass-surface-height'
-      ]) element.style?.removeProperty?.(property);
-      elementCleanup.delete(element);
-    });
+    elementCleanup.set(element, cleanup);
+    mountedSurfaceRefreshers.add(refreshSurface);
+    try {
+      element.setAttribute?.('data-liquid-glass-interactive', '');
+      element.addEventListener?.('pointermove', onPointerMove);
+      element.addEventListener?.('pointerleave', onPointerLeave);
+      if (typeof globalThis.ResizeObserver === 'function') {
+        resizeObserver = new globalThis.ResizeObserver(scheduleRebuild);
+        resizeObserver.observe(element);
+      }
+      windowLike?.addEventListener?.('resize', onWindowResize, { passive: true });
+      scheduleRebuild();
+    } catch {
+      cleanup();
+    }
   },
 
   unmounted(element) {
@@ -317,6 +347,18 @@ export const liquidGlassPlugin = {
     app.onUnmount?.(cleanupEnvironment);
   }
 };
+
+function refreshMountedSurfaces() {
+  for (const refreshSurface of [...mountedSurfaceRefreshers]) runSafely(refreshSurface);
+}
+
+function runSafely(action) {
+  try {
+    return action();
+  } catch {
+    return undefined;
+  }
+}
 
 function canUseRefraction(windowLike, documentLike) {
   return documentLike?.documentElement?.dataset?.uiGlassMode === LIQUID_GLASS_MODES.refractive

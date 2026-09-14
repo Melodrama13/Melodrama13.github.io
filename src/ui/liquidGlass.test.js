@@ -257,6 +257,8 @@ function withFakeGlassRuntime(run) {
     document,
     window,
     activeResizeObservers: () => observers.size,
+    pendingAnimationFrames: () => frames.size,
+    windowListenerCount: () => [...windowListeners.values()].reduce((total, handlers) => total + handlers.size, 0),
     flushAnimationFrame() {
       const pending = [...frames.values()];
       frames.clear();
@@ -382,6 +384,16 @@ test('bounds wide displacement maps and derives a stable geometry cache key', ()
   assert.equal(bounded.cacheKey, repeated.cacheKey);
 });
 
+test('rejects surfaces whose minimum sampling factor still exceeds the map edge cap', () => {
+  assert.throws(() => buildLiquidGlassDisplacement({
+    width: 6000,
+    height: 100,
+    radius: 8,
+    viewportWidth: 1440,
+    viewportHeight: 1000
+  }), RangeError);
+});
+
 test('tracks glass pointer state, debounces viewport rebuilds, and disposes resources', () => {
   withFakeGlassRuntime(({ activeResizeObservers, defs, flushAnimationFrame, flushTimers, window }) => {
     const element = createFakeGlassElement({ left: 10, top: 20, width: 200, height: 100 });
@@ -442,6 +454,101 @@ test('shares one connected filter between equal glass surfaces until the final r
     liquidGlassDirective.unmounted(first);
     assert.equal(defs.children.length, 1);
     liquidGlassDirective.unmounted(second);
+    assert.equal(defs.children.length, 0);
+  });
+});
+
+test('keeps CSS frost when an oversized directive surface cannot meet the map cap', () => {
+  withFakeGlassRuntime(({ activeResizeObservers, defs, flushAnimationFrame }) => {
+    const element = createFakeGlassElement({ left: 0, top: 0, width: 6000, height: 100 });
+    liquidGlassDirective.mounted(element);
+
+    try {
+      assert.doesNotThrow(() => flushAnimationFrame());
+      assert.equal(element.style.backdropFilter, '');
+      assert.equal(defs.children.length, 0);
+    } finally {
+      liquidGlassDirective.unmounted(element);
+      assert.equal(activeResizeObservers(), 0);
+    }
+  });
+});
+
+test('immediately clears mounted refraction when forced colors changes the environment mode', () => {
+  withFakeGlassRuntime(({ defs, document, flushAnimationFrame, window }) => {
+    const mediaQueries = new Map([
+      ['(prefers-reduced-transparency: reduce)', createMediaQueryList()],
+      ['(forced-colors: active)', createMediaQueryList()],
+      ['(prefers-reduced-motion: reduce)', createMediaQueryList()]
+    ]);
+    window.matchMedia = (query) => mediaQueries.get(query);
+    const cleanupEnvironment = installLiquidGlassEnvironment();
+    const element = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    liquidGlassDirective.mounted(element);
+    try {
+      flushAnimationFrame();
+      assert.match(element.style.backdropFilter, /^url\(#ui-liquid-glass-\d+\)$/);
+      assert.equal(defs.children.length, 1);
+
+      mediaQueries.get('(forced-colors: active)').emit(true);
+      assert.equal(document.documentElement.dataset.uiGlassMode, LIQUID_GLASS_MODES.opaque);
+      assert.equal(element.style.backdropFilter, '');
+      assert.equal(defs.children.length, 0);
+    } finally {
+      liquidGlassDirective.unmounted(element);
+      cleanupEnvironment();
+    }
+  });
+});
+
+test('cleans partial directive setup when observing immediately throws', () => {
+  withFakeGlassRuntime(({ activeResizeObservers, defs, pendingAnimationFrames }) => {
+    const element = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    let disconnected = false;
+    globalThis.ResizeObserver = class {
+      observe() {
+        throw new Error('observe failed');
+      }
+
+      disconnect() {
+        disconnected = true;
+      }
+    };
+
+    assert.doesNotThrow(() => liquidGlassDirective.mounted(element));
+    assert.equal(disconnected, true);
+    assert.equal(element.listenerCount(), 0);
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), false);
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(pendingAnimationFrames(), 0);
+    assert.equal(defs.children.length, 0);
+  });
+});
+
+test('continues directive cleanup after one removal API throws', () => {
+  withFakeGlassRuntime(({ activeResizeObservers, defs, flushAnimationFrame, pendingAnimationFrames, windowListenerCount }) => {
+    const element = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    liquidGlassDirective.mounted(element);
+    flushAnimationFrame();
+    assert.equal(defs.children.length, 1);
+    const removeListener = element.removeEventListener;
+    let shouldThrow = true;
+    element.removeEventListener = (...args) => {
+      removeListener(...args);
+      if (shouldThrow) {
+        shouldThrow = false;
+        throw new Error('remove listener failed');
+      }
+    };
+
+    assert.doesNotThrow(() => liquidGlassDirective.unmounted(element));
+    assert.equal(element.listenerCount(), 0);
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), false);
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
+    assert.equal(pendingAnimationFrames(), 0);
+    assert.equal(element.style.values.size, 0);
+    assert.equal(element.style.backdropFilter, '');
     assert.equal(defs.children.length, 0);
   });
 });
