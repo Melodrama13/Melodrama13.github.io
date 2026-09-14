@@ -1540,6 +1540,10 @@ import { toCanvas } from 'html-to-image';
 import { toHiragana, toRomaji } from 'wanakana';
 import { buildAssetUrl } from '../utils/assets.js';
 import { isSongReleased } from '../utils/spoilerGuard.js';
+import {
+  computeRenderTimeoutMs,
+  createRenderTaskTracker
+} from '../utils/songCapturePolicy.js';
 import { UI_BREAKPOINTS, isViewportAbove, isViewportAtMost } from '../ui/breakpoints.js';
 import {
   clampHostScrollTop,
@@ -1614,7 +1618,7 @@ let navSyncRaf = 0;
 let statsMainInteractionHost = null;
 let lastInteractiveAnchorEl = null;
 let lastInteractiveAt = 0;
-let pendingSongCaptureRenderTask = null;
+const songCaptureRenderTracker = createRenderTaskTracker();
 
 const DELETED_SONG_ID_SET = new Set([241, 290]);
 
@@ -4480,7 +4484,6 @@ const forceCancelScreenshotExport = () => {
   if (typeof task === 'function') {
     task();
   }
-  pendingSongCaptureRenderTask = null;
   isExportingPng.value = false;
   clearScreenshotModalAutoClose();
   screenshotModalVisible.value = false;
@@ -4855,18 +4858,6 @@ const countHeavyMediaNodes = (rootEl) => {
   return heavy;
 };
 
-const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, scale }) => {
-  const totalMegaPixels = (Math.max(1, width) * Math.max(1, height) * Math.max(1, scale) * Math.max(1, scale)) / 1000000;
-  const heavyBoost = heavyMediaCount >= 18 ? 1200 : 0;
-  if (totalMegaPixels <= 4) return 4200 + heavyBoost;
-  if (totalMegaPixels <= 8) return 5600 + heavyBoost;
-  if (totalMegaPixels <= 14) return 7200 + heavyBoost;
-  if (totalMegaPixels <= 22) return 9000 + heavyBoost;
-  if (totalMegaPixels <= 32) return 10800 + heavyBoost;
-  const tierCap = deviceTier === 'phone' ? 14000 : (deviceTier === 'tablet' ? 15500 : 14500);
-  return tierCap + heavyBoost;
-};
-
 const waitForSingleImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
   if (!(imgEl instanceof HTMLImageElement)) {
     resolve();
@@ -5026,45 +5017,9 @@ const withRenderTimeout = async (promise, timeoutMs, cancelPromise = null) => {
   }
 };
 
-const waitPendingSongCaptureRenderTask = async (maxWaitMs = 0) => {
-  const pending = pendingSongCaptureRenderTask;
-  if (!pending) return true;
-  if (!(maxWaitMs > 0)) {
-    try {
-      await pending;
-      return true;
-    } catch (_) {
-      // Ignore previous render failure; caller handles current retry policy.
-      return true;
-    }
-  }
-  try {
-    const settled = await Promise.race([
-      pending.then(() => true).catch(() => true),
-      new Promise((resolve) => {
-        window.setTimeout(() => resolve(false), maxWaitMs);
-      })
-    ]);
-    return !!settled;
-  } catch (_) {
-    // Ignore previous render failure; caller handles current retry policy.
-    return true;
-  }
-};
+const waitPendingSongCaptureRenderTask = (maxWaitMs = 0) => songCaptureRenderTracker.wait(maxWaitMs);
 
-const trackSongCaptureRenderTask = (taskPromise) => {
-  const tracked = Promise.resolve(taskPromise).finally(() => {
-    if (pendingSongCaptureRenderTask === tracked) {
-      pendingSongCaptureRenderTask = null;
-    }
-  });
-  pendingSongCaptureRenderTask = tracked;
-  return tracked;
-};
-
-const forceReleaseSongCaptureRenderTask = () => {
-  pendingSongCaptureRenderTask = null;
-};
+const startSongCaptureRenderTask = (createTask) => songCaptureRenderTracker.start(createTask);
 
 const createExportCancelContext = () => {
   let resolveCancel = null;
@@ -5513,10 +5468,7 @@ const shouldCaptureLiveElementForExport = (targetEl, options = {}) => {
 };
 
 const exportElementPng = async (targetEl, title, options = {}) => {
-  const previousIdle = await waitPendingSongCaptureRenderTask(1200);
-  if (!previousIdle) {
-    forceReleaseSongCaptureRenderTask();
-  }
+  await waitPendingSongCaptureRenderTask();
   const exportLabel = String(options?.taskLabel || title || '当前模块');
   const deviceTier = getCaptureDeviceTier();
   const captureLiveElement = shouldCaptureLiveElementForExport(targetEl, options);
@@ -5632,7 +5584,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       });
 
       try {
-        const renderTask = trackSongCaptureRenderTask(toCanvas(renderEl, {
+        const renderTask = startSongCaptureRenderTask(() => toCanvas(renderEl, {
           backgroundColor: '#ffffff',
           width,
           height,
@@ -5659,7 +5611,10 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           throw renderError;
         }
         if (isRenderTimeoutError(renderError)) {
-          forceReleaseSongCaptureRenderTask();
+          await waitPendingSongCaptureRenderTask();
+          if (cancelContext.isCancelled()) {
+            throw new Error('export-cancelled');
+          }
         }
         if (isEventLikeCaptureError(renderError)) {
           hideTransientMediaForCapture(renderEl);
@@ -5719,9 +5674,6 @@ const exportElementPng = async (targetEl, title, options = {}) => {
         cancelTask: null
       });
       return;
-    }
-    if (isRenderTimeoutError(error)) {
-      forceReleaseSongCaptureRenderTask();
     }
     const detail = getCaptureErrorText(error);
     console.error('导出失败:', error);

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:unit": "node --test src/ui/breakpoints.test.js src/utils/cardLimitedRules.test.js src/utils/cardImageVariants.test.js scripts/tests/check-ui-policy.test.js",
+    "test:unit": "node --test src/ui/breakpoints.test.js src/utils/cardLimitedRules.test.js src/utils/cardImageVariants.test.js src/utils/styleContract.test.js src/utils/songCapturePolicy.test.js scripts/tests/check-ui-policy.test.js",
     "check:ui": "node scripts/check-ui-policy.js",
     "test:visual": "playwright test --config=playwright.config.mjs",
     "test:visual:update": "playwright test --config=playwright.config.mjs --update-snapshots=all",

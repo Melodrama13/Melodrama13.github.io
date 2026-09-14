@@ -8,6 +8,11 @@ import {
   readStyleContract,
   settleUi
 } from './fixtures.mjs';
+import {
+  isExplicitStyleContractUpdate,
+  mergeStyleContract,
+  pickStyleContractEntries
+} from '../../src/utils/styleContract.js';
 
 const STYLE_CONTRACT_PATH = fileURLToPath(new URL('./style-contract.json', import.meta.url));
 const styleContracts = new Map();
@@ -19,13 +24,14 @@ const recordStyleContract = (name, value) => {
 const saveOrAssertStyleContract = async (testInfo) => {
   if (styleContracts.size === 0) return;
   const current = Object.fromEntries([...styleContracts.entries()].sort(([left], [right]) => left.localeCompare(right)));
-  if (testInfo.config.updateSnapshots !== 'none') {
-    await writeFile(STYLE_CONTRACT_PATH, `${JSON.stringify(current, null, 2)}\n`, 'utf8');
+  const expected = JSON.parse(await readFile(STYLE_CONTRACT_PATH, 'utf8'));
+  if (isExplicitStyleContractUpdate(testInfo.config.updateSnapshots)) {
+    const merged = mergeStyleContract(expected, current);
+    await writeFile(STYLE_CONTRACT_PATH, `${JSON.stringify(merged, null, 2)}\n`, 'utf8');
     return;
   }
 
-  const expected = JSON.parse(await readFile(STYLE_CONTRACT_PATH, 'utf8'));
-  expect(current).toEqual(expected);
+  expect(current).toEqual(pickStyleContractEntries(expected, current));
 };
 
 const styleSelectors = Object.freeze({
@@ -74,6 +80,26 @@ const assertNonZeroVisible = async (locator, name) => {
   expect(geometry.height, `${name} height`).toBeGreaterThan(0);
   expect(geometry.display, `${name} display`).not.toBe('none');
   expect(geometry.visibility, `${name} visibility`).not.toBe('hidden');
+};
+
+const stabilizeSongPanelScroll = async (page, locator) => {
+  await locator.scrollIntoViewIfNeeded();
+  await settleUi(page);
+  await page.evaluate((selector) => {
+    const host = document.querySelector('.content-area');
+    const target = document.querySelector(selector);
+    if (!(host instanceof HTMLElement) || !(target instanceof HTMLElement)) return;
+
+    const hostRect = host.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const targetTop = host.scrollTop + targetRect.top - hostRect.top;
+    const centeredTop = targetTop - ((host.clientHeight - targetRect.height) / 2);
+    const maxScrollTop = Math.max(0, host.scrollHeight - host.clientHeight);
+    host.scrollTop = Math.max(0, Math.min(maxScrollTop, centeredTop));
+  }, '#panel-another-vocal');
+  await page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
 };
 
 test.afterAll(async ({}, testInfo) => {
@@ -147,8 +173,7 @@ test('song stats captures the Anvo image panel and compact style contract', asyn
   await gotoUiState(page, { tab: 'songs', width: 1440, height: 1000 });
   await settleUi(page);
   const anvoPanel = page.locator('#panel-another-vocal');
-  await anvoPanel.scrollIntoViewIfNeeded();
-  await settleUi(page);
+  await stabilizeSongPanelScroll(page, anvoPanel);
   await assertNonZeroVisible(anvoPanel, 'Song Stats Anvo panel');
 
   recordStyleContract('songs-desktop', await readStyleContract(page, styleSelectors.songs));
