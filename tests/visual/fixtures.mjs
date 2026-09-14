@@ -30,13 +30,26 @@ const TAB_ROOT_SELECTORS = Object.freeze({
 });
 
 const HELLO_IMAGE_PATH = fileURLToPath(new URL('../../public/hello.jpg', import.meta.url));
-const STYLE_KEYS = Object.freeze([
+export const LAYOUT_STYLE_KEYS = Object.freeze([
   'fontFamily',
+  'fontSize',
+  'fontWeight',
+  'lineHeight',
+  'letterSpacing',
   'padding',
   'gap',
-  'backgroundImage',
-  'boxShadow',
+  'margin',
   'borderRadius'
+]);
+
+export const MATERIAL_STYLE_KEYS = Object.freeze([
+  'backgroundImage',
+  'boxShadow'
+]);
+
+const STYLE_KEYS = Object.freeze([
+  ...LAYOUT_STYLE_KEYS,
+  ...MATERIAL_STYLE_KEYS
 ]);
 
 const waitForFrames = async (page, count = 2) => {
