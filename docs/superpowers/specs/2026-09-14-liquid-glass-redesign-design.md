@@ -107,19 +107,25 @@ Create `src/styles/liquid-glass.css` and import it once from `src/main.js` after
 
 Component styles may retain layout declarations and selected-state colors, but reusable material recipes must not be copied back into SFCs.
 
-### 7.3 SVG filter host
+### 7.3 SVG filter host and per-surface displacement maps
 
-Create one small application-level Vue component that mounts hidden SVG filter definitions once. Its definitions use `feDisplacementMap` for a controlled optical displacement and expose stable filter IDs to the central stylesheet. The filter operates on the backdrop pseudo-element, not the content layer.
+Create one small application-level Vue component that mounts a hidden `<svg><defs>` host once. The runtime bakes a displacement map for each distinct `[width, height, computed radius, viewport width, viewport height, refraction config]` key and appends a generated filter to that shared host. Each filter uses `feImage` for the baked map, `feDisplacementMap` for live backdrop sampling, and `feGaussianBlur` for restrained frosting.
+
+The displacement field follows the rounded-rectangle edge: the center remains neutral while edge falloff, rim falloff, corner boost, and a small rim ripple bend the live backdrop within the first few pixels of the surface. Maps use 2x supersampling for small surfaces and cap their longest baked edge at 1400 pixels, with a 0.25 lower scale bound for wide surfaces. The filter region is derived from displacement scale and blur spread rather than a fixed percentage, preventing transparent clipping at corners.
+
+The implementation retains the MIT attribution notice from the referenced refraction-field source. It does not snapshot the page: `backdrop-filter: url(#generated-filter-id)` continues sampling the live DOM behind the element.
 
 ### 7.4 Runtime capability and interaction controller
 
 Create a focused `src/ui/liquidGlass.js` module and tests. It is responsible for:
 
 - conservative Chromium/capability detection;
-- activating refraction only after the SVG host exists;
+- building RG displacement pixels with the exact neutral-byte bias correction required by `feDisplacementMap`;
+- creating or recovering the singleton SVG host and activating a generated filter only when its node is connected;
+- caching generated filters by surface geometry/configuration, reference-counting them, and removing the filter node at zero references;
 - honoring reduced-transparency, forced-colors, and reduced-motion preferences;
 - requestAnimationFrame-throttled pointer variables for the specular highlight;
-- ResizeObserver updates only for the small set of refractive surfaces;
+- ResizeObserver updates for element geometry plus a debounced window-resize rebuild for viewport-relative displacement;
 - complete listener, observer, frame, and attribute cleanup on unmount;
 - falling back silently to the CSS material if any capability or lifecycle step fails.
 
@@ -195,8 +201,10 @@ Refraction geometry must refresh after a surface resize without changing its mea
 - No whole-page DOM capture for live refraction.
 - No WebGL canvas and no per-frame background texture upload.
 - No repeated displacement filter on list/card/table items.
+- Same-geometry surfaces share one generated filter; the cache key includes geometry, viewport, radius, and refraction configuration.
+- Refraction maps use 2x supersampling where affordable and cap the longest baked edge at 1400 pixels.
 - Pointer updates are frame-throttled and local to hovered refractive surfaces.
-- Resize work is observer-driven and coalesced.
+- Element resize work is observer-driven and frame-coalesced; viewport resize work is debounced before rebuilding.
 - Hidden pages and unmounted components release observers and scheduled frames.
 - Export targets keep their current content styling. Capture-mode and clone tests must prove that shell filters do not leak into PNG output.
 
@@ -206,7 +214,8 @@ Refraction geometry must refresh after a surface resize without changing its mea
 
 - Capability detection enables refraction only in the intended environment.
 - Reduced-transparency and forced-colors states always select the opaque fallback.
-- Pointer/resize controllers coalesce updates and clean up fully.
+- Displacement-map tests prove a neutral undistorted center, non-neutral edge offsets, decode-bias correction, supersampling, and maximum-map bounds.
+- Pointer/resize controllers coalesce updates, share same-key filters, release reference counts, and clean up fully.
 - SVG host and central stylesheet are singletons.
 - Shared consumers do not duplicate the core material recipe.
 

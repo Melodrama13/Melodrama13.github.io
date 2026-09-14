@@ -4,7 +4,7 @@
 
 **Goal:** Add a centralized, visibly iOS-inspired Liquid Glass functional layer with Chromium SVG displacement refraction while preserving the current typography, spacing, geometry, responsive layout, behavior, and exported content.
 
-**Architecture:** A values-only token layer feeds one global Liquid Glass stylesheet. A single hidden SVG host provides displacement filters, while one tested Vue plugin owns capability state, pointer/resize lifecycle, and the `v-liquid-glass` directive. App, stats navigation, menus, drawers, toolbars, and modals consume four material tiers; repeated content never receives refraction.
+**Architecture:** A values-only token layer feeds one global Liquid Glass stylesheet. A single hidden SVG host receives geometry-keyed filters whose displacement maps are baked per distinct surface size/radius and shared by reference count; one tested Vue plugin owns capability state, map/filter lifecycle, pointer/resize lifecycle, and the `v-liquid-glass` directive. App, stats navigation, menus, drawers, toolbars, and modals consume four material tiers; repeated content never receives refraction.
 
 **Tech Stack:** Vue 3.5, CSS backdrop filters and media queries, inline SVG Filter Effects (`feDisplacementMap`), Node test runner, Playwright Chromium, existing UI policy checker.
 
@@ -114,8 +114,8 @@ git commit -m "test: freeze liquid glass layout invariants"
 - Modify: `package.json:6-7`
 
 **Interfaces:**
-- Produces: `LIQUID_GLASS_MODES`, `isChromiumEngine(navigatorLike)`, `resolveLiquidGlassMode(input)`, `installLiquidGlassEnvironment(options)`, `liquidGlassDirective`, and `liquidGlassPlugin`.
-- Produces: document-level filter IDs `ui-liquid-glass-refraction` and `ui-liquid-glass-refraction-soft`.
+- Produces: `LIQUID_GLASS_MODES`, `GLASS_PRESET`, `isChromiumEngine(navigatorLike)`, `resolveLiquidGlassMode(input)`, `buildLiquidGlassDisplacement(input)`, `installLiquidGlassEnvironment(options)`, `liquidGlassDirective`, and `liquidGlassPlugin`.
+- Produces: one document-level `ui-liquid-glass-filter-host`; generated filters use unique `ui-liquid-glass-<number>` IDs and are cached by geometry/configuration.
 - Consumers: `src/main.js`, `src/App.vue`, `CardStats.vue`, and `SongStats.vue` in later tasks.
 
 - [ ] **Step 1: Add failing pure capability tests**
@@ -138,15 +138,15 @@ test('detects Chromium and Edge brands without treating Safari as Chromium', () 
   assert.equal(isChromiumEngine({ userAgent: 'Mozilla/5.0 Version/18.0 Safari/605.1.15' }), false);
 });
 
-test('selects refraction only when engine and backdrop URL filters are supported', () => {
-  assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsSvgBackdrop: true }), LIQUID_GLASS_MODES.refractive);
-  assert.equal(resolveLiquidGlassMode({ isChromium: false, supportsSvgBackdrop: true }), LIQUID_GLASS_MODES.frosted);
-  assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsSvgBackdrop: false }), LIQUID_GLASS_MODES.frosted);
+test('selects refraction only for Chromium with ordinary backdrop filtering', () => {
+  assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsBackdropFilter: true }), LIQUID_GLASS_MODES.refractive);
+  assert.equal(resolveLiquidGlassMode({ isChromium: false, supportsBackdropFilter: true }), LIQUID_GLASS_MODES.frosted);
+  assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsBackdropFilter: false }), LIQUID_GLASS_MODES.frosted);
 });
 
 test('forced colors and reduced transparency always select opaque mode', () => {
-  assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsSvgBackdrop: true, forcedColors: true }), LIQUID_GLASS_MODES.opaque);
-  assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsSvgBackdrop: true, reducedTransparency: true }), LIQUID_GLASS_MODES.opaque);
+  assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsBackdropFilter: true, forcedColors: true }), LIQUID_GLASS_MODES.opaque);
+  assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsBackdropFilter: true, reducedTransparency: true }), LIQUID_GLASS_MODES.opaque);
 });
 ```
 
@@ -177,7 +177,7 @@ export function isChromiumEngine(navigatorLike = {}) {}
 
 export function resolveLiquidGlassMode({
   isChromium = false,
-  supportsSvgBackdrop = false,
+  supportsBackdropFilter = false,
   reducedTransparency = false,
   forcedColors = false
 } = {}) {}
@@ -190,17 +190,38 @@ export function installLiquidGlassEnvironment({
 
 `installLiquidGlassEnvironment` must set `document.documentElement.dataset.uiGlassMode` to one of the three modes and `dataset.uiGlassMotion` to `full` or `reduced`. It must listen to `(prefers-reduced-transparency: reduce)`, `(forced-colors: active)`, and `(prefers-reduced-motion: reduce)`, support both `addEventListener('change')` and legacy `addListener`, and return one idempotent cleanup function that removes every listener and the two root attributes.
 
-Use a conservative backdrop URL-filter probe equivalent to:
+Feature queries cannot distinguish Safari's parsed-but-blank SVG backdrop behavior. Gate SVG refraction on `isChromiumEngine`; use capability probing only for the ordinary CSS fallback:
 
 ```js
-const filterValue = 'url("#ui-liquid-glass-refraction") blur(1px)';
-const supportsSvgBackdrop = Boolean(
+const filterValue = 'blur(1px)';
+const supportsBackdropFilter = Boolean(
   windowLike?.CSS?.supports?.('backdrop-filter', filterValue)
   || windowLike?.CSS?.supports?.('-webkit-backdrop-filter', filterValue)
 );
 ```
 
-- [ ] **Step 4: Add failing lifecycle tests for the directive**
+- [ ] **Step 4: Add failing displacement-field tests**
+
+Import `GLASS_PRESET` and `buildLiquidGlassDisplacement`. Use a literal `40x24` surface, `8px` radius, and `1440x1000` viewport. Assert that the returned RGBA buffer has four bytes per baked pixel, the decoded center displacement is within `0.5px` of zero, at least one edge sample exceeds `1px`, and `scale > 0`. Add a `2000x100` case proving the longest baked edge is at most `1400`, plus two identical calls whose cache keys match.
+
+The production function has this exact interface:
+
+```js
+export function buildLiquidGlassDisplacement({
+  width,
+  height,
+  radius,
+  viewportWidth,
+  viewportHeight,
+  config = GLASS_PRESET
+}) {
+  return { mapWidth, mapHeight, rgba, scale, cacheKey };
+}
+```
+
+Use the preset values and formulas from `C:/Users/Melodrama/.codex/skills/liquid-glass/references/refraction.md` verbatim, including `SUPERSAMPLE = 2`, `MAX_MAP_EDGE = 1400`, `BLUR_STD_PER_RADIUS = 0.35`, `warp:false`, and neutral-byte bias correction.
+
+- [ ] **Step 5: Add failing lifecycle and filter-registry tests for the directive**
 
 Add test doubles for `requestAnimationFrame`, `cancelAnimationFrame`, `ResizeObserver`, element event listeners, `style.setProperty`, and `getBoundingClientRect`. Assert that:
 
@@ -218,9 +239,19 @@ assert.equal(element.listenerCount(), 0);
 assert.equal(activeResizeObservers(), 0);
 ```
 
-Also verify that multiple pointer events before one frame produce only one style update and that unmount cancels a queued frame.
+Also verify that multiple pointer events before one frame produce only one style update, a window resize is debounced by 180ms, identical geometry shares one filter node with two references, unmounting the first consumer retains the shared node, and unmounting the final consumer removes it. The fake DOM/canvas belongs in the test file; production must not expose test-only cleanup methods.
 
-- [ ] **Step 5: Implement the directive and Vue plugin**
+- [ ] **Step 6: Implement the displacement field, directive, registry, and Vue plugin**
+
+Keep this MIT attribution notice at the top of the port:
+
+```js
+/*!
+ * Liquid Glass refraction field derived from liquid-glass-js
+ * (https://github.com/dashersw/liquid-glass-js), Copyright (c) 2025
+ * Armagan Amcalar, MIT License. The web port samples the live backdrop.
+ */
+```
 
 Use a module-level `WeakMap` for per-element cleanup. `liquidGlassDirective.mounted(element)` must:
 
@@ -228,9 +259,12 @@ Use a module-level `WeakMap` for per-element cleanup. `liquidGlassDirective.moun
 - attach `pointermove` and `pointerleave` listeners;
 - coalesce pointer writes through one animation frame;
 - clamp percentages to `0..100`;
-- update size variables through one `ResizeObserver` when available;
+- read the computed border radius, bake/acquire the geometry-keyed SVG displacement filter, and set inline `backdropFilter:url(#generated-id)` only in refractive mode;
+- update size variables and rebuild/acquire through one `ResizeObserver` when available;
+- debounce window-resize rebuilds by 180ms because displacement is viewport-relative;
+- share connected same-key filter nodes through a reference-counted registry and release the prior entry before switching keys;
 - restore the highlight to `50% 0%` on pointer leave;
-- remove listeners, observer, queued frame, data attribute, and owned custom properties on unmount.
+- remove listeners, observer, timers, queued frames, data attribute, inline refraction style, owned custom properties, and the final filter reference on unmount.
 
 Export a plugin with this interface:
 
@@ -244,31 +278,21 @@ export const liquidGlassPlugin = {
 };
 ```
 
-- [ ] **Step 6: Create the singleton SVG filter host**
+- [ ] **Step 7: Create the singleton SVG filter host**
 
-Create `src/components/ui/LiquidGlassFilters.vue` with one hidden, non-focusable SVG. Keep it in the DOM rather than `display:none` so URL filters remain resolvable:
+Create `src/components/ui/LiquidGlassFilters.vue` with one hidden, non-focusable SVG host. Keep it in the DOM rather than `display:none`; generated filters are appended to its `<defs>` by the directive:
 
 ```vue
 <template>
   <svg
+    id="ui-liquid-glass-filter-host"
     class="ui-liquid-glass-filter-host"
     width="0"
     height="0"
     aria-hidden="true"
     focusable="false"
   >
-    <defs>
-      <filter id="ui-liquid-glass-refraction" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
-        <feTurbulence type="fractalNoise" baseFrequency="0.008 0.032" numOctaves="2" seed="13" result="refractionNoise" />
-        <feColorMatrix in="refractionNoise" type="saturate" values="0" result="refractionMap" />
-        <feDisplacementMap in="SourceGraphic" in2="refractionMap" scale="18" xChannelSelector="R" yChannelSelector="G" />
-      </filter>
-      <filter id="ui-liquid-glass-refraction-soft" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
-        <feTurbulence type="fractalNoise" baseFrequency="0.01 0.04" numOctaves="1" seed="21" result="softNoise" />
-        <feColorMatrix in="softNoise" type="saturate" values="0" result="softMap" />
-        <feDisplacementMap in="SourceGraphic" in2="softMap" scale="10" xChannelSelector="R" yChannelSelector="G" />
-      </filter>
-    </defs>
+    <defs></defs>
   </svg>
 </template>
 
@@ -282,7 +306,9 @@ Create `src/components/ui/LiquidGlassFilters.vue` with one hidden, non-focusable
 </style>
 ```
 
-- [ ] **Step 7: Run unit tests and commit**
+Each generated filter must contain `feImage → feDisplacementMap → feGaussianBlur`, set its filter region from `scale / 2 + 3 * blurRadius * 0.35`, and verify a cached filter's `isConnected` before reuse.
+
+- [ ] **Step 8: Run unit tests and commit**
 
 Run:
 
@@ -413,7 +439,7 @@ Create `src/styles/liquid-glass.css`. The implementation must preserve consumer 
 }
 ```
 
-Add one edge-only pseudo-element for displacement when `html[data-ui-glass-mode='refractive']` is active. Use an 8px inner mask, `url('#ui-liquid-glass-refraction')`, and `pointer-events:none`. Add a separate rim/specular pseudo-element whose radial highlight uses `--ui-glass-pointer-x` and `--ui-glass-pointer-y`. Neither pseudo-element may alter hit testing or measured size.
+The directive supplies the generated inline SVG backdrop filter on supported surfaces. Do not add a static URL filter in CSS. Add one rim/specular pseudo-element whose radial highlight uses `--ui-glass-pointer-x` and `--ui-glass-pointer-y`; it must use `pointer-events:none` and must not alter hit testing or measured size. The center tint remains near-colorless so hue comes from the strengthened ambient backdrop.
 
 Add complete rules for:
 
@@ -700,25 +726,27 @@ export const setLiquidGlassMode = async (page, mode, motion = 'reduced') => {
 Create `liquid-glass.visual.spec.mjs` and assert at minimum:
 
 ```js
-test('Chromium mode exposes one SVG host and edge refraction on the shell', async ({ page }) => {
+test('Chromium mode exposes one SVG host and a generated edge filter on the shell', async ({ page }) => {
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000 });
   await setLiquidGlassMode(page, 'refractive');
-  await expect(page.locator('#ui-liquid-glass-refraction')).toHaveCount(1);
+  await expect(page.locator('#ui-liquid-glass-filter-host')).toHaveCount(1);
   await expect(page.locator('.nav-tabs')).toHaveClass(/ui-liquid-glass--refractive/);
-  const beforeFilter = await page.locator('.nav-tabs').evaluate((element) => getComputedStyle(element, '::before').backdropFilter);
-  expect(beforeFilter).toContain('url');
+  const inlineFilter = await page.locator('.nav-tabs').evaluate((element) => element.style.backdropFilter);
+  expect(inlineFilter).toMatch(/^url\("?#ui-liquid-glass-\d+"?\)$/);
+  await expect(page.locator('#ui-liquid-glass-filter-host feImage')).toHaveCount(1);
+  await expect(page.locator('#ui-liquid-glass-filter-host feDisplacementMap')).toHaveCount(1);
 });
 
 test('forced fallback keeps surfaces visible and removes displacement', async ({ page }) => {
   await gotoUiState(page, { tab: 'stats', width: 390, height: 844 });
   await setLiquidGlassMode(page, 'opaque');
   await expect(page.locator('.nav-tabs')).toBeVisible();
-  const beforeContent = await page.locator('.nav-tabs').evaluate((element) => getComputedStyle(element, '::before').content);
-  expect(beforeContent).toBe('none');
+  await expect(page.locator('.nav-tabs')).toHaveCSS('background-color', 'rgb(248, 250, 252)');
+  await expect(page.locator('.nav-tabs')).toHaveCSS('backdrop-filter', 'none');
 });
 ```
 
-Add tests for regular/menu and modal tiers, singleton host, no refraction class on representative content panels, and complete pointer cleanup after switching away from an async tab.
+Add tests for regular/menu and modal tiers, generated `feImage → feDisplacementMap → feGaussianBlur` order, singleton host, no refraction class on representative content panels, connected filter reuse, and complete pointer/filter cleanup after switching away from an async tab.
 
 - [ ] **Step 3: Add material screenshots at representative viewports**
 
