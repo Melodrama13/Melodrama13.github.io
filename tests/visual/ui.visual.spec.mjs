@@ -64,8 +64,8 @@ const CARD_BOUNDARY_WIDTHS = [760, 761, 768, 769, 900, 901, 1200, 1201, 1360, 13
 const SONG_BOUNDARY_WIDTHS = [699, 700, 701, 900, 901, 1200, 1201];
 const HISTORY_BOUNDARY_WIDTHS = [900, 901, 1000, 1001, 1200, 1201];
 
-const assertNonZeroVisible = async (locator, name) => {
-  await locator.scrollIntoViewIfNeeded();
+const assertNonZeroVisible = async (locator, name, { scrollIntoView = true } = {}) => {
+  if (scrollIntoView) await locator.scrollIntoViewIfNeeded();
   const geometry = await locator.evaluate((element) => {
     const rect = element.getBoundingClientRect();
     const style = getComputedStyle(element);
@@ -80,26 +80,6 @@ const assertNonZeroVisible = async (locator, name) => {
   expect(geometry.height, `${name} height`).toBeGreaterThan(0);
   expect(geometry.display, `${name} display`).not.toBe('none');
   expect(geometry.visibility, `${name} visibility`).not.toBe('hidden');
-};
-
-const stabilizeSongPanelScroll = async (page, locator) => {
-  await locator.scrollIntoViewIfNeeded();
-  await settleUi(page);
-  await page.evaluate((selector) => {
-    const host = document.querySelector('.content-area');
-    const target = document.querySelector(selector);
-    if (!(host instanceof HTMLElement) || !(target instanceof HTMLElement)) return;
-
-    const hostRect = host.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const targetTop = host.scrollTop + targetRect.top - hostRect.top;
-    const centeredTop = targetTop - ((host.clientHeight - targetRect.height) / 2);
-    const maxScrollTop = Math.max(0, host.scrollHeight - host.clientHeight);
-    host.scrollTop = Math.max(0, Math.min(maxScrollTop, centeredTop));
-  }, '#panel-another-vocal');
-  await page.evaluate(() => new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
-  }));
 };
 
 test.afterAll(async ({}, testInfo) => {
@@ -173,14 +153,16 @@ test('song stats captures the Anvo image panel and compact style contract', asyn
   await gotoUiState(page, { tab: 'songs', width: 1440, height: 1000 });
   await settleUi(page);
   const anvoPanel = page.locator('#panel-another-vocal');
-  await stabilizeSongPanelScroll(page, anvoPanel);
-  await assertNonZeroVisible(anvoPanel, 'Song Stats Anvo panel');
+  const contentArea = page.locator('.content-area');
+  const initialContentScrollTop = await contentArea.evaluate((element) => element.scrollTop);
+  await assertNonZeroVisible(anvoPanel, 'Song Stats Anvo panel', { scrollIntoView: false });
+  expect(await contentArea.evaluate((element) => element.scrollTop)).toBe(initialContentScrollTop);
 
-  recordStyleContract('songs-desktop', await readStyleContract(page, styleSelectors.songs));
   await expect(anvoPanel).toHaveScreenshot('songs-anvo-desktop.png', {
     animations: 'disabled',
     caret: 'hide'
   });
+  recordStyleContract('songs-desktop', await readStyleContract(page, styleSelectors.songs));
 
   await page.setViewportSize({ width: 390, height: 844 });
   await settleUi(page);
