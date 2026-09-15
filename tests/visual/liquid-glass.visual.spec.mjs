@@ -68,6 +68,10 @@ test('forced frosted and opaque modes retain a visible fallback without SVG disp
   await expect(shell).toBeVisible();
   await expect(shell).toHaveCSS('background-image', /gradient/);
   await expect(shell).toHaveCSS('backdrop-filter', /^(?!.*url\().+/);
+  await expect(shell).toHaveScreenshot('liquid-glass-card-stats-390-frosted-fallback.png', {
+    animations: 'disabled',
+    caret: 'hide'
+  });
 
   await setLiquidGlassMode(page, 'opaque');
   await expect(shell).toBeVisible();
@@ -75,6 +79,10 @@ test('forced frosted and opaque modes retain a visible fallback without SVG disp
   await expect(shell).toHaveCSS('background-image', 'none');
   await expect(shell).toHaveCSS('box-shadow', 'none');
   await expect(shell).toHaveCSS('backdrop-filter', 'none');
+  await expect(shell).toHaveScreenshot('liquid-glass-card-stats-390-opaque-fallback.png', {
+    animations: 'disabled',
+    caret: 'hide'
+  });
 });
 
 test('regular and modal tiers stay frosted while content surfaces remain outside refraction', async ({ page }) => {
@@ -235,9 +243,17 @@ test('liquid-glass card stats preserves the 1200px export boundary', async ({ pa
 });
 
 test('liquid-glass desktop stats navigation is stable at 1440px', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await gotoUiState(page, { tab: 'stats', width: 1440, height: 1000 });
-  await setLiquidGlassMode(page, 'refractive');
+  await setLiquidGlassMode(page, 'refractive', 'full');
   await settleUi(page);
+  const navigation = page.locator('.stats-nav');
+  const bounds = await navigation.boundingBox();
+  expect(bounds).not.toBeNull();
+  await page.mouse.move(bounds.x + bounds.width * 0.78, bounds.y + bounds.height * 0.18);
+  await expect.poll(() => navigation.evaluate((element) => Number.parseFloat(
+    element.style.getPropertyValue('--ui-glass-pointer-x')
+  ))).toBeCloseTo(78, 4);
   await expect(page).toHaveScreenshot('liquid-glass-card-stats-1440-navigation.png', {
     animations: 'disabled',
     caret: 'hide'
@@ -251,6 +267,18 @@ test('liquid-glass desktop data-source menu is stable at 1440px', async ({ page 
   await expect(page.locator('.source-menu-floating')).toBeVisible();
   await settleUi(page);
   await expect(page).toHaveScreenshot('liquid-glass-history-1440-source-menu.png', {
+    animations: 'disabled',
+    caret: 'hide'
+  });
+});
+
+test('liquid-glass desktop history filter panel is stable at 1440px', async ({ page }) => {
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await setLiquidGlassMode(page, 'refractive');
+  await page.locator('.filter-bar button[title="筛选面板"]').click();
+  await expect(page.locator('.filter-panel')).toBeVisible();
+  await settleUi(page);
+  await expect(page).toHaveScreenshot('liquid-glass-history-1440-filter-panel.png', {
     animations: 'disabled',
     caret: 'hide'
   });

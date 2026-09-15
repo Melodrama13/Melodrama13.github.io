@@ -197,6 +197,85 @@ test('history overlay controls adopt the shared liquid-glass tiers without neste
   await expect(page.locator('.predict-switch-dialog-card')).toHaveClass(/ui-liquid-glass--modal/);
 });
 
+test('history regular glass keeps a static optical rim when motion is reduced', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await settleUi(page);
+
+  const readRegularMaterial = (locator) => locator.evaluate((surface) => {
+    const style = getComputedStyle(surface);
+    const specular = getComputedStyle(surface, '::before');
+    return {
+      backdropFilter: style.backdropFilter,
+      boxShadow: style.boxShadow,
+      specularDisplay: specular.display,
+      specularContent: specular.content,
+      specularBackground: specular.backgroundImage,
+      specularPointerEvents: specular.pointerEvents
+    };
+  });
+
+  await page.locator('.source-trigger').click();
+  const sourceMenu = page.locator('.source-menu');
+  await expect(sourceMenu).toBeVisible();
+
+  const assertFullMotionMaterial = async (surface) => {
+    await expect(surface).toHaveClass(/ui-liquid-glass--regular/);
+    await expect(surface).not.toHaveAttribute('data-liquid-glass-interactive');
+    const material = await readRegularMaterial(surface);
+    expect(material.backdropFilter).not.toContain('url(');
+    expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
+    expect(material.specularDisplay).not.toBe('none');
+    expect(material.specularContent).toBe('""');
+    expect(material.specularBackground).toContain('radial-gradient');
+    expect(material.specularPointerEvents).toBe('none');
+    return material;
+  };
+
+  const sourceFullMotion = await assertFullMotionMaterial(sourceMenu);
+  const sourceReducedMotion = await page.evaluate(() => {
+    document.documentElement.dataset.uiGlassMotion = 'reduced';
+    const surface = document.querySelector('.source-menu');
+    const style = getComputedStyle(surface);
+    const specular = getComputedStyle(surface, '::before');
+    const material = { boxShadow: style.boxShadow, specularDisplay: specular.display };
+    delete document.documentElement.dataset.uiGlassMotion;
+    return material;
+  });
+
+  const filterBar = page.locator('.filter-bar');
+  await filterBar.locator('button[title="筛选面板"]').click();
+  const filterPanel = page.locator('.filter-panel');
+  await expect(filterPanel).toBeVisible();
+  const fullMotionMaterials = [
+    sourceFullMotion,
+    await assertFullMotionMaterial(filterBar),
+    await assertFullMotionMaterial(filterPanel)
+  ];
+
+  const filterReducedMotionMaterials = await page.evaluate(() => {
+    document.documentElement.dataset.uiGlassMotion = 'reduced';
+    const materials = ['.filter-bar', '.filter-panel'].map((selector) => {
+      const surface = document.querySelector(selector);
+      const style = getComputedStyle(surface);
+      const specular = getComputedStyle(surface, '::before');
+      return {
+        boxShadow: style.boxShadow,
+        specularDisplay: specular.display
+      };
+    });
+    delete document.documentElement.dataset.uiGlassMotion;
+    return materials;
+  });
+  const reducedMotionMaterials = [sourceReducedMotion, ...filterReducedMotionMaterials];
+
+  for (const [index, material] of reducedMotionMaterials.entries()) {
+    expect(material.boxShadow).toBe(fullMotionMaterials[index].boxShadow);
+    expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
+    expect(material.specularDisplay).toBe('none');
+  }
+});
+
 test('liquid glass capability states override stale inline refraction', async ({ page }) => {
   await gotoUiState(page, { tab: 'stats', width: 1440, height: 1000 });
   await settleUi(page);

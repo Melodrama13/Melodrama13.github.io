@@ -78,11 +78,15 @@ Liquid Glass 的路径固定为：`tokens.css` 中的 `--ui-glass-*` token → `
 | Modal | `.ui-liquid-glass.ui-liquid-glass--modal`，CSS-only readable frost | App 更新/导出状态弹窗和 Event History 的未保存预测切换弹窗。遮罩与对话框语义仍保持 local。 |
 | Chip | `.ui-liquid-glass.ui-liquid-glass--chip`，CSS-only | 小型、重复的 pill/chip；不得挂 directive。 |
 
+材质本身只在 `tokens.css` 中定义：`--ui-glass-ambient-image` 提供带克制暖玫瑰色的中性环境场；各 tier 的 `--ui-glass-*-bg` 保持近无色透射；`--ui-glass-shadow-*` 同时提供柔和外部深度和四道静态 inset optical rim（亮面、暗侧、cyan 与较弱的 rose glint）。`liquid-glass.css` 只把 token 应用于 tier，并以一个不接收 pointer event 的 `::before` 绘制宽阔的 pointer-driven specular highlight。不得在 consumer 中复制 gradient、shadow、filter 或 pseudo-element recipe。
+
+Event History 的 `.filter-bar`（操作栏）、`.filter-panel` 和 App 的 `.source-menu`（数据源面板）明确使用 `regular` tier：它们不带 `v-liquid-glass`、`data-liquid-glass-interactive` 或 SVG `url(#...)` 位移，依靠更高不透明度的 CSS frost 在滚动/密集文本上保持可读性。顶部与统计导航才保留实际位移。
+
 一个 glass 表面只拥有一个材质。其子元素、重复内容卡片、导出面板、列表行和数据内容 panel 必须保持原有局部表面，不能追加 `.ui-liquid-glass` 或 `v-liquid-glass`。这避免嵌套 backdrop/filter、额外 SVG 位移和导出画面漂移。
 
 `liquidGlassPlugin` 是唯一的 refraction 生命周期 owner：它维护一个共享 `#ui-liquid-glass-filter-host`，引用计数复用等几何的滤镜，并由插件级 KeepAlive bridge 在 cached tab `deactivated` 时暂停表面、释放 pointer/window listener、ResizeObserver、timer/RAF、filter、attribute 和内联 style；`activated` 时只恢复一次，最终 directive unmount 才销毁注册。不得用 per-consumer lifecycle hook、document-wide observer 或 per-element MutationObserver 替代它。
 
-SVG `url(#filter)` enhancement 只在 Chromium 且根状态为 `data-ui-glass-mode="refractive"` 时启用。其他引擎保留 CSS frost；`prefers-reduced-transparency`、高对比/forced-colors 会强制 opaque，`prefers-reduced-motion` 停止 ambient/specular motion。测试可在导航后写 root dataset 来选择确定模式，但生产代码不得把该覆盖写入 storage 或 URL。
+SVG `url(#filter)` enhancement 只在 Chromium 且根状态为 `data-ui-glass-mode="refractive"` 时启用。其他引擎保留 CSS frost；`prefers-reduced-transparency`、高对比/forced-colors 会强制 opaque，`prefers-reduced-motion` 停止 ambient motion 并隐藏 pointer-following specular，但静态 inset rim 必须保留。测试可在导航后写 root dataset 来选择确定模式，但生产代码不得把该覆盖写入 storage 或 URL。
 
 SFC 只保留既有几何、定位、响应式断点和语义状态色；central stylesheet 仅拥有 glass tokens/material。任何新增 consumer 必须同时证明不改变字体、间距、边界框、圆角、DOM 或 export PNG blob。
 

@@ -32,19 +32,31 @@
   --ui-motion-control: 0.16s ease;
   --ui-motion-shimmer-duration: 1.05s;
 
-  --ui-glass-refractive-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.40), rgba(236, 254, 255, 0.18) 46%, rgba(224, 231, 255, 0.14));
-  --ui-glass-regular-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.70), rgba(239, 246, 255, 0.46) 52%, rgba(238, 242, 255, 0.34));
-  --ui-glass-modal-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.84), rgba(239, 246, 255, 0.66) 54%, rgba(238, 242, 255, 0.56));
+  --ui-glass-ambient-image:
+    radial-gradient(circle at 14% 8%, rgba(255, 255, 255, 0.82), transparent 28%),
+    radial-gradient(circle at 86% 10%, rgba(125, 211, 252, 0.28), transparent 32%),
+    radial-gradient(circle at 78% 84%, rgba(196, 181, 253, 0.22), transparent 36%),
+    radial-gradient(circle at 10% 78%, rgba(153, 246, 228, 0.20), transparent 34%),
+    radial-gradient(circle at 52% 18%, rgba(251, 146, 160, 0.14), transparent 30%),
+    linear-gradient(180deg, #f9fafb 0%, #f3f7f6 48%, #f8f5f8 100%);
+  --ui-glass-refractive-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(248, 250, 252, 0.22) 46%, rgba(226, 232, 240, 0.16));
+  --ui-glass-regular-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(248, 250, 252, 0.56) 52%, rgba(226, 232, 240, 0.40));
+  --ui-glass-modal-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.70) 54%, rgba(226, 232, 240, 0.58));
+  --ui-glass-fallback-bg: #f8fafc;
   --ui-glass-chip-bg: rgba(255, 255, 255, 0.30);
   --ui-glass-chip-bg-hover: rgba(255, 255, 255, 0.46);
   --ui-glass-rim-light: rgba(255, 255, 255, 0.88);
-  --ui-glass-rim-dark: rgba(100, 116, 139, 0.18);
-  --ui-glass-shadow-refractive: 0 20px 54px rgba(15, 23, 42, 0.16), 0 3px 12px rgba(14, 165, 233, 0.08);
-  --ui-glass-shadow-regular: 0 18px 48px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(59, 130, 246, 0.06);
-  --ui-glass-shadow-modal: 0 28px 80px rgba(15, 23, 42, 0.26), 0 8px 24px rgba(14, 165, 233, 0.10);
-  --ui-glass-filter-refractive: saturate(190%) brightness(1.05) blur(14px);
-  --ui-glass-filter-regular: saturate(180%) brightness(1.03) blur(22px);
-  --ui-glass-filter-modal: saturate(175%) brightness(1.02) blur(30px);
+  --ui-glass-rim-dark: rgba(71, 85, 105, 0.18);
+  --ui-glass-rim-cyan: rgba(103, 232, 249, 0.30);
+  --ui-glass-rim-rose: rgba(251, 113, 133, 0.16);
+  --ui-glass-specular-highlight: radial-gradient(ellipse 54% 44% at var(--ui-glass-pointer-x) var(--ui-glass-pointer-y), rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.10) 46%, transparent 72%);
+  --ui-glass-shadow-refractive: 0 18px 50px rgba(71, 85, 105, 0.12), 0 4px 14px rgba(14, 165, 233, 0.06), inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
+  --ui-glass-shadow-regular: 0 16px 44px rgba(71, 85, 105, 0.12), 0 3px 10px rgba(14, 165, 233, 0.05), inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
+  --ui-glass-shadow-modal: 0 26px 72px rgba(71, 85, 105, 0.18), 0 7px 22px rgba(14, 165, 233, 0.07), inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
+  --ui-glass-shadow-chip: inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
+  --ui-glass-filter-refractive: saturate(132%) brightness(1.035) blur(12px);
+  --ui-glass-filter-regular: saturate(125%) brightness(1.02) blur(22px);
+  --ui-glass-filter-modal: saturate(118%) brightness(1.01) blur(30px);
   --ui-glass-pointer-x: 50%;
   --ui-glass-pointer-y: 0%;
   --ui-glass-motion-duration: 220ms;
