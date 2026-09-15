@@ -130,7 +130,18 @@ export async function gotoUiState(page, options = {}) {
   const query = fullHistory ? '?eventFullRender=1' : '';
   await page.goto(`/${query}`, { waitUntil: 'domcontentloaded' });
   await waitForAppState(page, tab);
+  if (tab === 'stats' || tab === 'songs') {
+    await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+    await waitForFrames(page, 2);
+  }
 }
+
+export const setLiquidGlassMode = async (page, mode, motion = 'reduced') => {
+  await page.evaluate(({ nextMode, nextMotion }) => {
+    document.documentElement.dataset.uiGlassMode = nextMode;
+    document.documentElement.dataset.uiGlassMotion = nextMotion;
+  }, { nextMode: mode, nextMotion: motion });
+};
 
 export async function settleUi(page) {
   await page.evaluate(async () => {

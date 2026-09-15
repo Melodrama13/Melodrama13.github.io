@@ -67,6 +67,25 @@ src/styles/tokens.css → src/style.css → src/styles/primitives.css
 
 导出代码也保持局部：克隆节点复制或临时覆盖根节点 custom properties（例如 Song Stats 导出 clone 对 `--stats-radius-btn` 的保留）以及克隆节点的尺寸、背景、位置、动画清理，不能抽成 global token。Event History 的拖拽/定位值 `--preview-config-top` 同样只属于对应 wrapper。只有在值被证明为跨功能 exact duplicate 后，才可以提出新的 `--ui-*` token。
 
+## 4.1 Liquid Glass 所有权与降级
+
+Liquid Glass 的路径固定为：`tokens.css` 中的 `--ui-glass-*` token → `src/styles/liquid-glass.css` 的统一材质 class → `src/ui/liquidGlass.js` 插件 → App 内唯一的 `LiquidGlassFilters` SVG host → 获准的 consumer。`src/main.js` 必须在基础样式之后、primitive 之前导入该样式，并在 mount 前安装 `liquidGlassPlugin`；不要在 SFC 中复制滤镜、环境探测或生命周期代码。
+
+| 层级 | class / runtime | 获准 consumer 与限制 |
+| --- | --- | --- |
+| Refractive | `.ui-liquid-glass.ui-liquid-glass--refractive` + `v-liquid-glass` | 顶部 `.nav-tabs`、Card/Song Stats 的 `.stats-nav` 与紧凑态 `.floating-menu-btn`。插件为每个已连接表面生成或复用 SVG 边缘位移滤镜。 |
+| Regular | `.ui-liquid-glass.ui-liquid-glass--regular`，CSS-only frost | 数据源菜单、Predict drawer、History filter bar/filter panel、Special Predict toolbar。无 directive、无 SVG 位移。 |
+| Modal | `.ui-liquid-glass.ui-liquid-glass--modal`，CSS-only readable frost | App 更新/导出状态弹窗和 Event History 的未保存预测切换弹窗。遮罩与对话框语义仍保持 local。 |
+| Chip | `.ui-liquid-glass.ui-liquid-glass--chip`，CSS-only | 小型、重复的 pill/chip；不得挂 directive。 |
+
+一个 glass 表面只拥有一个材质。其子元素、重复内容卡片、导出面板、列表行和数据内容 panel 必须保持原有局部表面，不能追加 `.ui-liquid-glass` 或 `v-liquid-glass`。这避免嵌套 backdrop/filter、额外 SVG 位移和导出画面漂移。
+
+`liquidGlassPlugin` 是唯一的 refraction 生命周期 owner：它维护一个共享 `#ui-liquid-glass-filter-host`，引用计数复用等几何的滤镜，并由插件级 KeepAlive bridge 在 cached tab `deactivated` 时暂停表面、释放 pointer/window listener、ResizeObserver、timer/RAF、filter、attribute 和内联 style；`activated` 时只恢复一次，最终 directive unmount 才销毁注册。不得用 per-consumer lifecycle hook、document-wide observer 或 per-element MutationObserver 替代它。
+
+SVG `url(#filter)` enhancement 只在 Chromium 且根状态为 `data-ui-glass-mode="refractive"` 时启用。其他引擎保留 CSS frost；`prefers-reduced-transparency`、高对比/forced-colors 会强制 opaque，`prefers-reduced-motion` 停止 ambient/specular motion。测试可在导航后写 root dataset 来选择确定模式，但生产代码不得把该覆盖写入 storage 或 URL。
+
+SFC 只保留既有几何、定位、响应式断点和语义状态色；central stylesheet 仅拥有 glass tokens/material。任何新增 consumer 必须同时证明不改变字体、间距、边界框、圆角、DOM 或 export PNG blob。
+
 ## 5. Scoped 共享片段
 
 共享片段必须通过每个 SFC 的 `<style scoped src="...">` 编译，不能在 `main.js` 或全局 stylesheet 中 import。当前片段和完整消费者如下：

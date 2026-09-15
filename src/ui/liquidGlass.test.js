@@ -394,6 +394,31 @@ test('rejects surfaces whose minimum sampling factor still exceeds the map edge 
   }), RangeError);
 });
 
+test('tracks pointer coordinates from DOMRect geometry with non-enumerable fields', () => {
+  withFakeGlassRuntime(({ flushAnimationFrame }) => {
+    const element = createFakeGlassElement({ left: 10, top: 20, width: 200, height: 100 });
+    const browserRect = {};
+    Object.defineProperties(browserRect, {
+      left: { value: 10 },
+      top: { value: 20 },
+      width: { value: 200 },
+      height: { value: 100 }
+    });
+    element.getBoundingClientRect = () => browserRect;
+    liquidGlassDirective.mounted(element);
+
+    try {
+      element.dispatch('pointermove', { clientX: 160, clientY: 45 });
+      flushAnimationFrame();
+
+      assert.equal(element.style.values.get('--ui-glass-pointer-x'), '75%');
+      assert.equal(element.style.values.get('--ui-glass-pointer-y'), '25%');
+    } finally {
+      liquidGlassDirective.unmounted(element);
+    }
+  });
+});
+
 test('tracks glass pointer state, debounces viewport rebuilds, and disposes resources', () => {
   withFakeGlassRuntime(({ activeResizeObservers, defs, flushAnimationFrame, flushTimers, window }) => {
     const element = createFakeGlassElement({ left: 10, top: 20, width: 200, height: 100 });
@@ -550,6 +575,57 @@ test('continues directive cleanup after one removal API throws', () => {
     assert.equal(element.style.values.size, 0);
     assert.equal(element.style.backdropFilter, '');
     assert.equal(defs.children.length, 0);
+  });
+});
+
+test('plugin bridge suspends kept-alive glass surfaces and resumes them once on activation', () => {
+  withFakeGlassRuntime(({ activeResizeObservers, defs, flushAnimationFrame, windowListenerCount }) => {
+    let registeredDirective;
+    let lifecycleBridge;
+    const app = {
+      directive(name, directive) {
+        assert.equal(name, 'liquid-glass');
+        registeredDirective = directive;
+      },
+      mixin(bridge) {
+        lifecycleBridge = bridge;
+      },
+      onUnmount() {}
+    };
+    liquidGlassPlugin.install(app);
+
+    const element = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    const keptAliveRoot = { contains: (candidate) => candidate === element };
+    registeredDirective.mounted(element);
+    flushAnimationFrame();
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), true);
+    assert.equal(activeResizeObservers(), 1);
+    assert.equal(windowListenerCount(), 1);
+    assert.equal(defs.children.length, 1);
+
+    lifecycleBridge.deactivated.call({ $el: keptAliveRoot });
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), false);
+    assert.equal(element.style.backdropFilter, '');
+    assert.equal(element.style.values.size, 0);
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
+    assert.equal(defs.children.length, 0);
+
+    lifecycleBridge.activated.call({ $el: keptAliveRoot });
+    lifecycleBridge.activated.call({ $el: keptAliveRoot });
+    flushAnimationFrame();
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), true);
+    assert.match(element.style.backdropFilter, /^url\(#ui-liquid-glass-\d+\)$/);
+    assert.equal(activeResizeObservers(), 1);
+    assert.equal(windowListenerCount(), 1);
+    assert.equal(defs.children.length, 1);
+
+    registeredDirective.unmounted(element);
+    lifecycleBridge.activated.call({ $el: keptAliveRoot });
+    flushAnimationFrame();
+    assert.equal(defs.children.length, 0);
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
   });
 });
 
