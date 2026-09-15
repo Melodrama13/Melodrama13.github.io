@@ -6,6 +6,7 @@ body {
 
 .ui-liquid-glass {
   position: relative;
+  isolation: isolate;
   background: var(--ui-glass-surface-bg);
   border-color: var(--ui-glass-rim-light);
   box-shadow: var(--ui-glass-surface-shadow);
@@ -18,6 +19,7 @@ body {
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  z-index: -1;
   pointer-events: none;
   background: var(--ui-glass-specular-highlight);
 }

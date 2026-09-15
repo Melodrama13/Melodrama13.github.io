@@ -82,6 +82,48 @@ const assertNonZeroVisible = async (locator, name, { scrollIntoView = true } = {
   expect(geometry.visibility, `${name} visibility`).not.toBe('hidden');
 };
 
+const prepareVisibleAnvoViewportCapture = async (panel) => {
+  const capture = await panel.evaluate((element) => {
+    const host = document.querySelector('.content-area');
+    if (!(host instanceof HTMLElement)) throw new Error('Song Stats scroll host was not found');
+
+    const hostRect = host.getBoundingClientRect();
+    const panelBeforeScroll = element.getBoundingClientRect();
+    const nextScrollTop = Math.max(0, Math.min(
+      host.scrollHeight - host.clientHeight,
+      host.scrollTop + panelBeforeScroll.top - hostRect.top
+    ));
+    host.scrollTop = nextScrollTop;
+
+    const panelRect = element.getBoundingClientRect();
+    const visibleTop = Math.max(panelRect.top, hostRect.top);
+    const visibleBottom = Math.min(panelRect.bottom, hostRect.bottom);
+    return {
+      scrollTop: host.scrollTop,
+      styleContractScrollTop: Math.round(host.scrollTop + (panelRect.height - (visibleBottom - visibleTop)) / 2),
+      panelHeight: panelRect.height,
+      visibleCardCount: [...element.querySelectorAll('.song-anvo-card')].filter((card) => {
+        const rect = card.getBoundingClientRect();
+        return rect.bottom > hostRect.top && rect.top < hostRect.bottom;
+      }).length,
+      heading: element.querySelector('h2')?.textContent?.trim(),
+      clip: {
+        x: Math.round(panelRect.left),
+        y: Math.round(visibleTop),
+        width: Math.round(panelRect.width),
+        height: Math.round(visibleBottom - visibleTop)
+      }
+    };
+  });
+
+  expect(capture.scrollTop, 'Anvo viewport capture must use an explicit host position').toBeGreaterThan(0);
+  expect(capture.clip.height, 'Anvo viewport capture must stay within the scroll host').toBeGreaterThan(0);
+  expect(capture.clip.height).toBeLessThan(capture.panelHeight);
+  expect(capture.heading).toBe('Anvo统计');
+  expect(capture.visibleCardCount, 'Anvo viewport capture must include rendered cards').toBeGreaterThan(0);
+  return capture;
+};
+
 test.afterAll(async ({}, testInfo) => {
   await saveOrAssertStyleContract(testInfo);
 });
@@ -158,10 +200,15 @@ test('song stats captures the Anvo image panel and compact style contract', asyn
   await assertNonZeroVisible(anvoPanel, 'Song Stats Anvo panel', { scrollIntoView: false });
   expect(await contentArea.evaluate((element) => element.scrollTop)).toBe(initialContentScrollTop);
 
-  await expect(anvoPanel).toHaveScreenshot('songs-anvo-desktop.png', {
+  const anvoCapture = await prepareVisibleAnvoViewportCapture(anvoPanel);
+  await expect(page).toHaveScreenshot('songs-anvo-desktop.png', {
+    clip: anvoCapture.clip,
     animations: 'disabled',
     caret: 'hide'
   });
+  expect(await contentArea.evaluate((element) => element.scrollTop)).toBe(anvoCapture.scrollTop);
+  await contentArea.evaluate((element, scrollTop) => { element.scrollTop = scrollTop; }, anvoCapture.styleContractScrollTop);
+  expect(await contentArea.evaluate((element) => element.scrollTop)).toBe(anvoCapture.styleContractScrollTop);
   recordStyleContract('songs-desktop', await readStyleContract(page, styleSelectors.songs));
 
   await page.setViewportSize({ width: 390, height: 844 });

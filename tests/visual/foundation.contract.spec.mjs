@@ -197,6 +197,47 @@ test('history overlay controls adopt the shared liquid-glass tiers without neste
   await expect(page.locator('.predict-switch-dialog-card')).toHaveClass(/ui-liquid-glass--modal/);
 });
 
+test('liquid glass specular stays below regular-glass content without changing its interaction layer', async ({ page }) => {
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await settleUi(page);
+  await page.locator('.source-trigger').click();
+
+  const layering = await page.locator('.source-menu').evaluate((surface) => {
+    const consumer = surface.querySelector('button');
+    if (!(consumer instanceof HTMLElement)) throw new Error('Source menu consumer content was not found');
+    const rect = consumer.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return {
+      surfaceIsolation: getComputedStyle(surface).isolation,
+      specularZIndex: getComputedStyle(surface, '::before').zIndex,
+      specularPointerEvents: getComputedStyle(surface, '::before').pointerEvents,
+      consumerHit: hit === consumer || consumer.contains(hit)
+    };
+  });
+
+  expect(layering).toEqual({
+    surfaceIsolation: 'isolate',
+    specularZIndex: '-1',
+    specularPointerEvents: 'none',
+    consumerHit: true
+  });
+});
+
+test('Special Predict keeps the regular outer tier while toolbar groups remain unfiltered', async ({ page }) => {
+  await gotoUiState(page, {
+    tab: 'specialPredict',
+    width: 1440,
+    height: 1000,
+    unlockSpecialPredict: true
+  });
+  await settleUi(page);
+
+  const toolbar = page.locator('.special-toolbar');
+  await expect(toolbar).toHaveClass(/ui-liquid-glass--regular/);
+  await expect(toolbar).not.toHaveCSS('backdrop-filter', 'none');
+  await expect(toolbar.locator('.special-toolbar-group').first()).toHaveCSS('backdrop-filter', 'none');
+});
+
 test('history regular glass keeps a static optical rim when motion is reduced', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });

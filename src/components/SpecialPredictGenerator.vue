@@ -4640,8 +4640,8 @@ const SpecialCardCell = defineComponent({
     inset 0 1px 0 rgba(255, 255, 255, 0.86),
     inset 0 -1px 0 rgba(148, 163, 184, 0.08),
     0 7px 18px rgba(71, 85, 105, 0.09);
-  backdrop-filter: blur(14px) saturate(155%);
-  -webkit-backdrop-filter: blur(14px) saturate(155%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .special-toolbar-break {
