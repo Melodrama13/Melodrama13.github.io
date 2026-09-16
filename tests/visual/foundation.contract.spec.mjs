@@ -43,7 +43,62 @@ const expectRefractiveStatsNav = async (page) => {
   const navigation = page.locator('.stats-nav');
   await expect(navigation).toHaveClass(/ui-liquid-glass--refractive/);
   await expect(navigation).toHaveAttribute('data-liquid-glass-interactive', '');
+  const material = await navigation.evaluate((surface) => {
+    const style = getComputedStyle(surface);
+    const filterMatch = surface.style.backdropFilter.match(/^url\(["']?#([^\)"']+)["']?\)$/);
+    return {
+      inlineBackdropFilter: surface.style.backdropFilter,
+      hasConnectedFilter: Boolean(filterMatch && document.getElementById(filterMatch[1])?.isConnected),
+      backgroundColor: style.backgroundColor,
+      backgroundImage: style.backgroundImage,
+      boxShadow: style.boxShadow
+    };
+  });
+  expect(material.inlineBackdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
+  expect(material.hasConnectedFilter).toBe(true);
+  expect(material.backgroundImage).toContain('linear-gradient');
+  expect(material.backgroundColor).not.toBe('rgb(255, 255, 255)');
+  expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
   await expect(navigation.locator('.nav-quick-wrap')).toHaveCSS('backdrop-filter', 'none');
+};
+
+const readRegularMaterial = (locator) => locator.evaluate((surface) => {
+  const style = getComputedStyle(surface);
+  const specular = getComputedStyle(surface, '::before');
+  return {
+    backdropFilter: style.backdropFilter,
+    backgroundImage: style.backgroundImage,
+    boxShadow: style.boxShadow,
+    specularContent: specular.content,
+    specularDisplay: specular.display,
+    specularBackground: specular.backgroundImage,
+    specularPointerEvents: specular.pointerEvents,
+    specularZIndex: specular.zIndex
+  };
+});
+
+const rgbaAlphas = (value) => [...value.matchAll(/rgba\([^)]*?,\s*([\d.]+)\)/g)]
+  .map((match) => Number(match[1]));
+
+const expectTransmissiveRegularMaterial = async (surface) => {
+  await expect(surface).toHaveClass(/ui-liquid-glass--regular/);
+  await expect(surface).not.toHaveAttribute('data-liquid-glass-interactive');
+  const material = await readRegularMaterial(surface);
+  const alphas = rgbaAlphas(material.backgroundImage);
+  const blur = material.backdropFilter.match(/blur\(([\d.]+)px\)/);
+
+  expect(material.backgroundImage).toContain('linear-gradient');
+  expect(alphas.length).toBeGreaterThan(0);
+  expect(Math.max(...alphas)).toBeLessThanOrEqual(0.60);
+  expect(material.backdropFilter).not.toContain('url(');
+  expect(blur).not.toBeNull();
+  expect(Number(blur[1])).toBeLessThanOrEqual(18);
+  expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
+  expect(material.specularDisplay).not.toBe('none');
+  expect(material.specularContent).toBe('""');
+  expect(material.specularBackground).toContain('radial-gradient');
+  expect(material.specularPointerEvents).toBe('none');
+  expect(material.specularZIndex).toBe('-1');
 };
 
 const expectCompactRefractiveStatsNav = async (page) => {
@@ -195,6 +250,107 @@ test('history overlay controls adopt the shared liquid-glass tiers without neste
 
   await openUnsavedPredictSwitchDialog(page);
   await expect(page.locator('.predict-switch-dialog-card')).toHaveClass(/ui-liquid-glass--modal/);
+});
+
+test('regular glass controls transmit ambient color without nested refraction', async ({ page }) => {
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await settleUi(page);
+
+  await page.locator('.source-trigger').click();
+  const sourceMenu = page.locator('.source-menu');
+  await expect(sourceMenu).toBeVisible();
+  await expectTransmissiveRegularMaterial(sourceMenu);
+
+  const sourceGroups = await sourceMenu
+    .locator('.source-menu-username-wrap, .source-list, .source-actions')
+    .evaluateAll((surfaces) => surfaces.map((surface) => {
+      const style = getComputedStyle(surface);
+      return {
+        className: surface.className,
+        backdropFilter: style.backdropFilter,
+        backgroundColor: style.backgroundColor
+      };
+    }));
+  expect(sourceGroups).toHaveLength(3);
+  expect(sourceGroups.find((surface) => surface.className.includes('source-list'))?.backdropFilter).toBe('none');
+  for (const sourceGroup of sourceGroups) {
+    const alphas = rgbaAlphas(sourceGroup.backgroundColor);
+    expect(alphas.length).toBeGreaterThan(0);
+    expect(Math.max(...alphas)).toBeLessThanOrEqual(0.14);
+  }
+
+  const filterBar = page.locator('.filter-bar');
+  await expectTransmissiveRegularMaterial(filterBar);
+  await filterBar.locator('button[title="筛选面板"]').click();
+  const filterPanel = page.locator('.filter-panel');
+  await expect(filterPanel).toBeVisible();
+  await expectTransmissiveRegularMaterial(filterPanel);
+});
+
+test('compact Card Stats navigation releases hidden refraction before restoring one visible aside', async ({ page }) => {
+  await gotoUiState(page, { tab: 'stats', width: 390, height: 844 });
+  await settleUi(page);
+
+  const navigation = page.locator('.stats-nav');
+  const trigger = page.locator('.floating-menu-btn');
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  await expect(navigation).toBeVisible();
+
+  const expandedFilterId = await navigation.evaluate((surface) => {
+    const match = surface.style.backdropFilter.match(/^url\(["']?#([^\)"']+)["']?\)$/);
+    if (!match) throw new Error('Expanded stats navigation did not own an inline refraction filter');
+    return match[1];
+  });
+
+  await navigation.locator('.nav-collapse-fab').click();
+  await expect(trigger).toBeVisible();
+  await expect(navigation).toBeHidden();
+
+  const collapsed = await page.evaluate((filterId) => {
+    const navigation = document.querySelector('.stats-nav');
+    const activeSurfaces = [...document.querySelectorAll('[data-liquid-glass-interactive]')];
+    const filterOwningSurfaces = activeSurfaces.filter((surface) => surface.style.backdropFilter.includes('url('));
+    return {
+      interactive: navigation?.hasAttribute('data-liquid-glass-interactive'),
+      backdropFilter: navigation?.style.backdropFilter,
+      webkitBackdropFilter: navigation?.style.webkitBackdropFilter,
+      previousFilterPresent: Boolean(document.getElementById(filterId)),
+      activeSurfaceCount: activeSurfaces.length,
+      filterOwningSurfaceCount: filterOwningSurfaces.length,
+      filterCount: document.querySelectorAll('#ui-liquid-glass-filter-host filter').length
+    };
+  }, expandedFilterId);
+  expect(collapsed).toEqual({
+    interactive: false,
+    backdropFilter: '',
+    webkitBackdropFilter: '',
+    previousFilterPresent: false,
+    activeSurfaceCount: 2,
+    filterOwningSurfaceCount: 2,
+    filterCount: 2
+  });
+
+  await trigger.click();
+  await expect(navigation).toBeVisible();
+  await expect(trigger).toHaveCount(0);
+  const reopened = await page.evaluate(() => {
+    const navigation = document.querySelector('.stats-nav');
+    const activeSurfaces = [...document.querySelectorAll('[data-liquid-glass-interactive]')];
+    const filterOwningSurfaces = activeSurfaces.filter((surface) => surface.style.backdropFilter.includes('url('));
+    return {
+      interactive: navigation?.hasAttribute('data-liquid-glass-interactive'),
+      backdropFilter: navigation?.style.backdropFilter,
+      activeSurfaceCount: activeSurfaces.length,
+      filterOwningSurfaceCount: filterOwningSurfaces.length,
+      filterCount: document.querySelectorAll('#ui-liquid-glass-filter-host filter').length
+    };
+  });
+  expect(reopened.interactive).toBe(true);
+  expect(reopened.backdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
+  expect(reopened.activeSurfaceCount).toBe(2);
+  expect(reopened.filterOwningSurfaceCount).toBe(2);
+  expect(reopened.filterCount).toBe(2);
 });
 
 test('liquid glass specular stays below regular-glass content without changing its interaction layer', async ({ page }) => {

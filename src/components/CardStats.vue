@@ -10,7 +10,7 @@
       >
         <img src="/data/icon/menu.png" class="floating-menu-icon" alt="菜单" />
       </button>
-      <aside v-liquid-glass class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--refractive" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
+      <aside v-liquid-glass="!navCollapsed" class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--refractive" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
         <button v-if="!navCollapsed" class="nav-collapse-fab export-hide" @click="setNavCollapsed(true)" title="收起统计菜单">
           <img src="/data/icon/menu_open.png" class="nav-collapse-fab-icon" alt="收起菜单" />
         </button>
@@ -12038,7 +12038,7 @@ defineExpose({
 
 .stats-section { flex: 1; }
 
-.card-panel {
+.card-panel:not(.stats-nav) {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: var(--stats-radius-panel);
@@ -16299,7 +16299,7 @@ td.record-char {
     padding: 3px 6px;
   }
 
-  .card-panel {
+  .card-panel:not(.stats-nav) {
     padding: 9px;
     border-radius: 14px;
   }
@@ -17070,7 +17070,7 @@ td.record-char {
     margin-bottom: 6px;
   }
 
-  .card-panel {
+  .card-panel:not(.stats-nav) {
     padding: 8px;
   }
 

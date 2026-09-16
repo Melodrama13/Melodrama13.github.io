@@ -109,6 +109,7 @@ function createFakeGlassElement({ left, top, width, height, radius = '8px' }) {
     values: new Map(),
     calls: [],
     backdropFilter: '',
+    webkitBackdropFilter: '',
     setProperty(name, value) {
       this.values.set(name, String(value));
       this.calls.push([name, String(value)]);
@@ -462,6 +463,93 @@ test('tracks glass pointer state, debounces viewport rebuilds, and disposes reso
     assert.equal(element.style.backdropFilter, '');
     assert.equal(element.style.values.size, 0);
     assert.equal(defs.children.length, 0);
+  });
+});
+
+test('directive binding suspends hidden surfaces and resumes one lifecycle when visible again', () => {
+  withFakeGlassRuntime(({ activeResizeObservers, defs, flushAnimationFrame, windowListenerCount }) => {
+    const element = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+
+    liquidGlassDirective.mounted(element, { value: false });
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), false);
+    assert.equal(element.listenerCount(), 0);
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
+    assert.equal(element.style.backdropFilter, '');
+    assert.equal(element.style.webkitBackdropFilter, '');
+    assert.equal(element.style.values.size, 0);
+    assert.equal(defs.children.length, 0);
+
+    liquidGlassDirective.updated(element, { value: false });
+    assert.equal(element.listenerCount(), 0);
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
+    assert.equal(defs.children.length, 0);
+
+    liquidGlassDirective.updated(element, {});
+    flushAnimationFrame();
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), true);
+    assert.equal(element.listenerCount(), 2);
+    assert.equal(activeResizeObservers(), 1);
+    assert.equal(windowListenerCount(), 1);
+    assert.match(element.style.backdropFilter, /^url\(#ui-liquid-glass-\d+\)$/);
+    assert.equal(element.style.webkitBackdropFilter, element.style.backdropFilter);
+    assert.equal(defs.children.length, 1);
+
+    const restoredFilter = element.style.backdropFilter;
+    liquidGlassDirective.updated(element, { value: true });
+    flushAnimationFrame();
+    assert.equal(element.listenerCount(), 2);
+    assert.equal(activeResizeObservers(), 1);
+    assert.equal(windowListenerCount(), 1);
+    assert.equal(element.style.backdropFilter, restoredFilter);
+    assert.equal(defs.children.length, 1);
+
+    liquidGlassDirective.updated(element, { value: false });
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), false);
+    assert.equal(element.listenerCount(), 0);
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
+    assert.equal(element.style.backdropFilter, '');
+    assert.equal(element.style.webkitBackdropFilter, '');
+    assert.equal(element.style.values.size, 0);
+    assert.equal(defs.children.length, 0);
+
+    liquidGlassDirective.unmounted(element);
+    assert.equal(element.listenerCount(), 0);
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
+  });
+});
+
+test('plugin activation leaves directive-binding-suspended surfaces inactive', () => {
+  withFakeGlassRuntime(({ activeResizeObservers, defs, flushAnimationFrame, windowListenerCount }) => {
+    let registeredDirective;
+    let lifecycleBridge;
+    liquidGlassPlugin.install({
+      directive(name, directive) {
+        assert.equal(name, 'liquid-glass');
+        registeredDirective = directive;
+      },
+      mixin(bridge) {
+        lifecycleBridge = bridge;
+      },
+      onUnmount() {}
+    });
+
+    const element = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    const keptAliveRoot = { contains: (candidate) => candidate === element };
+    registeredDirective.mounted(element, { value: false });
+    lifecycleBridge.activated.call({ $el: keptAliveRoot });
+    flushAnimationFrame();
+
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), false);
+    assert.equal(element.listenerCount(), 0);
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
+    assert.equal(defs.children.length, 0);
+
+    registeredDirective.unmounted(element);
   });
 });
 

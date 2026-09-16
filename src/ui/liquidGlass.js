@@ -29,6 +29,7 @@ const BLUR_STD_PER_RADIUS = 0.35;
 const FILTER_HOST_ID = 'ui-liquid-glass-filter-host';
 const elementCleanup = new WeakMap();
 const elementLifecycle = new WeakMap();
+const elementDirectiveActive = new WeakMap();
 const filterRegistry = new Map();
 const mountedSurfaceRefreshers = new Set();
 const registeredGlassSurfaces = new Set();
@@ -196,18 +197,33 @@ export function buildLiquidGlassDisplacement({
 }
 
 export const liquidGlassDirective = {
-  mounted(element) {
+  mounted(element, binding) {
     liquidGlassDirective.unmounted(element);
 
     const lifecycle = createGlassSurfaceLifecycle(element);
     elementCleanup.set(element, lifecycle.destroy);
     elementLifecycle.set(element, lifecycle);
+    elementDirectiveActive.set(element, binding?.value !== false);
     registeredGlassSurfaces.add(element);
-    if (!lifecycle.resume()) lifecycle.destroy();
+    if (binding?.value !== false && !lifecycle.resume()) lifecycle.destroy();
+  },
+
+  updated(element, binding) {
+    const lifecycle = elementLifecycle.get(element);
+    if (!lifecycle) return;
+
+    const isActive = binding?.value !== false;
+    elementDirectiveActive.set(element, isActive);
+    if (isActive) {
+      if (!lifecycle.resume()) lifecycle.destroy();
+    } else {
+      lifecycle.suspend();
+    }
   },
 
   unmounted(element) {
     elementCleanup.get(element)?.();
+    elementDirectiveActive.delete(element);
   }
 };
 
@@ -402,7 +418,9 @@ function suspendGlassSurfacesWithin(root) {
 
 function resumeGlassSurfacesWithin(root) {
   for (const element of registeredGlassSurfaces) {
-    if (isGlassSurfaceWithin(root, element)) elementLifecycle.get(element)?.resume();
+    if (isGlassSurfaceWithin(root, element) && elementDirectiveActive.get(element) !== false) {
+      elementLifecycle.get(element)?.resume();
+    }
   }
 }
 
@@ -550,7 +568,9 @@ function setStyleProperty(element, property, value) {
 }
 
 function setBackdropFilter(element, value) {
-  if (element.style) element.style.backdropFilter = value;
+  if (!element.style) return;
+  element.style.backdropFilter = value;
+  element.style.webkitBackdropFilter = value;
 }
 
 function clampPercentage(value) {

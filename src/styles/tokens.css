@@ -40,7 +40,7 @@
     radial-gradient(circle at 52% 18%, rgba(251, 146, 160, 0.14), transparent 30%),
     linear-gradient(180deg, #f9fafb 0%, #f3f7f6 48%, #f8f5f8 100%);
   --ui-glass-refractive-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(248, 250, 252, 0.22) 46%, rgba(226, 232, 240, 0.16));
-  --ui-glass-regular-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(248, 250, 252, 0.56) 52%, rgba(226, 232, 240, 0.40));
+  --ui-glass-regular-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.36) 52%, rgba(226, 232, 240, 0.26));
   --ui-glass-modal-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.70) 54%, rgba(226, 232, 240, 0.58));
   --ui-glass-fallback-bg: #f8fafc;
   --ui-glass-chip-bg: rgba(255, 255, 255, 0.30);
@@ -51,11 +51,11 @@
   --ui-glass-rim-rose: rgba(251, 113, 133, 0.16);
   --ui-glass-specular-highlight: radial-gradient(ellipse 54% 44% at var(--ui-glass-pointer-x) var(--ui-glass-pointer-y), rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.10) 46%, transparent 72%);
   --ui-glass-shadow-refractive: 0 18px 50px rgba(71, 85, 105, 0.12), 0 4px 14px rgba(14, 165, 233, 0.06), inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
-  --ui-glass-shadow-regular: 0 16px 44px rgba(71, 85, 105, 0.12), 0 3px 10px rgba(14, 165, 233, 0.05), inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
+  --ui-glass-shadow-regular: 0 18px 50px rgba(71, 85, 105, 0.14), 0 4px 14px rgba(14, 165, 233, 0.07), inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
   --ui-glass-shadow-modal: 0 26px 72px rgba(71, 85, 105, 0.18), 0 7px 22px rgba(14, 165, 233, 0.07), inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
   --ui-glass-shadow-chip: inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
   --ui-glass-filter-refractive: saturate(132%) brightness(1.035) blur(12px);
-  --ui-glass-filter-regular: saturate(125%) brightness(1.02) blur(22px);
+  --ui-glass-filter-regular: saturate(138%) brightness(1.025) blur(17px);
   --ui-glass-filter-modal: saturate(118%) brightness(1.01) blur(30px);
   --ui-glass-pointer-x: 50%;
   --ui-glass-pointer-y: 0%;

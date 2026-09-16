@@ -3844,7 +3844,7 @@ button.active {
   padding: 6px 8px;
   border: 1px solid var(--source-glass-border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
   box-shadow: var(--source-glass-shadow-soft);
 }
 
@@ -3912,7 +3912,7 @@ button.active {
   margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
   box-shadow: var(--source-glass-shadow-soft);
 }
 
@@ -4039,7 +4039,7 @@ button.active {
   margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
   box-shadow: var(--source-glass-shadow-soft);
 }
 

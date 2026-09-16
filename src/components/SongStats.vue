@@ -16,7 +16,7 @@
         <img src="/data/icon/menu.png" class="floating-menu-icon" alt="菜单" />
       </button>
 
-      <aside v-liquid-glass class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--refractive" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
+      <aside v-liquid-glass="!navCollapsed" class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--refractive" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
         <button v-if="!navCollapsed" class="nav-collapse-fab" @click="setNavCollapsed(true)" title="收起统计菜单">
           <img src="/data/icon/menu_open.png" class="nav-collapse-fab-icon" alt="收起菜单" />
         </button>
@@ -6243,7 +6243,7 @@ watch(totalSongPages, (nextTotal) => {
   white-space: nowrap;
 }
 
-.card-panel {
+.card-panel:not(.stats-nav) {
   background: #ffffff;
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: var(--stats-radius-panel);
@@ -8779,7 +8779,7 @@ watch(totalSongPages, (nextTotal) => {
     font-size: 1.1rem;
   }
 
-  .card-panel {
+  .card-panel:not(.stats-nav) {
     padding: 9px;
     border-radius: 10px;
   }
