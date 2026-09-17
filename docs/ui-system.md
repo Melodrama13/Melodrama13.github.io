@@ -75,7 +75,7 @@ Liquid Glass 的路径固定为：`tokens.css` 中的 `--ui-glass-*` token → `
 | --- | --- | --- |
 | Refractive | `.ui-liquid-glass.ui-liquid-glass--refractive` + `v-liquid-glass` | 顶部 `.nav-tabs`。插件为每个已连接表面生成或复用 SVG 边缘位移滤镜。 |
 | Prominent | `.ui-liquid-glass.ui-liquid-glass--prominent` + `v-liquid-glass` | Card/Song Stats 的 `.stats-nav` 与紧凑态 `.floating-menu-btn`、Event History 的 `.filter-bar` / `.filter-panel`、App 的 `.source-menu`。这是唯一的高霜层，内部 group/control/input/option 使用语义 token，不能追加子级折射。 |
-| Regular | `.ui-liquid-glass.ui-liquid-glass--regular` | Predict drawer 与 Special Predict toolbar 的既有常规材质；不把 prominent recipe 复制到这些 consumer。 |
+| Regular | `.ui-liquid-glass.ui-liquid-glass--regular` + `v-liquid-glass` | Predict drawer 与 Special Predict toolbar 的既有常规材质和 outer-surface refraction；不把 prominent recipe 复制到这些 consumer。 |
 | Modal | `.ui-liquid-glass.ui-liquid-glass--modal`，CSS-only readable frost | App 更新/导出状态弹窗和 Event History 的未保存预测切换弹窗。遮罩与对话框语义仍保持 local。 |
 | Chip | `.ui-liquid-glass.ui-liquid-glass--chip`，CSS-only | 小型、重复的 pill/chip；不得挂 directive。 |
 

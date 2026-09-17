@@ -4055,6 +4055,10 @@ button.active {
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
+.source-actions .io-btn:disabled {
+  background: rgba(255, 255, 255, 0.18);
+}
+
 .nav-tabs > button:hover:not(.active),
 .io-btn:hover:not(:disabled),
 .source-item:hover:not(.active),

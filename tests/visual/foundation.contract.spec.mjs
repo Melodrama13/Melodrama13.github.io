@@ -260,6 +260,42 @@ test('history overlay controls adopt the shared liquid-glass tiers without neste
   await expect(page.locator('.predict-switch-dialog-card')).toHaveClass(/ui-liquid-glass--modal/);
 });
 
+test('disabled Event History filter options retain their pre-prominent base material', async ({ page }) => {
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await settleUi(page);
+  await page.locator('.filter-bar button[title="筛选面板"]').click();
+
+  const option = page.locator('.filter-panel .btn-group-sm button').first();
+  const wasDisabled = await option.isDisabled();
+  try {
+    await option.evaluate((element) => { element.disabled = true; });
+    await expect(option).toHaveCSS('background-image', 'linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.36))');
+    await expect(option).toHaveCSS('border-top-color', 'rgba(255, 255, 255, 0.7)');
+    await expect(option).toHaveCSS('opacity', '1');
+    await expect(option).toHaveCSS('cursor', 'pointer');
+  } finally {
+    await option.evaluate((element, disabled) => { element.disabled = disabled; }, wasDisabled);
+  }
+});
+
+test('disabled data-source actions retain their pre-prominent base material', async ({ page }) => {
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await settleUi(page);
+  await page.locator('.source-trigger').click();
+
+  const action = page.locator('.source-actions .io-btn').first();
+  const wasDisabled = await action.isDisabled();
+  try {
+    await action.evaluate((element) => { element.disabled = true; });
+    await expect(action).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.18)');
+    await expect(action).toHaveCSS('border-top-color', 'rgba(148, 163, 184, 0.42)');
+    await expect(action).toHaveCSS('opacity', '1');
+    await expect(action).toHaveCSS('cursor', 'pointer');
+  } finally {
+    await action.evaluate((element, disabled) => { element.disabled = disabled; }, wasDisabled);
+  }
+});
+
 test('prominent glass controls transmit ambient color with outer-only Chromium refraction', async ({ page }) => {
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
   await settleUi(page);

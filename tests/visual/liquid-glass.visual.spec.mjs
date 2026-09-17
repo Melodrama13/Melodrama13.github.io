@@ -598,6 +598,11 @@ test('liquid-glass card stats compact sidebar is stable at 375px', async ({ page
   await setLiquidGlassMode(page, 'refractive');
   const trigger = page.locator('.floating-menu-btn');
   await expect(trigger).toBeVisible();
+  await settleUi(page);
+  await expect(trigger).toHaveScreenshot('liquid-glass-card-stats-375-navigation-trigger.png', {
+    animations: 'disabled',
+    caret: 'hide'
+  });
   await trigger.click();
   await expect(page.locator('.stats-nav')).toBeVisible();
   await settleUi(page);
@@ -666,7 +671,7 @@ test('liquid-glass desktop stats navigation is stable at 1440px', async ({ page 
   await expect.poll(() => navigation.evaluate((element) => Number.parseFloat(
     element.style.getPropertyValue('--ui-glass-pointer-x')
   ))).toBeCloseTo(78, 4);
-  await expect(page).toHaveScreenshot('liquid-glass-card-stats-1440-navigation.png', {
+  await expect(navigation).toHaveScreenshot('liquid-glass-card-stats-1440-navigation.png', {
     animations: 'disabled',
     caret: 'hide'
   });
@@ -678,7 +683,38 @@ test('liquid-glass desktop data-source menu is stable at 1440px', async ({ page 
   await page.locator('.source-trigger').click();
   await expect(page.locator('.source-menu-floating')).toBeVisible();
   await settleUi(page);
-  await expect(page).toHaveScreenshot('liquid-glass-history-1440-source-menu.png', {
+  await expect(page.locator('.source-menu-floating')).toHaveScreenshot('liquid-glass-history-1440-source-menu.png', {
+    animations: 'disabled',
+    caret: 'hide'
+  });
+});
+
+test('liquid-glass Song Stats navigation has targeted desktop and compact baselines', async ({ page }) => {
+  await gotoUiState(page, { tab: 'songs', width: 1440, height: 1000 });
+  await setLiquidGlassMode(page, 'refractive');
+  await settleUi(page);
+  await expect(page.locator('.stats-nav')).toHaveScreenshot('liquid-glass-song-stats-1440-navigation.png', {
+    animations: 'disabled',
+    caret: 'hide'
+  });
+
+  await gotoUiState(page, { tab: 'songs', width: 390, height: 844 });
+  await setLiquidGlassMode(page, 'refractive');
+  await settleUi(page);
+  await expect(page.locator('.floating-menu-btn')).toHaveScreenshot('liquid-glass-song-stats-390-navigation-trigger.png', {
+    animations: 'disabled',
+    caret: 'hide'
+  });
+});
+
+test('liquid-glass data-source menu has a targeted compact baseline', async ({ page }) => {
+  await gotoUiState(page, { tab: 'history', width: 390, height: 844, fullHistory: true });
+  await setLiquidGlassMode(page, 'refractive');
+  await page.locator('.source-trigger').click();
+  const sourceMenu = page.locator('.source-menu-floating');
+  await expect(sourceMenu).toBeVisible();
+  await settleUi(page);
+  await expect(sourceMenu).toHaveScreenshot('liquid-glass-history-390-source-menu.png', {
     animations: 'disabled',
     caret: 'hide'
   });

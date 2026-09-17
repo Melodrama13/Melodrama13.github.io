@@ -9038,6 +9038,13 @@ button:not(:disabled):active {
   box-shadow: 0 8px 18px rgba(20, 184, 166, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.44);
 }
 
+/* Disabled neutral options retain their pre-prominent material; active and reset states own their existing overrides. */
+.btn-group button:disabled:not(.active):not(.panel-reset-btn),
+.btn-group-sm button:disabled:not(.active):not(.panel-reset-btn) {
+  border-color: rgba(255, 255, 255, 0.70);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.36));
+}
+
 /* 角色 Chip */
 .chip-group {
   display: flex;
