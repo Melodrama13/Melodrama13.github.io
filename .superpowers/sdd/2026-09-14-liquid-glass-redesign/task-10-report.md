@@ -148,3 +148,43 @@ tests/visual/style-contract.json
 
 - No verification blocker remains. The regular tier is intentionally a midpoint white wash over busy event backdrops; if a later human review still finds a specific panel too ghosted or too opaque, the next adjustment should remain a central token-only change.
 - The required untracked `test-results/` directory remains present and unstaged; it was not deleted or altered intentionally.
+
+## Fix round 1
+
+### RED evidence and owner-scoped bridge design
+
+The owner-isolation regression was inherited from the pre-fix checkout and reproduced before this fix round with the exact command:
+
+```text
+node --test --test-name-pattern='plugin bridge keeps disconnected surfaces scoped to their owning component instance' src/ui/liquidGlass.test.js
+```
+
+Pre-fix output failed with `true !== false`: activating owner A incorrectly revived owner B's disconnected surface.
+
+The fix is recorded in commit `851af5c` (`fix: scope liquid glass lifecycle bridge by owner`). Each mounted directive stores the normalized Vue owner key in `elementDirectiveOwner`; `getDirectiveOwnerKey(instance)` uses `instance?.$ ?? instance` so the directive binding proxy and mixin public proxy resolve to the same internal component instance. The `activated`/`deactivated` bridge passes both `this` and `this.$el`, owner-matched surfaces are the only ones suspended or resumed, and ownerless bindings retain the existing DOM-containment fallback. The existing disconnected-element guard prevents a resume from attaching resources before the element reconnects.
+
+The added two-owner regression passed 2/2 and covers B deactivation, A deactivation, B reconnecting while inactive, A activation without reviving B, and B's independent activation. The browser fallback contract also verified real Vue identity: `element.__vnode.dirs[0].instance.$ === element.__vueParentComponent.proxy.$` (`directiveOwnerMatchesMixin: true`) for the Event History filter bar.
+
+### Fresh fix-round verification
+
+| Command | Outcome |
+| --- | --- |
+| `node --test --test-name-pattern='plugin bridge (suspends and restores a disconnected surface behind a Fragment root|keeps disconnected surfaces scoped to their owning component instance)' src/ui/liquidGlass.test.js` | 2 passed, 0 failed |
+| `npx.cmd playwright test --config=playwright.config.mjs tests/visual/liquid-glass.visual.spec.mjs --grep "approved regular roots release runtime refraction and retain readable frosted and opaque fallbacks" --reporter=line` | 1 passed (40.4s) |
+| `npm.cmd run test:unit` | 66 passed, 0 failed |
+| `npm.cmd run check:ui` | UI policy check passed |
+| `npm.cmd run build` | Vite build passed; 90 modules transformed |
+| `npm.cmd run test:visual -- --reporter=line` | 44 passed, 0 failed in 7.5 minutes |
+
+The fallback contract covered the Event History filter bar, source menu, filter panel, Predict drawer, and Special Predict toolbar. In frosted mode each root released runtime URL/filter-node state while retaining CSS frost; in opaque and reduced-transparency modes each released URL/filter-node/background-image state, retained a nontransparent fallback, and met the 4.5:1 text-contrast assertion. Restoring `no-preference` returned to refractive mode.
+
+The six export-named PNGs were rehashed against base `01a4e2b4663ee83546a695aefa5d81689dd28b69`; every base/current SHA-1 remained byte-identical. The working-tree diff contains no screenshot changes from this fix round.
+
+### Fix-round changed files
+
+- `src/ui/liquidGlass.js`
+- `src/ui/liquidGlass.test.js`
+- `tests/visual/liquid-glass.visual.spec.mjs`
+- This report (`task-10-report.md`), to be committed separately after the fix commit.
+
+The pre-existing untracked `test-results/.last-run.json` remains unstaged and uncommitted. No other tracked files were changed in the fix round.
