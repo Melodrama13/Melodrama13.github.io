@@ -61,6 +61,12 @@
     rgba(248, 250, 252, 0.30) 52%,
     rgba(226, 232, 240, 0.20)
   );
+  --ui-glass-prominent-bg: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.66),
+    rgba(248, 250, 252, 0.50) 52%,
+    rgba(226, 232, 240, 0.38)
+  );
   --ui-glass-modal-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.70) 54%, rgba(226, 232, 240, 0.58));
   --ui-glass-fallback-bg: #f8fafc;
   --ui-glass-chip-bg: rgba(255, 255, 255, 0.30);
@@ -76,7 +82,14 @@
   --ui-glass-shadow-chip: inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
   --ui-glass-filter-refractive: saturate(132%) brightness(1.035) blur(12px);
   --ui-glass-filter-regular: saturate(142%) brightness(1.02) blur(15px);
+  --ui-glass-filter-prominent: saturate(128%) brightness(1.015) blur(22px);
   --ui-glass-filter-modal: saturate(118%) brightness(1.01) blur(30px);
+  --ui-glass-refraction-blur-prominent: 16;
+  --ui-glass-group-bg: rgba(255, 255, 255, 0.24);
+  --ui-glass-control-bg: rgba(255, 255, 255, 0.34);
+  --ui-glass-input-bg: rgba(255, 255, 255, 0.56);
+  --ui-glass-option-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.70), rgba(248, 250, 252, 0.44));
+  --ui-glass-option-border: rgba(255, 255, 255, 0.78);
   --ui-glass-pointer-x: 50%;
   --ui-glass-pointer-y: 0%;
   --ui-glass-motion-duration: 220ms;

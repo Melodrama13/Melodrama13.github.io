@@ -25,6 +25,7 @@ export const GLASS_PRESET = Object.freeze({
 
 const SUPERSAMPLE = 2;
 const MAX_MAP_EDGE = 1400;
+const MAX_REFRACTION_BLUR_RADIUS = 64;
 const BLUR_STD_PER_RADIUS = 0.35;
 const FILTER_HOST_ID = 'ui-liquid-glass-filter-host';
 const elementCleanup = new WeakMap();
@@ -269,18 +270,19 @@ function createGlassSurfaceLifecycle(element) {
       }
 
       const radius = resolveBorderRadius(element, windowLike, bounds.width, bounds.height);
+      const config = resolveLiquidGlassConfig(element, windowLike);
       const field = buildLiquidGlassDisplacement({
         width: bounds.width,
         height: bounds.height,
         radius,
         viewportWidth: windowLike?.innerWidth,
         viewportHeight: windowLike?.innerHeight,
-        config: GLASS_PRESET
+        config
       });
       if (currentEntry?.key === field.cacheKey && currentEntry.node?.isConnected) return;
 
       clearRefraction();
-      currentEntry = acquireFilter(documentLike, field, bounds.width, bounds.height, GLASS_PRESET);
+      currentEntry = acquireFilter(documentLike, field, bounds.width, bounds.height, config);
       setBackdropFilter(element, currentEntry ? `url(#${currentEntry.id})` : '');
     } catch {
       clearRefraction();
@@ -486,6 +488,16 @@ function resolveBorderRadius(element, windowLike, width, height) {
   const parsed = Number.parseFloat(value) || 0;
   const radius = value.trim?.().endsWith('%') ? (parsed / 100) * Math.min(width, height) : parsed;
   return Math.max(0, Math.min(radius, Math.min(width, height) / 2));
+}
+
+function resolveLiquidGlassConfig(element, windowLike) {
+  const computed = windowLike?.getComputedStyle?.(element) ?? globalThis.getComputedStyle?.(element);
+  const rawBlurRadius = computed?.getPropertyValue?.('--ui-glass-refraction-blur-radius')?.trim?.() ?? '';
+  const parsedBlurRadius = rawBlurRadius === '' ? Number.NaN : Number(rawBlurRadius);
+  const blurRadius = Number.isFinite(parsedBlurRadius) && parsedBlurRadius >= 0
+    ? Math.min(parsedBlurRadius, MAX_REFRACTION_BLUR_RADIUS)
+    : GLASS_PRESET.blurRadius;
+  return { ...GLASS_PRESET, blurRadius };
 }
 
 function acquireFilter(documentLike, field, width, height, config) {

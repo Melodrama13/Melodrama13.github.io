@@ -207,3 +207,17 @@ test('rejects liquid glass governance violations outside the central material so
   assert.ok(diagnostics.some((message) => message.includes('LiquidGlassFilters must be mounted exactly once')));
   assert.ok(diagnostics.some((message) => message.includes('liquid glass material selector must stay centralized')));
 });
+
+test('rejects a prominent liquid glass material rule outside the central stylesheet', () => {
+  const diagnostics = inspectFixture({
+    'src/components/EventHistory.vue': `
+      ${scopedSource(shimmerPath)}
+      <style scoped>.ui-liquid-glass--prominent { background: white; }</style>
+    `,
+  });
+
+  assert.ok(diagnostics.some((message) => (
+    message.includes('EventHistory.vue')
+      && message.includes('liquid glass material selector must stay centralized')
+  )));
+});

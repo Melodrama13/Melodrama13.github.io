@@ -528,7 +528,7 @@
         <div
           ref="filterBarRef"
           v-liquid-glass
-          class="filter-bar ui-liquid-glass ui-liquid-glass--regular"
+          class="filter-bar ui-liquid-glass ui-liquid-glass--prominent"
           :class="{
             'is-compact': isCompactFilterBar,
             'is-editor-tight': isEditorFilterTight,
@@ -588,7 +588,7 @@
           </button>
         </div>
         <transition name="slide-fade">
-          <div v-if="showFilter" v-liquid-glass class="filter-panel ui-liquid-glass ui-liquid-glass--regular">
+          <div v-if="showFilter" v-liquid-glass class="filter-panel ui-liquid-glass ui-liquid-glass--prominent">
           <div class="filter-row filter-mode-row">
             <span class="row-label">模式</span>
             <div class="btn-group">
@@ -8420,7 +8420,7 @@ button:not(:disabled):active {
   cursor: pointer;
   border-radius: 999px;
   border: 1px solid var(--history-glass-border);
-  background: var(--history-glass-bg);
+  background: var(--ui-glass-control-bg);
   box-shadow: var(--history-glass-shadow-soft);
   transition: 0.2s;
   white-space: nowrap;
@@ -8442,7 +8442,7 @@ button:not(:disabled):active {
   cursor: pointer;
   border-radius: 999px;
   border: 1px solid var(--history-glass-border);
-  background: var(--history-glass-bg);
+  background: var(--ui-glass-control-bg);
   box-shadow: var(--history-glass-shadow-soft);
   flex: 0 0 auto;
   white-space: nowrap;
@@ -9020,8 +9020,8 @@ button:not(:disabled):active {
 .btn-group button, 
 .btn-group-sm button {
   padding: 4px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.70);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.36));
+  border: 1px solid var(--ui-glass-option-border);
+  background: var(--ui-glass-option-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   cursor: pointer;
   border-radius: 999px;
@@ -9051,10 +9051,10 @@ button:not(:disabled):active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
+  background: var(--ui-glass-option-bg);
   border-radius: 50%;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--ui-glass-option-border);
   box-shadow: var(--history-glass-shadow-soft);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   touch-action: manipulation;
@@ -9093,9 +9093,9 @@ button:not(:disabled):active {
   width: 35px; height: 35px;
   padding: 3px;
   box-sizing: border-box;
-  border: 0.3px solid rgba(255, 255, 255, 0.44);
+  border: 0.3px solid var(--ui-glass-option-border);
   border-radius: 50%;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
+  background: var(--ui-glass-option-bg);
   box-shadow: var(--history-glass-shadow-soft);
   cursor: pointer;
   filter: grayscale(1) opacity(0.5);
@@ -9106,9 +9106,9 @@ button:not(:disabled):active {
   width: 38px; height: 38px;
   padding: 3px;
   box-sizing: border-box;
-  border: 0.3px solid rgba(255, 255, 255, 0.44);
+  border: 0.3px solid var(--ui-glass-option-border);
   border-radius: 50%;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
+  background: var(--ui-glass-option-bg);
   box-shadow: var(--history-glass-shadow-soft);
   cursor: pointer;
   filter: grayscale(1) opacity(0.5);
@@ -9148,12 +9148,12 @@ button:not(:disabled):active {
 }
 .rarity-item {
   padding: 4px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.70);
+  border: 1px solid var(--ui-glass-option-border);
   border-radius: 999px;
   display: flex;
   align-items: center;
   cursor: pointer;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.36));
+  background: var(--ui-glass-option-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease;
   touch-action: manipulation;
@@ -9195,9 +9195,9 @@ button:not(:disabled):active {
   margin-left: 2px;
   padding: 0 10px;
   font-size: inherit;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(248, 250, 252, 0.34));
+  background: var(--ui-glass-option-bg);
   color: #6b7280;
-  border: 1px solid rgba(255, 255, 255, 0.70);
+  border: 1px solid var(--ui-glass-option-border);
   border-radius: 999px;
   box-shadow: var(--history-glass-shadow-soft);
 }

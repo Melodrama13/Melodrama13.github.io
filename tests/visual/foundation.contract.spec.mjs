@@ -39,9 +39,9 @@ const restoreSongPill = (locator, state) => locator.evaluate((element, original)
   delete root.dataset.foundationTestSongRoot;
 }, state);
 
-const expectRefractiveStatsNav = async (page) => {
+const expectProminentStatsNav = async (page) => {
   const navigation = page.locator('.stats-nav');
-  await expect(navigation).toHaveClass(/ui-liquid-glass--refractive/);
+  await expect(navigation).toHaveClass(/ui-liquid-glass--prominent/);
   await expect(navigation).toHaveAttribute('data-liquid-glass-interactive', '');
   const material = await navigation.evaluate((surface) => {
     const style = getComputedStyle(surface);
@@ -49,6 +49,9 @@ const expectRefractiveStatsNav = async (page) => {
     return {
       inlineBackdropFilter: surface.style.backdropFilter,
       hasConnectedFilter: Boolean(filterMatch && document.getElementById(filterMatch[1])?.isConnected),
+      blurStdDeviation: filterMatch
+        ? document.getElementById(filterMatch[1])?.querySelector('feGaussianBlur')?.getAttribute('stdDeviation')
+        : null,
       backgroundColor: style.backgroundColor,
       backgroundImage: style.backgroundImage,
       boxShadow: style.boxShadow
@@ -56,13 +59,14 @@ const expectRefractiveStatsNav = async (page) => {
   });
   expect(material.inlineBackdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
   expect(material.hasConnectedFilter).toBe(true);
+  expect(material.blurStdDeviation).toBe('5.6');
   expect(material.backgroundImage).toContain('linear-gradient');
   expect(material.backgroundColor).not.toBe('rgb(255, 255, 255)');
   expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
   await expect(navigation.locator('.nav-quick-wrap')).toHaveCSS('backdrop-filter', 'none');
 };
 
-const readRegularMaterial = (locator) => locator.evaluate((surface) => {
+const readProminentMaterial = (locator) => locator.evaluate((surface) => {
   const style = getComputedStyle(surface);
   const specular = getComputedStyle(surface, '::before');
   return {
@@ -85,15 +89,15 @@ const readRegularMaterial = (locator) => locator.evaluate((surface) => {
 const rgbaAlphas = (value) => [...value.matchAll(/rgba\([^)]*?,\s*([\d.]+)\)/g)]
   .map((match) => Number(match[1]));
 
-const expectTransmissiveRegularMaterial = async (surface) => {
-  await expect(surface).toHaveClass(/ui-liquid-glass--regular/);
+const expectTransmissiveProminentMaterial = async (surface) => {
+  await expect(surface).toHaveClass(/ui-liquid-glass--prominent/);
   await expect(surface).toHaveAttribute('data-liquid-glass-interactive', '');
-  const material = await readRegularMaterial(surface);
+  const material = await readProminentMaterial(surface);
   const alphas = rgbaAlphas(material.backgroundImage);
 
   expect(material.backgroundImage).toContain('linear-gradient');
   expect(alphas.length).toBeGreaterThan(0);
-  expect(Math.max(...alphas)).toBeLessThanOrEqual(0.60);
+  expect(Math.max(...alphas)).toBe(0.66);
   expect(material.inlineBackdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
   expect(material.hasConnectedFilter).toBe(true);
   expect(material.backdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
@@ -105,15 +109,15 @@ const expectTransmissiveRegularMaterial = async (surface) => {
   expect(material.specularZIndex).toBe('-1');
 };
 
-const expectCompactRefractiveStatsNav = async (page) => {
+const expectCompactProminentStatsNav = async (page) => {
   const trigger = page.locator('.floating-menu-btn');
   await expect(trigger).toBeVisible();
-  await expect(trigger).toHaveClass(/ui-liquid-glass--refractive/);
+  await expect(trigger).toHaveClass(/ui-liquid-glass--prominent/);
   await expect(trigger).toHaveAttribute('data-liquid-glass-interactive', '');
 
   await trigger.click();
   await expect(page.locator('.stats-nav')).toBeVisible();
-  await expectRefractiveStatsNav(page);
+  await expectProminentStatsNav(page);
 };
 
 const openUnsavedPredictSwitchDialog = async (page) => {
@@ -216,24 +220,24 @@ test('foundation tokens and existing global controls retain their contracts', as
   }
 });
 
-test('Card Stats navigation adopts the refractive liquid-glass contract on desktop and compact layouts', async ({ page }) => {
+test('Card Stats navigation adopts the prominent liquid-glass contract on desktop and compact layouts', async ({ page }) => {
   await gotoUiState(page, { tab: 'stats', width: 1440, height: 1000 });
   await settleUi(page);
-  await expectRefractiveStatsNav(page);
+  await expectProminentStatsNav(page);
 
   await gotoUiState(page, { tab: 'stats', width: 390, height: 844 });
   await settleUi(page);
-  await expectCompactRefractiveStatsNav(page);
+  await expectCompactProminentStatsNav(page);
 });
 
-test('Song Stats navigation adopts the refractive liquid-glass contract on desktop and compact layouts', async ({ page }) => {
+test('Song Stats navigation adopts the prominent liquid-glass contract on desktop and compact layouts', async ({ page }) => {
   await gotoUiState(page, { tab: 'songs', width: 1440, height: 1000 });
   await settleUi(page);
-  await expectRefractiveStatsNav(page);
+  await expectProminentStatsNav(page);
 
   await gotoUiState(page, { tab: 'songs', width: 390, height: 844 });
   await settleUi(page);
-  await expectCompactRefractiveStatsNav(page);
+  await expectCompactProminentStatsNav(page);
 });
 
 test('history overlay controls adopt the shared liquid-glass tiers without nested menu filtering', async ({ page }) => {
@@ -242,28 +246,28 @@ test('history overlay controls adopt the shared liquid-glass tiers without neste
 
   await page.locator('.source-trigger').click();
   const sourceMenu = page.locator('.source-menu');
-  await expect(sourceMenu).toHaveClass(/ui-liquid-glass--regular/);
+  await expect(sourceMenu).toHaveClass(/ui-liquid-glass--prominent/);
   await expect(sourceMenu.locator('.source-list')).toHaveCSS('backdrop-filter', 'none');
 
   const filterBar = page.locator('.filter-bar');
-  await expect(filterBar).toHaveClass(/ui-liquid-glass--regular/);
+  await expect(filterBar).toHaveClass(/ui-liquid-glass--prominent/);
   await filterBar.locator('button[title="筛选面板"]').click();
   const filterPanel = page.locator('.filter-panel');
   await expect(filterPanel).toBeVisible();
-  await expect(filterPanel).toHaveClass(/ui-liquid-glass--regular/);
+  await expect(filterPanel).toHaveClass(/ui-liquid-glass--prominent/);
 
   await openUnsavedPredictSwitchDialog(page);
   await expect(page.locator('.predict-switch-dialog-card')).toHaveClass(/ui-liquid-glass--modal/);
 });
 
-test('regular glass controls transmit ambient color with outer-only Chromium refraction', async ({ page }) => {
+test('prominent glass controls transmit ambient color with outer-only Chromium refraction', async ({ page }) => {
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
   await settleUi(page);
 
   await page.locator('.source-trigger').click();
   const sourceMenu = page.locator('.source-menu');
   await expect(sourceMenu).toBeVisible();
-  await expectTransmissiveRegularMaterial(sourceMenu);
+  await expectTransmissiveProminentMaterial(sourceMenu);
 
   const sourceGroups = await sourceMenu
     .locator('.source-menu-username-wrap, .source-list, .source-actions')
@@ -280,15 +284,15 @@ test('regular glass controls transmit ambient color with outer-only Chromium ref
   for (const sourceGroup of sourceGroups) {
     const alphas = rgbaAlphas(sourceGroup.backgroundColor);
     expect(alphas.length).toBeGreaterThan(0);
-    expect(Math.max(...alphas)).toBeLessThanOrEqual(0.14);
+    expect(Math.max(...alphas)).toBe(0.24);
   }
 
   const filterBar = page.locator('.filter-bar');
-  await expectTransmissiveRegularMaterial(filterBar);
+  await expectTransmissiveProminentMaterial(filterBar);
   await filterBar.locator('button[title="筛选面板"]').click();
   const filterPanel = page.locator('.filter-panel');
   await expect(filterPanel).toBeVisible();
-  await expectTransmissiveRegularMaterial(filterPanel);
+  await expectTransmissiveProminentMaterial(filterPanel);
 });
 
 test('compact Card Stats navigation releases hidden refraction before restoring one visible aside', async ({ page }) => {
@@ -357,7 +361,7 @@ test('compact Card Stats navigation releases hidden refraction before restoring 
   expect(reopened.filterCount).toBe(2);
 });
 
-test('liquid glass specular stays below regular-glass content without changing its interaction layer', async ({ page }) => {
+test('liquid glass specular stays below prominent-glass content without changing its interaction layer', async ({ page }) => {
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
   await settleUi(page);
   await page.locator('.source-trigger').click();
@@ -401,12 +405,12 @@ test('Special Predict toolbar owns Chromium refraction while toolbar groups rema
   await expect(toolbar.locator('.special-toolbar-group').first()).not.toHaveAttribute('data-liquid-glass-interactive');
 });
 
-test('history regular glass keeps a static optical rim when motion is reduced', async ({ page }) => {
+test('history prominent glass keeps a static optical rim when motion is reduced', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
   await settleUi(page);
 
-  const readRegularMaterial = (locator) => locator.evaluate((surface) => {
+  const readProminentMaterial = (locator) => locator.evaluate((surface) => {
     const style = getComputedStyle(surface);
     const specular = getComputedStyle(surface, '::before');
     return {
@@ -429,9 +433,9 @@ test('history regular glass keeps a static optical rim when motion is reduced', 
   await expect(sourceMenu).toBeVisible();
 
   const assertFullMotionMaterial = async (surface) => {
-    await expect(surface).toHaveClass(/ui-liquid-glass--regular/);
+    await expect(surface).toHaveClass(/ui-liquid-glass--prominent/);
     await expect(surface).toHaveAttribute('data-liquid-glass-interactive', '');
-    const material = await readRegularMaterial(surface);
+    const material = await readProminentMaterial(surface);
     expect(material.inlineBackdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
     expect(material.hasConnectedFilter).toBe(true);
     expect(material.backdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);

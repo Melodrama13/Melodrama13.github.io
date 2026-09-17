@@ -206,7 +206,7 @@ test('forced frosted and opaque modes retain a visible fallback without SVG disp
   });
 });
 
-test('forced-colors clears regular-shell URL filters and filter nodes while retaining an opaque readable fallback', async ({ page }) => {
+test('forced-colors clears prominent-shell URL filters and filter nodes while retaining an opaque readable fallback', async ({ page }) => {
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
   await setLiquidGlassMode(page, 'refractive');
   await settleUi(page);
@@ -228,7 +228,7 @@ test('forced-colors clears regular-shell URL filters and filter nodes while reta
   expect(fallback.contrast).toBeGreaterThanOrEqual(4.5);
 });
 
-test('approved regular roots release runtime refraction through reduced-transparency media transitions', async ({ page }) => {
+test('approved prominent roots release runtime refraction through reduced-transparency media transitions', async ({ page }) => {
   const mediaSession = await page.context().newCDPSession(page);
   await setEmulatedMediaFeature(mediaSession, 'prefers-reduced-transparency', 'no-preference');
 
@@ -297,7 +297,7 @@ test('approved regular roots release runtime refraction through reduced-transpar
   await assertReducedTransparencyFallback(page, mediaSession, [toolbar], 'reduced-transparency Special Predict toolbar');
 });
 
-test('approved regular roots start with CSS frost on a non-Chromium user agent', async ({ page }) => {
+test('approved prominent roots start with CSS frost on a non-Chromium user agent', async ({ page }) => {
   const fallbackPage = await page.context().newPage();
   const userAgentSession = await fallbackPage.context().newCDPSession(fallbackPage);
   await userAgentSession.send('Emulation.setUserAgentOverride', {
@@ -352,7 +352,7 @@ test('approved regular roots start with CSS frost on a non-Chromium user agent',
   }
 });
 
-test('approved regular overlay shells own Chromium refraction while descendants and content stay outside it', async ({ page }) => {
+test('approved prominent overlay shells own Chromium refraction while descendants and content stay outside it', async ({ page }) => {
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
   await setLiquidGlassMode(page, 'refractive');
   await settleUi(page);
@@ -361,16 +361,16 @@ test('approved regular overlay shells own Chromium refraction while descendants 
   await sourceTrigger.click();
   const sourceMenu = page.locator('.source-menu');
   await expect(sourceMenu).toBeVisible();
-  await expect(sourceMenu).toHaveClass(/ui-liquid-glass--regular/);
+  await expect(sourceMenu).toHaveClass(/ui-liquid-glass--prominent/);
   await expectRefractiveOuterSurface(sourceMenu, '.source-list', 'data-source menu');
 
   const filterBar = page.locator('.filter-bar');
-  await expect(filterBar).toHaveClass(/ui-liquid-glass--regular/);
+  await expect(filterBar).toHaveClass(/ui-liquid-glass--prominent/);
   await expectRefractiveOuterSurface(filterBar, '.sort-btn, .nav-btn', 'Event History filter bar');
   await filterBar.locator('button[title="筛选面板"]').click();
   const filterPanel = page.locator('.filter-panel');
   await expect(filterPanel).toBeVisible();
-  await expect(filterPanel).toHaveClass(/ui-liquid-glass--regular/);
+  await expect(filterPanel).toHaveClass(/ui-liquid-glass--prominent/);
   await expectRefractiveOuterSurface(filterPanel, '.filter-row', 'Event History filter panel');
   await expect(page.locator('.event-item').first()).not.toHaveClass(/ui-liquid-glass/);
 
@@ -396,7 +396,7 @@ test('approved regular overlay shells own Chromium refraction while descendants 
   await expect(page.locator('#panel-another-vocal')).not.toHaveAttribute('data-liquid-glass-interactive');
 });
 
-test('conditional regular roots release filters and KeepAlive restores the Event History lifecycle once', async ({ page }) => {
+test('conditional prominent roots release filters and KeepAlive restores the Event History lifecycle once', async ({ page }) => {
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
   await setLiquidGlassMode(page, 'refractive');
   await settleUi(page);
@@ -478,22 +478,62 @@ test('conditional regular roots release filters and KeepAlive restores the Event
   await expect(host.locator('filter')).toHaveCount(baselineFilters);
 });
 
-test('Card and Song expanded navigation use their stats material while top and compact refractive shells keep the general material', async ({ page }) => {
-  const statsNavigationBackground = 'linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.28) 42%, rgba(219, 234, 254, 0.2))';
+test('Card and Song targeted navigation uses prominent material while the top shell keeps the general material', async ({ page }) => {
+  const prominentBackground = 'linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.5) 52%, rgba(226, 232, 240, 0.38))';
   const generalRefractiveBackground = 'linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(248, 250, 252, 0.22) 46%, rgba(226, 232, 240, 0.16))';
 
   for (const tab of ['stats', 'songs']) {
     await gotoUiState(page, { tab, width: 1440, height: 1000 });
     await setLiquidGlassMode(page, 'refractive');
     await settleUi(page);
-    expect(await readBackgroundImage(page.locator('.stats-nav'))).toBe(statsNavigationBackground);
+    expect(await readBackgroundImage(page.locator('.stats-nav'))).toBe(prominentBackground);
     expect(await readBackgroundImage(page.locator('.nav-tabs'))).toBe(generalRefractiveBackground);
 
     await gotoUiState(page, { tab, width: 390, height: 844 });
     await setLiquidGlassMode(page, 'refractive');
     await settleUi(page);
-    expect(await readBackgroundImage(page.locator('.floating-menu-btn'))).toBe(generalRefractiveBackground);
+    expect(await readBackgroundImage(page.locator('.floating-menu-btn'))).toBe(prominentBackground);
   }
+});
+
+test('prominent target roots use high-frost refraction without refractive descendants', async ({ page }) => {
+  const prominentBackground = 'linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.5) 52%, rgba(226, 232, 240, 0.38))';
+  const expectProminentSurface = async (root, descendantSelector, label) => {
+    await expect(root).toHaveClass(/ui-liquid-glass--prominent/);
+    await expectRefractiveOuterSurface(root, descendantSelector, label);
+    expect(await readBackgroundImage(root)).toBe(prominentBackground);
+    expect(await root.evaluate((element) => {
+      const filterId = element.style.backdropFilter.match(/#([^\)"]+)/)?.[1];
+      return filterId ? document.getElementById(filterId)?.querySelector('feGaussianBlur')?.getAttribute('stdDeviation') : null;
+    })).toBe('5.6');
+  };
+
+  for (const tab of ['stats', 'songs']) {
+    await gotoUiState(page, { tab, width: 1440, height: 1000 });
+    await setLiquidGlassMode(page, 'refractive');
+    await settleUi(page);
+    await expectProminentSurface(page.locator('.stats-nav'), '.nav-scroll', `${tab} desktop navigation`);
+
+    await gotoUiState(page, { tab, width: 390, height: 844 });
+    await setLiquidGlassMode(page, 'refractive');
+    await settleUi(page);
+    await expectProminentSurface(page.locator('.floating-menu-btn'), '.floating-menu-icon', `${tab} compact navigation trigger`);
+  }
+
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await setLiquidGlassMode(page, 'refractive');
+  await settleUi(page);
+  const filterBar = page.locator('.filter-bar');
+  await expectProminentSurface(filterBar, '.sort-btn, .nav-btn', 'Event History filter bar');
+  await filterBar.locator('button[title="筛选面板"]').click();
+  const filterPanel = page.locator('.filter-panel');
+  await expectProminentSurface(filterPanel, '.filter-row', 'Event History filter panel');
+
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await setLiquidGlassMode(page, 'refractive');
+  await page.locator('.source-trigger').click();
+  const sourceMenu = page.locator('.source-menu-floating');
+  await expectProminentSurface(sourceMenu, '.source-list', 'data-source menu');
 });
 
 test('switching away from an async refractive tab releases its filter and pointer state', async ({ page }) => {

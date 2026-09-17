@@ -36,7 +36,7 @@ const SHARED_SOURCES = {
 const MAIN_SOURCE = 'src/main.js';
 const LIQUID_GLASS_STYLE_SOURCE = 'src/styles/liquid-glass.css';
 const LIQUID_GLASS_FILTERS_SOURCE = 'src/components/ui/LiquidGlassFilters.vue';
-const LIQUID_GLASS_MATERIAL_SELECTOR = /(^|[^a-zA-Z0-9_-])\.ui-liquid-glass(?:--(?:refractive|regular|modal|chip))?(?![a-zA-Z0-9_-])/;
+const LIQUID_GLASS_MATERIAL_SELECTOR = /(^|[^a-zA-Z0-9_-])\.ui-liquid-glass(?:--(?:refractive|regular|prominent|modal|chip))?(?![a-zA-Z0-9_-])/;
 
 function normalizePath(file) {
   return file.replaceAll('\\', '/');

@@ -102,7 +102,7 @@ function createFakeNode(tagName) {
   return node;
 }
 
-function createFakeGlassElement({ left, top, width, height, radius = '8px' }) {
+function createFakeGlassElement({ left, top, width, height, radius = '8px', refractionBlur = '' }) {
   const listeners = new Map();
   const attributes = new Map();
   const style = {
@@ -123,6 +123,7 @@ function createFakeGlassElement({ left, top, width, height, radius = '8px' }) {
     dataset: {},
     style,
     _radius: radius,
+    _refractionBlur: refractionBlur,
     connected: true,
     addEventListener(type, listener) {
       const handlers = listeners.get(type) || new Set();
@@ -222,7 +223,12 @@ function withFakeGlassRuntime(run) {
       for (const listener of windowListeners.get(type) || []) listener();
     },
     getComputedStyle(element) {
-      return { borderTopLeftRadius: element._radius };
+      return {
+        borderTopLeftRadius: element._radius,
+        getPropertyValue(name) {
+          return name === '--ui-glass-refraction-blur-radius' ? element._refractionBlur : '';
+        }
+      };
     }
   };
 
@@ -572,6 +578,43 @@ test('shares one connected filter between equal glass surfaces until the final r
     assert.equal(defs.children.length, 1);
     liquidGlassDirective.unmounted(second);
     assert.equal(defs.children.length, 0);
+  });
+});
+
+test('resolves CSS refraction blur per surface for SVG blur and filter sharing', () => {
+  withFakeGlassRuntime(({ defs, flushAnimationFrame }) => {
+    const defaultSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    const prominentSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '16' });
+    const matchingProminentSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '16' });
+    const invalidSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: 'invalid' });
+    const negativeSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '-2' });
+    const cappedSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '128' });
+    const surfaces = [
+      defaultSurface,
+      prominentSurface,
+      matchingProminentSurface,
+      invalidSurface,
+      negativeSurface,
+      cappedSurface
+    ];
+
+    for (const surface of surfaces) liquidGlassDirective.mounted(surface);
+    flushAnimationFrame();
+
+    try {
+      assert.equal(defs.children.length, 3);
+      assert.deepEqual(
+        defs.children.map((filter) => filter.children.find((node) => node.tagName === 'feGaussianBlur')?.getAttribute('stdDeviation')).sort(),
+        ['0.7', '5.6', '22.4'].sort()
+      );
+      assert.notEqual(defaultSurface.style.backdropFilter, prominentSurface.style.backdropFilter);
+      assert.equal(prominentSurface.style.backdropFilter, matchingProminentSurface.style.backdropFilter);
+      assert.equal(defaultSurface.style.backdropFilter, invalidSurface.style.backdropFilter);
+      assert.equal(defaultSurface.style.backdropFilter, negativeSurface.style.backdropFilter);
+      assert.notEqual(defaultSurface.style.backdropFilter, cappedSurface.style.backdropFilter);
+    } finally {
+      for (const surface of surfaces) liquidGlassDirective.unmounted(surface);
+    }
   });
 });
 

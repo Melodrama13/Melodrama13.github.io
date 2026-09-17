@@ -40,6 +40,13 @@ body {
   --ui-glass-surface-filter: var(--ui-glass-filter-regular);
 }
 
+.ui-liquid-glass--prominent {
+  --ui-glass-surface-bg: var(--ui-glass-prominent-bg);
+  --ui-glass-surface-shadow: var(--ui-glass-shadow-regular);
+  --ui-glass-surface-filter: var(--ui-glass-filter-prominent);
+  --ui-glass-refraction-blur-radius: var(--ui-glass-refraction-blur-prominent);
+}
+
 .ui-liquid-glass--modal {
   --ui-glass-surface-bg: var(--ui-glass-modal-bg);
   --ui-glass-surface-shadow: var(--ui-glass-shadow-modal);

@@ -81,7 +81,7 @@
           v-if="sourceMenuOpen && showSourceDropdownInNav"
           ref="sourceMenuPanelRef"
           v-liquid-glass
-          class="source-menu source-menu-floating ui-liquid-glass ui-liquid-glass--regular"
+          class="source-menu source-menu-floating ui-liquid-glass ui-liquid-glass--prominent"
           :style="sourceMenuStyle"
           @pointerdown.stop
         >
@@ -3845,7 +3845,7 @@ button.active {
   padding: 6px 8px;
   border: 1px solid var(--source-glass-border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--ui-glass-group-bg);
   box-shadow: var(--source-glass-shadow-soft);
 }
 
@@ -3865,7 +3865,7 @@ button.active {
   padding: 0 10px;
   font-size: 0.76rem;
   color: #0f172a;
-  background: rgba(255, 255, 255, 0.46);
+  background: var(--ui-glass-input-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 1px 8px rgba(15, 23, 42, 0.04);
   outline: none;
   box-sizing: border-box;
@@ -3913,7 +3913,7 @@ button.active {
   margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--ui-glass-group-bg);
   box-shadow: var(--source-glass-shadow-soft);
 }
 
@@ -3928,8 +3928,8 @@ button.active {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid var(--source-inner-border);
+  background: var(--ui-glass-option-bg);
+  border: 1px solid var(--ui-glass-option-border);
   border-radius: 999px;
   padding: 6px 8px;
   font-size: 0.78rem;
@@ -3958,7 +3958,7 @@ button.active {
   justify-content: center;
   border-radius: 999px;
   border: 1px solid var(--source-inner-border);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(239, 246, 255, 0.24));
+  background: var(--ui-glass-control-bg);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
   font-size: 0.72rem;
   line-height: 1;
@@ -3981,7 +3981,7 @@ button.active {
   justify-content: center;
   border-radius: 999px;
   border: 1px solid var(--source-inner-border);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(239, 246, 255, 0.24));
+  background: var(--ui-glass-control-bg);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
   font-size: 0.72rem;
   line-height: 1;
@@ -4040,7 +4040,7 @@ button.active {
   margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--ui-glass-group-bg);
   box-shadow: var(--source-glass-shadow-soft);
 }
 
@@ -4051,7 +4051,7 @@ button.active {
   font-size: 0.74rem;
   border-radius: 999px;
   border-color: var(--source-inner-border);
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--ui-glass-control-bg);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
@@ -4084,7 +4084,7 @@ button.active {
   padding: 5px 8px;
   border: 1px solid var(--source-inner-border, rgba(148, 163, 184, 0.42));
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--ui-glass-control-bg);
   box-shadow: var(--source-glass-shadow-soft, inset 0 1px 0 rgba(255, 255, 255, 0.56));
   margin-bottom: 8px;
   user-select: none;

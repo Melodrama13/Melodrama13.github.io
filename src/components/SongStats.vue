@@ -9,14 +9,14 @@
       <button
         v-if="navCollapsed"
         v-liquid-glass
-        class="floating-menu-btn ui-liquid-glass ui-liquid-glass--refractive"
+        class="floating-menu-btn ui-liquid-glass ui-liquid-glass--prominent"
         title="展开统计菜单"
         @click="setNavCollapsed(false)"
       >
         <img src="/data/icon/menu.png" class="floating-menu-icon" alt="菜单" />
       </button>
 
-      <aside v-liquid-glass="!navCollapsed" class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--refractive" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
+      <aside v-liquid-glass="!navCollapsed" class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--prominent" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
         <button v-if="!navCollapsed" class="nav-collapse-fab" @click="setNavCollapsed(true)" title="收起统计菜单">
           <img src="/data/icon/menu_open.png" class="nav-collapse-fab-icon" alt="收起菜单" />
         </button>
