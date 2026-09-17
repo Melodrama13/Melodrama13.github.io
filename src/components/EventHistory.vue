@@ -527,6 +527,7 @@
       <div ref="filterStickyRef" class="filter-sticky">
         <div
           ref="filterBarRef"
+          v-liquid-glass
           class="filter-bar ui-liquid-glass ui-liquid-glass--regular"
           :class="{
             'is-compact': isCompactFilterBar,
@@ -587,7 +588,7 @@
           </button>
         </div>
         <transition name="slide-fade">
-          <div v-if="showFilter" class="filter-panel ui-liquid-glass ui-liquid-glass--regular">
+          <div v-if="showFilter" v-liquid-glass class="filter-panel ui-liquid-glass ui-liquid-glass--regular">
           <div class="filter-row filter-mode-row">
             <span class="row-label">模式</span>
             <div class="btn-group">

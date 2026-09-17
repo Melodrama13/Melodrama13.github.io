@@ -123,6 +123,7 @@ function createFakeGlassElement({ left, top, width, height, radius = '8px' }) {
     dataset: {},
     style,
     _radius: radius,
+    connected: true,
     addEventListener(type, listener) {
       const handlers = listeners.get(type) || new Set();
       handlers.add(listener);
@@ -150,6 +151,9 @@ function createFakeGlassElement({ left, top, width, height, radius = '8px' }) {
     },
     hasAttribute(name) {
       return attributes.has(name);
+    },
+    get isConnected() {
+      return this.connected;
     }
   };
 }
@@ -714,6 +718,54 @@ test('plugin bridge suspends kept-alive glass surfaces and resumes them once on 
     assert.equal(defs.children.length, 0);
     assert.equal(activeResizeObservers(), 0);
     assert.equal(windowListenerCount(), 0);
+  });
+});
+
+test('plugin bridge suspends and restores a disconnected surface behind a Fragment root', () => {
+  withFakeGlassRuntime(({ activeResizeObservers, defs, flushAnimationFrame, windowListenerCount }) => {
+    let registeredDirective;
+    let lifecycleBridge;
+    liquidGlassPlugin.install({
+      directive(name, directive) {
+        assert.equal(name, 'liquid-glass');
+        registeredDirective = directive;
+      },
+      mixin(bridge) {
+        lifecycleBridge = bridge;
+      },
+      onUnmount() {}
+    });
+
+    const element = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    const fragmentAnchor = { contains: () => false };
+    registeredDirective.mounted(element);
+    flushAnimationFrame();
+
+    element.connected = false;
+    lifecycleBridge.deactivated.call({ $el: fragmentAnchor });
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), false);
+    assert.equal(element.style.backdropFilter, '');
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
+    assert.equal(defs.children.length, 0);
+
+    registeredDirective.updated(element, {});
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), false);
+    assert.equal(element.style.backdropFilter, '');
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
+    assert.equal(defs.children.length, 0);
+
+    element.connected = true;
+    lifecycleBridge.activated.call({ $el: fragmentAnchor });
+    flushAnimationFrame();
+    assert.equal(element.hasAttribute('data-liquid-glass-interactive'), true);
+    assert.match(element.style.backdropFilter, /^url\(#ui-liquid-glass-\d+\)$/);
+    assert.equal(activeResizeObservers(), 1);
+    assert.equal(windowListenerCount(), 1);
+    assert.equal(defs.children.length, 1);
+
+    registeredDirective.unmounted(element);
   });
 });
 

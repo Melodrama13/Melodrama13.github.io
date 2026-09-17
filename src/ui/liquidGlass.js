@@ -362,6 +362,7 @@ function createGlassSurfaceLifecycle(element) {
 
   const resume = () => {
     if (destroyed) return false;
+    if (element?.isConnected === false) return true;
     if (active) return true;
     active = true;
     try {
@@ -412,13 +413,18 @@ export const liquidGlassPlugin = {
 
 function suspendGlassSurfacesWithin(root) {
   for (const element of registeredGlassSurfaces) {
-    if (isGlassSurfaceWithin(root, element)) elementLifecycle.get(element)?.suspend();
+    if (isGlassSurfaceWithin(root, element) || element?.isConnected === false) {
+      elementLifecycle.get(element)?.suspend();
+    }
   }
 }
 
 function resumeGlassSurfacesWithin(root) {
   for (const element of registeredGlassSurfaces) {
-    if (isGlassSurfaceWithin(root, element) && elementDirectiveActive.get(element) !== false) {
+    if (
+      (isGlassSurfaceWithin(root, element) || element?.isConnected === true)
+      && elementDirectiveActive.get(element) !== false
+    ) {
       elementLifecycle.get(element)?.resume();
     }
   }

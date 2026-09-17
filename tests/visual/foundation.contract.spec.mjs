@@ -66,6 +66,11 @@ const readRegularMaterial = (locator) => locator.evaluate((surface) => {
   const style = getComputedStyle(surface);
   const specular = getComputedStyle(surface, '::before');
   return {
+    inlineBackdropFilter: surface.style.backdropFilter,
+    hasConnectedFilter: Boolean(
+      surface.style.backdropFilter.match(/^url\(["']?#([^\)"']+)["']?\)$/)?.[1]
+      && document.getElementById(surface.style.backdropFilter.match(/^url\(["']?#([^\)"']+)["']?\)$/)?.[1])?.isConnected
+    ),
     backdropFilter: style.backdropFilter,
     backgroundImage: style.backgroundImage,
     boxShadow: style.boxShadow,
@@ -82,17 +87,16 @@ const rgbaAlphas = (value) => [...value.matchAll(/rgba\([^)]*?,\s*([\d.]+)\)/g)]
 
 const expectTransmissiveRegularMaterial = async (surface) => {
   await expect(surface).toHaveClass(/ui-liquid-glass--regular/);
-  await expect(surface).not.toHaveAttribute('data-liquid-glass-interactive');
+  await expect(surface).toHaveAttribute('data-liquid-glass-interactive', '');
   const material = await readRegularMaterial(surface);
   const alphas = rgbaAlphas(material.backgroundImage);
-  const blur = material.backdropFilter.match(/blur\(([\d.]+)px\)/);
 
   expect(material.backgroundImage).toContain('linear-gradient');
   expect(alphas.length).toBeGreaterThan(0);
   expect(Math.max(...alphas)).toBeLessThanOrEqual(0.60);
-  expect(material.backdropFilter).not.toContain('url(');
-  expect(blur).not.toBeNull();
-  expect(Number(blur[1])).toBeLessThanOrEqual(18);
+  expect(material.inlineBackdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
+  expect(material.hasConnectedFilter).toBe(true);
+  expect(material.backdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
   expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
   expect(material.specularDisplay).not.toBe('none');
   expect(material.specularContent).toBe('""');
@@ -252,7 +256,7 @@ test('history overlay controls adopt the shared liquid-glass tiers without neste
   await expect(page.locator('.predict-switch-dialog-card')).toHaveClass(/ui-liquid-glass--modal/);
 });
 
-test('regular glass controls transmit ambient color without nested refraction', async ({ page }) => {
+test('regular glass controls transmit ambient color with outer-only Chromium refraction', async ({ page }) => {
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
   await settleUi(page);
 
@@ -379,7 +383,7 @@ test('liquid glass specular stays below regular-glass content without changing i
   });
 });
 
-test('Special Predict keeps the regular outer tier while toolbar groups remain unfiltered', async ({ page }) => {
+test('Special Predict toolbar owns Chromium refraction while toolbar groups remain unfiltered', async ({ page }) => {
   await gotoUiState(page, {
     tab: 'specialPredict',
     width: 1440,
@@ -390,8 +394,11 @@ test('Special Predict keeps the regular outer tier while toolbar groups remain u
 
   const toolbar = page.locator('.special-toolbar');
   await expect(toolbar).toHaveClass(/ui-liquid-glass--regular/);
-  await expect(toolbar).not.toHaveCSS('backdrop-filter', 'none');
+  await expect(toolbar).toHaveAttribute('data-liquid-glass-interactive', '');
+  await expect.poll(() => toolbar.evaluate((element) => element.style.backdropFilter)).toMatch(/^url\("?#ui-liquid-glass-\d+"?\)$/);
+  await expect(toolbar).toHaveCSS('backdrop-filter', /^url\("?#ui-liquid-glass-\d+"?\)$/);
   await expect(toolbar.locator('.special-toolbar-group').first()).toHaveCSS('backdrop-filter', 'none');
+  await expect(toolbar.locator('.special-toolbar-group').first()).not.toHaveAttribute('data-liquid-glass-interactive');
 });
 
 test('history regular glass keeps a static optical rim when motion is reduced', async ({ page }) => {
@@ -403,6 +410,11 @@ test('history regular glass keeps a static optical rim when motion is reduced', 
     const style = getComputedStyle(surface);
     const specular = getComputedStyle(surface, '::before');
     return {
+      inlineBackdropFilter: surface.style.backdropFilter,
+      hasConnectedFilter: Boolean(
+        surface.style.backdropFilter.match(/^url\(["']?#([^\)"']+)["']?\)$/)?.[1]
+        && document.getElementById(surface.style.backdropFilter.match(/^url\(["']?#([^\)"']+)["']?\)$/)?.[1])?.isConnected
+      ),
       backdropFilter: style.backdropFilter,
       boxShadow: style.boxShadow,
       specularDisplay: specular.display,
@@ -418,9 +430,11 @@ test('history regular glass keeps a static optical rim when motion is reduced', 
 
   const assertFullMotionMaterial = async (surface) => {
     await expect(surface).toHaveClass(/ui-liquid-glass--regular/);
-    await expect(surface).not.toHaveAttribute('data-liquid-glass-interactive');
+    await expect(surface).toHaveAttribute('data-liquid-glass-interactive', '');
     const material = await readRegularMaterial(surface);
-    expect(material.backdropFilter).not.toContain('url(');
+    expect(material.inlineBackdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
+    expect(material.hasConnectedFilter).toBe(true);
+    expect(material.backdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
     expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
     expect(material.specularDisplay).not.toBe('none');
     expect(material.specularContent).toBe('""');

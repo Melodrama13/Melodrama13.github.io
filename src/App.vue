@@ -80,6 +80,7 @@
         <div
           v-if="sourceMenuOpen && showSourceDropdownInNav"
           ref="sourceMenuPanelRef"
+          v-liquid-glass
           class="source-menu source-menu-floating ui-liquid-glass ui-liquid-glass--regular"
           :style="sourceMenuStyle"
           @pointerdown.stop

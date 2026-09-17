@@ -4,6 +4,7 @@
       <div
         ref="drawerRef"
         v-if="isOpen"
+        v-liquid-glass
         class="predict-drawer ui-liquid-glass ui-liquid-glass--regular"
         :class="{ 'is-mobile-sheet': isMobileViewport }"
         :style="drawerStyle"

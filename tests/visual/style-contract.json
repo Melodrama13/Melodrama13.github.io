@@ -10,7 +10,7 @@
       "gap": "3px",
       "margin": "0px",
       "borderRadius": "999px",
-      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.36) 52%, rgba(226, 232, 240, 0.26))",
+      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(248, 250, 252, 0.3) 52%, rgba(226, 232, 240, 0.2))",
       "boxShadow": "rgba(71, 85, 105, 0.14) 0px 18px 50px 0px, rgba(14, 165, 233, 0.07) 0px 4px 14px 0px, rgba(255, 255, 255, 0.88) 0px 1px 0px 0px inset, rgba(71, 85, 105, 0.18) 0px -1px 0px 0px inset, rgba(103, 232, 249, 0.3) 1px 0px 0px 0px inset, rgba(251, 113, 133, 0.16) -1px 0px 0px 0px inset",
       "boundingBox": {
         "x": 10,
@@ -69,7 +69,7 @@
       "gap": "10px",
       "margin": "0px",
       "borderRadius": "999px",
-      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.36) 52%, rgba(226, 232, 240, 0.26))",
+      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(248, 250, 252, 0.3) 52%, rgba(226, 232, 240, 0.2))",
       "boxShadow": "rgba(71, 85, 105, 0.14) 0px 18px 50px 0px, rgba(14, 165, 233, 0.07) 0px 4px 14px 0px, rgba(255, 255, 255, 0.88) 0px 1px 0px 0px inset, rgba(71, 85, 105, 0.18) 0px -1px 0px 0px inset, rgba(103, 232, 249, 0.3) 1px 0px 0px 0px inset, rgba(251, 113, 133, 0.16) -1px 0px 0px 0px inset",
       "boundingBox": {
         "x": 20,
@@ -128,7 +128,7 @@
       "gap": "8px",
       "margin": "0px",
       "borderRadius": "28px",
-      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(248, 250, 252, 0.22) 46%, rgba(226, 232, 240, 0.16))",
+      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.28) 42%, rgba(219, 234, 254, 0.2))",
       "boxShadow": "rgba(71, 85, 105, 0.12) 0px 18px 50px 0px, rgba(14, 165, 233, 0.06) 0px 4px 14px 0px, rgba(255, 255, 255, 0.88) 0px 1px 0px 0px inset, rgba(71, 85, 105, 0.18) 0px -1px 0px 0px inset, rgba(103, 232, 249, 0.3) 1px 0px 0px 0px inset, rgba(251, 113, 133, 0.16) -1px 0px 0px 0px inset",
       "boundingBox": {
         "x": 0,
@@ -187,7 +187,7 @@
       "gap": "8px",
       "margin": "0px",
       "borderRadius": "28px",
-      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(248, 250, 252, 0.22) 46%, rgba(226, 232, 240, 0.16))",
+      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.28) 42%, rgba(219, 234, 254, 0.2))",
       "boxShadow": "rgba(71, 85, 105, 0.12) 0px 18px 50px 0px, rgba(14, 165, 233, 0.06) 0px 4px 14px 0px, rgba(255, 255, 255, 0.88) 0px 1px 0px 0px inset, rgba(71, 85, 105, 0.18) 0px -1px 0px 0px inset, rgba(103, 232, 249, 0.3) 1px 0px 0px 0px inset, rgba(251, 113, 133, 0.16) -1px 0px 0px 0px inset",
       "boundingBox": {
         "x": 44,
@@ -246,7 +246,7 @@
       "gap": "8px",
       "margin": "0px",
       "borderRadius": "28px",
-      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(248, 250, 252, 0.22) 46%, rgba(226, 232, 240, 0.16))",
+      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.28) 42%, rgba(219, 234, 254, 0.2))",
       "boxShadow": "rgba(71, 85, 105, 0.12) 0px 18px 50px 0px, rgba(14, 165, 233, 0.06) 0px 4px 14px 0px, rgba(255, 255, 255, 0.88) 0px 1px 0px 0px inset, rgba(71, 85, 105, 0.18) 0px -1px 0px 0px inset, rgba(103, 232, 249, 0.3) 1px 0px 0px 0px inset, rgba(251, 113, 133, 0.16) -1px 0px 0px 0px inset",
       "boundingBox": {
         "x": 0,
@@ -305,7 +305,7 @@
       "gap": "8px",
       "margin": "0px",
       "borderRadius": "28px",
-      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(248, 250, 252, 0.22) 46%, rgba(226, 232, 240, 0.16))",
+      "backgroundImage": "linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.28) 42%, rgba(219, 234, 254, 0.2))",
       "boxShadow": "rgba(71, 85, 105, 0.12) 0px 18px 50px 0px, rgba(14, 165, 233, 0.06) 0px 4px 14px 0px, rgba(255, 255, 255, 0.88) 0px 1px 0px 0px inset, rgba(71, 85, 105, 0.18) 0px -1px 0px 0px inset, rgba(103, 232, 249, 0.3) 1px 0px 0px 0px inset, rgba(251, 113, 133, 0.16) -1px 0px 0px 0px inset",
       "boundingBox": {
         "x": 44,

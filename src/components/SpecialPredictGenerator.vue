@@ -24,7 +24,7 @@
     </section>
 
     <section v-else class="special-generator-shell">
-      <div class="special-toolbar ui-liquid-glass ui-liquid-glass--regular">
+      <div v-liquid-glass class="special-toolbar ui-liquid-glass ui-liquid-glass--regular">
         <div class="special-toolbar-row special-toolbar-row-main">
         <div class="special-toolbar-group special-toolbar-source" :class="{ 'is-multi': isMultiCaseMode }">
           <div class="special-predict-mode-toggle" aria-label="预测图模式">

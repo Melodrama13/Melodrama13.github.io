@@ -30,6 +30,10 @@ body {
   --ui-glass-surface-filter: var(--ui-glass-filter-refractive);
 }
 
+.stats-nav.ui-liquid-glass--refractive {
+  --ui-glass-surface-bg: var(--ui-stats-nav-glass-bg);
+}
+
 .ui-liquid-glass--regular {
   --ui-glass-surface-bg: var(--ui-glass-regular-bg);
   --ui-glass-surface-shadow: var(--ui-glass-shadow-regular);
