@@ -1183,8 +1183,6 @@ defineExpose({
   line-height: 1;
   background: var(--pe-glass-bg);
   box-shadow: var(--pe-glass-shadow-soft);
-  backdrop-filter: saturate(160%) blur(14px);
-  -webkit-backdrop-filter: saturate(160%) blur(14px);
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, filter 0.16s ease, transform 0.16s ease;
 }
 .close-btn:hover {
@@ -1208,8 +1206,6 @@ defineExpose({
     0 8px 22px rgba(15, 23, 42, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.70),
     inset 0 -1px 0 rgba(14, 165, 233, 0.10);
-  backdrop-filter: saturate(180%) blur(18px);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
 }
 .global-config-bar.has-banner { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .cfg-group {
@@ -1218,8 +1214,6 @@ defineExpose({
   border: 0;
   background: transparent;
   box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 .cfg-group label {
   display: block;
@@ -1251,8 +1245,6 @@ defineExpose({
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
   box-shadow: var(--pe-glass-shadow-soft);
-  backdrop-filter: saturate(150%) blur(10px);
-  -webkit-backdrop-filter: saturate(150%) blur(10px);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 .cfg-group select:focus,
@@ -1292,8 +1284,6 @@ defineExpose({
   border: 1px solid var(--pe-glass-border);
   border-radius: var(--pe-radius-card);
   box-shadow: var(--pe-glass-shadow-soft);
-  backdrop-filter: saturate(150%) blur(14px);
-  -webkit-backdrop-filter: saturate(150%) blur(14px);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.16s ease;
 }
 .editor-card::before {
@@ -1392,8 +1382,6 @@ defineExpose({
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
   box-shadow: var(--pe-glass-shadow-soft);
-  backdrop-filter: saturate(150%) blur(10px);
-  -webkit-backdrop-filter: saturate(150%) blur(10px);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 .cfg-group select:disabled,
@@ -1417,8 +1405,6 @@ defineExpose({
   color: #64748b;
   border: 1px solid rgba(148, 163, 184, 0.24);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  backdrop-filter: saturate(150%) blur(10px);
-  -webkit-backdrop-filter: saturate(150%) blur(10px);
   box-sizing: border-box;
 }
 
@@ -1574,8 +1560,6 @@ defineExpose({
   background: var(--pe-glass-bg-strong);
   border: 1px solid var(--pe-glass-border);
   box-shadow: var(--pe-glass-shadow-soft);
-  backdrop-filter: saturate(160%) blur(12px);
-  -webkit-backdrop-filter: saturate(160%) blur(12px);
 }
 .wl-lock-note {
   color: #64748b;

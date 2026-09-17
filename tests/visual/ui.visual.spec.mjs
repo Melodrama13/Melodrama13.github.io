@@ -6,6 +6,7 @@ import {
   assertNoViewportOverflow,
   gotoUiState,
   readStyleContract,
+  setLiquidGlassMode,
   settleUi
 } from './fixtures.mjs';
 import {
@@ -124,6 +125,48 @@ const prepareVisibleAnvoViewportCapture = async (panel) => {
   return capture;
 };
 
+const readBackdropFilters = async (locator) => locator.evaluateAll((elements) => elements.map((element) => {
+  const style = getComputedStyle(element);
+  return {
+    backdropFilter: style.backdropFilter || 'none',
+    webkitBackdropFilter: style.webkitBackdropFilter || 'none'
+  };
+}));
+
+const assertRegularShellFilterOwnership = async (page, { label, root, descendants, isFallback }) => {
+  const [rootFilter] = await readBackdropFilters(page.locator(root));
+  if (isFallback) {
+    expect(rootFilter.backdropFilter, `${label} shell fallback backdrop filter`).toBe('none');
+    expect(rootFilter.webkitBackdropFilter, `${label} shell fallback webkit backdrop filter`).toBe('none');
+  } else {
+    expect(rootFilter.backdropFilter, `${label} shell owns the regular glass material`).not.toBe('none');
+  }
+
+  const childFilters = await readBackdropFilters(page.locator(descendants));
+  expect(childFilters.length, `${label} representative descendants`).toBeGreaterThan(0);
+  for (const [index, filter] of childFilters.entries()) {
+    expect(filter.backdropFilter, `${label} descendant ${index} backdrop filter`).toBe('none');
+    expect(filter.webkitBackdropFilter, `${label} descendant ${index} webkit backdrop filter`).toBe('none');
+  }
+};
+
+const openPredictDrawerForContract = async (page) => {
+  const opened = await page.locator('.event-item').evaluateAll(async (items) => {
+    const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    for (const item of items) {
+      item.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await nextFrame();
+      if (document.querySelector('.predict-drawer')) return true;
+    }
+    return false;
+  });
+
+  expect(opened, 'a future Event History row opens the Predict drawer').toBe(true);
+  await expect(page.locator('.predict-drawer')).toBeVisible();
+  await page.locator('.predict-drawer .pool-item:not(.is_disabled)').first().click();
+  await expect(page.locator('.predict-drawer .editor-card')).toBeVisible();
+};
+
 test.afterAll(async ({}, testInfo) => {
   await saveOrAssertStyleContract(testInfo);
 });
@@ -151,6 +194,43 @@ test('history compact captures the current compact surface and style contract', 
     animations: 'disabled',
     caret: 'hide'
   });
+});
+
+test('regular Event History and Predict shells own filtering across normal and fallback modes', async ({ page }) => {
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await settleUi(page);
+  await page.locator('.filter-bar .nav-btn[data-tip="筛选面板"]').click();
+  await expect(page.locator('.filter-panel')).toBeVisible();
+  await openPredictDrawerForContract(page);
+
+  const modes = [
+    { label: 'normal', mode: 'refractive', motion: 'full', isFallback: false },
+    { label: 'opaque', mode: 'opaque', motion: 'full', isFallback: true },
+    { label: 'reduced-transparency fallback', mode: 'opaque', motion: 'reduced', isFallback: true }
+  ];
+
+  for (const mode of modes) {
+    await setLiquidGlassMode(page, mode.mode, mode.motion);
+    await settleUi(page);
+    await assertRegularShellFilterOwnership(page, {
+      label: `Event History ${mode.label}`,
+      root: '.filter-bar',
+      descendants: '.filter-bar .sort-btn, .filter-bar .nav-btn',
+      isFallback: mode.isFallback
+    });
+    await assertRegularShellFilterOwnership(page, {
+      label: `Event History filter panel ${mode.label}`,
+      root: '.filter-panel',
+      descendants: '.filter-panel .char-chip, .filter-panel .icon-group img',
+      isFallback: mode.isFallback
+    });
+    await assertRegularShellFilterOwnership(page, {
+      label: `Predict ${mode.label}`,
+      root: '.predict-drawer',
+      descendants: '.predict-drawer .close-btn, .predict-drawer .global-config-bar, .predict-drawer .cfg-group select, .predict-drawer .editor-card, .predict-drawer .mini-select, .predict-drawer .unit-tag',
+      isFallback: mode.isFallback
+    });
+  }
 });
 
 test('card stats desktop captures the navigation and distribution panel', async ({ page }) => {

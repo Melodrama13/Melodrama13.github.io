@@ -8421,8 +8421,6 @@ button:not(:disabled):active {
   border: 1px solid var(--history-glass-border);
   background: var(--history-glass-bg);
   box-shadow: var(--history-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   transition: 0.2s;
   white-space: nowrap;
   min-height: 32px;
@@ -8445,8 +8443,6 @@ button:not(:disabled):active {
   border: 1px solid var(--history-glass-border);
   background: var(--history-glass-bg);
   box-shadow: var(--history-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   flex: 0 0 auto;
   white-space: nowrap;
   display: inline-flex;
@@ -9059,8 +9055,6 @@ button:not(:disabled):active {
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow: var(--history-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   touch-action: manipulation;
 }
@@ -9102,8 +9096,6 @@ button:not(:disabled):active {
   border-radius: 50%;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
   box-shadow: var(--history-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   cursor: pointer;
   filter: grayscale(1) opacity(0.5);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -9117,8 +9109,6 @@ button:not(:disabled):active {
   border-radius: 50%;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
   box-shadow: var(--history-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   cursor: pointer;
   filter: grayscale(1) opacity(0.5);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
