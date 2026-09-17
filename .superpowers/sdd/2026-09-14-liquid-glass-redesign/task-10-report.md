@@ -188,3 +188,33 @@ The six export-named PNGs were rehashed against base `01a4e2b4663ee83546a695aefa
 - This report (`task-10-report.md`), to be committed separately after the fix commit.
 
 The pre-existing untracked `test-results/.last-run.json` remains unstaged and uncommitted. No other tracked files were changed in the fix round.
+
+## Fix round 2
+
+### Test-only runtime-path coverage
+
+Round 2 is recorded in commit `5154c16e8238fe79933d6de193f27f3984b86850` (`test: exercise liquid glass fallback media paths`). No production source, material token, consumer scope, layout, breakpoint, screenshot, or export file changed.
+
+The focused command was run first:
+
+```text
+npx.cmd playwright test --config=playwright.config.mjs tests/visual/liquid-glass.visual.spec.mjs --grep "approved regular roots" --reporter=line
+```
+
+Output: `2 passed (54.1s)`.
+
+The Chromium case now starts in the production refractive environment and sends the real CDP `Emulation.setEmulatedMedia` transition for `prefers-reduced-transparency: reduce` and back to `no-preference` separately for every approved root group: Event History filter bar/source menu, Event History filter panel, Predict drawer, and Special Predict toolbar. Each transition asserts the environment mode, cleared inline URL filter, `backdrop-filter: none`, released SVG filter nodes, opaque background alpha, and text contrast of at least 4.5:1.
+
+The non-Chromium case creates a fresh page, applies a deterministic Safari user-agent and empty Chromium brand metadata before app boot, verifies the production mode is `frosted`, and exercises the same four root groups. Each group asserts CSS frost, no URL filter, and zero SVG filter nodes. The forced-colors contract now reuses the same `readSurfaceMaterial` contrast helper and asserts at least 4.5:1 instead of foreground/background string inequality.
+
+### Fresh round-2 verification
+
+| Command | Outcome |
+| --- | --- |
+| `npm.cmd run test:unit` | 66 passed, 0 failed |
+| `npm.cmd run check:ui` | UI policy check passed |
+| `npm.cmd run build` | Vite build passed; 90 modules transformed |
+| `npm.cmd run test:visual -- --reporter=line` | 45 passed, 0 failed in 8.8 minutes |
+| `git diff --check` | exit 0 before commit |
+
+All six export-named PNG SHA-1 values still match base `01a4e2b4663ee83546a695aefa5d81689dd28b69` byte-for-byte. The only round-2 tracked test change is `tests/visual/liquid-glass.visual.spec.mjs`; this report is the accompanying documentation change. The pre-existing `test-results/.last-run.json` remains untracked and unstaged.
