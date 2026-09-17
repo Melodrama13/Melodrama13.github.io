@@ -30,6 +30,7 @@ const FILTER_HOST_ID = 'ui-liquid-glass-filter-host';
 const elementCleanup = new WeakMap();
 const elementLifecycle = new WeakMap();
 const elementDirectiveActive = new WeakMap();
+const elementDirectiveOwner = new WeakMap();
 const filterRegistry = new Map();
 const mountedSurfaceRefreshers = new Set();
 const registeredGlassSurfaces = new Set();
@@ -204,6 +205,7 @@ export const liquidGlassDirective = {
     elementCleanup.set(element, lifecycle.destroy);
     elementLifecycle.set(element, lifecycle);
     elementDirectiveActive.set(element, binding?.value !== false);
+    if (binding?.instance != null) elementDirectiveOwner.set(element, getDirectiveOwnerKey(binding.instance));
     registeredGlassSurfaces.add(element);
     if (binding?.value !== false && !lifecycle.resume()) lifecycle.destroy();
   },
@@ -224,6 +226,7 @@ export const liquidGlassDirective = {
   unmounted(element) {
     elementCleanup.get(element)?.();
     elementDirectiveActive.delete(element);
+    elementDirectiveOwner.delete(element);
   }
 };
 
@@ -401,33 +404,39 @@ export const liquidGlassPlugin = {
     app.directive('liquid-glass', liquidGlassDirective);
     app.mixin?.({
       activated() {
-        resumeGlassSurfacesWithin(this?.$el);
+        resumeGlassSurfacesWithin(this, this?.$el);
       },
       deactivated() {
-        suspendGlassSurfacesWithin(this?.$el);
+        suspendGlassSurfacesWithin(this, this?.$el);
       }
     });
     app.onUnmount?.(cleanupEnvironment);
   }
 };
 
-function suspendGlassSurfacesWithin(root) {
+function suspendGlassSurfacesWithin(instance, root) {
   for (const element of registeredGlassSurfaces) {
-    if (isGlassSurfaceWithin(root, element) || element?.isConnected === false) {
+    if (isGlassSurfaceOwnedBy(instance, root, element)) {
       elementLifecycle.get(element)?.suspend();
     }
   }
 }
 
-function resumeGlassSurfacesWithin(root) {
+function resumeGlassSurfacesWithin(instance, root) {
   for (const element of registeredGlassSurfaces) {
-    if (
-      (isGlassSurfaceWithin(root, element) || element?.isConnected === true)
-      && elementDirectiveActive.get(element) !== false
-    ) {
+    if (isGlassSurfaceOwnedBy(instance, root, element) && elementDirectiveActive.get(element) !== false) {
       elementLifecycle.get(element)?.resume();
     }
   }
+}
+
+function isGlassSurfaceOwnedBy(instance, root, element) {
+  const owner = elementDirectiveOwner.get(element);
+  return owner != null ? owner === getDirectiveOwnerKey(instance) : isGlassSurfaceWithin(root, element);
+}
+
+function getDirectiveOwnerKey(instance) {
+  return instance?.$ ?? instance;
 }
 
 function isGlassSurfaceWithin(root, element) {

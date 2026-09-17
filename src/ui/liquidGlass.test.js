@@ -738,11 +738,12 @@ test('plugin bridge suspends and restores a disconnected surface behind a Fragme
 
     const element = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
     const fragmentAnchor = { contains: () => false };
-    registeredDirective.mounted(element);
+    const component = { $el: fragmentAnchor };
+    registeredDirective.mounted(element, { instance: component });
     flushAnimationFrame();
 
     element.connected = false;
-    lifecycleBridge.deactivated.call({ $el: fragmentAnchor });
+    lifecycleBridge.deactivated.call(component);
     assert.equal(element.hasAttribute('data-liquid-glass-interactive'), false);
     assert.equal(element.style.backdropFilter, '');
     assert.equal(activeResizeObservers(), 0);
@@ -757,7 +758,7 @@ test('plugin bridge suspends and restores a disconnected surface behind a Fragme
     assert.equal(defs.children.length, 0);
 
     element.connected = true;
-    lifecycleBridge.activated.call({ $el: fragmentAnchor });
+    lifecycleBridge.activated.call(component);
     flushAnimationFrame();
     assert.equal(element.hasAttribute('data-liquid-glass-interactive'), true);
     assert.match(element.style.backdropFilter, /^url\(#ui-liquid-glass-\d+\)$/);
@@ -766,6 +767,71 @@ test('plugin bridge suspends and restores a disconnected surface behind a Fragme
     assert.equal(defs.children.length, 1);
 
     registeredDirective.unmounted(element);
+  });
+});
+
+test('plugin bridge keeps disconnected surfaces scoped to their owning component instance', () => {
+  withFakeGlassRuntime(({ activeResizeObservers, defs, flushAnimationFrame, windowListenerCount }) => {
+    let registeredDirective;
+    let lifecycleBridge;
+    liquidGlassPlugin.install({
+      directive(name, directive) {
+        assert.equal(name, 'liquid-glass');
+        registeredDirective = directive;
+      },
+      mixin(bridge) {
+        lifecycleBridge = bridge;
+      },
+      onUnmount() {}
+    });
+
+    const ownerA = {};
+    const ownerB = {};
+    const elementA = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    const elementB = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    const rootA = { contains: () => false };
+    const rootB = { contains: () => false };
+    ownerA.$el = rootA;
+    ownerB.$el = rootB;
+    registeredDirective.mounted(elementA, { instance: ownerA });
+    registeredDirective.mounted(elementB, { instance: ownerB });
+    flushAnimationFrame();
+    assert.equal(activeResizeObservers(), 2);
+    assert.equal(defs.children.length, 1);
+
+    elementB.connected = false;
+    lifecycleBridge.deactivated.call(ownerB);
+    assert.equal(elementA.hasAttribute('data-liquid-glass-interactive'), true);
+    assert.equal(elementB.hasAttribute('data-liquid-glass-interactive'), false);
+    assert.equal(activeResizeObservers(), 1);
+    assert.equal(windowListenerCount(), 1);
+    assert.equal(defs.children.length, 1);
+
+    elementA.connected = false;
+    lifecycleBridge.deactivated.call(ownerA);
+    assert.equal(activeResizeObservers(), 0);
+    assert.equal(windowListenerCount(), 0);
+    assert.equal(defs.children.length, 0);
+
+    elementB.connected = true;
+    elementA.connected = true;
+    lifecycleBridge.activated.call(ownerA);
+    flushAnimationFrame();
+    assert.equal(elementA.hasAttribute('data-liquid-glass-interactive'), true);
+    assert.equal(elementB.hasAttribute('data-liquid-glass-interactive'), false);
+    assert.equal(activeResizeObservers(), 1);
+    assert.equal(windowListenerCount(), 1);
+    assert.equal(defs.children.length, 1);
+
+    lifecycleBridge.activated.call(ownerB);
+    flushAnimationFrame();
+    assert.equal(elementB.hasAttribute('data-liquid-glass-interactive'), true);
+    assert.equal(activeResizeObservers(), 2);
+    assert.equal(windowListenerCount(), 2);
+    assert.equal(defs.children.length, 1);
+
+    registeredDirective.unmounted(elementA);
+    registeredDirective.unmounted(elementB);
   });
 });
 
