@@ -73,6 +73,86 @@ const expectRefractiveOuterSurface = async (root, descendantSelector, label) => 
   }
 };
 
+const readSurfaceMaterial = (root) => root.evaluate((element) => {
+  const style = getComputedStyle(element);
+  const parseRgb = (value) => {
+    const match = value.match(/rgba?\(([^)]+)\)/);
+    if (!match) return null;
+    const channels = match[1].split(',').map((channel) => Number.parseFloat(channel.trim()));
+    if (channels.length < 3 || channels.some((channel) => !Number.isFinite(channel))) return null;
+    return {
+      rgb: channels.slice(0, 3).map((channel) => channel / 255),
+      alpha: channels.length >= 4 ? channels[3] : 1
+    };
+  };
+  const relativeLuminance = (value) => {
+    const parsed = parseRgb(value);
+    if (!parsed) return null;
+    return parsed.rgb.reduce((total, channel, index) => {
+      const linear = channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      return total + linear * [0.2126, 0.7152, 0.0722][index];
+    }, 0);
+  };
+  const backgroundLuminance = relativeLuminance(style.backgroundColor);
+  const textLuminance = relativeLuminance(style.color);
+  const contrast = backgroundLuminance === null || textLuminance === null
+    ? null
+    : (Math.max(backgroundLuminance, textLuminance) + 0.05)
+      / (Math.min(backgroundLuminance, textLuminance) + 0.05);
+  return {
+    inlineBackdropFilter: element.style.backdropFilter,
+    backdropFilter: style.backdropFilter,
+    backgroundImage: style.backgroundImage,
+    backgroundColor: style.backgroundColor,
+    backgroundAlpha: parseRgb(style.backgroundColor)?.alpha ?? null,
+    contrast
+  };
+});
+
+const setEmulatedMediaFeature = async (mediaSession, name, value) => {
+  await mediaSession.send('Emulation.setEmulatedMedia', {
+    features: [{ name, value }]
+  });
+};
+
+const assertFrostedFallbacks = async (page, roots, label) => {
+  await expect.poll(() => page.locator('#ui-liquid-glass-filter-host filter').count(), {
+    message: `${label} frosted filter nodes must be released`
+  }).toBe(0);
+  for (const root of roots) {
+    const material = await readSurfaceMaterial(root);
+    expect(material.inlineBackdropFilter, `${label} frosted inline filter`).toBe('');
+    expect(material.backdropFilter, `${label} frosted computed filter`).not.toContain('url(');
+    expect(material.backdropFilter, `${label} frosted computed filter`).toMatch(/blur\(/);
+    expect(material.backgroundImage, `${label} frosted background`).toContain('linear-gradient');
+  }
+};
+
+const assertOpaqueFallbacks = async (page, roots, label) => {
+  await expect.poll(() => page.locator('#ui-liquid-glass-filter-host filter').count(), {
+    message: `${label} opaque filter nodes must be released`
+  }).toBe(0);
+  for (const root of roots) {
+    const material = await readSurfaceMaterial(root);
+    expect(material.inlineBackdropFilter, `${label} opaque inline filter`).toBe('');
+    expect(material.backdropFilter, `${label} opaque computed filter`).toBe('none');
+    expect(material.backgroundImage, `${label} opaque background image`).toBe('none');
+    expect(material.backgroundAlpha, `${label} opaque background alpha`).toBe(1);
+    expect(material.contrast, `${label} opaque text contrast`).toBeGreaterThanOrEqual(4.5);
+  }
+};
+
+const assertReducedTransparencyFallback = async (page, mediaSession, roots, label) => {
+  await setEmulatedMediaFeature(mediaSession, 'prefers-reduced-transparency', 'reduce');
+  await expect.poll(() => page.evaluate(() => window.matchMedia('(prefers-reduced-transparency: reduce)').matches)).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.uiGlassMode)).toBe('opaque');
+  await assertOpaqueFallbacks(page, roots, label);
+
+  await setEmulatedMediaFeature(mediaSession, 'prefers-reduced-transparency', 'no-preference');
+  await expect.poll(() => page.evaluate(() => window.matchMedia('(prefers-reduced-transparency: reduce)').matches)).toBe(false);
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.uiGlassMode)).toBe('refractive');
+};
+
 const readBackgroundImage = (locator) => locator.evaluate((element) => getComputedStyle(element).backgroundImage);
 
 test('Chromium shell owns one connected SVG edge pipeline in filter order', async ({ page }) => {
@@ -143,90 +223,25 @@ test('forced-colors clears regular-shell URL filters and filter nodes while reta
   await expect(filterBar).toHaveCSS('background-image', 'none');
   await expect(host.locator('filter')).toHaveCount(0);
 
-  const fallback = await filterBar.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return { backgroundColor: style.backgroundColor, color: style.color };
-  });
+  const fallback = await readSurfaceMaterial(filterBar);
   expect(fallback.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
-  expect(fallback.color).not.toBe(fallback.backgroundColor);
+  expect(fallback.contrast).toBeGreaterThanOrEqual(4.5);
 });
 
-test('approved regular roots release runtime refraction and retain readable frosted and opaque fallbacks', async ({ page }) => {
-  const readSurfaceFallback = async (root) => root.evaluate((element) => {
-    const style = getComputedStyle(element);
-    const parseRgb = (value) => {
-      const match = value.match(/rgba?\(([^)]+)\)/);
-      if (!match) return null;
-      const channels = match[1].split(',').map((channel) => Number.parseFloat(channel.trim()));
-      if (channels.length < 3 || channels.some((channel) => !Number.isFinite(channel))) return null;
-      return channels.slice(0, 3).map((channel) => channel / 255);
-    };
-    const relativeLuminance = (value) => {
-      const rgb = parseRgb(value);
-      if (!rgb) return null;
-      return rgb.reduce((total, channel, index) => {
-        const linear = channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-        return total + linear * [0.2126, 0.7152, 0.0722][index];
-      }, 0);
-    };
-    const backgroundLuminance = relativeLuminance(style.backgroundColor);
-    const textLuminance = relativeLuminance(style.color);
-    const contrast = backgroundLuminance === null || textLuminance === null
-      ? null
-      : (Math.max(backgroundLuminance, textLuminance) + 0.05)
-        / (Math.min(backgroundLuminance, textLuminance) + 0.05);
-    return {
-      inlineBackdropFilter: element.style.backdropFilter,
-      backdropFilter: style.backdropFilter,
-      backgroundImage: style.backgroundImage,
-      backgroundColor: style.backgroundColor,
-      contrast
-    };
-  });
+test('approved regular roots release runtime refraction through reduced-transparency media transitions', async ({ page }) => {
+  const mediaSession = await page.context().newCDPSession(page);
+  await setEmulatedMediaFeature(mediaSession, 'prefers-reduced-transparency', 'no-preference');
 
-  const refreshMode = async (mode) => {
-    await setLiquidGlassMode(page, mode);
-    await page.evaluate(() => window.dispatchEvent(new Event('resize')));
-    await settleUi(page);
-  };
-
-  const assertOpaqueFallbacks = async (roots, label) => {
-    await expect.poll(() => page.locator('#ui-liquid-glass-filter-host filter').count(), {
-      message: `${label} opaque filter nodes must be released`
-    }).toBe(0);
-    for (const root of roots) {
-      const material = await readSurfaceFallback(root);
-      expect(material.inlineBackdropFilter, `${label} opaque inline filter`).toBe('');
-      expect(material.backdropFilter, `${label} opaque computed filter`).toBe('none');
-      expect(material.backgroundImage, `${label} opaque background image`).toBe('none');
-      expect(material.backgroundColor, `${label} opaque background color`).not.toBe('rgba(0, 0, 0, 0)');
-      expect(material.contrast, `${label} opaque text contrast`).toBeGreaterThanOrEqual(4.5);
-    }
-  };
-
-  const assertRuntimeFallbacks = async (roots, label) => {
-    await refreshMode('frosted');
-    await expect.poll(() => page.locator('#ui-liquid-glass-filter-host filter').count(), {
-      message: `${label} frosted filter nodes must be released`
-    }).toBe(0);
-    for (const root of roots) {
-      const material = await readSurfaceFallback(root);
-      expect(material.inlineBackdropFilter, `${label} frosted inline filter`).toBe('');
-      expect(material.backdropFilter, `${label} frosted computed filter`).not.toContain('url(');
-      expect(material.backdropFilter, `${label} frosted computed filter`).toMatch(/blur\(/);
-      expect(material.backgroundImage, `${label} frosted background`).toContain('linear-gradient');
-    }
-
-    await refreshMode('opaque');
-    await assertOpaqueFallbacks(roots, label);
+  const expectChromiumRefractive = async () => {
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.uiGlassMode)).toBe('refractive');
   };
 
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
-  await setLiquidGlassMode(page, 'refractive');
+  await expectChromiumRefractive();
   await settleUi(page);
 
   const filterBar = page.locator('.filter-bar');
-  await expectRefractiveOuterSurface(filterBar, '.sort-btn', 'fallback filter bar');
+  await expectRefractiveOuterSurface(filterBar, '.sort-btn', 'reduced-transparency filter bar');
   expect(await filterBar.evaluate((element) => {
     const surfaceOwner = element.__vueParentComponent?.proxy;
     const eventHistoryOwner = element.closest('.event-history')?.__vueParentComponent?.proxy;
@@ -248,50 +263,93 @@ test('approved regular roots release runtime refraction and retain readable fros
 
   await page.locator('.source-trigger').click();
   const sourceMenu = page.locator('.source-menu-floating');
-  await expectRefractiveOuterSurface(sourceMenu, '.source-list', 'fallback source menu');
-  await assertRuntimeFallbacks([filterBar, sourceMenu], 'Event History filter bar and source menu');
-
-  await setLiquidGlassMode(page, 'refractive');
-  await page.evaluate(() => window.dispatchEvent(new Event('resize')));
-  await settleUi(page);
-  const mediaSession = await page.context().newCDPSession(page);
-  await mediaSession.send('Emulation.setEmulatedMedia', {
-    features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }]
-  });
-  await expect.poll(() => page.evaluate(() => window.matchMedia('(prefers-reduced-transparency: reduce)').matches)).toBe(true);
-  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.uiGlassMode)).toBe('opaque');
-  await assertOpaqueFallbacks([filterBar, sourceMenu], 'reduced-transparency Event History roots');
-  await mediaSession.send('Emulation.setEmulatedMedia', {
-    features: [{ name: 'prefers-reduced-transparency', value: 'no-preference' }]
-  });
-  await expect.poll(() => page.evaluate(() => window.matchMedia('(prefers-reduced-transparency: reduce)').matches)).toBe(false);
-  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.uiGlassMode)).toBe('refractive');
+  await expectRefractiveOuterSurface(sourceMenu, '.source-list', 'reduced-transparency source menu');
+  await assertReducedTransparencyFallback(
+    page,
+    mediaSession,
+    [filterBar, sourceMenu],
+    'reduced-transparency Event History filter bar and source menu'
+  );
 
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
-  await setLiquidGlassMode(page, 'refractive');
+  await expectChromiumRefractive();
   await settleUi(page);
   const filterBarWithPanel = page.locator('.filter-bar');
-  await expectRefractiveOuterSurface(filterBarWithPanel, '.sort-btn', 'fallback filter panel bar');
-
+  await expectRefractiveOuterSurface(filterBarWithPanel, '.sort-btn', 'reduced-transparency filter panel bar');
   await filterBarWithPanel.locator('button[title="筛选面板"]').click();
   const filterPanel = page.locator('.filter-panel');
-  await expectRefractiveOuterSurface(filterPanel, '.filter-row', 'fallback filter panel');
-  await assertRuntimeFallbacks([filterBarWithPanel, filterPanel], 'Event History filter panel');
+  await expectRefractiveOuterSurface(filterPanel, '.filter-row', 'reduced-transparency filter panel');
+  await assertReducedTransparencyFallback(page, mediaSession, [filterBarWithPanel, filterPanel], 'reduced-transparency Event History filter panel');
 
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
-  await setLiquidGlassMode(page, 'refractive');
+  await expectChromiumRefractive();
   await settleUi(page);
   await openPredictDrawer(page);
   const predictDrawer = page.locator('.predict-drawer');
-  await expectRefractiveOuterSurface(predictDrawer, '.drawer-header', 'fallback Predict drawer');
-  await assertRuntimeFallbacks([predictDrawer], 'Predict drawer regular root');
+  await expectRefractiveOuterSurface(predictDrawer, '.drawer-header', 'reduced-transparency Predict drawer');
+  await assertReducedTransparencyFallback(page, mediaSession, [predictDrawer], 'reduced-transparency Predict drawer');
 
   await gotoUiState(page, { tab: 'specialPredict', width: 1440, height: 1000, unlockSpecialPredict: true });
-  await setLiquidGlassMode(page, 'refractive');
+  await expectChromiumRefractive();
   await settleUi(page);
   const toolbar = page.locator('.special-toolbar');
-  await expectRefractiveOuterSurface(toolbar, '.special-toolbar-group', 'fallback Special Predict toolbar');
-  await assertRuntimeFallbacks([toolbar], 'Special Predict regular root');
+  await expectRefractiveOuterSurface(toolbar, '.special-toolbar-group', 'reduced-transparency Special Predict toolbar');
+  await assertReducedTransparencyFallback(page, mediaSession, [toolbar], 'reduced-transparency Special Predict toolbar');
+});
+
+test('approved regular roots start with CSS frost on a non-Chromium user agent', async ({ page }) => {
+  const fallbackPage = await page.context().newPage();
+  const userAgentSession = await fallbackPage.context().newCDPSession(fallbackPage);
+  await userAgentSession.send('Emulation.setUserAgentOverride', {
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15',
+    acceptLanguage: 'en-US,en;q=0.9',
+    platform: 'MacIntel',
+    userAgentMetadata: {
+      brands: [],
+      fullVersionList: [],
+      platform: 'macOS',
+      platformVersion: '10.15.7',
+      architecture: 'x86',
+      model: '',
+      mobile: false,
+      bitness: '64',
+      wow64: false
+    }
+  });
+
+  try {
+    await gotoUiState(fallbackPage, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+    await expect.poll(() => fallbackPage.evaluate(() => document.documentElement.dataset.uiGlassMode)).toBe('frosted');
+    expect(await fallbackPage.evaluate(() => navigator.userAgent)).toContain('Safari');
+    expect(await fallbackPage.evaluate(() => navigator.userAgentData?.brands ?? [])).toEqual([]);
+    await settleUi(fallbackPage);
+
+    const filterBar = fallbackPage.locator('.filter-bar');
+    await assertFrostedFallbacks(fallbackPage, [filterBar], 'non-Chromium Event History filter bar');
+    await fallbackPage.locator('.source-trigger').click();
+    const sourceMenu = fallbackPage.locator('.source-menu-floating');
+    await assertFrostedFallbacks(fallbackPage, [filterBar, sourceMenu], 'non-Chromium Event History filter bar and source menu');
+
+    await gotoUiState(fallbackPage, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+    await settleUi(fallbackPage);
+    const filterBarWithPanel = fallbackPage.locator('.filter-bar');
+    await filterBarWithPanel.locator('button[title="筛选面板"]').click();
+    const filterPanel = fallbackPage.locator('.filter-panel');
+    await assertFrostedFallbacks(fallbackPage, [filterBarWithPanel, filterPanel], 'non-Chromium Event History filter panel');
+
+    await gotoUiState(fallbackPage, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+    await settleUi(fallbackPage);
+    await openPredictDrawer(fallbackPage);
+    const predictDrawer = fallbackPage.locator('.predict-drawer');
+    await assertFrostedFallbacks(fallbackPage, [predictDrawer], 'non-Chromium Predict drawer');
+
+    await gotoUiState(fallbackPage, { tab: 'specialPredict', width: 1440, height: 1000, unlockSpecialPredict: true });
+    await settleUi(fallbackPage);
+    const toolbar = fallbackPage.locator('.special-toolbar');
+    await assertFrostedFallbacks(fallbackPage, [toolbar], 'non-Chromium Special Predict toolbar');
+  } finally {
+    await fallbackPage.close();
+  }
 });
 
 test('approved regular overlay shells own Chromium refraction while descendants and content stay outside it', async ({ page }) => {
