@@ -66,6 +66,14 @@ function maxEdgeDisplacement({ mapHeight, mapWidth, rgba, scale }) {
   return maximum;
 }
 
+function displacementMagnitude({ mapWidth, rgba, scale }, x, y) {
+  const offset = (y * mapWidth + x) * 4;
+  return Math.hypot(
+    decodeDisplacement(rgba[offset], scale),
+    decodeDisplacement(rgba[offset + 1], scale)
+  );
+}
+
 function createFakeNode(tagName) {
   const node = {
     tagName,
@@ -102,7 +110,16 @@ function createFakeNode(tagName) {
   return node;
 }
 
-function createFakeGlassElement({ left, top, width, height, radius = '8px', refractionBlur = '' }) {
+function createFakeGlassElement({
+  left,
+  top,
+  width,
+  height,
+  radius = '8px',
+  refractionBlur = '',
+  refractionStrength = '',
+  refractionSpread = ''
+}) {
   const listeners = new Map();
   const attributes = new Map();
   const style = {
@@ -124,6 +141,8 @@ function createFakeGlassElement({ left, top, width, height, radius = '8px', refr
     style,
     _radius: radius,
     _refractionBlur: refractionBlur,
+    _refractionStrength: refractionStrength,
+    _refractionSpread: refractionSpread,
     connected: true,
     addEventListener(type, listener) {
       const handlers = listeners.get(type) || new Set();
@@ -157,6 +176,12 @@ function createFakeGlassElement({ left, top, width, height, radius = '8px', refr
       return this.connected;
     }
   };
+}
+
+function filterConfigForSurface(element, defs) {
+  const id = element.style.backdropFilter.match(/^url\(#([^\)]+)\)$/)?.[1];
+  const key = defs.children.find((filter) => filter.getAttribute('id') === id)?.dataset?.uiLiquidGlassKey;
+  return JSON.parse(key?.split('|').at(-1) ?? '');
 }
 
 function withFakeGlassRuntime(run) {
@@ -226,7 +251,11 @@ function withFakeGlassRuntime(run) {
       return {
         borderTopLeftRadius: element._radius,
         getPropertyValue(name) {
-          return name === '--ui-glass-refraction-blur-radius' ? element._refractionBlur : '';
+          return {
+            '--ui-glass-refraction-blur-radius': element._refractionBlur,
+            '--ui-glass-refraction-strength': element._refractionStrength,
+            '--ui-glass-refraction-spread': element._refractionSpread
+          }[name] ?? '';
         }
       };
     }
@@ -378,6 +407,82 @@ test('bakes a neutral center and visible rounded-rect edge refraction', () => {
   assert.ok(Math.abs(centerY) <= 0.5);
   assert.ok(maxEdgeDisplacement(field) > 1);
   assert.ok(field.scale > 0);
+});
+
+test('resolves prominent optical multipliers safely without changing the default preset', () => {
+  withFakeGlassRuntime(({ defs, flushAnimationFrame }) => {
+    const defaultSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    const prominentSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionStrength: '1.14', refractionSpread: '1.45' });
+    const nonPositiveSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionStrength: '0', refractionSpread: '-1' });
+    const invalidSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionStrength: 'Infinity', refractionSpread: 'not-a-number' });
+    const boundedSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionStrength: '99', refractionSpread: '0.25' });
+    const spreadCappedSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionStrength: '2', refractionSpread: '99' });
+    const surfaces = [defaultSurface, prominentSurface, nonPositiveSurface, invalidSurface, boundedSurface, spreadCappedSurface];
+
+    for (const surface of surfaces) liquidGlassDirective.mounted(surface);
+    flushAnimationFrame();
+
+    try {
+      const defaults = filterConfigForSurface(defaultSurface, defs);
+      const prominent = filterConfigForSurface(prominentSurface, defs);
+      const bounded = filterConfigForSurface(boundedSurface, defs);
+      const spreadCapped = filterConfigForSurface(spreadCappedSurface, defs);
+
+      assert.deepEqual(defaults, GLASS_PRESET);
+      assert.equal(defaultSurface.style.backdropFilter, nonPositiveSurface.style.backdropFilter);
+      assert.equal(defaultSurface.style.backdropFilter, invalidSurface.style.backdropFilter);
+      assert.equal(prominent.edgeIntensity, GLASS_PRESET.edgeIntensity * 1.14);
+      assert.equal(prominent.rimIntensity, GLASS_PRESET.rimIntensity * 1.14);
+      assert.equal(prominent.cornerBoost, GLASS_PRESET.cornerBoost * 1.14);
+      assert.equal(prominent.rippleEffect, GLASS_PRESET.rippleEffect * 1.14);
+      assert.equal(prominent.edgeDistance, GLASS_PRESET.edgeDistance / 1.45);
+      assert.equal(prominent.rimDistance, GLASS_PRESET.rimDistance / 1.45);
+      assert.equal(bounded.edgeIntensity, GLASS_PRESET.edgeIntensity * 2);
+      assert.equal(bounded.edgeDistance, GLASS_PRESET.edgeDistance / 0.5);
+      assert.equal(spreadCapped.edgeDistance, GLASS_PRESET.edgeDistance / 2);
+      assert.deepEqual(GLASS_PRESET, {
+        edgeIntensity: 0.015,
+        rimIntensity: 0.028,
+        baseIntensity: 0.05,
+        edgeDistance: 0.5,
+        rimDistance: 1.7,
+        baseDistance: 0.2,
+        cornerBoost: 0.06,
+        rippleEffect: 0.26,
+        blurRadius: 2,
+        warp: false
+      });
+    } finally {
+      for (const surface of surfaces) liquidGlassDirective.unmounted(surface);
+    }
+  });
+});
+
+test('prominent optical multipliers create a stronger wider edge-only displacement field', () => {
+  withFakeGlassRuntime(({ defs, flushAnimationFrame }) => {
+    const defaultSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    const prominentSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionStrength: '1.14', refractionSpread: '1.45' });
+    liquidGlassDirective.mounted(defaultSurface);
+    liquidGlassDirective.mounted(prominentSurface);
+    flushAnimationFrame();
+
+    try {
+      const input = { width: 80, height: 40, radius: 12, viewportWidth: 1440, viewportHeight: 1000 };
+      const defaults = buildLiquidGlassDisplacement({ ...input, config: filterConfigForSurface(defaultSurface, defs) });
+      const prominent = buildLiquidGlassDisplacement({ ...input, config: filterConfigForSurface(prominentSurface, defs) });
+      const centerX = Math.floor(prominent.mapWidth / 2);
+      const centerY = Math.floor(prominent.mapHeight / 2);
+
+      assert.ok(maxEdgeDisplacement(prominent) > maxEdgeDisplacement(defaults));
+      assert.ok(displacementMagnitude(prominent, 8, centerY) > displacementMagnitude(defaults, 8, centerY));
+      assert.equal(filterConfigForSurface(prominentSurface, defs).warp, false);
+      assert.ok(displacementMagnitude(prominent, centerX, centerY) < displacementMagnitude(prominent, 8, centerY) * 0.1);
+      assert.notEqual(prominent.cacheKey, defaults.cacheKey);
+    } finally {
+      liquidGlassDirective.unmounted(defaultSurface);
+      liquidGlassDirective.unmounted(prominentSurface);
+    }
+  });
 });
 
 test('bounds wide displacement maps and derives a stable geometry cache key', () => {
@@ -584,8 +689,9 @@ test('shares one connected filter between equal glass surfaces until the final r
 test('resolves CSS refraction blur per surface for SVG blur and filter sharing', () => {
   withFakeGlassRuntime(({ defs, flushAnimationFrame }) => {
     const defaultSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
-    const prominentSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '16' });
-    const matchingProminentSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '16' });
+    const prominentSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '16', refractionStrength: '1.14', refractionSpread: '1.45' });
+    const matchingProminentSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '16', refractionStrength: '1.14', refractionSpread: '1.45' });
+    const sameBlurDefaultOpticalSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '16' });
     const invalidSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: 'invalid' });
     const negativeSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '-2' });
     const cappedSurface = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100, refractionBlur: '128' });
@@ -593,6 +699,7 @@ test('resolves CSS refraction blur per surface for SVG blur and filter sharing',
       defaultSurface,
       prominentSurface,
       matchingProminentSurface,
+      sameBlurDefaultOpticalSurface,
       invalidSurface,
       negativeSurface,
       cappedSurface
@@ -602,13 +709,14 @@ test('resolves CSS refraction blur per surface for SVG blur and filter sharing',
     flushAnimationFrame();
 
     try {
-      assert.equal(defs.children.length, 3);
+      assert.equal(defs.children.length, 4);
       assert.deepEqual(
         defs.children.map((filter) => filter.children.find((node) => node.tagName === 'feGaussianBlur')?.getAttribute('stdDeviation')).sort(),
-        ['0.7', '5.6', '22.4'].sort()
+        ['0.7', '5.6', '5.6', '22.4'].sort()
       );
       assert.notEqual(defaultSurface.style.backdropFilter, prominentSurface.style.backdropFilter);
       assert.equal(prominentSurface.style.backdropFilter, matchingProminentSurface.style.backdropFilter);
+      assert.notEqual(prominentSurface.style.backdropFilter, sameBlurDefaultOpticalSurface.style.backdropFilter);
       assert.equal(defaultSurface.style.backdropFilter, invalidSurface.style.backdropFilter);
       assert.equal(defaultSurface.style.backdropFilter, negativeSurface.style.backdropFilter);
       assert.notEqual(defaultSurface.style.backdropFilter, cappedSurface.style.backdropFilter);

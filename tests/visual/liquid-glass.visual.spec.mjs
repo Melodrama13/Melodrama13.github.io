@@ -105,7 +105,17 @@ const readSurfaceMaterial = (root) => root.evaluate((element) => {
     backgroundImage: style.backgroundImage,
     backgroundColor: style.backgroundColor,
     backgroundAlpha: parseRgb(style.backgroundColor)?.alpha ?? null,
-    contrast
+    contrast,
+    opticalRim: {
+      content: getComputedStyle(element, '::after').content,
+      display: getComputedStyle(element, '::after').display,
+      background: getComputedStyle(element, '::after').backgroundImage,
+      padding: getComputedStyle(element, '::after').padding,
+      pointerEvents: getComputedStyle(element, '::after').pointerEvents,
+      backdropFilter: getComputedStyle(element, '::after').backdropFilter,
+      maskImage: getComputedStyle(element, '::after').maskImage,
+      webkitMaskImage: getComputedStyle(element, '::after').webkitMaskImage
+    }
   };
 });
 
@@ -134,11 +144,13 @@ const assertOpaqueFallbacks = async (page, roots, label) => {
   }).toBe(0);
   for (const root of roots) {
     const material = await readSurfaceMaterial(root);
+    const isProminent = await root.evaluate((element) => element.classList.contains('ui-liquid-glass--prominent'));
     expect(material.inlineBackdropFilter, `${label} opaque inline filter`).toBe('');
     expect(material.backdropFilter, `${label} opaque computed filter`).toBe('none');
     expect(material.backgroundImage, `${label} opaque background image`).toBe('none');
     expect(material.backgroundAlpha, `${label} opaque background alpha`).toBe(1);
     expect(material.contrast, `${label} opaque text contrast`).toBeGreaterThanOrEqual(4.5);
+    if (isProminent) expect(material.opticalRim.display, `${label} opaque optical rim`).toBe('none');
   }
 };
 
@@ -226,6 +238,26 @@ test('forced-colors clears prominent-shell URL filters and filter nodes while re
   const fallback = await readSurfaceMaterial(filterBar);
   expect(fallback.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
   expect(fallback.contrast).toBeGreaterThanOrEqual(4.5);
+  expect(fallback.opticalRim.display).toBe('none');
+});
+
+test('prominent optical rim hides for opaque and increased-contrast fallbacks', async ({ page }) => {
+  const mediaSession = await page.context().newCDPSession(page);
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await setLiquidGlassMode(page, 'refractive', 'full');
+  await page.locator('.source-trigger').click();
+  const sourceMenu = page.locator('.source-menu');
+
+  await expect.poll(() => sourceMenu.evaluate((surface) => getComputedStyle(surface, '::after').display)).not.toBe('none');
+  await setLiquidGlassMode(page, 'opaque', 'full');
+  await expect(sourceMenu).toHaveCSS('background-image', 'none');
+  await expect.poll(() => sourceMenu.evaluate((surface) => getComputedStyle(surface, '::after').display)).toBe('none');
+
+  await setLiquidGlassMode(page, 'refractive', 'full');
+  await setEmulatedMediaFeature(mediaSession, 'prefers-contrast', 'more');
+  await expect.poll(() => sourceMenu.evaluate((surface) => getComputedStyle(surface, '::after').display)).toBe('none');
+
+  await setEmulatedMediaFeature(mediaSession, 'prefers-contrast', 'no-preference');
 });
 
 test('approved prominent roots release runtime refraction through reduced-transparency media transitions', async ({ page }) => {

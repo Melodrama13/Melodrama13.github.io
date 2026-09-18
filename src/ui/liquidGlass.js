@@ -497,7 +497,31 @@ function resolveLiquidGlassConfig(element, windowLike) {
   const blurRadius = Number.isFinite(parsedBlurRadius) && parsedBlurRadius >= 0
     ? Math.min(parsedBlurRadius, MAX_REFRACTION_BLUR_RADIUS)
     : GLASS_PRESET.blurRadius;
-  return { ...GLASS_PRESET, blurRadius };
+  const strength = resolveOpticalMultiplier(
+    computed?.getPropertyValue?.('--ui-glass-refraction-strength'),
+    { maximum: 2 }
+  );
+  const spread = resolveOpticalMultiplier(
+    computed?.getPropertyValue?.('--ui-glass-refraction-spread'),
+    { minimum: 0.5, maximum: 2 }
+  );
+  return {
+    ...GLASS_PRESET,
+    edgeIntensity: GLASS_PRESET.edgeIntensity * strength,
+    rimIntensity: GLASS_PRESET.rimIntensity * strength,
+    edgeDistance: GLASS_PRESET.edgeDistance / spread,
+    rimDistance: GLASS_PRESET.rimDistance / spread,
+    cornerBoost: GLASS_PRESET.cornerBoost * strength,
+    rippleEffect: GLASS_PRESET.rippleEffect * strength,
+    blurRadius
+  };
+}
+
+function resolveOpticalMultiplier(rawValue, { minimum = 0, maximum }) {
+  const normalized = rawValue?.trim?.() ?? '';
+  const parsed = normalized === '' ? Number.NaN : Number(normalized);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 1;
+  return Math.min(Math.max(parsed, minimum), maximum);
 }
 
 function acquireFilter(documentLike, field, width, height, config) {

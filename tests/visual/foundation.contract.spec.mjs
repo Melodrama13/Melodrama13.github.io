@@ -54,7 +54,17 @@ const expectProminentStatsNav = async (page) => {
         : null,
       backgroundColor: style.backgroundColor,
       backgroundImage: style.backgroundImage,
-      boxShadow: style.boxShadow
+      boxShadow: style.boxShadow,
+      opticalRim: {
+        content: getComputedStyle(surface, '::after').content,
+        display: getComputedStyle(surface, '::after').display,
+        background: getComputedStyle(surface, '::after').backgroundImage,
+        padding: getComputedStyle(surface, '::after').padding,
+        pointerEvents: getComputedStyle(surface, '::after').pointerEvents,
+        backdropFilter: getComputedStyle(surface, '::after').backdropFilter,
+        maskImage: getComputedStyle(surface, '::after').maskImage,
+        webkitMaskImage: getComputedStyle(surface, '::after').webkitMaskImage
+      }
     };
   });
   expect(material.inlineBackdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
@@ -62,13 +72,21 @@ const expectProminentStatsNav = async (page) => {
   expect(material.blurStdDeviation).toBe('5.6');
   expect(material.backgroundImage).toContain('linear-gradient');
   expect(material.backgroundColor).not.toBe('rgb(255, 255, 255)');
-  expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
+  expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(5);
+  expect(material.opticalRim.content).toBe('""');
+  expect(material.opticalRim.display).not.toBe('none');
+  expect(material.opticalRim.background).toContain('conic-gradient');
+  expect(material.opticalRim.padding).toBe('1px');
+  expect(material.opticalRim.pointerEvents).toBe('none');
+  expect(material.opticalRim.backdropFilter).toBe('none');
+  expect(`${material.opticalRim.maskImage} ${material.opticalRim.webkitMaskImage}`).toContain('linear-gradient');
   await expect(navigation.locator('.nav-quick-wrap')).toHaveCSS('backdrop-filter', 'none');
 };
 
 const readProminentMaterial = (locator) => locator.evaluate((surface) => {
   const style = getComputedStyle(surface);
   const specular = getComputedStyle(surface, '::before');
+  const opticalRim = getComputedStyle(surface, '::after');
   return {
     inlineBackdropFilter: surface.style.backdropFilter,
     hasConnectedFilter: Boolean(
@@ -82,7 +100,15 @@ const readProminentMaterial = (locator) => locator.evaluate((surface) => {
     specularDisplay: specular.display,
     specularBackground: specular.backgroundImage,
     specularPointerEvents: specular.pointerEvents,
-    specularZIndex: specular.zIndex
+    specularZIndex: specular.zIndex,
+    opticalRimContent: opticalRim.content,
+    opticalRimDisplay: opticalRim.display,
+    opticalRimBackground: opticalRim.backgroundImage,
+    opticalRimPadding: opticalRim.padding,
+    opticalRimPointerEvents: opticalRim.pointerEvents,
+    opticalRimBackdropFilter: opticalRim.backdropFilter,
+    opticalRimMaskImage: opticalRim.maskImage,
+    opticalRimWebkitMaskImage: opticalRim.webkitMaskImage
   };
 });
 
@@ -101,12 +127,19 @@ const expectTransmissiveProminentMaterial = async (surface) => {
   expect(material.inlineBackdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
   expect(material.hasConnectedFilter).toBe(true);
   expect(material.backdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
-  expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
+  expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(5);
   expect(material.specularDisplay).not.toBe('none');
   expect(material.specularContent).toBe('""');
   expect(material.specularBackground).toContain('radial-gradient');
   expect(material.specularPointerEvents).toBe('none');
   expect(material.specularZIndex).toBe('-1');
+  expect(material.opticalRimContent).toBe('""');
+  expect(material.opticalRimDisplay).not.toBe('none');
+  expect(material.opticalRimBackground).toContain('conic-gradient');
+  expect(material.opticalRimPadding).toBe('1px');
+  expect(material.opticalRimPointerEvents).toBe('none');
+  expect(material.opticalRimBackdropFilter).toBe('none');
+  expect(`${material.opticalRimMaskImage} ${material.opticalRimWebkitMaskImage}`).toContain('linear-gradient');
 };
 
 const expectCompactProminentStatsNav = async (page) => {
@@ -449,6 +482,7 @@ test('history prominent glass keeps a static optical rim when motion is reduced'
   const readProminentMaterial = (locator) => locator.evaluate((surface) => {
     const style = getComputedStyle(surface);
     const specular = getComputedStyle(surface, '::before');
+    const opticalRim = getComputedStyle(surface, '::after');
     return {
       inlineBackdropFilter: surface.style.backdropFilter,
       hasConnectedFilter: Boolean(
@@ -460,7 +494,15 @@ test('history prominent glass keeps a static optical rim when motion is reduced'
       specularDisplay: specular.display,
       specularContent: specular.content,
       specularBackground: specular.backgroundImage,
-      specularPointerEvents: specular.pointerEvents
+      specularPointerEvents: specular.pointerEvents,
+      opticalRimContent: opticalRim.content,
+      opticalRimDisplay: opticalRim.display,
+      opticalRimBackground: opticalRim.backgroundImage,
+      opticalRimPadding: opticalRim.padding,
+      opticalRimPointerEvents: opticalRim.pointerEvents,
+      opticalRimBackdropFilter: opticalRim.backdropFilter,
+      opticalRimMaskImage: opticalRim.maskImage,
+      opticalRimWebkitMaskImage: opticalRim.webkitMaskImage
     };
   });
 
@@ -475,11 +517,18 @@ test('history prominent glass keeps a static optical rim when motion is reduced'
     expect(material.inlineBackdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
     expect(material.hasConnectedFilter).toBe(true);
     expect(material.backdropFilter).toMatch(/^url\(["']?#ui-liquid-glass-\d+["']?\)$/);
-    expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
+    expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(5);
     expect(material.specularDisplay).not.toBe('none');
     expect(material.specularContent).toBe('""');
     expect(material.specularBackground).toContain('radial-gradient');
     expect(material.specularPointerEvents).toBe('none');
+    expect(material.opticalRimContent).toBe('""');
+    expect(material.opticalRimDisplay).not.toBe('none');
+    expect(material.opticalRimBackground).toContain('conic-gradient');
+    expect(material.opticalRimPadding).toBe('1px');
+    expect(material.opticalRimPointerEvents).toBe('none');
+    expect(material.opticalRimBackdropFilter).toBe('none');
+    expect(`${material.opticalRimMaskImage} ${material.opticalRimWebkitMaskImage}`).toContain('linear-gradient');
     return material;
   };
 
@@ -489,7 +538,14 @@ test('history prominent glass keeps a static optical rim when motion is reduced'
     const surface = document.querySelector('.source-menu');
     const style = getComputedStyle(surface);
     const specular = getComputedStyle(surface, '::before');
-    const material = { boxShadow: style.boxShadow, specularDisplay: specular.display };
+    const opticalRim = getComputedStyle(surface, '::after');
+    const material = {
+      boxShadow: style.boxShadow,
+      specularDisplay: specular.display,
+      opticalRimDisplay: opticalRim.display,
+      opticalRimBackground: opticalRim.backgroundImage,
+      opticalRimBackdropFilter: opticalRim.backdropFilter
+    };
     delete document.documentElement.dataset.uiGlassMotion;
     return material;
   });
@@ -510,9 +566,13 @@ test('history prominent glass keeps a static optical rim when motion is reduced'
       const surface = document.querySelector(selector);
       const style = getComputedStyle(surface);
       const specular = getComputedStyle(surface, '::before');
+      const opticalRim = getComputedStyle(surface, '::after');
       return {
         boxShadow: style.boxShadow,
-        specularDisplay: specular.display
+        specularDisplay: specular.display,
+        opticalRimDisplay: opticalRim.display,
+        opticalRimBackground: opticalRim.backgroundImage,
+        opticalRimBackdropFilter: opticalRim.backdropFilter
       };
     });
     delete document.documentElement.dataset.uiGlassMotion;
@@ -522,8 +582,11 @@ test('history prominent glass keeps a static optical rim when motion is reduced'
 
   for (const [index, material] of reducedMotionMaterials.entries()) {
     expect(material.boxShadow).toBe(fullMotionMaterials[index].boxShadow);
-    expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(4);
+    expect(material.boxShadow.match(/\binset\b/g) ?? []).toHaveLength(5);
     expect(material.specularDisplay).toBe('none');
+    expect(material.opticalRimDisplay).not.toBe('none');
+    expect(material.opticalRimBackground).toContain('conic-gradient');
+    expect(material.opticalRimBackdropFilter).toBe('none');
   }
 });
 
