@@ -34,6 +34,7 @@ function createEnvironment({ legacy = false } = {}) {
   const mediaQueries = new Map([
     ['(prefers-reduced-transparency: reduce)', createMediaQueryList(false, legacy)],
     ['(forced-colors: active)', createMediaQueryList(false, legacy)],
+    ['(prefers-contrast: more)', createMediaQueryList(false, legacy)],
     ['(prefers-reduced-motion: reduce)', createMediaQueryList(false, legacy)]
   ]);
   const document = { documentElement: { dataset: {} } };
@@ -339,9 +340,10 @@ test('selects refraction only for Chromium with ordinary backdrop filtering', ()
   assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsBackdropFilter: false }), LIQUID_GLASS_MODES.frosted);
 });
 
-test('forced colors and reduced transparency always select opaque mode', () => {
+test('forced colors, reduced transparency, and increased contrast always select opaque mode', () => {
   assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsBackdropFilter: true, forcedColors: true }), LIQUID_GLASS_MODES.opaque);
   assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsBackdropFilter: true, reducedTransparency: true }), LIQUID_GLASS_MODES.opaque);
+  assert.equal(resolveLiquidGlassMode({ isChromium: true, supportsBackdropFilter: true, increasedContrast: true }), LIQUID_GLASS_MODES.opaque);
 });
 
 test('installs, updates, and cleans root glass state through modern media listeners', () => {
@@ -356,6 +358,10 @@ test('installs, updates, and cleans root glass state through modern media listen
   assert.equal(root.dataset.uiGlassMode, LIQUID_GLASS_MODES.opaque);
 
   mediaQueries.get('(forced-colors: active)').emit(false);
+  mediaQueries.get('(prefers-contrast: more)').emit(true);
+  assert.equal(root.dataset.uiGlassMode, LIQUID_GLASS_MODES.opaque);
+
+  mediaQueries.get('(prefers-contrast: more)').emit(false);
   mediaQueries.get('(prefers-reduced-motion: reduce)').emit(true);
   assert.equal(root.dataset.uiGlassMode, LIQUID_GLASS_MODES.refractive);
   assert.equal(root.dataset.uiGlassMotion, 'reduced');
@@ -371,8 +377,11 @@ test('uses legacy media listeners when change events are unavailable', () => {
   const { document, mediaQueries, window } = createEnvironment({ legacy: true });
   const cleanup = installLiquidGlassEnvironment({ window, document });
 
-  mediaQueries.get('(prefers-reduced-transparency: reduce)').emit(true);
+  mediaQueries.get('(prefers-contrast: more)').emit(true);
   assert.equal(document.documentElement.dataset.uiGlassMode, LIQUID_GLASS_MODES.opaque);
+
+  mediaQueries.get('(prefers-contrast: more)').emit(false);
+  assert.equal(document.documentElement.dataset.uiGlassMode, LIQUID_GLASS_MODES.refractive);
 
   cleanup();
   assert.equal([...mediaQueries.values()].every((query) => query.listenerCount() === 0), true);
@@ -762,6 +771,39 @@ test('immediately clears mounted refraction when forced colors changes the envir
       assert.equal(document.documentElement.dataset.uiGlassMode, LIQUID_GLASS_MODES.opaque);
       assert.equal(element.style.backdropFilter, '');
       assert.equal(defs.children.length, 0);
+    } finally {
+      liquidGlassDirective.unmounted(element);
+      cleanupEnvironment();
+    }
+  });
+});
+
+test('immediately clears and restores mounted refraction when contrast changes the environment mode', () => {
+  withFakeGlassRuntime(({ defs, document, flushAnimationFrame, window }) => {
+    const mediaQueries = new Map([
+      ['(prefers-reduced-transparency: reduce)', createMediaQueryList()],
+      ['(forced-colors: active)', createMediaQueryList()],
+      ['(prefers-contrast: more)', createMediaQueryList()],
+      ['(prefers-reduced-motion: reduce)', createMediaQueryList()]
+    ]);
+    window.matchMedia = (query) => mediaQueries.get(query);
+    const cleanupEnvironment = installLiquidGlassEnvironment();
+    const element = createFakeGlassElement({ left: 0, top: 0, width: 200, height: 100 });
+    liquidGlassDirective.mounted(element);
+    try {
+      flushAnimationFrame();
+      assert.match(element.style.backdropFilter, /^url\(#ui-liquid-glass-\d+\)$/);
+      assert.equal(defs.children.length, 1);
+
+      mediaQueries.get('(prefers-contrast: more)').emit(true);
+      assert.equal(document.documentElement.dataset.uiGlassMode, LIQUID_GLASS_MODES.opaque);
+      assert.equal(element.style.backdropFilter, '');
+      assert.equal(defs.children.length, 0);
+
+      mediaQueries.get('(prefers-contrast: more)').emit(false);
+      assert.equal(document.documentElement.dataset.uiGlassMode, LIQUID_GLASS_MODES.refractive);
+      assert.match(element.style.backdropFilter, /^url\(#ui-liquid-glass-\d+\)$/);
+      assert.equal(defs.children.length, 1);
     } finally {
       liquidGlassDirective.unmounted(element);
       cleanupEnvironment();

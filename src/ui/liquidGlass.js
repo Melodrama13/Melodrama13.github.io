@@ -50,9 +50,10 @@ export function resolveLiquidGlassMode({
   isChromium = false,
   supportsBackdropFilter = false,
   reducedTransparency = false,
-  forcedColors = false
+  forcedColors = false,
+  increasedContrast = false
 } = {}) {
-  if (reducedTransparency || forcedColors) {
+  if (reducedTransparency || forcedColors || increasedContrast) {
     return LIQUID_GLASS_MODES.opaque;
   }
 
@@ -72,6 +73,7 @@ export function installLiquidGlassEnvironment({
 
   const reducedTransparencyQuery = getMediaQuery(windowLike, '(prefers-reduced-transparency: reduce)');
   const forcedColorsQuery = getMediaQuery(windowLike, '(forced-colors: active)');
+  const increasedContrastQuery = getMediaQuery(windowLike, '(prefers-contrast: more)');
   const reducedMotionQuery = getMediaQuery(windowLike, '(prefers-reduced-motion: reduce)');
 
   const update = () => {
@@ -80,7 +82,8 @@ export function installLiquidGlassEnvironment({
         isChromium: isChromiumEngine(windowLike?.navigator),
         supportsBackdropFilter: supportsBackdropFilter(windowLike),
         reducedTransparency: Boolean(reducedTransparencyQuery?.matches),
-        forcedColors: Boolean(forcedColorsQuery?.matches)
+        forcedColors: Boolean(forcedColorsQuery?.matches),
+        increasedContrast: Boolean(increasedContrastQuery?.matches)
       });
       root.dataset.uiGlassMotion = reducedMotionQuery?.matches ? 'reduced' : 'full';
     } catch {
@@ -96,6 +99,7 @@ export function installLiquidGlassEnvironment({
   const removeListeners = [
     addMediaListener(reducedTransparencyQuery, update),
     addMediaListener(forcedColorsQuery, update),
+    addMediaListener(increasedContrastQuery, update),
     addMediaListener(reducedMotionQuery, update)
   ];
   let cleanedUp = false;

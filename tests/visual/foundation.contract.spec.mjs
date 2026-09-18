@@ -311,6 +311,31 @@ test('disabled Event History filter options retain their pre-prominent base mate
   }
 });
 
+test('disabled Event History reset and unit controls retain their pre-prominent neutral material', async ({ page }) => {
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await settleUi(page);
+  await page.locator('.filter-bar button[title="筛选面板"]').click();
+
+  const reset = page.locator('.filter-mode-row .panel-reset-btn').first();
+  await expect(reset).toBeDisabled();
+  await expect(reset).toHaveCSS('background-image', 'linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(248, 250, 252, 0.34))');
+  await expect(reset).toHaveCSS('border-top-color', 'rgba(255, 255, 255, 0.7)');
+  await expect(reset).toHaveCSS('opacity', '0.6');
+  await expect(reset).toHaveCSS('cursor', 'not-allowed');
+
+  const eventTypeRow = page.locator('.filter-panel .filter-row').filter({ hasText: '活动类型' });
+  await eventTypeRow.getByRole('button', { name: '混活', exact: true }).click();
+
+  const disabledUnits = page.locator('.filter-panel .icon-group.units.is-disabled');
+  const disabledUnit = disabledUnits.locator('img').first();
+  await expect(disabledUnits).toHaveAttribute('title', '选择混活时不可选活动团体');
+  await expect(disabledUnit).toHaveClass(/icon-disabled/);
+  await expect(disabledUnit).toHaveCSS('background-image', 'linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28))');
+  await expect(disabledUnit).toHaveCSS('border-top-color', 'rgba(255, 255, 255, 0.44)');
+  await expect(disabledUnits).toHaveCSS('opacity', '0.38');
+  await expect(disabledUnit).toHaveCSS('cursor', 'not-allowed');
+});
+
 test('disabled data-source actions retain their pre-prominent base material', async ({ page }) => {
   await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
   await settleUi(page);

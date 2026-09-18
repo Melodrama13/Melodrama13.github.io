@@ -260,6 +260,42 @@ test('prominent optical rim hides for opaque and increased-contrast fallbacks', 
   await setEmulatedMediaFeature(mediaSession, 'prefers-contrast', 'no-preference');
 });
 
+test('increased contrast releases runtime refraction and restores it when preference returns to normal', async ({ page }) => {
+  const mediaSession = await page.context().newCDPSession(page);
+  await setEmulatedMediaFeature(mediaSession, 'prefers-contrast', 'no-preference');
+  await gotoUiState(page, { tab: 'history', width: 1440, height: 1000, fullHistory: true });
+  await settleUi(page);
+
+  const host = page.locator('#ui-liquid-glass-filter-host');
+  const filterBar = page.locator('.filter-bar');
+  await page.locator('.source-trigger').click();
+  const sourceMenu = page.locator('.source-menu');
+  const roots = [filterBar, sourceMenu];
+
+  await expectRefractiveOuterSurface(filterBar, '.sort-btn', 'increased-contrast filter bar before fallback');
+  await expectRefractiveOuterSurface(sourceMenu, '.source-list', 'increased-contrast source menu before fallback');
+  expect(await host.locator('filter').count()).toBeGreaterThan(0);
+
+  await setEmulatedMediaFeature(mediaSession, 'prefers-contrast', 'more');
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.uiGlassMode)).toBe('opaque');
+  await assertOpaqueFallbacks(page, roots, 'increased-contrast');
+
+  await filterBar.evaluate((element) => {
+    element.style.backdropFilter = 'url(#stale-liquid-glass-filter)';
+    element.style.webkitBackdropFilter = 'url(#stale-liquid-glass-filter)';
+  });
+  await expect(filterBar).toHaveCSS('backdrop-filter', 'none');
+  await filterBar.evaluate((element) => {
+    element.style.backdropFilter = '';
+    element.style.webkitBackdropFilter = '';
+  });
+
+  await setEmulatedMediaFeature(mediaSession, 'prefers-contrast', 'no-preference');
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.uiGlassMode)).toBe('refractive');
+  await expectRefractiveOuterSurface(filterBar, '.sort-btn', 'increased-contrast filter bar after restoration');
+  await expectRefractiveOuterSurface(sourceMenu, '.source-list', 'increased-contrast source menu after restoration');
+});
+
 test('approved prominent roots release runtime refraction through reduced-transparency media transitions', async ({ page }) => {
   const mediaSession = await page.context().newCDPSession(page);
   await setEmulatedMediaFeature(mediaSession, 'prefers-reduced-transparency', 'no-preference');

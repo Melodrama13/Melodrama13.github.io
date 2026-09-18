@@ -9038,9 +9038,9 @@ button:not(:disabled):active {
   box-shadow: 0 8px 18px rgba(20, 184, 166, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.44);
 }
 
-/* Disabled neutral options retain their pre-prominent material; active and reset states own their existing overrides. */
-.btn-group button:disabled:not(.active):not(.panel-reset-btn),
-.btn-group-sm button:disabled:not(.active):not(.panel-reset-btn) {
+/* Disabled neutral options retain their pre-prominent material; active states own their existing overrides. */
+.btn-group button:disabled:not(.active),
+.btn-group-sm button:disabled:not(.active) {
   border-color: rgba(255, 255, 255, 0.70);
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.36));
 }
@@ -9147,6 +9147,12 @@ button:not(:disabled):active {
   cursor: not-allowed;
 }
 
+.icon-group.is-disabled img.icon-disabled:not(.icon-active) {
+  border-color: rgba(255, 255, 255, 0.44);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
+  box-shadow: var(--history-glass-shadow-soft);
+}
+
 /* 稀有度星星样式 */
 .rarity-group {
   display: flex;
@@ -9235,12 +9241,12 @@ button:not(:disabled):active {
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
 }
 
-.panel-reset-btn:disabled {
-  opacity: 1;
-  background: rgba(248, 250, 252, 0.42);
+.filter-mode-row .btn-group button.panel-reset-btn:disabled {
+  opacity: 0.6;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(248, 250, 252, 0.34));
   color: #9ca3af;
-  border-color: rgba(255, 255, 255, 0.54);
-  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.70);
+  box-shadow: var(--history-glass-shadow-soft);
   cursor: not-allowed;
 }
 

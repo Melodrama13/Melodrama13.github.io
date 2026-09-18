@@ -146,17 +146,17 @@ body {
 
 @media (prefers-contrast: more) {
   .ui-liquid-glass {
-    background: var(--ui-glass-fallback-bg);
-    background-image: none;
-    border-color: var(--ui-glass-rim-dark);
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+    background: var(--ui-glass-fallback-bg) !important;
+    background-image: none !important;
+    border-color: var(--ui-glass-rim-dark) !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 
   .ui-liquid-glass::before,
   .ui-liquid-glass--prominent::after {
-    display: none;
+    display: none !important;
   }
 }
 
