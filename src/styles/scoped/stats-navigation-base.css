@@ -109,7 +109,7 @@
   height: 17px;
   object-fit: contain;
   display: block;
-  filter: brightness(0) saturate(100%) invert(96%) sepia(6%) saturate(243%) hue-rotate(182deg) brightness(103%) contrast(96%);
+  filter: brightness(0) saturate(100%);
 }
 
 .nav-link {

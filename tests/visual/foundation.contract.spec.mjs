@@ -147,6 +147,7 @@ const expectCompactProminentStatsNav = async (page) => {
   await expect(trigger).toBeVisible();
   await expect(trigger).toHaveClass(/ui-liquid-glass--prominent/);
   await expect(trigger).toHaveAttribute('data-liquid-glass-interactive', '');
+  await expect(trigger.locator('.floating-menu-icon')).toHaveCSS('filter', 'brightness(0) saturate(1)');
 
   await trigger.click();
   await expect(page.locator('.stats-nav')).toBeVisible();
