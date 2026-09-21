@@ -47,6 +47,7 @@ copilot_memories/
 .codex-plans/
 
 # Local development archives and generated acceptance artifacts
+.codex/
 .dev-archive/
 .superpowers/
 docs/superpowers/
