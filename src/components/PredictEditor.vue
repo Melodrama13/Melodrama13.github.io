@@ -4,7 +4,8 @@
       <div
         ref="drawerRef"
         v-if="isOpen"
-        class="predict-drawer"
+        v-liquid-glass
+        class="predict-drawer ui-liquid-glass ui-liquid-glass--regular"
         :class="{ 'is-mobile-sheet': isMobileViewport }"
         :style="drawerStyle"
       >
@@ -149,6 +150,7 @@
 
 <script setup>
 import { reactive, inject, watch, computed, ref, onMounted, onActivated, onDeactivated, onBeforeUnmount } from 'vue';
+import { UI_BREAKPOINTS, isViewportAtMost } from '../ui/breakpoints.js';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -249,7 +251,7 @@ const isWorldLinkTeamSeries = (eventLike) => {
   return Number.isFinite(sid) && sid > 0 && sid <= 3;
 };
 
-const MOBILE_BREAKPOINT = 900;
+const MOBILE_BREAKPOINT = UI_BREAKPOINTS.compactMax;
 const SHEET_MIN_VH = 26;
 const SHEET_MID_VH = 62;
 const SHEET_MAX_VH = 92;
@@ -311,7 +313,7 @@ const attachSheetTouchListeners = () => {
 };
 
 const updateMobileViewport = () => {
-  isMobileViewport.value = window.innerWidth <= MOBILE_BREAKPOINT;
+  isMobileViewport.value = isViewportAtMost(window.innerWidth, MOBILE_BREAKPOINT);
   if (!isMobileViewport.value) {
     sheetHeightVh.value = SHEET_MAX_VH;
     sheetDragState.value = { dragging: false, startY: 0, startVh: SHEET_MAX_VH };
@@ -1069,17 +1071,8 @@ defineExpose({
   padding: 0;
   color: #102033;
   overflow: hidden;
-  background:
-    linear-gradient(138deg, rgba(204, 251, 241, 0.28) 0%, rgba(186, 230, 253, 0.16) 38%, rgba(255, 255, 255, 0.12) 64%, rgba(240, 253, 250, 0.20) 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(236, 254, 255, 0.10));
-  border-left: 1px solid rgba(255, 255, 255, 0.66);
-  box-shadow:
-    -22px 0 42px rgba(15, 23, 42, 0.20),
-    inset 1px 0 0 rgba(255, 255, 255, 0.95),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88),
-    inset 0 -1px 0 rgba(148, 163, 184, 0.12);
-  backdrop-filter: saturate(190%) blur(30px);
-  -webkit-backdrop-filter: saturate(190%) blur(30px);
+  border-left-width: 1px;
+  border-left-style: solid;
   --pe-radius-card: 999px;
   --pe-radius-btn: 999px;
   --pe-glass-bg: linear-gradient(145deg, rgba(204, 251, 241, 0.34), rgba(186, 230, 253, 0.16) 50%, rgba(255, 255, 255, 0.12));
@@ -1091,18 +1084,6 @@ defineExpose({
   --pe-accent: #22b8ad;
   --pe-accent-strong: #0f9f96;
   --pe-danger: #ef4444;
-}
-
-.predict-drawer::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(104deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.18) 23%, transparent 48%),
-    linear-gradient(270deg, rgba(255, 255, 255, 0.58), transparent 18%);
-  mix-blend-mode: screen;
-  opacity: 0.82;
 }
 
 .predict-drawer > * {
@@ -1118,15 +1099,10 @@ defineExpose({
   width: 100vw;
   height: 62dvh;
   border-radius: 24px 24px 0 0;
-  border-left: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.88);
-  background:
-    linear-gradient(136deg, rgba(204, 251, 241, 0.46) 0%, rgba(186, 230, 253, 0.30) 42%, rgba(255, 255, 255, 0.28) 64%, rgba(240, 253, 250, 0.38) 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(236, 254, 255, 0.24));
-  box-shadow:
-    0 -20px 42px rgba(15, 23, 42, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    inset 0 -1px 0 rgba(148, 163, 184, 0.12);
+  border-left-width: 0;
+  border-left-style: none;
+  border-top-width: 1px;
+  border-top-style: solid;
   transition: height 0.16s ease;
   --pe-glass-bg: linear-gradient(145deg, rgba(204, 251, 241, 0.48), rgba(186, 230, 253, 0.24) 50%, rgba(255, 255, 255, 0.22));
   --pe-glass-bg-hover: linear-gradient(145deg, rgba(204, 251, 241, 0.62), rgba(125, 211, 252, 0.30) 54%, rgba(255, 255, 255, 0.28));
@@ -1208,8 +1184,6 @@ defineExpose({
   line-height: 1;
   background: var(--pe-glass-bg);
   box-shadow: var(--pe-glass-shadow-soft);
-  backdrop-filter: saturate(160%) blur(14px);
-  -webkit-backdrop-filter: saturate(160%) blur(14px);
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, filter 0.16s ease, transform 0.16s ease;
 }
 .close-btn:hover {
@@ -1233,8 +1207,6 @@ defineExpose({
     0 8px 22px rgba(15, 23, 42, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.70),
     inset 0 -1px 0 rgba(14, 165, 233, 0.10);
-  backdrop-filter: saturate(180%) blur(18px);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
 }
 .global-config-bar.has-banner { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .cfg-group {
@@ -1243,8 +1215,6 @@ defineExpose({
   border: 0;
   background: transparent;
   box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 .cfg-group label {
   display: block;
@@ -1276,8 +1246,6 @@ defineExpose({
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
   box-shadow: var(--pe-glass-shadow-soft);
-  backdrop-filter: saturate(150%) blur(10px);
-  -webkit-backdrop-filter: saturate(150%) blur(10px);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 .cfg-group select:focus,
@@ -1317,8 +1285,6 @@ defineExpose({
   border: 1px solid var(--pe-glass-border);
   border-radius: var(--pe-radius-card);
   box-shadow: var(--pe-glass-shadow-soft);
-  backdrop-filter: saturate(150%) blur(14px);
-  -webkit-backdrop-filter: saturate(150%) blur(14px);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.16s ease;
 }
 .editor-card::before {
@@ -1417,8 +1383,6 @@ defineExpose({
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
   box-shadow: var(--pe-glass-shadow-soft);
-  backdrop-filter: saturate(150%) blur(10px);
-  -webkit-backdrop-filter: saturate(150%) blur(10px);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 .cfg-group select:disabled,
@@ -1442,8 +1406,6 @@ defineExpose({
   color: #64748b;
   border: 1px solid rgba(148, 163, 184, 0.24);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  backdrop-filter: saturate(150%) blur(10px);
-  -webkit-backdrop-filter: saturate(150%) blur(10px);
   box-sizing: border-box;
 }
 
@@ -1599,8 +1561,6 @@ defineExpose({
   background: var(--pe-glass-bg-strong);
   border: 1px solid var(--pe-glass-border);
   box-shadow: var(--pe-glass-shadow-soft);
-  backdrop-filter: saturate(160%) blur(12px);
-  -webkit-backdrop-filter: saturate(160%) blur(12px);
 }
 .wl-lock-note {
   color: #64748b;

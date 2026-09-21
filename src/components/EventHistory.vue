@@ -527,7 +527,8 @@
       <div ref="filterStickyRef" class="filter-sticky">
         <div
           ref="filterBarRef"
-          class="filter-bar"
+          v-liquid-glass
+          class="filter-bar ui-liquid-glass ui-liquid-glass--prominent"
           :class="{
             'is-compact': isCompactFilterBar,
             'is-editor-tight': isEditorFilterTight,
@@ -587,7 +588,7 @@
           </button>
         </div>
         <transition name="slide-fade">
-          <div v-if="showFilter" class="filter-panel">
+          <div v-if="showFilter" v-liquid-glass class="filter-panel ui-liquid-glass ui-liquid-glass--prominent">
           <div class="filter-row filter-mode-row">
             <span class="row-label">模式</span>
             <div class="btn-group">
@@ -1154,7 +1155,7 @@
         @keydown.esc.prevent="resolvePredictSwitchDialog('cancel')"
       >
         <section
-          class="predict-switch-dialog-card"
+          class="predict-switch-dialog-card ui-liquid-glass ui-liquid-glass--modal"
           role="dialog"
           aria-modal="true"
           aria-labelledby="predict-switch-dialog-title"
@@ -1186,6 +1187,7 @@ import { toCanvas } from 'html-to-image';
 import { buildAssetUrl } from '../utils/assets.js';
 import { getCardImageVariants } from '../utils/cardImageVariants.js';
 import { isCardImageReleased, isEventStarted, isSongReleased } from '../utils/spoilerGuard.js';
+import { UI_BREAKPOINTS, isViewportAtMost } from '../ui/breakpoints.js';
 
 
 // 2. 【新增】接收从 App.vue 传下来的总表（包含历史+预测）
@@ -1899,7 +1901,7 @@ const previewConfigPanelStyle = computed(() => {
 });
 
 const clampPreviewConfigPanelPos = (x, y) => {
-  const panelWidth = window.innerWidth <= 1000 ? 320 : 360;
+  const panelWidth = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.historyPreviewMax) ? 320 : 360;
   const maxX = Math.max(0, window.innerWidth - panelWidth - 6);
   const maxY = Math.max(0, window.innerHeight - 42);
   const minY = getPreviewDragMinY();
@@ -1970,7 +1972,7 @@ const handleDragPreviewConfigTouch = (event) => {
 
 const getPreviewDefaultPanelPosition = (idx = 0, avoidEditorDrawer = true) => {
   const slot = Number.isFinite(idx) ? idx : 0;
-  const isNarrow = window.innerWidth <= 1000;
+  const isNarrow = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.historyPreviewMax);
   const baseX = isNarrow
     ? PREVIEW_CONFIG_LEFT
     : (PREVIEW_CONFIG_LEFT + PREVIEW_CONFIG_WIDTH + PREVIEW_PANEL_X_GAP);
@@ -4919,7 +4921,8 @@ const setFullEventRenderMode = (enabled, options = {}) => {
 
 const isProgressiveTouchLayout = () => {
   if (typeof window === 'undefined') return false;
-  return window.innerWidth <= 1200 || window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches;
+  return isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.tabletMax)
+    || window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches;
 };
 
 const getProgressiveInitialRowCount = () => {
@@ -5605,7 +5608,7 @@ const applyMeasuredFilterFit = () => {
   const needsMobile = bar.scrollWidth > bar.clientWidth + 1;
   if (needsMobile !== isEditorFilterMobile.value) {
     isEditorFilterMobile.value = needsMobile;
-    isCompactFilterBar.value = window.innerWidth <= 900 || needsMobile;
+    isCompactFilterBar.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax) || needsMobile;
   }
 };
 
@@ -5629,7 +5632,7 @@ const scheduleMeasuredFilterFit = () => {
 const updateCompactFilterState = () => {
   if (!isHistoryPageActive) return;
   const viewportWidth = window.innerWidth;
-  const nextBottomMode = viewportWidth <= 900;
+  const nextBottomMode = isViewportAtMost(viewportWidth, UI_BREAKPOINTS.compactMax);
   isBottomPredictEditorMode.value = nextBottomMode;
 
   const historyWidth = getHistoryWidthWithEditor();
@@ -5638,7 +5641,7 @@ const updateCompactFilterState = () => {
 
   isEditorFilterTight.value = editorTight;
   isEditorFilterMobile.value = false;
-  isCompactFilterBar.value = viewportWidth <= 900;
+  isCompactFilterBar.value = isViewportAtMost(viewportWidth, UI_BREAKPOINTS.compactMax);
 
   if (editorTight) {
     nextTick(() => {
@@ -6419,7 +6422,7 @@ const getHistoryCaptureDeviceTier = () => {
   const width = Number(window?.innerWidth || 0);
   const height = Number(window?.innerHeight || 0);
   const minSide = Math.min(width || Number.MAX_SAFE_INTEGER, height || Number.MAX_SAFE_INTEGER);
-  if (width <= 900) {
+  if (isViewportAtMost(width, UI_BREAKPOINTS.compactMax)) {
     if (minSide >= 680) return 'tablet';
     return 'phone';
   }
@@ -7352,13 +7355,13 @@ const getFestivalPreviewUnitLogo = (name) => {
   --eh-radius-card: 16px;
   --eh-radius-panel: 16px;
   --eh-radius-btn: 12px;
-  --history-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.34) 52%, rgba(219, 234, 254, 0.24));
-  --history-glass-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(236, 254, 255, 0.46) 55%, rgba(219, 234, 254, 0.30));
-  --history-glass-border: rgba(255, 255, 255, 0.72);
-  --history-glass-shadow: 0 10px 30px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.78);
-  --history-glass-shadow-soft: 0 5px 16px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.76);
-  --history-active-bg: linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(45, 212, 191, 0.72) 52%, rgba(14, 165, 233, 0.58));
-  --history-active-border: rgba(94, 234, 212, 0.78);
+  --history-glass-bg: var(--ui-shell-glass-bg);
+  --history-glass-bg-hover: var(--ui-shell-glass-bg-hover);
+  --history-glass-border: var(--ui-shell-glass-border);
+  --history-glass-shadow: var(--ui-shell-glass-shadow);
+  --history-glass-shadow-soft: var(--ui-shell-glass-shadow-soft);
+  --history-active-bg: var(--ui-shell-active-bg);
+  --history-active-border: var(--ui-shell-active-border);
 }
 
 .predict-switch-dialog-backdrop {
@@ -7381,31 +7384,11 @@ const getFestivalPreviewUnitLogo = (name) => {
   isolation: isolate;
   width: min(520px, calc(100vw - 36px));
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-width: 1px;
+  border-style: solid;
   border-radius: 26px;
   padding: 24px;
   color: #173042;
-  background:
-    linear-gradient(138deg, rgba(255, 255, 255, 0.82), rgba(236, 254, 255, 0.58) 48%, rgba(219, 234, 254, 0.50)),
-    rgba(255, 255, 255, 0.58);
-  box-shadow:
-    0 28px 80px rgba(15, 23, 42, 0.26),
-    0 8px 24px rgba(14, 165, 233, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    inset 0 -1px 0 rgba(148, 163, 184, 0.18);
-  backdrop-filter: blur(30px) saturate(185%);
-  -webkit-backdrop-filter: blur(30px) saturate(185%);
-}
-
-.predict-switch-dialog-card::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: -42% 44% 36% -18%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(94, 234, 212, 0.34), rgba(125, 211, 252, 0.06) 58%, transparent 72%);
-  filter: blur(4px);
-  pointer-events: none;
 }
 
 .predict-switch-dialog-icon {
@@ -8414,12 +8397,9 @@ button:not(:disabled):active {
 .filter-bar {
   width: 100%;
   box-sizing: border-box;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.36) 52%, rgba(219, 234, 254, 0.26));
-  border: 1px solid var(--history-glass-border);
+  border-width: 1px;
+  border-style: solid;
   border-radius: 999px;
-  box-shadow: var(--history-glass-shadow);
-  backdrop-filter: saturate(170%) blur(18px);
-  -webkit-backdrop-filter: saturate(170%) blur(18px);
   padding: 8px 10px;
   display: flex;
   align-items: center;
@@ -8440,10 +8420,8 @@ button:not(:disabled):active {
   cursor: pointer;
   border-radius: 999px;
   border: 1px solid var(--history-glass-border);
-  background: var(--history-glass-bg);
+  background: var(--ui-glass-control-bg);
   box-shadow: var(--history-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   transition: 0.2s;
   white-space: nowrap;
   min-height: 32px;
@@ -8464,10 +8442,8 @@ button:not(:disabled):active {
   cursor: pointer;
   border-radius: 999px;
   border: 1px solid var(--history-glass-border);
-  background: var(--history-glass-bg);
+  background: var(--ui-glass-control-bg);
   box-shadow: var(--history-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   flex: 0 0 auto;
   white-space: nowrap;
   display: inline-flex;
@@ -8754,28 +8730,9 @@ button:not(:disabled):active {
   flex: 0 0 auto;
 }
 
-.media-load-shimmer:not([data-loaded='1']) {
-  background-image: linear-gradient(110deg, #d1d5db 8%, #f3f4f6 18%, #d1d5db 33%);
-  background-size: 220% 100%;
-  animation: media-shimmer 1.05s linear infinite;
-}
-
-@keyframes media-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -40% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .media-load-shimmer:not([data-loaded='1']) {
-    animation: none;
-    background-image: none;
-    background-color: #d1d5db;
-  }
-}
+</style>
+<style scoped src="../styles/scoped/media-load-shimmer.css"></style>
+<style scoped>
 
 .birthday-info-content {
   min-width: 0;
@@ -8966,8 +8923,8 @@ button:not(:disabled):active {
 
 /* 筛选面板基础样式 */
 .filter-panel {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.38));
-  border: 1px solid var(--history-glass-border);
+  border-width: 1px;
+  border-style: solid;
   border-radius: calc(var(--eh-radius-panel) + 6px);
   position: absolute;
   left: 0;
@@ -8982,9 +8939,6 @@ button:not(:disabled):active {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: var(--history-glass-shadow);
-  backdrop-filter: saturate(170%) blur(18px);
-  -webkit-backdrop-filter: saturate(170%) blur(18px);
 }
 
 .filter-mode-row {
@@ -9066,8 +9020,8 @@ button:not(:disabled):active {
 .btn-group button, 
 .btn-group-sm button {
   padding: 4px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.70);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.36));
+  border: 1px solid var(--ui-glass-option-border);
+  background: var(--ui-glass-option-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   cursor: pointer;
   border-radius: 999px;
@@ -9084,6 +9038,13 @@ button:not(:disabled):active {
   box-shadow: 0 8px 18px rgba(20, 184, 166, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.44);
 }
 
+/* Disabled neutral options retain their pre-prominent material; active states own their existing overrides. */
+.btn-group button:disabled:not(.active),
+.btn-group-sm button:disabled:not(.active) {
+  border-color: rgba(255, 255, 255, 0.70);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.36));
+}
+
 /* 角色 Chip */
 .chip-group {
   display: flex;
@@ -9097,13 +9058,11 @@ button:not(:disabled):active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
+  background: var(--ui-glass-option-bg);
   border-radius: 50%;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--ui-glass-option-border);
   box-shadow: var(--history-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   touch-action: manipulation;
 }
@@ -9141,12 +9100,10 @@ button:not(:disabled):active {
   width: 35px; height: 35px;
   padding: 3px;
   box-sizing: border-box;
-  border: 0.3px solid rgba(255, 255, 255, 0.44);
+  border: 0.3px solid var(--ui-glass-option-border);
   border-radius: 50%;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
+  background: var(--ui-glass-option-bg);
   box-shadow: var(--history-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   cursor: pointer;
   filter: grayscale(1) opacity(0.5);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -9156,12 +9113,10 @@ button:not(:disabled):active {
   width: 38px; height: 38px;
   padding: 3px;
   box-sizing: border-box;
-  border: 0.3px solid rgba(255, 255, 255, 0.44);
+  border: 0.3px solid var(--ui-glass-option-border);
   border-radius: 50%;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
+  background: var(--ui-glass-option-bg);
   box-shadow: var(--history-glass-shadow-soft);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
   cursor: pointer;
   filter: grayscale(1) opacity(0.5);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -9192,6 +9147,12 @@ button:not(:disabled):active {
   cursor: not-allowed;
 }
 
+.icon-group.is-disabled img.icon-disabled:not(.icon-active) {
+  border-color: rgba(255, 255, 255, 0.44);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.28));
+  box-shadow: var(--history-glass-shadow-soft);
+}
+
 /* 稀有度星星样式 */
 .rarity-group {
   display: flex;
@@ -9200,12 +9161,12 @@ button:not(:disabled):active {
 }
 .rarity-item {
   padding: 4px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.70);
+  border: 1px solid var(--ui-glass-option-border);
   border-radius: 999px;
   display: flex;
   align-items: center;
   cursor: pointer;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(248, 250, 252, 0.36));
+  background: var(--ui-glass-option-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease;
   touch-action: manipulation;
@@ -9247,9 +9208,9 @@ button:not(:disabled):active {
   margin-left: 2px;
   padding: 0 10px;
   font-size: inherit;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(248, 250, 252, 0.34));
+  background: var(--ui-glass-option-bg);
   color: #6b7280;
-  border: 1px solid rgba(255, 255, 255, 0.70);
+  border: 1px solid var(--ui-glass-option-border);
   border-radius: 999px;
   box-shadow: var(--history-glass-shadow-soft);
 }
@@ -9280,12 +9241,12 @@ button:not(:disabled):active {
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
 }
 
-.panel-reset-btn:disabled {
-  opacity: 1;
-  background: rgba(248, 250, 252, 0.42);
+.filter-mode-row .btn-group button.panel-reset-btn:disabled {
+  opacity: 0.6;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(248, 250, 252, 0.34));
   color: #9ca3af;
-  border-color: rgba(255, 255, 255, 0.54);
-  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.70);
+  box-shadow: var(--history-glass-shadow-soft);
   cursor: not-allowed;
 }
 

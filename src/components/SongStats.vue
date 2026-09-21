@@ -8,14 +8,15 @@
     <div class="stats-layout" :class="{ 'nav-collapsed': navCollapsed, 'mobile-nav-overlay': isNavTopLayout, 'mobile-nav-open': !navCollapsed }">
       <button
         v-if="navCollapsed"
-        class="floating-menu-btn"
+        v-liquid-glass
+        class="floating-menu-btn ui-liquid-glass ui-liquid-glass--prominent"
         title="展开统计菜单"
         @click="setNavCollapsed(false)"
       >
         <img src="/data/icon/menu.png" class="floating-menu-icon" alt="菜单" />
       </button>
 
-      <aside class="stats-nav card-panel" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
+      <aside v-liquid-glass="!navCollapsed" class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--prominent" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
         <button v-if="!navCollapsed" class="nav-collapse-fab" @click="setNavCollapsed(true)" title="收起统计菜单">
           <img src="/data/icon/menu_open.png" class="nav-collapse-fab-icon" alt="收起菜单" />
         </button>
@@ -1541,6 +1542,20 @@ import { toHiragana, toRomaji } from 'wanakana';
 import { buildAssetUrl } from '../utils/assets.js';
 import { isSongReleased } from '../utils/spoilerGuard.js';
 import {
+  PENDING_RENDER_BUSY_WAIT_MS,
+  PRELOAD_PHASE_TIMEOUT_MS,
+  RENDER_TASK_SETTLE_GRACE_MS,
+  buildRenderAttemptTimeouts,
+  createExportLifecycle,
+  createRenderTaskTracker,
+  getCaptureReadyTimeoutMs,
+  preloadUrlsWithDeadline,
+  shouldRunCaptureRecoveryPreload,
+  waitForRenderTimeoutOutcome,
+  withRenderTimeout
+} from '../utils/songCapturePolicy.js';
+import { UI_BREAKPOINTS, isViewportAbove, isViewportAtMost } from '../ui/breakpoints.js';
+import {
   clampHostScrollTop,
   createStatsNavigationHandlers,
   getDefaultScrollContainer
@@ -1613,7 +1628,9 @@ let navSyncRaf = 0;
 let statsMainInteractionHost = null;
 let lastInteractiveAnchorEl = null;
 let lastInteractiveAt = 0;
-let pendingSongCaptureRenderTask = null;
+const songCaptureRenderTracker = createRenderTaskTracker();
+const songExportLifecycle = createExportLifecycle();
+let activeSongExportToken = null;
 
 const DELETED_SONG_ID_SET = new Set([241, 290]);
 
@@ -2434,7 +2451,9 @@ const onAnotherImageModeChange = (event) => {
   }, anchorEl);
 };
 
-const canShowAnvoFillToggle = computed(() => anotherImageMode.value && viewportWidth.value > 1200);
+const canShowAnvoFillToggle = computed(() => (
+  anotherImageMode.value && isViewportAbove(viewportWidth.value, UI_BREAKPOINTS.tabletMax)
+));
 const isAnvoFillModeActive = computed(() => anvoFillDisplay.value && canShowAnvoFillToggle.value);
 
 const anvoMaxSongCount = computed(() => {
@@ -2570,7 +2589,7 @@ const updateMobileNavState = () => {
   if (typeof window === 'undefined') return;
   viewportWidth.value = window.innerWidth;
   viewportHeight.value = window.innerHeight;
-  const isTopLayout = window.innerWidth <= 900;
+  const isTopLayout = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
   const prev = navTopLayoutPrev.value;
   const nextCollapsed = prev === null
     ? isTopLayout
@@ -4443,8 +4462,22 @@ const clearScreenshotModalAutoClose = () => {
   screenshotModalAutoCloseTimer = 0;
 };
 
+const resetScreenshotModalState = () => {
+  clearScreenshotModalAutoClose();
+  screenshotModalVisible.value = false;
+  screenshotModalState.value = 'idle';
+  screenshotModalTitle.value = '';
+  screenshotModalMessage.value = '';
+  screenshotModalRetryTask.value = null;
+  screenshotModalCancelTask.value = null;
+};
+
 const setScreenshotModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, cancelTask = null, autoCloseMs = 0 } = {}) => {
   clearScreenshotModalAutoClose();
+  if (state === 'idle') {
+    resetScreenshotModalState();
+    return;
+  }
   screenshotModalVisible.value = true;
   screenshotModalState.value = state;
   screenshotModalTitle.value = title;
@@ -4461,31 +4494,24 @@ const setScreenshotModalState = ({ state = 'capturing', title = '', message = ''
   }
 };
 
+const setSongExportModalState = (token, payload = {}) => {
+  if (!songExportLifecycle.isLive(token)) return false;
+  setScreenshotModalState(payload);
+  return true;
+};
+
 const closeScreenshotModal = () => {
   if (isExportingPng.value && screenshotModalState.value !== 'failed') return;
-  clearScreenshotModalAutoClose();
-  screenshotModalVisible.value = false;
-  screenshotModalState.value = 'idle';
-  screenshotModalTitle.value = '';
-  screenshotModalMessage.value = '';
-  screenshotModalRetryTask.value = null;
-  screenshotModalCancelTask.value = null;
+  resetScreenshotModalState();
 };
 
 const forceCancelScreenshotExport = () => {
   const task = screenshotModalCancelTask.value;
+  songExportLifecycle.cancel(activeSongExportToken);
   if (typeof task === 'function') {
     task();
   }
-  pendingSongCaptureRenderTask = null;
-  isExportingPng.value = false;
-  clearScreenshotModalAutoClose();
-  screenshotModalVisible.value = false;
-  screenshotModalState.value = 'idle';
-  screenshotModalTitle.value = '';
-  screenshotModalMessage.value = '';
-  screenshotModalRetryTask.value = null;
-  screenshotModalCancelTask.value = null;
+  resetScreenshotModalState();
 };
 
 const retryScreenshotExport = async () => {
@@ -4656,9 +4682,11 @@ const drawCanvasCircleImage = (ctx, img, cx, cy, radius) => {
 };
 
 const exportAnvoFillCanvasPng = async (title, options = {}) => {
+  const exportToken = options?.exportToken;
+  const setModal = (payload) => setSongExportModalState(exportToken, payload);
   const cards = anotherVocalCards.value || [];
   if (!cards.length) {
-    setScreenshotModalState({
+    setModal({
       state: 'failed',
       title: '截图失败',
       message: '没有可导出的 Anvo 数据。'
@@ -4681,7 +4709,7 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
   const height = outerPad * 2 + titleHeight + gridHeight;
   const pixelScale = 2;
 
-  setScreenshotModalState({
+  setModal({
     state: 'capturing',
     title: '截图中',
     message: `正在绘制 ${exportLabel} 铺满导出画布...`,
@@ -4715,7 +4743,7 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
         imageMap.set(src, img);
         loadedCount += 1;
         if (loadedCount % 60 === 0) {
-          setScreenshotModalState({
+          setModal({
             state: 'capturing',
             title: '截图中',
             message: `正在载入 Anvo 曲绘资源 ${loadedCount}/${missingEntries.length}`,
@@ -4787,7 +4815,7 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
       });
     });
 
-    setScreenshotModalState({
+    setModal({
       state: 'exporting',
       title: '导出图片',
       message: '正在生成 PNG 文件...',
@@ -4798,7 +4826,7 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
     const safeTitle = typeof sanitizeExportFileName === 'function' ? sanitizeExportFileName(`${title || 'Anvo'}_${ts}`) : `${title || 'Anvo'}_${ts}`;
     await triggerDownloadPng(canvas, safeTitle);
 
-    setScreenshotModalState({
+    setModal({
       state: 'success',
       title: '导出成功',
       message: `【${exportLabel}】已导出 PNG（耗时 ${Math.max(0, Math.round(performance.now() - startedAt))}ms）`,
@@ -4807,11 +4835,11 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
     });
   } catch (error) {
     if (isExportCancelledError(error)) {
-      setScreenshotModalState({ state: 'idle', title: '', message: '', cancelTask: null });
+      setModal({ state: 'idle', title: '', message: '', cancelTask: null });
       return;
     }
     const detail = getCaptureErrorText(error);
-    setScreenshotModalState({
+    setModal({
       state: 'failed',
       title: '截图失败',
       message: 'Anvo 铺满导出发生错误：' + detail.text,
@@ -4829,7 +4857,7 @@ const getCaptureDeviceTier = () => {
   const width = Number(window?.innerWidth || 0);
   const height = Number(window?.innerHeight || 0);
   const minSide = Math.min(width || Number.MAX_SAFE_INTEGER, height || Number.MAX_SAFE_INTEGER);
-  if (width < 1200) {
+  if (isViewportAtMost(width, UI_BREAKPOINTS.tabletMax)) {
     if (minSide >= 680) return 'tablet';
     return 'phone';
   }
@@ -4850,18 +4878,6 @@ const countHeavyMediaNodes = (rootEl) => {
     }
   });
   return heavy;
-};
-
-const computeRenderTimeoutMs = ({ deviceTier, heavyMediaCount, width, height, scale }) => {
-  const totalMegaPixels = (Math.max(1, width) * Math.max(1, height) * Math.max(1, scale) * Math.max(1, scale)) / 1000000;
-  const heavyBoost = heavyMediaCount >= 18 ? 1200 : 0;
-  if (totalMegaPixels <= 4) return 4200 + heavyBoost;
-  if (totalMegaPixels <= 8) return 5600 + heavyBoost;
-  if (totalMegaPixels <= 14) return 7200 + heavyBoost;
-  if (totalMegaPixels <= 22) return 9000 + heavyBoost;
-  if (totalMegaPixels <= 32) return 10800 + heavyBoost;
-  const tierCap = deviceTier === 'phone' ? 14000 : (deviceTier === 'tablet' ? 15500 : 14500);
-  return tierCap + heavyBoost;
 };
 
 const waitForSingleImageReady = (imgEl, timeoutMs = 2200) => new Promise((resolve) => {
@@ -4981,7 +4997,8 @@ const sanitizeSongCloneForExport = (cloneRoot) => {
   // clone both the real text and pseudo text, so export uses one real label.
   cloneRoot.querySelectorAll('.song-duo-image-toggle.is-image-toggle > span').forEach((node) => {
     if (!(node instanceof HTMLElement)) return;
-    const compact = typeof window !== 'undefined' && window.innerWidth <= 900;
+    const compact = typeof window !== 'undefined'
+      && isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
     node.textContent = compact ? '曲绘' : '曲绘显示';
     node.classList.add('song-export-no-pseudo-label');
   });
@@ -4998,69 +5015,9 @@ const sanitizeSongCloneForExport = (cloneRoot) => {
   });
 };
 
-const withRenderTimeout = async (promise, timeoutMs, cancelPromise = null) => {
-  let timer = 0;
-  try {
-    const raceTasks = [
-      promise,
-      new Promise((_, reject) => {
-        timer = window.setTimeout(() => {
-          reject(new Error(`render-timeout-${timeoutMs}`));
-        }, timeoutMs);
-      })
-    ];
-    if (cancelPromise) {
-      raceTasks.push(cancelPromise.then(() => {
-        throw new Error('export-cancelled');
-      }));
-    }
-    return await Promise.race(raceTasks);
-  } finally {
-    if (timer) {
-      clearTimeout(timer);
-    }
-  }
-};
+const waitPendingSongCaptureRenderTask = (maxWaitMs = 0) => songCaptureRenderTracker.wait(maxWaitMs);
 
-const waitPendingSongCaptureRenderTask = async (maxWaitMs = 0) => {
-  const pending = pendingSongCaptureRenderTask;
-  if (!pending) return true;
-  if (!(maxWaitMs > 0)) {
-    try {
-      await pending;
-      return true;
-    } catch (_) {
-      // Ignore previous render failure; caller handles current retry policy.
-      return true;
-    }
-  }
-  try {
-    const settled = await Promise.race([
-      pending.then(() => true).catch(() => true),
-      new Promise((resolve) => {
-        window.setTimeout(() => resolve(false), maxWaitMs);
-      })
-    ]);
-    return !!settled;
-  } catch (_) {
-    // Ignore previous render failure; caller handles current retry policy.
-    return true;
-  }
-};
-
-const trackSongCaptureRenderTask = (taskPromise) => {
-  const tracked = Promise.resolve(taskPromise).finally(() => {
-    if (pendingSongCaptureRenderTask === tracked) {
-      pendingSongCaptureRenderTask = null;
-    }
-  });
-  pendingSongCaptureRenderTask = tracked;
-  return tracked;
-};
-
-const forceReleaseSongCaptureRenderTask = () => {
-  pendingSongCaptureRenderTask = null;
-};
+const startSongCaptureRenderTask = (createTask) => songCaptureRenderTracker.start(createTask);
 
 const createExportCancelContext = () => {
   let resolveCancel = null;
@@ -5184,7 +5141,7 @@ const syncCloneBackgroundStylesWithSource = (sourceRoot, cloneRoot) => {
   }
 };
 
-const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((resolve) => {
+const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000, signal = null) => new Promise((resolve) => {
   const src = String(url || '').trim();
   if (!src) {
     resolve(false);
@@ -5192,13 +5149,24 @@ const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((
   }
   let done = false;
   let timer = 0;
+  let abortHandler = null;
   const img = new Image();
-  const finish = (ok) => {
+  const finish = (ok, aborted = false) => {
     if (done) return;
     done = true;
     if (timer) clearTimeout(timer);
     img.onload = null;
     img.onerror = null;
+    if (signal && abortHandler) {
+      signal.removeEventListener('abort', abortHandler);
+    }
+    if (aborted) {
+      try {
+        img.src = '';
+      } catch (_) {
+        // Ignore a browser-specific Image reset failure during abort cleanup.
+      }
+    }
     resolve(!!ok);
   };
   img.onload = () => finish(true);
@@ -5210,6 +5178,14 @@ const preloadSingleImageUrlForCapture = (url, timeoutMs = 7000) => new Promise((
     img.referrerPolicy = 'no-referrer';
   } catch (_) {
     // Ignore unsupported attributes.
+  }
+  abortHandler = () => finish(false, true);
+  if (signal) {
+    if (signal.aborted) {
+      abortHandler();
+      return;
+    }
+    signal.addEventListener('abort', abortHandler, { once: true });
   }
   timer = window.setTimeout(() => finish(false), timeoutMs);
   img.src = src;
@@ -5227,15 +5203,15 @@ const preloadImageUrlsForCapture = async (rootEl, options = {}) => {
   const uniq = [...new Set(srcList)];
   if (!uniq.length) return;
 
-  let cursor = 0;
-  const workers = Array.from({ length: Math.max(1, Math.min(concurrency, uniq.length)) }).map(async () => {
-    while (cursor < uniq.length) {
-      const idx = cursor;
-      cursor += 1;
-      await preloadSingleImageUrlForCapture(uniq[idx], timeoutMs);
-    }
+  return preloadUrlsWithDeadline({
+    urls: uniq,
+    concurrency,
+    timeoutMs,
+    phaseTimeoutMs: PRELOAD_PHASE_TIMEOUT_MS,
+    loadOne: (url, { signal, timeoutMs: singleTimeoutMs }) => (
+      preloadSingleImageUrlForCapture(url, singleTimeoutMs, signal)
+    )
   });
-  await Promise.allSettled(workers);
 };
 
 const hideTransientMediaForCapture = (rootEl) => {
@@ -5509,9 +5485,18 @@ const shouldCaptureLiveElementForExport = (targetEl, options = {}) => {
 };
 
 const exportElementPng = async (targetEl, title, options = {}) => {
-  const previousIdle = await waitPendingSongCaptureRenderTask(1200);
+  const exportToken = options?.exportToken;
+  const setModal = (payload) => setSongExportModalState(exportToken, payload);
+  const previousIdle = await waitPendingSongCaptureRenderTask(PENDING_RENDER_BUSY_WAIT_MS);
   if (!previousIdle) {
-    forceReleaseSongCaptureRenderTask();
+    setModal({
+      state: 'failed',
+      title: '截图暂不可用',
+      message: '上一轮渲染仍在收尾，请稍后重试。',
+      retryTask: typeof options?.retryTask === 'function' ? options.retryTask : null,
+      cancelTask: null
+    });
+    return;
   }
   const exportLabel = String(options?.taskLabel || title || '当前模块');
   const deviceTier = getCaptureDeviceTier();
@@ -5520,7 +5505,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
   const exportStartAt = performance.now();
   const formatElapsed = () => `${Math.max(0, Math.round(performance.now() - exportStartAt))}ms`;
 
-  setScreenshotModalState({
+  setModal({
     state: 'capturing',
     title: '截图中',
     message: '[初始化] 正在准备捕获 ' + exportLabel,
@@ -5542,7 +5527,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     });
 
     await waitForRenderableAssets(targetEl, {
-      maxWaitMs: deviceTier === 'phone' ? 3600 : 3000,
+      maxWaitMs: getCaptureReadyTimeoutMs({ deviceTier, phase: 'source' }),
       maxImages: Math.max(120, Math.min(1200, sourceImages.length + 80))
     });
     await preloadImageUrlsForCapture(targetEl, {
@@ -5555,7 +5540,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       throw new Error('export-cancelled');
     }
 
-    setScreenshotModalState({
+    setModal({
       state: 'capturing',
       title: '截图中',
       message: captureLiveElement ? '[布局中] 正在使用页面实时布局...' : '[克隆中] 正在准备导出布局...',
@@ -5582,7 +5567,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     });
 
     await waitForRenderableAssets(renderEl, {
-      maxWaitMs: deviceTier === 'phone' ? 4200 : 3400,
+      maxWaitMs: getCaptureReadyTimeoutMs({ deviceTier, phase: 'clone' }),
       maxImages: Math.max(180, Math.min(1400, cloneImages.length + 120))
     });
     await preloadImageUrlsForCapture(renderEl, {
@@ -5601,34 +5586,31 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     const height = Math.max(1, Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0));
     const heavyMediaCount = countHeavyMediaNodes(renderEl);
     const pixelRatioPlan = buildCapturePixelRatioPlan(deviceTier);
+    const renderAttemptBudgets = buildRenderAttemptTimeouts({
+      deviceTier,
+      heavyMediaCount,
+      width,
+      height,
+      pixelRatioPlan
+    });
 
     let canvas = null;
     let lastRenderError = null;
 
-    for (let attemptIdx = 0; attemptIdx < pixelRatioPlan.length; attemptIdx += 1) {
-      const pixelRatio = pixelRatioPlan[attemptIdx];
+    for (let attemptIdx = 0; attemptIdx < renderAttemptBudgets.length; attemptIdx += 1) {
+      const { pixelRatio, timeoutMs: renderTimeoutMs } = renderAttemptBudgets[attemptIdx];
       const canvasWidth = Math.max(1, Math.round(width * pixelRatio));
       const canvasHeight = Math.max(1, Math.round(height * pixelRatio));
-      const renderTimeoutMs = Math.min(
-        56000,
-        Math.max(12000, Math.round(computeRenderTimeoutMs({
-          deviceTier,
-          heavyMediaCount,
-          width,
-          height,
-          scale: pixelRatio
-        }) * (1.35 + (attemptIdx * 0.25))))
-      );
 
-      setScreenshotModalState({
+      setModal({
         state: 'capturing',
         title: '截图中',
-        message: `[渲染中] ${exportLabel}（${width}x${height}，像素比 x${pixelRatio.toFixed(2)}，尝试 ${attemptIdx + 1}/${pixelRatioPlan.length}）`,
+        message: `[渲染中] ${exportLabel}（${width}x${height}，像素比 x${pixelRatio.toFixed(2)}，尝试 ${attemptIdx + 1}/${renderAttemptBudgets.length}）`,
         cancelTask: cancelContext.cancel
       });
 
       try {
-        const renderTask = trackSongCaptureRenderTask(toCanvas(renderEl, {
+        const renderTask = startSongCaptureRenderTask(() => toCanvas(renderEl, {
           backgroundColor: '#ffffff',
           width,
           height,
@@ -5655,9 +5637,23 @@ const exportElementPng = async (targetEl, title, options = {}) => {
           throw renderError;
         }
         if (isRenderTimeoutError(renderError)) {
-          forceReleaseSongCaptureRenderTask();
+          const timeoutOutcome = await waitForRenderTimeoutOutcome({
+            isCancelled: cancelContext.isCancelled,
+            waitForSettle: waitPendingSongCaptureRenderTask,
+            maxWaitMs: RENDER_TASK_SETTLE_GRACE_MS
+          });
+          if (timeoutOutcome === 'cancelled') {
+            throw new Error('export-cancelled');
+          }
+          if (timeoutOutcome === 'timed-out') {
+            throw renderError;
+          }
         }
-        if (isEventLikeCaptureError(renderError)) {
+        if (shouldRunCaptureRecoveryPreload({
+          eventLike: isEventLikeCaptureError(renderError),
+          attemptIndex: attemptIdx,
+          attemptCount: renderAttemptBudgets.length
+        })) {
           hideTransientMediaForCapture(renderEl);
           await preloadImageUrlsForCapture(renderEl, {
             maxImages: 520,
@@ -5673,7 +5669,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       throw lastRenderError || new Error('toCanvas returned null');
     }
 
-    setScreenshotModalState({
+    setModal({
       state: 'exporting',
       title: '导出图片',
       message: '[编码中] 正在生成 PNG 文件...',
@@ -5699,7 +5695,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       });
     }
 
-    setScreenshotModalState({
+    setModal({
       state: 'success',
       title: '导出成功',
       message: `【${exportLabel}】已导出 PNG（耗时 ${formatElapsed()}）`,
@@ -5708,7 +5704,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     });
   } catch (error) {
     if (isExportCancelledError(error)) {
-      setScreenshotModalState({
+      setModal({
         state: 'idle',
         title: '',
         message: '',
@@ -5716,12 +5712,9 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       });
       return;
     }
-    if (isRenderTimeoutError(error)) {
-      forceReleaseSongCaptureRenderTask();
-    }
     const detail = getCaptureErrorText(error);
     console.error('导出失败:', error);
-    setScreenshotModalState({
+    setModal({
       state: 'failed',
       title: '截图失败',
       message: '[失败] 导出发生错误: ' + detail.text,
@@ -5792,23 +5785,26 @@ const expandOcBookUnitsForExport = (targetUnit = '') => {
 
 const exportSongPanelPng = async (panelId, title) => {
   if (isExportingPng.value) return;
-  const targetEl = document.getElementById(panelId);
-  if (!targetEl) {
-    setScreenshotModalState({
-      state: 'failed',
-      title: '截图失败',
-      message: '未找到可导出的区域。'
-    });
-    return;
-  }
+  const exportToken = songExportLifecycle.begin();
+  if (exportToken === null) return;
+  activeSongExportToken = exportToken;
+  isExportingPng.value = true;
 
   const prevAnotherModes = snapshotAnotherCardModes();
   const prevDuoExpanded = snapshotDuoExpandedMap();
   const prevVsSongModes = snapshotVsSongCardModes();
   const prevOcBookExpanded = snapshotOcBookExpandedMap();
-  isExportingPng.value = true;
 
   try {
+    const targetEl = document.getElementById(panelId);
+    if (!targetEl) {
+      setSongExportModalState(exportToken, {
+        state: 'failed',
+        title: '截图失败',
+        message: '未找到可导出的区域。'
+      });
+      return;
+    }
     if (panelId === 'panel-another-vocal') {
       expandAnotherCardsForExport();
     } else if (panelId === 'panel-vs-song-stats') {
@@ -5823,15 +5819,20 @@ const exportSongPanelPng = async (panelId, title) => {
     await waitNextPaint();
     const useAnvoFillCanvasMode = panelId === 'panel-another-vocal'
       && !!anotherImageMode.value
-      && (Number(window?.innerWidth || 0) < 1200 || isAnvoFillModeActive.value);
+      && (
+        isViewportAtMost(Number(window?.innerWidth || 0), UI_BREAKPOINTS.tabletMax)
+        || isAnvoFillModeActive.value
+      );
     if (useAnvoFillCanvasMode) {
       await exportAnvoFillCanvasPng(title, {
         taskLabel: title,
+        exportToken,
         retryTask: () => exportSongPanelPng(panelId, title)
       });
     } else {
       await exportElementPng(targetEl, title, {
         taskLabel: title,
+        exportToken,
         retryTask: () => exportSongPanelPng(panelId, title)
       });
     }
@@ -5843,6 +5844,10 @@ const exportSongPanelPng = async (panelId, title) => {
     vsSongCardModeMap.value = prevVsSongModes;
     ocBookUnitExpandedMap.value = prevOcBookExpanded;
     await nextTick();
+    songExportLifecycle.finish(exportToken);
+    if (activeSongExportToken === exportToken) {
+      activeSongExportToken = null;
+    }
     isExportingPng.value = false;
   }
 };
@@ -5966,21 +5971,21 @@ watch(totalSongPages, (nextTotal) => {
   min-height: 100vh;
   min-height: 100dvh;
   --stats-radius-panel: 18px;
-  --stats-nav-radius: 28px;
-  --stats-nav-inner-radius: 22px;
-  --stats-radius-btn: 12px;
-  --stats-nav-width: 220px;
-  --stats-nav-left: 44px;
-  --stats-nav-top: 78px;
-  --stats-nav-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.24) 42%, rgba(219, 234, 254, 0.18));
-  --stats-nav-glass-border: rgba(255, 255, 255, 0.62);
-  --stats-nav-glass-line: rgba(148, 163, 184, 0.26);
-  --stats-nav-glass-shadow: 0 18px 46px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -1px 0 rgba(15, 23, 42, 0.04);
-  --stats-nav-glass-blur: saturate(170%) blur(18px);
-  --stats-nav-control-bg: rgba(255, 255, 255, 0.24);
-  --stats-nav-control-bg-hover: rgba(255, 255, 255, 0.42);
-  --stats-nav-active-bg: linear-gradient(135deg, rgba(191, 219, 254, 0.66), rgba(224, 242, 254, 0.34));
-  --stats-nav-active-border: rgba(96, 165, 250, 0.58);
+  --stats-nav-radius: var(--ui-stats-nav-radius);
+  --stats-nav-inner-radius: var(--ui-stats-nav-inner-radius);
+  --stats-radius-btn: var(--ui-stats-control-radius);
+  --stats-nav-width: var(--ui-stats-nav-width);
+  --stats-nav-left: var(--ui-stats-nav-left);
+  --stats-nav-top: var(--ui-stats-nav-top);
+  --stats-nav-glass-bg: var(--ui-stats-nav-glass-bg);
+  --stats-nav-glass-border: var(--ui-stats-nav-glass-border);
+  --stats-nav-glass-line: var(--ui-stats-nav-glass-line);
+  --stats-nav-glass-shadow: var(--ui-stats-nav-glass-shadow);
+  --stats-nav-glass-blur: var(--ui-stats-nav-glass-blur);
+  --stats-nav-control-bg: var(--ui-stats-nav-control-bg);
+  --stats-nav-control-bg-hover: var(--ui-stats-nav-control-bg-hover);
+  --stats-nav-active-bg: var(--ui-stats-nav-active-bg);
+  --stats-nav-active-border: var(--ui-stats-nav-active-border);
   --song-btn-pad-x: 8px;
   --song-mini-toggle-size: 20px;
   --song-stat-min-card-width: 250px;
@@ -6011,165 +6016,19 @@ watch(totalSongPages, (nextTotal) => {
   transform: translateY(1px) scale(0.97);
 }
 
-.stats-layout {
-  display: grid;
-  grid-template-columns: var(--stats-nav-width) 1fr;
-  gap: 16px;
+ .nav-link:hover {
+  background: var(--stats-nav-control-bg-hover);
 }
 
-.stats-layout.nav-collapsed {
-  grid-template-columns: 1fr;
-}
-
-.stats-layout.nav-collapsed .stats-nav {
-  display: none;
-}
-
-.stats-layout:not(.nav-collapsed) .stats-main {
-  grid-column: 2;
-}
-
-.stats-nav.card-panel {
-  position: fixed;
-  top: var(--stats-nav-top);
-  left: var(--stats-nav-left);
-  width: var(--stats-nav-width);
-  height: calc(100vh - var(--stats-nav-top) - 10px);
-  max-height: calc(100vh - var(--stats-nav-top) - 10px);
-  height: calc(100dvh - var(--stats-nav-top) - 10px);
-  max-height: calc(100dvh - var(--stats-nav-top) - 10px);
-  min-height: 0;
-  box-sizing: border-box;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 10;
-  padding: 14px;
-  border-radius: var(--stats-nav-radius);
-  border: 1px solid var(--stats-nav-glass-border);
-  background: var(--stats-nav-glass-bg);
-  box-shadow: var(--stats-nav-glass-shadow);
-  backdrop-filter: var(--stats-nav-glass-blur);
-  -webkit-backdrop-filter: var(--stats-nav-glass-blur);
-  isolation: isolate;
-}
-
-.stats-nav.card-panel::before {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 24% 0%, rgba(255, 255, 255, 0.72), transparent 30%),
-    linear-gradient(120deg, rgba(255, 255, 255, 0.46), transparent 34%, rgba(125, 211, 252, 0.12) 72%, transparent);
-  opacity: 0.78;
-  z-index: -1;
-}
-
-.nav-quick-wrap {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  border: 1px solid var(--stats-nav-glass-line);
-  border-radius: var(--stats-nav-inner-radius);
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44), inset 0 -1px 0 rgba(15, 23, 42, 0.03);
-  padding: 8px 6px 6px;
-}
-
-.nav-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  padding-bottom: 4px;
-  padding-right: 2px;
-}
-
-.nav-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-bottom: 8px;
-}
-
-.nav-group:last-child {
-  margin-bottom: 0;
-}
-
-.nav-link {
-  width: 100%;
-  text-align: left;
-  min-height: 32px;
-  padding: 6px 12px;
-  border: 1px solid var(--stats-nav-glass-line);
-  border-radius: 999px;
-  background: var(--stats-nav-control-bg);
-  color: #374151;
-  cursor: pointer;
-  font-size: 0.82rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
-}
-
-.nav-link-main {
-  font-weight: 700;
-  border-color: rgba(148, 163, 184, 0.34);
-}
-
-.nav-sub-list {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-left: 6px;
-  padding-left: 10px;
-}
-
-.nav-sub-list::before {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 2px;
-  bottom: 2px;
-  width: 1px;
-  background: #cbd5e1;
-}
-
-.nav-link-sub {
-  align-self: stretch;
-  margin-left: 8px;
-  width: calc(100% - 8px);
-  padding: 5px 10px;
-  text-indent: 0;
-  font-size: 0.78rem;
-}
+</style>
+<style scoped src="../styles/scoped/stats-navigation-base.css"></style>
+<style scoped>
 
 .nav-link-sub.is-duo-subanchor {
   margin-left: 14px;
   width: calc(100% - 14px);
   font-size: 0.74rem;
   color: #64748b;
-}
-
-.nav-link:hover {
-  background: var(--stats-nav-control-bg-hover);
-}
-
-
-.nav-link.active {
-  background: var(--stats-nav-active-bg);
-  border-color: var(--stats-nav-active-border);
-  color: #1d4ed8;
-  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.66);
 }
 
 .nav-collapse-fab {
@@ -6189,41 +6048,6 @@ watch(totalSongPages, (nextTotal) => {
   align-items: center;
   justify-content: center;
   z-index: 4601;
-}
-
-.nav-collapse-fab-icon {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-  display: block;
-  filter: brightness(0) saturate(100%) invert(100%);
-}
-
-.floating-menu-btn {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 60px);
-  left: 8px;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  border: 2px solid #0f766e;
-  background: #33ccbb;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
-  color: #f8fafc;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 5100;
-  padding: 0;
-  cursor: pointer;
-}
-
-.floating-menu-icon {
-  width: 17px;
-  height: 17px;
-  object-fit: contain;
-  display: block;
-  filter: brightness(0) saturate(100%) invert(96%) sepia(6%) saturate(243%) hue-rotate(182deg) brightness(103%) contrast(96%);
 }
 
 .stats-main {
@@ -6419,7 +6243,7 @@ watch(totalSongPages, (nextTotal) => {
   white-space: nowrap;
 }
 
-.card-panel {
+.card-panel:not(.stats-nav) {
   background: #ffffff;
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: var(--stats-radius-panel);
@@ -8465,28 +8289,9 @@ watch(totalSongPages, (nextTotal) => {
   border-radius: 0;
 }
 
-.media-load-shimmer:not([data-loaded='1']) {
-  background-image: linear-gradient(110deg, #d1d5db 8%, #f3f4f6 18%, #d1d5db 33%);
-  background-size: 220% 100%;
-  animation: media-shimmer 1.05s linear infinite;
-}
-
-@keyframes media-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -40% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .media-load-shimmer:not([data-loaded='1']) {
-    animation: none;
-    background-image: none;
-    background-color: #d1d5db;
-  }
-}
+</style>
+<style scoped src="../styles/scoped/media-load-shimmer.css"></style>
+<style scoped>
 
 .song-jacket-fallback {
   display: none;
@@ -8892,6 +8697,9 @@ watch(totalSongPages, (nextTotal) => {
   color: #64748b;
 }
 
+</style>
+<style scoped src="../styles/scoped/stats-navigation-responsive.css"></style>
+<style scoped>
 @media (max-width: 1200px) {
   .pjsk-song-stats {
     --stats-nav-width: 196px;
@@ -8932,14 +8740,6 @@ watch(totalSongPages, (nextTotal) => {
   height: 20px;
   }
 
-  .stats-layout {
-    grid-template-columns: var(--stats-nav-width) 1fr;
-  }
-
-  .stats-layout.nav-collapsed {
-    grid-template-columns: 1fr;
-  }
-
   .song-duo-unit-card.is-ws-split .song-duo-pair-grid > .song-duo-card {
     grid-column: auto;
     grid-row: auto;
@@ -8968,86 +8768,6 @@ watch(totalSongPages, (nextTotal) => {
     --song-duo-vs-icon-gap: 1px;
   }
 
-  .stats-layout,
-  .stats-layout.nav-collapsed {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .stats-layout:not(.nav-collapsed) .stats-main {
-    grid-column: auto;
-  }
-
-  .stats-layout.mobile-nav-open .floating-menu-btn {
-    background: #ef4444;
-    border-color: #b91c1c;
-    color: #ffffff;
-  }
-
-  .stats-nav {
-    position: static;
-    left: auto;
-    width: auto;
-    height: auto;
-    max-height: none;
-    top: auto;
-  }
-
-  .stats-nav.mobile-floating {
-    position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 58px);
-    left: 8px;
-    right: auto;
-    width: min(240px, calc(100vw - 16px));
-    max-width: calc(100vw - 16px);
-    height: auto;
-    max-height: calc(100dvh - 70px);
-    z-index: 5090;
-    box-shadow: var(--stats-nav-glass-shadow);
-    background: var(--stats-nav-glass-bg);
-    backdrop-filter: var(--stats-nav-glass-blur);
-    -webkit-backdrop-filter: var(--stats-nav-glass-blur);
-    border: 1px solid var(--stats-nav-glass-border);
-    border-radius: var(--stats-nav-radius) !important;
-    overflow: hidden;
-  }
-
-  .stats-nav.mobile-floating .nav-quick-wrap {
-    flex: 0 1 auto;
-    max-height: min(70dvh, calc(100dvh - 220px));
-  }
-
-  .stats-nav.mobile-floating .nav-scroll {
-    flex: 0 1 auto;
-    max-height: inherit;
-  }
-
-  .stats-nav.mobile-floating.is-collapsed {
-    display: none;
-  }
-
-  .nav-scroll {
-    max-height: none;
-  }
-
-  .nav-group {
-    margin-bottom: 4px;
-  }
-
-  .nav-link {
-    min-height: 26px;
-    font-size: 0.72rem;
-    padding: 4px 8px;
-  }
-
-  .nav-link-sub {
-    margin-left: 6px;
-    width: calc(100% - 6px);
-    padding: 3px 8px;
-    text-indent: 0;
-    font-size: 0.68rem;
-  }
-
   .nav-link-sub.is-duo-subanchor {
     margin-left: 10px;
     width: calc(100% - 10px);
@@ -9059,7 +8779,7 @@ watch(totalSongPages, (nextTotal) => {
     font-size: 1.1rem;
   }
 
-  .card-panel {
+  .card-panel:not(.stats-nav) {
     padding: 9px;
     border-radius: 10px;
   }
@@ -9349,19 +9069,6 @@ watch(totalSongPages, (nextTotal) => {
     padding: 6px;
   }
 
-  .floating-menu-btn {
-    top: calc(env(safe-area-inset-top, 0px) + 58px);
-    width: 34px;
-    height: 34px;
-    z-index: 5100;
-  }
-
-  .nav-collapse-fab {
-    width: 30px;
-    min-height: 30px;
-    height: 30px;
-    z-index: 5101;
-  }
 }
 
 

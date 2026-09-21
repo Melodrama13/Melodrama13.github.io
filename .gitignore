@@ -45,3 +45,13 @@ copilot_memories/
 
 # Local temporary implementation plans (never publish)
 .codex-plans/
+
+# Local development archives and generated acceptance artifacts
+.dev-archive/
+.superpowers/
+docs/superpowers/
+tests/visual/
+test-results/
+
+# Local Git worktrees
+.worktrees/

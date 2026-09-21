@@ -1,5 +1,9 @@
-import { createApp } from 'vue'
-import './style.css'
-import App from './App.vue'
+import { createApp } from 'vue';
+import './styles/tokens.css';
+import './style.css';
+import './styles/liquid-glass.css';
+import './styles/primitives.css';
+import { liquidGlassPlugin } from './ui/liquidGlass.js';
+import App from './App.vue';
 
-createApp(App).mount('#app')
+createApp(App).use(liquidGlassPlugin).mount('#app');
