@@ -101,6 +101,9 @@
   --ui-glass-filter-regular: saturate(142%) brightness(1.02) blur(15px);
   --ui-glass-filter-prominent: saturate(128%) brightness(1.015) blur(22px);
   --ui-glass-filter-modal: saturate(118%) brightness(1.01) blur(30px);
+  --ui-glass-filter-frosted-refractive: saturate(132%) brightness(1.035) blur(2px);
+  --ui-glass-filter-frosted-regular: saturate(142%) brightness(1.02) blur(3px);
+  --ui-glass-filter-frosted-prominent: saturate(128%) brightness(1.015) blur(6px);
   --ui-glass-refraction-blur-prominent: 16;
   --ui-glass-refraction-strength-prominent: 1.14;
   --ui-glass-refraction-spread-prominent: 1.45;

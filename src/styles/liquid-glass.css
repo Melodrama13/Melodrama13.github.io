@@ -84,6 +84,18 @@ body {
   --ui-glass-surface-bg: var(--ui-glass-chip-bg-hover);
 }
 
+:root[data-ui-glass-mode='frosted'] .ui-liquid-glass--refractive {
+  --ui-glass-surface-filter: var(--ui-glass-filter-frosted-refractive);
+}
+
+:root[data-ui-glass-mode='frosted'] .ui-liquid-glass--regular {
+  --ui-glass-surface-filter: var(--ui-glass-filter-frosted-regular);
+}
+
+:root[data-ui-glass-mode='frosted'] .ui-liquid-glass--prominent {
+  --ui-glass-surface-filter: var(--ui-glass-filter-frosted-prominent);
+}
+
 :root[data-ui-glass-mode='frosted'] .ui-liquid-glass {
   -webkit-backdrop-filter: var(--ui-glass-surface-filter) !important;
   backdrop-filter: var(--ui-glass-surface-filter) !important;

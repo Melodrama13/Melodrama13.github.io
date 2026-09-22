@@ -74,14 +74,14 @@ Liquid Glass 的路径固定为：`tokens.css` 中的 `--ui-glass-*` token → `
 | 层级 | class / runtime | 获准 consumer 与限制 |
 | --- | --- | --- |
 | Refractive | `.ui-liquid-glass.ui-liquid-glass--refractive` + `v-liquid-glass` | 顶部 `.nav-tabs`。插件为每个已连接表面生成或复用 SVG 边缘位移滤镜。 |
-| Prominent | `.ui-liquid-glass.ui-liquid-glass--prominent` + `v-liquid-glass` | Card/Song Stats 的 `.stats-nav` 与紧凑态 `.floating-menu-btn`、Event History 的 `.filter-bar` / `.filter-panel`、App 的 `.source-menu`。这是唯一的高霜层，内部 group/control/input/option 使用语义 token，不能追加子级折射。 |
+| Prominent | `.ui-liquid-glass.ui-liquid-glass--prominent` + `v-liquid-glass` | Card/Song Stats 的 `.stats-nav` 与紧凑态 `.floating-menu-btn`、Event History 的 `.filter-bar` / `.filter-panel`、App 的 `.source-menu`。这是唯一的强调玻璃层，内部 group/control/input/option 使用语义 token，不能追加子级折射。 |
 | Regular | `.ui-liquid-glass.ui-liquid-glass--regular` + `v-liquid-glass` | Predict drawer 与 Special Predict toolbar 的既有常规材质和 outer-surface refraction；不把 prominent recipe 复制到这些 consumer。 |
 | Modal | `.ui-liquid-glass.ui-liquid-glass--modal`，CSS-only readable frost | App 更新/导出状态弹窗和 Event History 的未保存预测切换弹窗。遮罩与对话框语义仍保持 local。 |
 | Chip | `.ui-liquid-glass.ui-liquid-glass--chip`，CSS-only | 小型、重复的 pill/chip；不得挂 directive。 |
 
 材质本身只在 `tokens.css` 中定义：`--ui-glass-ambient-image` 提供带克制暖玫瑰色的中性环境场；各 tier 的 `--ui-glass-*-bg` 保持近无色透射。prominent tier 独占 `--ui-glass-shadow-prominent` 的外部深度与五道静态 inset optical rim，以及 `--ui-glass-optical-rim-prominent` 的 1px conic 边缘 caustic。`liquid-glass.css` 只把 token 应用于 tier，并以不接收 pointer event 的 `::before` 绘制宽阔的 pointer-driven specular highlight、以 prominent `::after` 绘制仅边缘可见的 masked static rim；SVG 位移仍只属于外层 directive。不得在 consumer 中复制 gradient、shadow、filter 或 pseudo-element recipe。
 
-Event History 的 `.filter-bar`（操作栏）、`.filter-panel` 和 App 的 `.source-menu`（数据源面板）明确使用 `prominent` tier，并各自只拥有一个外层 `v-liquid-glass`/SVG `url(#...)` 位移；Card/Song Stats 的完整与紧凑导航遵循同一规则。它们依靠高霜表面与语义内部填充在滚动/密集文本上保持可读性；顶部导航维持既有 refractive tier。
+Event History 的 `.filter-bar`（操作栏）、`.filter-panel` 和 App 的 `.source-menu`（数据源面板）明确使用 `prominent` tier，并各自只拥有一个外层 `v-liquid-glass`/SVG `url(#...)` 位移；Card/Song Stats 的完整与紧凑导航遵循同一规则。它们依靠较高的白色雾化层与语义内部填充在滚动/密集文本上保持可读性；顶部导航维持既有 refractive tier。
 
 一个 glass 表面只拥有一个材质。其子元素、重复内容卡片、导出面板、列表行和数据内容 panel 必须保持原有局部表面，不能追加 `.ui-liquid-glass` 或 `v-liquid-glass`。这避免嵌套 backdrop/filter、额外 SVG 位移和导出画面漂移。
 
@@ -90,6 +90,8 @@ Event History 的 `.filter-bar`（操作栏）、`.filter-panel` 和 App 的 `.s
 SVG blur 由每个外层表面的计算 CSS property `--ui-glass-refraction-blur-radius` 决定：未设置、非法或负值时回退为 `GLASS_PRESET.blurRadius` 的 `2`（`feGaussianBlur stdDeviation="0.7"`），值上限为 `64`。prominent tier 把它设为 `--ui-glass-refraction-blur-prominent: 16`，因此生成 `stdDeviation="5.6"`；它还映射 `--ui-glass-refraction-strength-prominent: 1.14` 与 `--ui-glass-refraction-spread-prominent: 1.45` 到每个外层的 runtime config。运行时只接受有限正数（缺失、非法或非正数回退 `1`），strength 上限为 `2`，spread 限制为 `0.5..2`；strength 同时作用于 edge/rim/corner/ripple 强度，spread 仅放宽 edge/rim 衰减而不启用中心 warp。已解析 config 与 blur 同时参与位移缓存键、共享和 SVG filter margin，不能在 consumer 中用内联 recipe 替代。
 
 SVG `url(#filter)` enhancement 只在 Chromium 且根状态为 `data-ui-glass-mode="refractive"` 时启用。其他引擎保留 CSS frost；`prefers-reduced-transparency`、高对比/forced-colors 会强制 opaque 并隐藏 prominent `::after` rim，`prefers-reduced-motion` 停止 ambient motion 并隐藏 pointer-following specular，但保留不依赖 pointer 的 prominent static rim。测试可在导航后写 root dataset 来选择确定模式，但生产代码不得把该覆盖写入 storage 或 URL。
+
+非 Chromium 的 `data-ui-glass-mode="frosted"` 必须通过独立的 `--ui-glass-filter-frosted-*` token 对齐 Chromium 的光学模糊量，而不能直接复用可读性优先的通用高模糊值。当前 refractive / regular / prominent 回退分别为 `2px / 3px / 6px`；这些值按材质模式选择，与 viewport 断点无关，因此真实移动设备与桌面窄视口保持相近的透明感，同时继续保留 CSS rim、specular 和 prominent optical rim。`scripts/check-ui-policy.js` 会阻止三档回退缺失、未映射或重新超过约束上限。
 
 SFC 只保留既有几何、定位、响应式断点和语义状态色；central stylesheet 仅拥有 glass tokens/material。任何新增 consumer 必须同时证明不改变字体、间距、边界框、圆角、DOM 或 export PNG blob。
 

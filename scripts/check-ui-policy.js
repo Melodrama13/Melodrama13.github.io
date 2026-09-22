@@ -34,9 +34,15 @@ const SHARED_SOURCES = {
 };
 
 const MAIN_SOURCE = 'src/main.js';
+const UI_TOKENS_SOURCE = 'src/styles/tokens.css';
 const LIQUID_GLASS_STYLE_SOURCE = 'src/styles/liquid-glass.css';
 const LIQUID_GLASS_FILTERS_SOURCE = 'src/components/ui/LiquidGlassFilters.vue';
 const LIQUID_GLASS_MATERIAL_SELECTOR = /(^|[^a-zA-Z0-9_-])\.ui-liquid-glass(?:--(?:refractive|regular|prominent|modal|chip))?(?![a-zA-Z0-9_-])/;
+const FROSTED_GLASS_FILTER_LIMITS = Object.freeze({
+  refractive: 3,
+  regular: 4,
+  prominent: 8,
+});
 
 function normalizePath(file) {
   return file.replaceAll('\\', '/');
@@ -48,6 +54,52 @@ function lineNumber(text, offset) {
 
 function stripCssComments(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractCustomProperty(text, property) {
+  if (typeof text !== 'string') return null;
+  const match = stripCssComments(text).match(new RegExp(`${escapeRegExp(property)}\\s*:\\s*([^;]+);`));
+  return match?.[1]?.trim() ?? null;
+}
+
+function extractBlurPixels(filter) {
+  const match = filter?.match(/blur\(\s*(\d+(?:\.\d+)?)px\s*\)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function inspectFrostedGlassFilterParity(sourceMap) {
+  const diagnostics = [];
+  const tokensSource = sourceMap.get(UI_TOKENS_SOURCE);
+  const glassSource = sourceMap.get(LIQUID_GLASS_STYLE_SOURCE);
+
+  for (const [tier, maximumBlur] of Object.entries(FROSTED_GLASS_FILTER_LIMITS)) {
+    const token = `--ui-glass-filter-frosted-${tier}`;
+    const filter = extractCustomProperty(tokensSource, token);
+    const blur = extractBlurPixels(filter);
+
+    if (filter === null) {
+      diagnostics.push(`${UI_TOKENS_SOURCE}: missing ${token} for non-Chromium glass parity`);
+    } else if (blur === null) {
+      diagnostics.push(`${UI_TOKENS_SOURCE}: ${token} must include a px blur()`);
+    } else if (blur > maximumBlur) {
+      diagnostics.push(`${UI_TOKENS_SOURCE}: ${token} blur ${blur}px exceeds ${maximumBlur}px parity limit`);
+    }
+
+    const selector = `:root[data-ui-glass-mode='frosted'] .ui-liquid-glass--${tier}`;
+    const mapping = new RegExp(
+      `${escapeRegExp(selector)}\\s*\\{[^}]*--ui-glass-surface-filter\\s*:\\s*var\\(\\s*${escapeRegExp(token)}\\s*\\)`,
+      's'
+    );
+    if (typeof glassSource !== 'string' || !mapping.test(stripCssComments(glassSource))) {
+      diagnostics.push(`${LIQUID_GLASS_STYLE_SOURCE}: ${selector} must map to ${token}`);
+    }
+  }
+
+  return diagnostics;
 }
 
 function maskCssCommentsAndStrings(text) {
@@ -425,6 +477,8 @@ export function inspectLiquidGlassGovernance(sourceMap) {
   if (typeof sourceMap.get(LIQUID_GLASS_FILTERS_SOURCE) !== 'string') {
     diagnostics.push(`missing liquid glass filter host source ${LIQUID_GLASS_FILTERS_SOURCE}`);
   }
+
+  diagnostics.push(...inspectFrostedGlassFilterParity(sourceMap));
 
   return diagnostics;
 }
