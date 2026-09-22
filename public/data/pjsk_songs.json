@@ -32169,6 +32169,22 @@
           "东云彰人",
           "青柳冬弥"
         ]
+      },
+      {
+        "vocal_id": 2079,
+        "type": "another_vocal",
+        "released_at": "2026/9/22",
+        "characters": [
+          "白石杏"
+        ]
+      },
+      {
+        "vocal_id": 2080,
+        "type": "another_vocal",
+        "released_at": "2026/9/22",
+        "characters": [
+          "巡音流歌"
+        ]
       }
     ]
   },
@@ -35682,6 +35698,44 @@
     ]
   },
   {
+    "id": 805,
+    "title": "きのせい",
+    "pronunciation": "きのせい",
+    "composer": "imie",
+    "lyricist": "imie",
+    "arranger": "imie",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-09-23 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 12,
+      "hard": 16,
+      "expert": 23,
+      "master": 27
+    },
+    "vocals": [
+      {
+        "vocal_id": 1849,
+        "type": "original_song",
+        "released_at": "2026/9/23",
+        "characters": [
+          "初音未来",
+          "镜音铃",
+          "镜音连",
+          "巡音流歌",
+          "MEIKO",
+          "KAITO"
+        ]
+      }
+    ]
+  },
+  {
     "id": 809,
     "title": "敗走",
     "pronunciation": "はいそう",
@@ -35761,6 +35815,40 @@
           "天马司",
           "凤笑梦",
           "神代类"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 814,
+    "title": "こわれちゃった！！",
+    "pronunciation": "こわれちゃった",
+    "composer": "タケノコ少年",
+    "lyricist": "タケノコ少年",
+    "arranger": "タケノコ少年",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-09-22 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 15,
+      "hard": 23,
+      "expert": 31,
+      "master": 34,
+      "append": 37
+    },
+    "vocals": [
+      {
+        "vocal_id": 1858,
+        "type": "original_song",
+        "released_at": "2026/9/22",
+        "characters": [
+          "初音未来"
         ]
       }
     ]
