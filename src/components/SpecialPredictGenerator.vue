@@ -645,6 +645,7 @@
 <script setup>
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import html2canvas from 'html2canvas';
+import { isCompilationEvent } from '../utils/compilationEvents.js';
 
 const props = defineProps({
   predictSources: { type: Array, default: () => [] },
@@ -3486,7 +3487,9 @@ const isC6FixedRosterEvent = (event) => (
   && getSourceEventTypeText(event) === '联动'
   && Number(event?.type_series_id) === 6
 );
-const isPredictDisabledEvent = (event) => isTestEvent(event) || isWorldLinkFinalEvent(event);
+const isPredictDisabledEvent = (event) => (
+  isTestEvent(event) || isWorldLinkFinalEvent(event) || isCompilationEvent(event)
+);
 const isPredictableBaseEvent = (event) => (
   (Number.isFinite(Number(event?.id)) || isC6FixedRosterEvent(event))
   && !isPredictDisabledEvent(event)
@@ -3990,7 +3993,7 @@ const renderedRows = computed(() => {
   if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) return [];
 
   return numericEvents.value
-    .filter(({ idNum }) => idNum >= range.start && idNum <= range.end)
+    .filter(({ event, idNum }) => isPredictableBaseEvent(event) && idNum >= range.start && idNum <= range.end)
     .map(({ event: base, index, scheduleIndex }) => {
       const idKey = normalizeId(base.id);
       const patch = predictPatchById.value.get(idKey) || null;
@@ -4022,7 +4025,7 @@ const multiCaseRows = computed(() => {
   const range = effectiveRange.value;
   if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) return [];
   return numericEvents.value
-    .filter(({ idNum }) => idNum >= range.start && idNum <= range.end)
+    .filter(({ event, idNum }) => isPredictableBaseEvent(event) && idNum >= range.start && idNum <= range.end)
     .map(({ event: base, index, scheduleIndex }) => {
       const idKey = normalizeId(base.id);
       const groupedCases = new Map();

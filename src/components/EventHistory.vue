@@ -844,7 +844,7 @@
 
           <div class="banner-section">
             <div class="avatar-wrapper">
-              <template v-if="row.event.event_type === 'World Link' && row.event.unit">
+              <template v-if="['World Link', '总集篇'].includes(row.event.event_type) && row.event.unit">
                 <img :src="`/elements/${row.event.unit.toLowerCase()}.png`" class="unit-logo-banner" :title="row.event.unit" />
               </template>
               <template v-else-if="row.event.banner">
@@ -863,7 +863,7 @@
 
           <div class="event-main-content">
             <div class="event-title-row">
-              <span class="event-title">{{ row.event.event_title }}</span>
+              <span class="event-title">{{ row.event.event_title || (isCompilationEvent(row.event) ? `${row.event.unit} 总集篇` : '') }}</span>
             </div>
             
             <div class="type-indicator">
@@ -1188,6 +1188,7 @@ import { buildAssetUrl } from '../utils/assets.js';
 import { getCardImageVariants } from '../utils/cardImageVariants.js';
 import { isCardImageReleased, isEventStarted, isSongReleased } from '../utils/spoilerGuard.js';
 import { UI_BREAKPOINTS, isViewportAtMost } from '../ui/breakpoints.js';
+import { isCompilationEvent } from '../utils/compilationEvents.js';
 
 
 // 2. 【新增】接收从 App.vue 传下来的总表（包含历史+预测）
@@ -1781,7 +1782,9 @@ const isEventWorldLinkFinalByJson = (event) => {
   const type = getSourceEventType(event).toLowerCase().replace(/\s+/g, '');
   return type.includes('终章') && (type.includes('wl') || type.includes('worldlink'));
 };
-const isEventPredictDisabledByJson = (event) => isEventTestByJson(event) || isEventWorldLinkFinalByJson(event);
+const isEventPredictDisabledByJson = (event) => (
+  isEventTestByJson(event) || isEventWorldLinkFinalByJson(event) || isCompilationEvent(event)
+);
 const isEventOfficialRevealedByJson = (event) => hasNonEmptyText(getSourceEventTitle(event));
 
 const getPredictStatus = (event) => {
@@ -4485,6 +4488,7 @@ const EVENT_TYPE_FILTER_OPTIONS = [
   { value: 'box', label: '箱活' },
   { value: 'mix', label: '混活' },
   { value: 'wl', label: 'World Link' },
+  { value: 'compilation', label: '总集篇' },
   { value: 'collab', label: '联动' }
 ];
 const EVENT_SPECIAL_RULE_OPTIONS = [
@@ -5393,6 +5397,7 @@ const matchEventTypeFilter = (event, typeValue) => {
   if (typeValue === 'box') return eventType === '箱活';
   if (typeValue === 'mix') return eventType === '混活';
   if (typeValue === 'wl') return ['wl', 'world link', 'world link终章'].includes(eventType.toLowerCase());
+  if (typeValue === 'compilation') return isCompilationEvent(event);
   if (typeValue === 'collab') {
     return eventType.includes('联动') || gachaType.includes('联动') || /^c\d+$/.test(idRaw);
   }
@@ -7199,7 +7204,7 @@ const getCharColor = (name) => {
 const isVirtualSinger = (name) => VS_NAMES.value.includes(String(name || '').trim());
 //const isUnitRelated = (ev) => ['箱活','World Link'].includes(ev.event_type);
 const isUnitRelated = (ev) => {
-  const isTypeMatch = ['箱活', 'WL', 'World Link'].includes(ev.event_type);
+  const isTypeMatch = ['箱活', 'WL', 'World Link', '总集篇'].includes(ev.event_type);
   return isTypeMatch && !!ev.unit; // !!ev.unit 确保 unit 不为空字符串或 null
 };
 const isSpecialFestival = (fest) => ['新年', '半周年', '情人节', '白情', '周年', '婚活'].includes(fest);

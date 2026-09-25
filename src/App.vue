@@ -496,6 +496,11 @@ import {
 } from './utils/assets.js';
 import { UI_BREAKPOINTS, isViewportAtMost, toMaxWidthMediaQuery } from './ui/breakpoints.js';
 import { resolveTabDragTarget } from './ui/mobileTabSwitcher.js';
+import {
+  isCompilationEvent,
+  mapLegacyPredictionId,
+  resolveLegacyPredictionScheduleIndex
+} from './utils/compilationEvents.js';
 
 // --- 界面切换逻辑 (恢复原样) ---
 const TabLoadingIndicator = {
@@ -1858,7 +1863,9 @@ const isJsonWorldLinkFinalEvent = (event) => {
   const type = getSourceEventTypeText(event).toLowerCase().replace(/\s+/g, '');
   return type.includes('终章') && (type.includes('wl') || type.includes('worldlink'));
 };
-const isPredictDisabledJsonEvent = (event) => isJsonTestEvent(event) || isJsonWorldLinkFinalEvent(event);
+const isPredictDisabledJsonEvent = (event) => (
+  isJsonTestEvent(event) || isJsonWorldLinkFinalEvent(event) || isCompilationEvent(event)
+);
 
 const hasExplicitPredictShiftFlag = (event) => (
   event?.predict_shift === true
@@ -1933,8 +1940,18 @@ const resolveLegacyShiftedPredictEventId = (patch) => {
   return idNum + (currentShiftCount - savedShiftCount);
 };
 
+const isLegacyPredictPatch = (patch) => Number(patch?.predict_schema_version || 0) < 4;
+const resolveLegacyPredictEventId = (patch) => {
+  const oldIndex = getStoredIntegerField(patch, 'predict_schedule_index');
+  if (oldIndex !== null) {
+    return resolveLegacyPredictionScheduleIndex(oldIndex, historyData.value);
+  }
+  return mapLegacyPredictionId(resolveLegacyShiftedPredictEventId(patch));
+};
+
 const resolvePredictEventIdForCurrentSchedule = (patch) => {
   if (getEventKey(patch?.id) === 'c6') return 'c6';
+  if (isLegacyPredictPatch(patch)) return resolveLegacyPredictEventId(patch);
   return resolvePredictEventIdByScheduleIndex(patch)
     ?? resolveLegacyShiftedPredictEventId(patch);
 };
@@ -2028,7 +2045,7 @@ const retargetPredictPatch = (patch, targetEvent) => {
   const next = {
     ...(patch || {}),
     id: targetId,
-    predict_schema_version: 3,
+    predict_schema_version: 4,
     ...(Number.isInteger(scheduleIndex) ? { predict_schedule_index: scheduleIndex } : {}),
     ...(isNumericEventIdValue(targetId) ? { predict_shift_count: getInsertedTestCountAtOrBefore(targetId) } : {}),
     memberCards: retargetPredictMemberCards(patch?.memberCards, targetId)
@@ -2058,6 +2075,10 @@ const resolvePredictPatchForCurrentSchedule = (patch) => {
 
   const directSourceEvent = getSourceEventById(patch.id);
   if (isC6FixedRosterEvent(directSourceEvent)) return useTarget(patch.id);
+
+  if (isLegacyPredictPatch(patch)) {
+    return useTarget(resolveLegacyPredictEventId(patch));
+  }
 
   const scheduleTargetId = resolvePredictEventIdByScheduleIndex(patch);
   if (scheduleTargetId !== null) return useTarget(scheduleTargetId);
@@ -2143,7 +2164,7 @@ const reconcilePredictiveEvents = (list) => {
 };
 
 const buildPredictExportPayload = (list) => ({
-  version: 3,
+  version: 4,
   exportedAt: new Date().toISOString(),
   source: 'pjsk-planner',
   owner: normalizeUserName(predictUserName.value),
@@ -2651,16 +2672,12 @@ const sanitizeLoadedPredictSources = () => {
   predictSources.value = (predictSources.value || []).map((source) => {
     const beforeList = Array.isArray(source?.predictiveEvents) ? source.predictiveEvents : [];
     const canonical = sanitizeCanonicalPredictiveEvents(beforeList);
-    const shouldPreserveNonEmptySource = beforeList.length > 0 && canonical.length === 0;
-    const nextList = shouldPreserveNonEmptySource ? beforeList : canonical;
     if (source.id === activePredictSourceId.value) {
-      activeCleanedCount = shouldPreserveNonEmptySource
-        ? 0
-        : Math.max(0, beforeList.length - canonical.length);
+      activeCleanedCount = Math.max(0, beforeList.length - canonical.length);
     }
     return {
       ...source,
-      predictiveEvents: clonePredictList(nextList)
+      predictiveEvents: clonePredictList(canonical)
     };
   });
 
@@ -2739,7 +2756,7 @@ onMounted(async () => {
     const cachedPublicDataTexts = cachedPublicData?.texts || null;
     if (cachedPublicDataTexts) {
       applyLoadedAppData(parsePublicDataTexts(cachedPublicDataTexts));
-      sanitizeLoadedPredictSources();
+      if (cachedPublicData.isCurrentVersion) sanitizeLoadedPredictSources();
     }
 
     // A code-only release keeps the same publicDataVersion. Once that exact
@@ -3107,7 +3124,7 @@ const buildPredictEventPatchFromPayload = (payload, options = {}) => {
 
   return {
     id: fixedRosterCollab ? 'c6' : Number(eventId),
-    predict_schema_version: 3,
+    predict_schema_version: 4,
     ...(fixedRosterCollab ? {} : {
       predict_schedule_index: getNormalScheduleIndexByEventId(eventId),
       predict_shift_count: getInsertedTestCountAtOrBefore(eventId)
