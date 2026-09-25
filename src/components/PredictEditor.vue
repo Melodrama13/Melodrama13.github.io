@@ -5,8 +5,12 @@
         ref="drawerRef"
         v-if="isOpen"
         v-liquid-glass
-        class="predict-drawer ui-liquid-glass ui-liquid-glass--regular"
-        :class="{ 'is-mobile-sheet': isMobileViewport }"
+        class="predict-drawer ui-liquid-glass ui-glass-optical-detail"
+        :class="{
+          'is-mobile-sheet': isMobileViewport,
+          'ui-liquid-glass--prominent': isMobileViewport,
+          'ui-liquid-glass--refractive': !isMobileViewport
+        }"
         :style="drawerStyle"
       >
       <div class="drawer-header">
@@ -1075,12 +1079,12 @@ defineExpose({
   border-left-style: solid;
   --pe-radius-card: 999px;
   --pe-radius-btn: 999px;
-  --pe-glass-bg: linear-gradient(145deg, rgba(204, 251, 241, 0.34), rgba(186, 230, 253, 0.16) 50%, rgba(255, 255, 255, 0.12));
-  --pe-glass-bg-hover: linear-gradient(145deg, rgba(204, 251, 241, 0.48), rgba(125, 211, 252, 0.22) 54%, rgba(255, 255, 255, 0.18));
-  --pe-glass-bg-strong: linear-gradient(145deg, rgba(204, 251, 241, 0.30), rgba(186, 230, 253, 0.14) 54%, rgba(255, 255, 255, 0.12));
-  --pe-glass-border: rgba(255, 255, 255, 0.56);
+  --pe-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(248, 250, 252, 0.16) 50%, rgba(226, 232, 240, 0.12));
+  --pe-glass-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(248, 250, 252, 0.22) 54%, rgba(226, 232, 240, 0.18));
+  --pe-glass-bg-strong: linear-gradient(145deg, rgba(255, 255, 255, 0.30), rgba(248, 250, 252, 0.14) 54%, rgba(226, 232, 240, 0.12));
+  --pe-glass-border: var(--ui-glass-editor-inner-border, rgba(255, 255, 255, 0.56));
   --pe-glass-shadow: 0 12px 30px rgba(15, 23, 42, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -1px 0 rgba(148, 163, 184, 0.12);
-  --pe-glass-shadow-soft: 0 6px 18px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.88), inset 0 -1px 0 rgba(148, 163, 184, 0.10);
+  --pe-glass-shadow-soft: var(--ui-glass-editor-inner-shadow, 0 6px 18px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.88), inset 0 -1px 0 rgba(148, 163, 184, 0.10));
   --pe-accent: #22b8ad;
   --pe-accent-strong: #0f9f96;
   --pe-danger: #ef4444;
@@ -1104,10 +1108,10 @@ defineExpose({
   border-top-width: 1px;
   border-top-style: solid;
   transition: height 0.16s ease;
-  --pe-glass-bg: linear-gradient(145deg, rgba(204, 251, 241, 0.48), rgba(186, 230, 253, 0.24) 50%, rgba(255, 255, 255, 0.22));
-  --pe-glass-bg-hover: linear-gradient(145deg, rgba(204, 251, 241, 0.62), rgba(125, 211, 252, 0.30) 54%, rgba(255, 255, 255, 0.28));
-  --pe-glass-bg-strong: linear-gradient(145deg, rgba(204, 251, 241, 0.42), rgba(186, 230, 253, 0.22) 54%, rgba(255, 255, 255, 0.22));
-  --pe-glass-border: rgba(255, 255, 255, 0.72);
+  --pe-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(248, 250, 252, 0.24) 50%, rgba(226, 232, 240, 0.22));
+  --pe-glass-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(248, 250, 252, 0.30) 54%, rgba(226, 232, 240, 0.28));
+  --pe-glass-bg-strong: linear-gradient(145deg, rgba(255, 255, 255, 0.42), rgba(248, 250, 252, 0.22) 54%, rgba(226, 232, 240, 0.22));
+  --pe-glass-border: var(--ui-glass-editor-inner-border, rgba(255, 255, 255, 0.72));
 }
 
 .drawer-grab-handle {
@@ -1135,7 +1139,7 @@ defineExpose({
 .drawer-header {
   padding: 16px 16px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.70);
-  background: linear-gradient(180deg, rgba(236, 254, 255, 0.30), rgba(204, 251, 241, 0.08));
+  background: transparent;
   box-shadow: inset 0 -1px 0 rgba(148, 163, 184, 0.08);
 }
 .header-main {
@@ -1164,7 +1168,7 @@ defineExpose({
   color: #0f766e;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.82rem;
-  background: linear-gradient(145deg, rgba(236, 254, 255, 0.76), rgba(204, 251, 241, 0.36));
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(248, 250, 252, 0.36));
   border: 1px solid rgba(20, 184, 166, 0.34);
   box-shadow: var(--pe-glass-shadow-soft);
 }
@@ -1199,14 +1203,12 @@ defineExpose({
   margin: 0 -6px;
   padding: 7px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  background:
-    linear-gradient(145deg, rgba(20, 184, 166, 0.04), rgba(14, 165, 233, 0.025) 52%, rgba(255, 255, 255, 0.14)),
-    rgba(255, 255, 255, 0.12);
-  box-shadow:
+  border: 1px solid var(--ui-glass-editor-inner-border, rgba(255, 255, 255, 0.42));
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: var(--ui-glass-editor-group-shadow,
     0 8px 22px rgba(15, 23, 42, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.70),
-    inset 0 -1px 0 rgba(14, 165, 233, 0.10);
+    inset 0 -1px 0 rgba(14, 165, 233, 0.10));
 }
 .global-config-bar.has-banner { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .cfg-group {
@@ -1229,14 +1231,14 @@ defineExpose({
   min-height: 30px;
   padding: 5px 24px 5px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
+  border: 1px solid var(--ui-glass-editor-inner-border, rgba(148, 163, 184, 0.28));
   font-size: 12px;
   font-weight: 700;
   color: #0f172a;
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-color: rgba(240, 253, 250, 0.38);
+  background-color: var(--ui-glass-editor-control-fill, rgba(255, 255, 255, 0.38));
   background-image:
     linear-gradient(45deg, transparent 50%, #64748b 50%),
     linear-gradient(135deg, #64748b 50%, transparent 50%);
@@ -1308,7 +1310,7 @@ defineExpose({
 .editor-card.is-banner-card {
   border-color: rgba(251, 146, 60, 0.36);
   background:
-    linear-gradient(145deg, rgba(254, 215, 170, 0.26), rgba(255, 247, 237, 0.16) 54%, rgba(204, 251, 241, 0.14)),
+    linear-gradient(145deg, rgba(254, 215, 170, 0.26), rgba(255, 247, 237, 0.16) 54%, rgba(255, 255, 255, 0.14)),
     var(--pe-glass-bg-strong);
   box-shadow:
     0 8px 18px rgba(251, 146, 60, 0.08),
@@ -1369,11 +1371,11 @@ defineExpose({
   font-weight: 700;
   color: #0f172a;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.26);
+  border: 1px solid var(--ui-glass-editor-inner-border, rgba(148, 163, 184, 0.26));
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-color: rgba(255, 255, 255, 0.58);
+  background-color: var(--ui-glass-editor-control-fill, rgba(255, 255, 255, 0.58));
   background-image:
     linear-gradient(45deg, transparent 50%, #64748b 50%),
     linear-gradient(135deg, #64748b 50%, transparent 50%);
@@ -1400,12 +1402,12 @@ defineExpose({
   justify-content: center;
   font-size: 10px;
   font-weight: 800;
-  background: linear-gradient(145deg, rgba(226, 232, 240, 0.66), rgba(241, 245, 249, 0.34) 58%, rgba(203, 213, 225, 0.18));
+  background: var(--ui-glass-editor-tag-fill, linear-gradient(145deg, rgba(226, 232, 240, 0.66), rgba(241, 245, 249, 0.34) 58%, rgba(203, 213, 225, 0.18)));
   padding: 2px 8px;
   border-radius: 999px;
   color: #64748b;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--ui-glass-editor-inner-border, rgba(148, 163, 184, 0.24));
+  box-shadow: var(--ui-glass-editor-inner-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.72));
   box-sizing: border-box;
 }
 

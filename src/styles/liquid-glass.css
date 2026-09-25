@@ -30,6 +30,14 @@ body {
   --ui-glass-surface-filter: var(--ui-glass-filter-refractive);
 }
 
+.predict-drawer.ui-liquid-glass--refractive {
+  --ui-glass-surface-bg: var(--ui-glass-editor-refractive-bg);
+  --ui-glass-refraction-blur-radius: var(--ui-glass-editor-refraction-blur);
+  --ui-glass-refraction-strength: var(--ui-glass-editor-refraction-strength);
+  --ui-glass-refraction-spread: var(--ui-glass-editor-refraction-spread);
+  --ui-glass-refraction-warp-strength: var(--ui-glass-editor-refraction-warp-strength);
+}
+
 .stats-nav.ui-liquid-glass--refractive {
   --ui-glass-surface-bg: var(--ui-stats-nav-glass-bg);
 }
@@ -49,7 +57,28 @@ body {
   --ui-glass-refraction-spread: var(--ui-glass-refraction-spread-prominent);
 }
 
-.ui-liquid-glass--prominent::after {
+.ui-liquid-glass--refractive.ui-glass-optical-detail,
+.ui-liquid-glass--prominent.ui-glass-optical-detail,
+.predict-drawer.is-mobile-sheet.ui-liquid-glass--prominent {
+  --ui-glass-surface-shadow: var(--ui-glass-optical-prominent-shadow);
+  --ui-glass-optical-rim-prominent: var(--ui-glass-optical-prominent-rim);
+  --ui-glass-micro-shadow: var(--ui-glass-optical-micro-shadow);
+  --ui-glass-micro-group-shadow: var(--ui-glass-optical-micro-group-shadow);
+}
+
+.predict-drawer.ui-glass-optical-detail {
+  --ui-glass-editor-inner-border: var(--ui-glass-optical-micro-border);
+  --ui-glass-editor-inner-shadow: var(--ui-glass-micro-shadow);
+  --ui-glass-editor-group-shadow: var(--ui-glass-micro-group-shadow);
+}
+
+.predict-drawer.is-mobile-sheet.ui-liquid-glass--prominent {
+  --ui-glass-editor-control-fill: var(--ui-glass-editor-micro-control-fill);
+  --ui-glass-editor-tag-fill: var(--ui-glass-editor-micro-tag-fill);
+}
+
+.ui-liquid-glass--prominent::after,
+.ui-liquid-glass--refractive.ui-glass-optical-detail::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -84,6 +113,36 @@ body {
   --ui-glass-surface-bg: var(--ui-glass-chip-bg-hover);
 }
 
+:is(.mobile-tab-glider, .mobile-source-trigger).ui-liquid-glass {
+  --ui-glass-surface-bg: var(--ui-glass-mobile-lens-bg);
+  --ui-glass-surface-shadow: var(--ui-glass-mobile-lens-shadow);
+  --ui-glass-surface-filter: var(--ui-glass-mobile-lens-filter);
+  --ui-glass-refraction-blur-radius: 1.5;
+  --ui-glass-refraction-strength: 1.95;
+  --ui-glass-refraction-spread: 1.75;
+  background: var(--ui-glass-surface-bg);
+  box-shadow: var(--ui-glass-surface-shadow);
+}
+
+:is(.mobile-tab-glider, .mobile-source-trigger).ui-liquid-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--ui-glass-mobile-lens-rim);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
 :root[data-ui-glass-mode='frosted'] .ui-liquid-glass--refractive {
   --ui-glass-surface-filter: var(--ui-glass-filter-frosted-refractive);
 }
@@ -94,6 +153,10 @@ body {
 
 :root[data-ui-glass-mode='frosted'] .ui-liquid-glass--prominent {
   --ui-glass-surface-filter: var(--ui-glass-filter-frosted-prominent);
+}
+
+:root[data-ui-glass-mode='frosted'] :is(.mobile-tab-glider, .mobile-source-trigger).ui-liquid-glass {
+  --ui-glass-surface-filter: var(--ui-glass-mobile-lens-filter);
 }
 
 :root[data-ui-glass-mode='frosted'] .ui-liquid-glass {
@@ -111,8 +174,19 @@ body {
 
 :root[data-ui-glass-mode='opaque'] .ui-liquid-glass::before,
 :root[data-ui-glass-mode='opaque'] .ui-liquid-glass--prominent::after,
+:root[data-ui-glass-mode='opaque'] .ui-liquid-glass--refractive.ui-glass-optical-detail::after,
+:root[data-ui-glass-mode='opaque'] .mobile-tab-glider.ui-liquid-glass::after,
 :root[data-ui-glass-motion='reduced'] .ui-liquid-glass::before {
   display: none;
+}
+
+:root[data-ui-glass-mode='opaque'] .predict-drawer.ui-glass-optical-detail {
+  --ui-glass-editor-inner-border: rgba(71, 85, 105, 0.48);
+}
+
+:root[data-ui-glass-mode='opaque'] .ui-glass-optical-detail {
+  --ui-glass-micro-shadow: none;
+  --ui-glass-micro-group-shadow: none;
 }
 
 :root[data-ui-glass-motion='reduced'] body {
@@ -142,6 +216,15 @@ body {
 }
 
 @media (prefers-reduced-transparency: reduce) {
+  .predict-drawer.ui-glass-optical-detail {
+    --ui-glass-editor-inner-border: rgba(71, 85, 105, 0.48);
+  }
+
+  .ui-glass-optical-detail {
+    --ui-glass-micro-shadow: none;
+    --ui-glass-micro-group-shadow: none;
+  }
+
   .ui-liquid-glass {
     background: var(--ui-glass-fallback-bg);
     background-image: none;
@@ -151,12 +234,23 @@ body {
   }
 
   .ui-liquid-glass::before,
-  .ui-liquid-glass--prominent::after {
+  .ui-liquid-glass--prominent::after,
+  .ui-liquid-glass--refractive.ui-glass-optical-detail::after,
+  .mobile-tab-glider.ui-liquid-glass::after {
     display: none;
   }
 }
 
 @media (prefers-contrast: more) {
+  .predict-drawer.ui-glass-optical-detail {
+    --ui-glass-editor-inner-border: rgba(71, 85, 105, 0.64);
+  }
+
+  .ui-glass-optical-detail {
+    --ui-glass-micro-shadow: none;
+    --ui-glass-micro-group-shadow: none;
+  }
+
   .ui-liquid-glass {
     background: var(--ui-glass-fallback-bg) !important;
     background-image: none !important;
@@ -167,12 +261,23 @@ body {
   }
 
   .ui-liquid-glass::before,
-  .ui-liquid-glass--prominent::after {
+  .ui-liquid-glass--prominent::after,
+  .ui-liquid-glass--refractive.ui-glass-optical-detail::after,
+  .mobile-tab-glider.ui-liquid-glass::after {
     display: none !important;
   }
 }
 
 @media (forced-colors: active) {
+  .predict-drawer.ui-glass-optical-detail {
+    --ui-glass-editor-inner-border: CanvasText;
+  }
+
+  .ui-glass-optical-detail {
+    --ui-glass-micro-shadow: none;
+    --ui-glass-micro-group-shadow: none;
+  }
+
   body {
     background-image: none;
     animation: none;
@@ -191,8 +296,12 @@ body {
 
   :root[data-ui-glass-mode] .ui-liquid-glass::before,
   :root[data-ui-glass-mode] .ui-liquid-glass--prominent::after,
+  :root[data-ui-glass-mode] .ui-liquid-glass--refractive.ui-glass-optical-detail::after,
+  :root[data-ui-glass-mode] .mobile-tab-glider.ui-liquid-glass::after,
   .ui-liquid-glass::before,
-  .ui-liquid-glass--prominent::after {
+  .ui-liquid-glass--prominent::after,
+  .ui-liquid-glass--refractive.ui-glass-optical-detail::after,
+  .mobile-tab-glider.ui-liquid-glass::after {
     display: none !important;
   }
 }

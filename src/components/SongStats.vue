@@ -9,14 +9,14 @@
       <button
         v-if="navCollapsed"
         v-liquid-glass
-        class="floating-menu-btn ui-liquid-glass ui-liquid-glass--prominent"
+        class="floating-menu-btn ui-liquid-glass ui-liquid-glass--prominent ui-glass-optical-detail"
         title="展开统计菜单"
         @click="setNavCollapsed(false)"
       >
         <img src="/data/icon/menu.png" class="floating-menu-icon" alt="菜单" />
       </button>
 
-      <aside v-liquid-glass="!navCollapsed" class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--prominent" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
+      <aside v-liquid-glass="!navCollapsed" class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--prominent ui-glass-optical-detail" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
         <button v-if="!navCollapsed" class="nav-collapse-fab" @click="setNavCollapsed(true)" title="收起统计菜单">
           <img src="/data/icon/menu_open.png" class="nav-collapse-fab-icon" alt="收起菜单" />
         </button>
@@ -8702,7 +8702,7 @@ watch(totalSongPages, (nextTotal) => {
 <style scoped>
 @media (max-width: 1200px) {
   .pjsk-song-stats {
-    --stats-nav-width: 196px;
+    --stats-nav-width: 187px;
     --stats-nav-left: 34px;
     --stats-nav-top: 78px;
     --song-jacket-default-size: 60px;
@@ -9265,6 +9265,10 @@ watch(totalSongPages, (nextTotal) => {
     flex: 0 0 25px;
     font-size: 0.7rem;
   }
+}
+
+.stats-nav .nav-quick-wrap {
+  margin-top: 20px;
 }
 
 .stats-nav.mobile-floating .nav-cutoff,

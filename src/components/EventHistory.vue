@@ -6,7 +6,7 @@
         class="predict-preview-floating"
         aria-live="polite"
       >
-        <div class="preview-config-panel" :class="{ 'is-collapsed': previewFloatingCollapsed || previewConfigBodyCollapsed }" :style="previewConfigPanelStyle" @mousedown="bringPreviewConfigToFront" @touchstart="bringPreviewConfigToFront">
+        <div class="preview-config-panel ui-liquid-glass ui-liquid-glass--prominent ui-glass-optical-detail" :class="{ 'is-collapsed': previewFloatingCollapsed || previewConfigBodyCollapsed }" :style="previewConfigPanelStyle" @mousedown="bringPreviewConfigToFront" @touchstart="bringPreviewConfigToFront">
           <div class="preview-config-head" @mousedown.prevent="startDragPreviewConfig($event)" @touchstart.prevent="startDragPreviewConfigTouch($event)">
             <span>悬浮统计（最多6个）</span>
             <div class="preview-config-actions">
@@ -129,7 +129,7 @@
           v-show="!previewFloatingCollapsed"
           v-for="panel in previewFloatingPanels"
           :key="panel.id"
-          :class="['preview-panel', { 'is-collapsed': isPreviewPanelCollapsed(panel.id) }]"
+          :class="['preview-panel', 'ui-liquid-glass', 'ui-liquid-glass--prominent', 'ui-glass-optical-detail', { 'is-collapsed': isPreviewPanelCollapsed(panel.id) }]"
           :style="getPreviewPanelStyle(panel.id)"
           @mousedown="bringPreviewPanelToFront(panel.id)"
           @touchstart="bringPreviewPanelToFront(panel.id)"
@@ -528,7 +528,7 @@
         <div
           ref="filterBarRef"
           v-liquid-glass
-          class="filter-bar ui-liquid-glass ui-liquid-glass--prominent"
+          class="filter-bar ui-liquid-glass ui-liquid-glass--prominent ui-glass-optical-detail"
           :class="{
             'is-compact': isCompactFilterBar,
             'is-editor-tight': isEditorFilterTight,
@@ -588,7 +588,7 @@
           </button>
         </div>
         <transition name="slide-fade">
-          <div v-if="showFilter" v-liquid-glass class="filter-panel ui-liquid-glass ui-liquid-glass--prominent">
+          <div v-if="showFilter" v-liquid-glass class="filter-panel ui-liquid-glass ui-liquid-glass--prominent ui-glass-optical-detail">
           <div class="filter-row filter-mode-row">
             <span class="row-label">模式</span>
             <div class="btn-group">
@@ -7522,21 +7522,12 @@ const getFestivalPreviewUnitLogo = (name) => {
   width: 360px;
   border: 1px solid rgba(255, 255, 255, 0.68);
   border-radius: 24px;
-  background:
-    linear-gradient(142deg, rgba(204, 251, 241, 0.34), rgba(186, 230, 253, 0.20) 48%, rgba(255, 255, 255, 0.18)),
-    rgba(255, 255, 255, 0.34);
-  box-shadow:
-    0 18px 44px rgba(15, 23, 42, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.90),
-    inset 0 -1px 0 rgba(148, 163, 184, 0.12);
   padding: 8px;
   pointer-events: auto;
   max-height: min(84vh, calc(100vh - var(--preview-config-top) - 10px));
   max-height: min(84dvh, calc(100dvh - var(--preview-config-top) - 10px));
   overflow-x: hidden;
   overflow-y: auto;
-  backdrop-filter: saturate(185%) blur(24px);
-  -webkit-backdrop-filter: saturate(185%) blur(24px);
 }
 
 .preview-config-head {
@@ -7588,18 +7579,16 @@ const getFestivalPreviewUnitLogo = (name) => {
 .preview-config-reset {
   border: 1px solid rgba(148, 163, 184, 0.26);
   border-radius: 999px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(240, 253, 250, 0.30));
+  background: var(--ui-glass-optical-control-bg);
   color: #334155;
   font-size: 0.68rem;
   padding: 3px 9px;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.82);
-  backdrop-filter: saturate(150%) blur(10px);
-  -webkit-backdrop-filter: saturate(150%) blur(10px);
+  box-shadow: var(--ui-glass-micro-shadow);
 }
 
 .preview-config-reset:hover {
-  background: linear-gradient(145deg, rgba(236, 254, 255, 0.76), rgba(255, 255, 255, 0.42));
+  background: var(--ui-glass-optical-control-bg-hover);
 }
 
 .preview-config-options {
@@ -7611,12 +7600,12 @@ const getFestivalPreviewUnitLogo = (name) => {
 .preview-config-btn {
   border: 1px solid rgba(148, 163, 184, 0.26);
   border-radius: 999px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(240, 253, 250, 0.30));
+  background: var(--ui-glass-optical-control-bg);
   color: #334155;
   font-size: 0.72rem;
   padding: 4px 10px;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  box-shadow: var(--ui-glass-micro-shadow);
 }
 
 .preview-config-btn.is-active {
@@ -7635,8 +7624,8 @@ const getFestivalPreviewUnitLogo = (name) => {
   border: 1px solid rgba(255, 255, 255, 0.52);
   border-radius: 18px;
   padding: 8px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(240, 253, 250, 0.16));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  background: var(--ui-glass-optical-group-bg);
+  box-shadow: var(--ui-glass-micro-group-shadow);
 }
 
 .preview-char-select-title {
@@ -7663,6 +7652,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   font-size: 0.64rem;
   padding: 2px 8px;
   cursor: pointer;
+  box-shadow: var(--ui-glass-micro-shadow);
 }
 
 .preview-char-select-toggle:disabled {
@@ -7688,7 +7678,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   background: rgba(255, 255, 255, 0.34);
   padding: 0;
   cursor: pointer;
-  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--ui-glass-micro-shadow);
 }
 
 .preview-char-chip.is-active {
@@ -7732,6 +7722,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   line-height: 1;
   padding: 4px 9px;
   cursor: pointer;
+  box-shadow: var(--ui-glass-micro-shadow);
 }
 
 .preview-festival-chip.is-active {
@@ -7746,15 +7737,6 @@ const getFestivalPreviewUnitLogo = (name) => {
   border-radius: 24px;
   padding: 10px 10px 8px;
   border: 1px solid rgba(255, 255, 255, 0.68);
-  box-shadow:
-    0 18px 44px rgba(15, 23, 42, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.90),
-    inset 0 -1px 0 rgba(148, 163, 184, 0.12);
-  background:
-    linear-gradient(142deg, rgba(204, 251, 241, 0.34), rgba(186, 230, 253, 0.20) 48%, rgba(255, 255, 255, 0.18)),
-    rgba(255, 255, 255, 0.34);
-  backdrop-filter: saturate(185%) blur(24px);
-  -webkit-backdrop-filter: saturate(185%) blur(24px);
   pointer-events: auto;
   overflow: hidden;
 }
@@ -7816,6 +7798,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   border-radius: 999px;
   padding: 1px 6px;
   background: rgba(255, 255, 255, 0.54);
+  box-shadow: var(--ui-glass-micro-shadow);
 }
 
 .preview-head-filter-toggle input {
@@ -7832,10 +7815,11 @@ const getFestivalPreviewUnitLogo = (name) => {
   line-height: 1;
   padding: 3px 8px;
   cursor: pointer;
+  box-shadow: var(--ui-glass-micro-shadow);
 }
 
 .preview-head-filter-btn:hover {
-  background: rgba(236, 254, 255, 0.72);
+  background: var(--ui-glass-optical-control-bg-hover);
 }
 
 .preview-collapse-btn {
@@ -7850,10 +7834,11 @@ const getFestivalPreviewUnitLogo = (name) => {
   margin-left: 6px;
   padding: 0;
   line-height: 1;
+  box-shadow: var(--ui-glass-micro-shadow);
 }
 
 .preview-collapse-btn:hover {
-  background: rgba(236, 254, 255, 0.72);
+  background: var(--ui-glass-optical-control-bg-hover);
 }
 
 .preview-drag-hint {
@@ -7968,7 +7953,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   gap: 6px;
   border-radius: 16px;
   padding: 2px 6px;
-  background: rgba(236, 253, 245, 0.46);
+  background: rgba(255, 255, 255, 0.32);
   border: 1px solid rgba(255, 255, 255, 0.42);
   box-sizing: border-box;
 }
@@ -8269,7 +8254,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   gap: 6px;
   border-radius: 16px;
   padding: 2px 6px;
-  background: rgba(236, 253, 245, 0.46);
+  background: rgba(255, 255, 255, 0.32);
   border: 1px solid rgba(255, 255, 255, 0.42);
   color: #065f46;
   font-size: 0.72rem;
@@ -8421,7 +8406,7 @@ button:not(:disabled):active {
   border-radius: 999px;
   border: 1px solid var(--history-glass-border);
   background: var(--ui-glass-control-bg);
-  box-shadow: var(--history-glass-shadow-soft);
+  box-shadow: var(--ui-glass-micro-shadow, var(--history-glass-shadow-soft));
   transition: 0.2s;
   white-space: nowrap;
   min-height: 32px;
@@ -8443,7 +8428,7 @@ button:not(:disabled):active {
   border-radius: 999px;
   border: 1px solid var(--history-glass-border);
   background: var(--ui-glass-control-bg);
-  box-shadow: var(--history-glass-shadow-soft);
+  box-shadow: var(--ui-glass-micro-shadow, var(--history-glass-shadow-soft));
   flex: 0 0 auto;
   white-space: nowrap;
   display: inline-flex;
@@ -9022,7 +9007,7 @@ button:not(:disabled):active {
   padding: 4px 12px;
   border: 1px solid var(--ui-glass-option-border);
   background: var(--ui-glass-option-bg);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  box-shadow: var(--ui-glass-micro-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.72));
   cursor: pointer;
   border-radius: 999px;
   white-space: nowrap; /* 确保按钮文字不会在内部换行 */
@@ -9062,7 +9047,7 @@ button:not(:disabled):active {
   border-radius: 50%;
   cursor: pointer;
   border: 1px solid var(--ui-glass-option-border);
-  box-shadow: var(--history-glass-shadow-soft);
+  box-shadow: var(--ui-glass-micro-shadow, var(--history-glass-shadow-soft));
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   touch-action: manipulation;
 }
@@ -9103,7 +9088,7 @@ button:not(:disabled):active {
   border: 0.3px solid var(--ui-glass-option-border);
   border-radius: 50%;
   background: var(--ui-glass-option-bg);
-  box-shadow: var(--history-glass-shadow-soft);
+  box-shadow: var(--ui-glass-micro-shadow, var(--history-glass-shadow-soft));
   cursor: pointer;
   filter: grayscale(1) opacity(0.5);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -9116,7 +9101,7 @@ button:not(:disabled):active {
   border: 0.3px solid var(--ui-glass-option-border);
   border-radius: 50%;
   background: var(--ui-glass-option-bg);
-  box-shadow: var(--history-glass-shadow-soft);
+  box-shadow: var(--ui-glass-micro-shadow, var(--history-glass-shadow-soft));
   cursor: pointer;
   filter: grayscale(1) opacity(0.5);
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -9167,7 +9152,7 @@ button:not(:disabled):active {
   align-items: center;
   cursor: pointer;
   background: var(--ui-glass-option-bg);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  box-shadow: var(--ui-glass-micro-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.72));
   transition: filter 0.16s ease, transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease;
   touch-action: manipulation;
 }
@@ -9212,7 +9197,7 @@ button:not(:disabled):active {
   color: #6b7280;
   border: 1px solid var(--ui-glass-option-border);
   border-radius: 999px;
-  box-shadow: var(--history-glass-shadow-soft);
+  box-shadow: var(--ui-glass-micro-shadow, var(--history-glass-shadow-soft));
 }
 
 .sort-btn:hover,

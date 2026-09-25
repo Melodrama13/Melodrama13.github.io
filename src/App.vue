@@ -2,34 +2,49 @@
   <div class="main-app">
     <LiquidGlassFilters />
     <div
-      v-liquid-glass
-      class="nav-tabs ui-liquid-glass ui-liquid-glass--refractive"
-      :class="{ 'is-stats-top-compact': isStatsTopNavCompact }"
+      v-liquid-glass="!isSmallTabletViewport"
+      class="nav-tabs"
+      :class="{
+        'ui-liquid-glass': !isSmallTabletViewport,
+        'ui-liquid-glass--refractive': !isSmallTabletViewport,
+        'is-stats-top-compact': isStatsTopNavCompact
+      }"
+      role="navigation"
+      :aria-label="isSmallTabletViewport ? '页面工具' : '页面切换'"
     >
       <button 
-        :class="{ active: currentTab === 'stats' }" 
-        @click="setCurrentTab('stats')"
+        type="button"
+        class="primary-tab-button"
+        :class="{ active: currentTab === 'stats' }"
+        :aria-current="currentTab === 'stats' ? 'page' : undefined"
+        @click="selectPrimaryTab('stats', $event)"
       >
         <span class="btn-with-icon">
-          <img src="/data/icon/statistics.png" class="btn-icon" alt="统计" />
+          <img src="/data/icon/statistics.png" class="btn-icon" alt="统计" draggable="false" />
           <span>{{ isStatsTopNavCompact ? '统计' : '统计面板' }}</span>
         </span>
       </button>
       <button 
-        :class="{ active: currentTab === 'history' }" 
-        @click="setCurrentTab('history')"
+        type="button"
+        class="primary-tab-button"
+        :class="{ active: currentTab === 'history' }"
+        :aria-current="currentTab === 'history' ? 'page' : undefined"
+        @click="selectPrimaryTab('history', $event)"
       >
         <span class="btn-with-icon">
-          <img src="/data/icon/event.png" class="btn-icon" alt="活动" />
+          <img src="/data/icon/event.png" class="btn-icon" alt="活动" draggable="false" />
           <span>{{ isStatsTopNavCompact ? '活动' : '历史活动一览' }}</span>
         </span>
       </button>
       <button
+        type="button"
+        class="primary-tab-button"
         :class="{ active: currentTab === 'songs' }"
-        @click="setCurrentTab('songs')"
+        :aria-current="currentTab === 'songs' ? 'page' : undefined"
+        @click="selectPrimaryTab('songs', $event)"
       >
         <span class="btn-with-icon">
-          <img src="/data/icon/music.png" class="btn-icon" alt="乐曲" />
+          <img src="/data/icon/music.png" class="btn-icon" alt="乐曲" draggable="false" />
           <span>{{ isStatsTopNavCompact ? '乐曲' : '乐曲统计' }}</span>
         </span>
       </button>
@@ -104,6 +119,12 @@
             >
               <span>？</span>
             </button>
+          </div>
+          <div v-if="isSmallTabletViewport && showPredictInfoInNav" class="source-menu-mobile-summary">
+            当前数据源共有 {{ predictiveEvents.length }} 条预测
+          </div>
+          <div v-if="isSmallTabletViewport && cleanedPatchNoticeCount > 0" class="source-menu-mobile-summary">
+            已清理 {{ cleanedPatchNoticeCount }} 条过期或冲突预测
           </div>
           <div class="source-menu-title">切换数据源</div>
           <div class="source-list">
@@ -273,6 +294,57 @@
       />
     </div>
 
+    <div class="mobile-bottom-controls">
+      <nav
+        ref="primaryTabSwitcherRef"
+        class="mobile-tab-switcher"
+        :class="{ 'is-mobile-tab-dragging': isMobileTabDragging }"
+        :style="mobileTabSwitcherStyle"
+        aria-label="页面切换"
+        @pointerdown="onMobileTabPointerDown"
+        @pointermove="onMobileTabPointerMove"
+        @pointerup="onMobileTabPointerUp"
+        @pointercancel="onMobileTabPointerCancel"
+      >
+        <span
+          v-if="mobileTabIndex >= 0"
+          v-liquid-glass
+          class="mobile-tab-glider ui-liquid-glass ui-liquid-glass--refractive"
+          aria-hidden="true"
+        ></span>
+        <button
+          v-for="(tab, index) in PRIMARY_TABS"
+          :key="tab"
+          type="button"
+          class="primary-tab-button"
+          :class="{ active: currentTab === tab }"
+          :aria-current="currentTab === tab ? 'page' : undefined"
+          @click="selectPrimaryTab(tab, $event)"
+        >
+          <span class="btn-with-icon">
+            <img :src="MOBILE_TAB_ICONS[index]" class="btn-icon" alt="" draggable="false" />
+            <span>{{ MOBILE_TAB_LABELS[index] }}</span>
+          </span>
+        </button>
+      </nav>
+      <button
+        v-if="showSourceDropdownInNav"
+        ref="mobileSourceTriggerRef"
+        v-liquid-glass
+        type="button"
+        class="mobile-source-trigger ui-liquid-glass ui-liquid-glass--refractive"
+        :class="{ 'is-open': sourceMenuOpen }"
+        :disabled="isHistoryPredictEditorOpen"
+        :aria-expanded="sourceMenuOpen"
+        :aria-label="`数据源：${activePredictSourceName}`"
+        :title="isHistoryPredictEditorOpen ? '预测面板打开时不可操作数据源' : `当前数据源：${activePredictSourceName}`"
+        @pointerdown.stop
+        @click.stop="toggleSourceMenu"
+      >
+        源
+      </button>
+    </div>
+
     <div v-if="showAppUpdateBanner" class="app-update-banner" role="status" aria-live="polite">
       <span class="app-update-text">{{ appUpdateBannerText }}</span>
       <button class="app-update-btn app-update-btn-muted" @click="openAppUpdatePromptModal">更新说明</button>
@@ -401,8 +473,11 @@
 
     <button
       v-if="showBackToTopBtn"
-      class="floating-top-btn"
+      v-liquid-glass
+      class="floating-top-btn ui-liquid-glass ui-liquid-glass--refractive"
+      :class="{ 'is-dock-aligned': currentTab === 'stats' || currentTab === 'songs' }"
       title="回到顶部"
+      aria-label="回到顶部"
       @click="scrollContentToTop"
     >
       <span class="floating-top-btn-icon">↑</span>
@@ -420,6 +495,7 @@ import {
   scheduleImageWarmup
 } from './utils/assets.js';
 import { UI_BREAKPOINTS, isViewportAtMost, toMaxWidthMediaQuery } from './ui/breakpoints.js';
+import { resolveTabDragTarget } from './ui/mobileTabSwitcher.js';
 
 // --- 界面切换逻辑 (恢复原样) ---
 const TabLoadingIndicator = {
@@ -486,6 +562,7 @@ const isImportDragOver = ref(false);
 const sourceMenuOpen = ref(false);
 const sourceDropdownRef = ref(null);
 const sourceTriggerRef = ref(null);
+const mobileSourceTriggerRef = ref(null);
 const sourceMenuPanelRef = ref(null);
 const sourceMenuStyle = ref({});
 const predictUserName = ref('user');
@@ -494,6 +571,13 @@ const dragOverSourceId = ref('');
 const isEditingPredictUserName = ref(false);
 const isCompactTopNav = ref(false);
 const isStatsTopNavCompact = ref(false);
+const isSmallTabletViewport = ref(
+  typeof window !== 'undefined'
+    && isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.smallTabletMax)
+);
+const primaryTabSwitcherRef = ref(null);
+const mobileTabDragOffset = ref(0);
+const isMobileTabDragging = ref(false);
 const exportBirthdayRowsInPng = ref(true);
 const isScreenshotExporting = ref(false);
 const screenshotStatusText = ref('');
@@ -543,6 +627,22 @@ let cancelInitialAppVersionCheck = null;
 let cancelSmallImageWarmup = null;
 let stopSmallImageWarmupObserver = null;
 let cancelScheduledPublicDataCacheWrite = null;
+let mobileTabDragState = null;
+let suppressPrimaryTabClick = false;
+let suppressPrimaryTabClickTimer = null;
+
+const PRIMARY_TABS = Object.freeze(['stats', 'history', 'songs']);
+const MOBILE_TAB_LABELS = Object.freeze(['统计', '活动', '乐曲']);
+const MOBILE_TAB_ICONS = Object.freeze([
+  '/data/icon/statistics.png',
+  '/data/icon/event.png',
+  '/data/icon/music.png'
+]);
+const mobileTabIndex = computed(() => PRIMARY_TABS.indexOf(currentTab.value));
+const mobileTabSwitcherStyle = computed(() => ({
+  '--mobile-tab-offset': `${Math.max(0, mobileTabIndex.value) * 100}%`,
+  '--mobile-tab-drag-x': `${mobileTabDragOffset.value}px`
+}));
 
 const APP_VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const APP_RELEASE_LOG_SKIP_KEY = 'pjsk_skip_release_log_build_id_v1';
@@ -945,6 +1045,83 @@ const setCurrentTab = (tab) => {
   }
   currentTab.value = tab;
   persistCurrentTab(tab);
+};
+
+const clearMobileTabDrag = () => {
+  mobileTabDragState = null;
+  mobileTabDragOffset.value = 0;
+  isMobileTabDragging.value = false;
+};
+
+const selectPrimaryTab = (tab, event) => {
+  if (suppressPrimaryTabClick) {
+    event?.preventDefault?.();
+    return;
+  }
+  setCurrentTab(tab);
+};
+
+const onMobileTabPointerDown = (event) => {
+  if (!isSmallTabletViewport.value || mobileTabIndex.value < 0) return;
+  const button = event.target?.closest?.('.primary-tab-button');
+  if (!button || !primaryTabSwitcherRef.value?.contains?.(button)) return;
+
+  mobileTabDragState = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startIndex: mobileTabIndex.value,
+    moved: false
+  };
+  button.setPointerCapture?.(event.pointerId);
+};
+
+const onMobileTabPointerMove = (event) => {
+  const drag = mobileTabDragState;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  const bounds = primaryTabSwitcherRef.value?.getBoundingClientRect?.();
+  if (!bounds?.width) return;
+
+  const deltaX = event.clientX - drag.startX;
+  const segmentWidth = Math.max(1, (bounds.width - 8) / PRIMARY_TABS.length);
+  const minOffset = -drag.startIndex * segmentWidth;
+  const maxOffset = (PRIMARY_TABS.length - 1 - drag.startIndex) * segmentWidth;
+  mobileTabDragOffset.value = Math.min(Math.max(deltaX, minOffset), maxOffset);
+
+  if (Math.abs(deltaX) >= 5) {
+    drag.moved = true;
+    isMobileTabDragging.value = true;
+    event.preventDefault?.();
+  }
+};
+
+const onMobileTabPointerUp = (event) => {
+  const drag = mobileTabDragState;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  const bounds = primaryTabSwitcherRef.value?.getBoundingClientRect?.();
+  const deltaX = event.clientX - drag.startX;
+
+  if (drag.moved && bounds?.width) {
+    const targetIndex = resolveTabDragTarget({
+      startIndex: drag.startIndex,
+      deltaX,
+      trackWidth: Math.max(1, bounds.width - 8),
+      tabCount: PRIMARY_TABS.length
+    });
+    suppressPrimaryTabClick = true;
+    if (suppressPrimaryTabClickTimer) window.clearTimeout(suppressPrimaryTabClickTimer);
+    suppressPrimaryTabClickTimer = window.setTimeout(() => {
+      suppressPrimaryTabClick = false;
+      suppressPrimaryTabClickTimer = null;
+    }, 0);
+    setCurrentTab(PRIMARY_TABS[targetIndex]);
+  }
+
+  clearMobileTabDrag();
+};
+
+const onMobileTabPointerCancel = (event) => {
+  if (mobileTabDragState?.pointerId !== event.pointerId) return;
+  clearMobileTabDrag();
 };
 
 const openSpecialPredictGenerator = () => {
@@ -1599,13 +1776,16 @@ const updateCompactTopNav = () => {
   if (typeof window === 'undefined') return;
   isCompactTopNav.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
   isStatsTopNavCompact.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
+  isSmallTabletViewport.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.smallTabletMax);
+  if (!isSmallTabletViewport.value) clearMobileTabDrag();
   scheduleStatsTopControlStateSync();
 };
 
 const updateSourceMenuPosition = () => {
   if (typeof window === 'undefined') return;
   if (!sourceMenuOpen.value) return;
-  const trigger = sourceTriggerRef.value;
+  const mobile = isSmallTabletViewport.value;
+  const trigger = mobile ? mobileSourceTriggerRef.value : sourceTriggerRef.value;
   if (!trigger) return;
   const rect = trigger.getBoundingClientRect();
   const vw = window.innerWidth;
@@ -1615,13 +1795,15 @@ const updateSourceMenuPosition = () => {
   const maxWidth = compact ? 360 : 420;
   const width = Math.max(Math.min(maxWidth, vw - 12), Math.min(minWidth, vw - 12));
   const left = Math.max(6, Math.min(vw - width - 6, rect.right - width));
-  const top = Math.max(6, rect.bottom + 6);
-  const maxHeight = Math.max(180, vh - top - 8);
+  const maxHeight = mobile
+    ? Math.max(0, rect.top - 16)
+    : Math.max(180, vh - rect.bottom - 14);
 
   sourceMenuStyle.value = {
     position: 'fixed',
     left: `${Math.round(left)}px`,
-    top: `${Math.round(top)}px`,
+    top: mobile ? 'auto' : `${Math.round(Math.max(6, rect.bottom + 6))}px`,
+    bottom: mobile ? `${Math.round(vh - rect.top + 8)}px` : 'auto',
     width: `${Math.round(width)}px`,
     maxHeight: `${Math.round(maxHeight)}px`,
     overflowY: 'auto',
@@ -2980,9 +3162,11 @@ provide('deletePredictEvent', (id) => {
 const handleGlobalPointerDown = (event) => {
   if (!sourceMenuOpen.value) return;
   const triggerWrap = sourceDropdownRef.value;
+  const mobileTrigger = mobileSourceTriggerRef.value;
   const menuPanel = sourceMenuPanelRef.value;
   const target = event.target;
   if (triggerWrap && triggerWrap.contains(target)) return;
+  if (mobileTrigger && mobileTrigger.contains(target)) return;
   if (menuPanel && menuPanel.contains(target)) return;
   sourceMenuOpen.value = false;
 };
@@ -3013,6 +3197,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateCompactTopNav);
   window.removeEventListener('resize', updateSourceMenuPosition);
   window.removeEventListener('scroll', updateSourceMenuPosition, true);
+  if (suppressPrimaryTabClickTimer) {
+    window.clearTimeout(suppressPrimaryTabClickTimer);
+    suppressPrimaryTabClickTimer = null;
+  }
   if (typeof screenshotExportModalCancelTask.value === 'function') {
     screenshotExportModalCancelTask.value();
   }
@@ -3142,6 +3330,13 @@ watch(isHistoryPredictEditorOpen, (open) => {
   z-index: 2000;
   flex: 0 0 auto;
   /* 移除 sticky，因为外层已经是 flex 布局，它自然就在最顶部 */
+}
+
+.mobile-bottom-controls,
+.mobile-tab-switcher,
+.mobile-source-trigger,
+.mobile-tab-glider {
+  display: none;
 }
 
 .app-update-banner {
@@ -3837,6 +4032,13 @@ button.active {
   margin: 2px 0 6px;
 }
 
+.source-menu-mobile-summary {
+  margin: 0 0 8px;
+  color: #475569;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 .source-menu-username-wrap {
   display: flex;
   align-items: center;
@@ -4345,12 +4547,8 @@ button.active {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  border: 1px solid rgba(94, 234, 212, 0.78);
-  background: var(--top-active-bg, linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(45, 212, 191, 0.72)));
-  color: #fff;
-  box-shadow: 0 10px 28px rgba(20, 184, 166, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.46);
-  backdrop-filter: saturate(165%) blur(14px);
-  -webkit-backdrop-filter: saturate(165%) blur(14px);
+  border: 1px solid var(--ui-glass-rim-light);
+  color: var(--ui-control-label);
   z-index: 2600;
   cursor: pointer;
 }
@@ -4359,12 +4557,15 @@ button.active {
   display: block;
   line-height: 1;
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 900;
+  -webkit-text-stroke: 1px currentColor;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
   transform: translateY(-1px);
 }
 
-.floating-top-btn:hover {
-  background: linear-gradient(145deg, rgba(13, 148, 136, 0.92), rgba(20, 184, 166, 0.74), rgba(14, 165, 233, 0.58));
+.floating-top-btn:focus-visible {
+  outline: 2px solid rgba(8, 145, 178, 0.72);
+  outline-offset: 3px;
 }
 
 @media (min-width: 901px) and (max-width: 1200px) {
@@ -4474,12 +4675,164 @@ button.active {
     height: 100dvh;
   }
 
-  .nav-tabs {
-    gap: 3px;
-    padding: 5px 6px;
-    flex-wrap: wrap;
-    overflow-x: hidden;
-    overflow-y: visible;
+  .nav-tabs,
+  .nav-tabs.is-stats-top-compact {
+    display: none;
+  }
+
+  .mobile-bottom-controls {
+    display: flex;
+    position: fixed;
+    z-index: 2600;
+    left: 50%;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: 60vw;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-50%);
+  }
+
+  .mobile-tab-switcher {
+    display: flex;
+    position: relative;
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    height: 62px;
+    padding: 4px;
+    box-sizing: border-box;
+    align-items: center;
+    border: 1px solid var(--ui-glass-mobile-track-border);
+    border-radius: 999px;
+    background: var(--ui-glass-mobile-track-bg);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.66),
+      inset 0 -1px 0 rgba(71, 85, 105, 0.12),
+      0 12px 30px rgba(15, 23, 42, 0.18);
+    isolation: isolate;
+  }
+
+  .mobile-source-trigger {
+    display: inline-flex;
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 8px);
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 50%;
+    box-sizing: border-box;
+    color: #0f766e;
+    font-size: 0.82rem;
+    font-weight: 800;
+    white-space: nowrap;
+    isolation: isolate;
+    transform: translateY(-50%);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-source-trigger:active {
+    filter: brightness(0.82);
+    transform: translateY(-50%) scale(0.96);
+  }
+
+  .mobile-source-trigger.is-open {
+    color: #0891b2;
+  }
+
+  .mobile-source-trigger:focus-visible {
+    outline: 2px solid rgba(8, 145, 178, 0.72);
+    outline-offset: 2px;
+  }
+
+  .mobile-source-trigger:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .mobile-tab-glider {
+    display: block;
+    position: absolute;
+    z-index: 0;
+    top: 3px;
+    left: 4px;
+    width: calc((100% - 8px) / 3);
+    height: calc(100% - 6px);
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    pointer-events: none;
+    transform: translate3d(calc(var(--mobile-tab-offset) + var(--mobile-tab-drag-x)), 0, 0);
+    transition: transform 420ms cubic-bezier(0.2, 0.82, 0.2, 1);
+    will-change: transform;
+  }
+
+  .mobile-tab-switcher.is-mobile-tab-dragging .mobile-tab-glider {
+    transition: none;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 52px;
+    padding: 5px 3px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #475569;
+    touch-action: pan-y;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button.active {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #0891b2;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button:focus-visible {
+    outline: 2px solid rgba(8, 145, 178, 0.72);
+    outline-offset: -4px;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button .btn-with-icon {
+    min-height: auto;
+    flex-direction: column;
+    gap: 4px;
+    line-height: 1;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button .btn-icon {
+    width: 22px;
+    height: 22px;
+    flex-basis: 22px;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button.active .btn-icon {
+    filter: saturate(1.16) drop-shadow(0 1px 5px rgba(8, 145, 178, 0.26));
+  }
+
+  .mobile-tab-switcher > .primary-tab-button:active {
+    filter: brightness(0.82);
+    transform: scale(0.96);
+  }
+
+  :root[data-ui-glass-mode='opaque'] .mobile-tab-switcher {
+    background: var(--ui-glass-fallback-bg);
+    border-color: var(--ui-glass-rim-dark);
+  }
+
+  :root[data-ui-glass-motion='reduced'] .mobile-tab-glider {
+    transition: none;
   }
 
   .nav-tabs button,
@@ -4635,9 +4988,15 @@ button.active {
   }
 
   .source-menu {
+    min-width: 0;
     max-height: calc(100vh - 74px);
     max-height: calc(100dvh - 74px);
     overflow-y: auto;
+  }
+
+  .source-menu .source-list {
+    max-height: none;
+    overflow-y: visible;
   }
 
   .source-list:not(:has(.source-item-row + .source-item-row)),
@@ -4671,6 +5030,7 @@ button.active {
 
   .content-area {
     padding: 10px;
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
     overflow-x: hidden;
   }
 
@@ -4678,11 +5038,19 @@ button.active {
     padding: 0;
   }
 
+  .content-area.history-mode :deep(.history-list) {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  }
+
   .floating-top-btn {
     right: 10px;
-    bottom: 14px;
-    width: 36px;
-    height: 36px;
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+    width: 44px;
+    height: 44px;
+  }
+
+  .floating-top-btn.is-dock-aligned {
+    bottom: calc(21px + env(safe-area-inset-bottom, 0px));
   }
 
   .floating-top-btn-icon {
@@ -4698,6 +5066,10 @@ button.active {
   .nav-tabs {
     gap: 3px;
     padding: 5px 6px;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button {
+    font-size: 0.72rem;
   }
 
   .username-wrap {

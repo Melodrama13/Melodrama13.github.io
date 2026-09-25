@@ -509,6 +509,11 @@ function resolveLiquidGlassConfig(element, windowLike) {
     computed?.getPropertyValue?.('--ui-glass-refraction-spread'),
     { minimum: 0.5, maximum: 2 }
   );
+  const rawWarpStrength = computed?.getPropertyValue?.('--ui-glass-refraction-warp-strength')?.trim?.() ?? '';
+  const parsedWarpStrength = rawWarpStrength === '' ? Number.NaN : Number(rawWarpStrength);
+  const warpStrength = Number.isFinite(parsedWarpStrength) && parsedWarpStrength > 0
+    ? Math.min(parsedWarpStrength, 0.2)
+    : 0;
   return {
     ...GLASS_PRESET,
     edgeIntensity: GLASS_PRESET.edgeIntensity * strength,
@@ -517,6 +522,8 @@ function resolveLiquidGlassConfig(element, windowLike) {
     rimDistance: GLASS_PRESET.rimDistance / spread,
     cornerBoost: GLASS_PRESET.cornerBoost * strength,
     rippleEffect: GLASS_PRESET.rippleEffect * strength,
+    baseIntensity: GLASS_PRESET.baseIntensity * warpStrength,
+    warp: warpStrength > 0,
     blurRadius
   };
 }

@@ -39,7 +39,7 @@
     top: calc(env(safe-area-inset-top, 0px) + 58px);
     left: 8px;
     right: auto;
-    width: min(240px, calc(100vw - 16px));
+    width: min(216px, calc(100vw - 16px));
     max-width: calc(100vw - 16px);
     height: auto;
     max-height: calc(100dvh - 70px);
@@ -89,7 +89,6 @@
 
 @media (max-width: 520px) {
   .floating-menu-btn {
-    top: calc(env(safe-area-inset-top, 0px) + 58px);
     width: 34px;
     height: 34px;
     z-index: 5100;
@@ -100,5 +99,16 @@
     min-height: 30px;
     height: 30px;
     z-index: 5101;
+  }
+}
+
+@media (max-width: 768px) {
+  .floating-menu-btn,
+  .stats-nav.mobile-floating {
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+  }
+
+  .stats-nav.mobile-floating {
+    max-height: calc(100dvh - 100px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   }
 }

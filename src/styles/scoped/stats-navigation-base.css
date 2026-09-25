@@ -32,7 +32,7 @@
   flex-direction: column;
   gap: 8px;
   z-index: 10;
-  padding: 14px;
+  padding: 12px;
   border-radius: var(--stats-nav-radius);
   border-width: 1px;
   border-style: solid;
@@ -43,11 +43,15 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  padding-bottom: 4px;
-  padding-right: 2px;
+  scrollbar-width: none;
+  padding: 0 4px 4px;
+}
+
+.nav-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-quick-wrap {
@@ -61,7 +65,7 @@
   border-color: var(--stats-nav-glass-line);
   border-radius: var(--stats-nav-inner-radius);
   background: rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  box-shadow: var(--ui-glass-micro-group-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.34));
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   padding: 8px 6px 6px;
@@ -126,7 +130,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  box-shadow: var(--ui-glass-micro-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.38));
 }
 
 .nav-link-main {

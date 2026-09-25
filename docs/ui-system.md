@@ -6,7 +6,7 @@
 
 - 只有声明和值都完全相同的重复项才可以抽成 token 或共享片段。颜色、间距、阴影、圆角或尺寸只要有差异，就留在原组件；例如 Card Stats 面板圆角 `28px` 与 Song Stats 面板圆角 `18px` 不能合并。
 - 当前视觉值是冻结的：字体、字号、行高、间距、尺寸、圆角、颜色、渐变、阴影、透明度、动效、DOM、class 和功能行为都不得因“整理”而改变。
-- 本阶段唯一允许的视觉/响应式变化是断点规范化：Card Stats 两处原 `760px` 的紧凑规则统一到 `768px`；与 CSS 紧凑/导出边界对应的运行时 `1200px` 判断采用包含 `1200px` 的语义。除此之外不得顺手改布局。
+- 初次 UI 规范化阶段的视觉/响应式变化仅限断点规范化：Card Stats 两处原 `760px` 的紧凑规则统一到 `768px`；与 CSS 紧凑/导出边界对应的运行时 `1200px` 判断采用包含 `1200px` 的语义。后续经单独确认的手机端底部悬浮导航、活动页数据源入口，以及 Predict Editor 随侧拉/底部布局切换材质、移除装饰性青绿色底色并校准桌面折射，均属于各自独立的功能变更，不放宽其他组件的保真约束。
 - 现有胶囊控件的 `border-radius: 999px` 是 UI 合同的一部分。已有控件的按下反馈（变暗/缩放）以及释放后的恢复也属于合同；修改时必须保留 `:active` 与释放后的原有行为。
 - 不因为本规范而引入新的主题、组件包装、字体、图标或布局系统。
 
@@ -73,21 +73,25 @@ Liquid Glass 的路径固定为：`tokens.css` 中的 `--ui-glass-*` token → `
 
 | 层级 | class / runtime | 获准 consumer 与限制 |
 | --- | --- | --- |
-| Refractive | `.ui-liquid-glass.ui-liquid-glass--refractive` + `v-liquid-glass` | 顶部 `.nav-tabs`。插件为每个已连接表面生成或复用 SVG 边缘位移滤镜。 |
-| Prominent | `.ui-liquid-glass.ui-liquid-glass--prominent` + `v-liquid-glass` | Card/Song Stats 的 `.stats-nav` 与紧凑态 `.floating-menu-btn`、Event History 的 `.filter-bar` / `.filter-panel`、App 的 `.source-menu`。这是唯一的强调玻璃层，内部 group/control/input/option 使用语义 token，不能追加子级折射。 |
-| Regular | `.ui-liquid-glass.ui-liquid-glass--regular` + `v-liquid-glass` | Predict drawer 与 Special Predict toolbar 的既有常规材质和 outer-surface refraction；不把 prominent recipe 复制到这些 consumer。 |
+| Refractive | `.ui-liquid-glass.ui-liquid-glass--refractive` + `v-liquid-glass` | 背后内容较安静、可优先展示透射时使用：桌面顶部 `.nav-tabs`、Predict Editor 的右侧抽屉（`>900px`）、手机端底部 `.mobile-tab-glider` 与活动页 `.mobile-source-trigger`，以及直达顶部 `.floating-top-btn`。插件为每个已连接表面生成或复用 SVG 边缘位移滤镜；桌面编辑器使用更薄的中性遮色和受限的内部位移，不新增材质等级。 |
+| Prominent | `.ui-liquid-glass.ui-liquid-glass--prominent`；主要外层使用 `v-liquid-glass`，重复悬浮窗仅使用 CSS | 背后有滚动内容或密集文字、需要更稳定的可读性时使用：Predict Editor 的底部抽屉（`≤900px`）、Card/Song Stats 的 `.stats-nav` 与紧凑态 `.floating-menu-btn`、Event History 的 `.filter-bar` / `.filter-panel`、App 的 `.source-menu`，以及预测编辑时的悬浮统计配置窗与最多 6 个统计窗。悬浮统计不为每个窗新增 SVG 滤镜。内部 group/control/input/option 使用语义 token，不能追加子级折射。 |
+| Regular | `.ui-liquid-glass.ui-liquid-glass--regular` + `v-liquid-glass` | 介于透射与强调之间的普通悬浮表面；目前用于 Special Predict toolbar，不因视口宽度单独改变材质。 |
 | Modal | `.ui-liquid-glass.ui-liquid-glass--modal`，CSS-only readable frost | App 更新/导出状态弹窗和 Event History 的未保存预测切换弹窗。遮罩与对话框语义仍保持 local。 |
 | Chip | `.ui-liquid-glass.ui-liquid-glass--chip`，CSS-only | 小型、重复的 pill/chip；不得挂 directive。 |
 
-材质本身只在 `tokens.css` 中定义：`--ui-glass-ambient-image` 提供带克制暖玫瑰色的中性环境场；各 tier 的 `--ui-glass-*-bg` 保持近无色透射。prominent tier 独占 `--ui-glass-shadow-prominent` 的外部深度与五道静态 inset optical rim，以及 `--ui-glass-optical-rim-prominent` 的 1px conic 边缘 caustic。`liquid-glass.css` 只把 token 应用于 tier，并以不接收 pointer event 的 `::before` 绘制宽阔的 pointer-driven specular highlight、以 prominent `::after` 绘制仅边缘可见的 masked static rim；SVG 位移仍只属于外层 directive。不得在 consumer 中复制 gradient、shadow、filter 或 pseudo-element recipe。
+这五项是视觉材质等级，不是浏览器运行模式。运行模式另分 Chromium 的 SVG `refractive`、WebKit 等引擎的 CSS `frosted`、辅助功能要求下的 `opaque`；同一材质等级在三种运行模式下都有对应呈现。选材依据是玻璃背后的内容密度和前景可读性，不是设备名称本身。Predict Editor 恰好以 `900px` 切换侧拉与底部布局，因此只在外层抽屉随布局切换 Refractive / Prominent；桌面侧拉的透射和位移参数在共享 token 中独立配置，底部抽屉仍沿用 Prominent。桌面与手机端编辑器、活动筛选栏／面板、卡片及乐曲统计导航、悬浮统计窗共用强化的 optical rim 和 CSS-only 微镜片控件边：外框加强上亮下暗的边缘，内部中性控件只用淡暗轮廓与细内高光，不增加材质等级、子级 backdrop-filter 或 SVG 位移。悬浮统计的被动表面使用中性透色，不保留旧青绿色底色；保存、选中、禁用、聚焦等语义状态色仍由原组件控制。opaque、低透明度与高对比模式取消装饰性微镜片阴影。
 
-Event History 的 `.filter-bar`（操作栏）、`.filter-panel` 和 App 的 `.source-menu`（数据源面板）明确使用 `prominent` tier，并各自只拥有一个外层 `v-liquid-glass`/SVG `url(#...)` 位移；Card/Song Stats 的完整与紧凑导航遵循同一规则。它们依靠较高的白色雾化层与语义内部填充在滚动/密集文本上保持可读性；顶部导航维持既有 refractive tier。
+材质本身只在 `tokens.css` 中定义：`--ui-glass-ambient-image` 提供带克制暖玫瑰色的中性环境场；各 tier 的 `--ui-glass-*-bg` 保持近无色透射。prominent tier 独占 `--ui-glass-shadow-prominent` 的外部深度与五道静态 inset optical rim，以及 `--ui-glass-optical-rim-prominent` 的 1px conic 边缘 caustic。需强化边缘的 Prominent consumer 与桌面折射编辑器可加 `.ui-glass-optical-detail`：共享 `--ui-glass-optical-prominent-*` 外框 token 与 `--ui-glass-optical-micro-*` 内部中性控件 token；此 class 仅增加光学边缘，不改变 Refractive 的透色或滤镜。`liquid-glass.css` 只把 token 应用于 tier，并以不接收 pointer event 的 `::before` 绘制宽阔的 pointer-driven specular highlight、以 `::after` 绘制仅边缘可见的 masked static rim；SVG 位移仍只属于外层 directive。不得在 consumer 中复制 gradient、shadow、filter 或 pseudo-element recipe。
+
+Event History 的 `.filter-bar`（操作栏）、`.filter-panel` 和 App 的 `.source-menu`（数据源面板）明确使用 `prominent` tier，并各自只拥有一个外层 `v-liquid-glass`/SVG `url(#...)` 位移；Card/Song Stats 的完整与紧凑导航遵循同一规则。它们依靠较高的白色雾化层与语义内部填充在滚动/密集文本上保持可读性；桌面顶部导航维持 refractive tier，手机端以独立折射滑块承载选中态。
 
 一个 glass 表面只拥有一个材质。其子元素、重复内容卡片、导出面板、列表行和数据内容 panel 必须保持原有局部表面，不能追加 `.ui-liquid-glass` 或 `v-liquid-glass`。这避免嵌套 backdrop/filter、额外 SVG 位移和导出画面漂移。
 
 `liquidGlassPlugin` 是唯一的 refraction 生命周期 owner：它维护一个共享 `#ui-liquid-glass-filter-host`，引用计数复用等几何和已解析 refraction config 的滤镜，并由插件级 KeepAlive bridge 在 cached tab `deactivated` 时暂停表面、释放 pointer/window listener、ResizeObserver、timer/RAF、filter、attribute 和内联 style；`activated` 时只恢复一次，最终 directive unmount 才销毁注册。不得用 per-consumer lifecycle hook、document-wide observer 或 per-element MutationObserver 替代它。
 
 SVG blur 由每个外层表面的计算 CSS property `--ui-glass-refraction-blur-radius` 决定：未设置、非法或负值时回退为 `GLASS_PRESET.blurRadius` 的 `2`（`feGaussianBlur stdDeviation="0.7"`），值上限为 `64`。prominent tier 把它设为 `--ui-glass-refraction-blur-prominent: 16`，因此生成 `stdDeviation="5.6"`；它还映射 `--ui-glass-refraction-strength-prominent: 1.14` 与 `--ui-glass-refraction-spread-prominent: 1.45` 到每个外层的 runtime config。运行时只接受有限正数（缺失、非法或非正数回退 `1`），strength 上限为 `2`，spread 限制为 `0.5..2`；strength 同时作用于 edge/rim/corner/ripple 强度，spread 仅放宽 edge/rim 衰减而不启用中心 warp。已解析 config 与 blur 同时参与位移缓存键、共享和 SVG filter margin，不能在 consumer 中用内联 recipe 替代。
+
+中心区域默认仍为零位移；仅桌面 Predict Editor 在共享材质映射中设置 `--ui-glass-refraction-warp-strength`，当前为 `0.1` 倍的 preset base intensity。插件只接受有限正数，最大 `0.2`，缺失、零或非法值保持 `warp: false`；该值与其他配置一同参与位移缓存键。它使抽屉上方背后的参考文字有轻微弯曲，不能推广到覆盖密集文本的 Prominent、Regular 或导航滑块。WebKit 仍使用原有 CSS 雾化，辅助功能的 opaque 模式仍优先。
 
 SVG `url(#filter)` enhancement 只在 Chromium 且根状态为 `data-ui-glass-mode="refractive"` 时启用。其他引擎保留 CSS frost；`prefers-reduced-transparency`、高对比/forced-colors 会强制 opaque 并隐藏 prominent `::after` rim，`prefers-reduced-motion` 停止 ambient motion 并隐藏 pointer-following specular，但保留不依赖 pointer 的 prominent static rim。测试可在导航后写 root dataset 来选择确定模式，但生产代码不得把该覆盖写入 storage 或 URL。
 
@@ -121,7 +125,9 @@ SFC 只保留既有几何、定位、响应式断点和语义状态色；central
 | --- | --- |
 | `520px` | extra-small phone；通常是 `max-width: 520px` 与 `min-width: 521px` 的两侧 |
 | `700px` | editor/small transition；保留现有 `max-width: 699px` / `min-width: 700px`，或组件为保持 exact `700px` 的现有归属而使用 `min-width: 701px`。不得为了整齐改动 `699/700/701` 的 ownership |
-| `768px` | small-tablet transition；Card Stats 两处紧凑规则使用 `max-width: 768px`，另一侧为 `min-width: 769px` |
+| `768px` | small-tablet transition；Card Stats 两处紧凑规则使用 `max-width: 768px`，另一侧为 `min-width: 769px`；App 在这一侧隐藏顶栏并显示自适应居中的底部三页切换栏，滑动可按距离跨越多个页面；活动页的圆形数据源入口独立贴于右侧、菜单向上展开；Card/Song Stats 的悬浮菜单按钮及面板同步上移，直达顶部按钮与底部切换栏垂直居中对齐，箭头保持原字号而以字重与描边增强辨识度 |
+
+Card/Song Stats 共用的导航滚动区不预留可见滚动条槽，仍可滚动；内框左右各留 4px 保护胶囊阴影。外框在手机、紧凑桌面和宽桌面断点同步缩窄，使胶囊维持原有宽度，而非填满被移除的空白。
 | `900px` | compact application layout；`max-width: 900px` 与 `min-width: 901px` |
 | `1000px` | 仅 Event History preview-panel 定位/宽度的 JavaScript feature threshold（`historyPreviewMax`）；不是新的 CSS viewport breakpoint |
 | `1200px` | tablet/desktop 与导出边界；CSS 使用 `max-width: 1200px` / `min-width: 1201px`，对应的运行时判断在需要模拟 CSS compact/export 侧时包含 exact `1200px` |

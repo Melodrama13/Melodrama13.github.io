@@ -4,20 +4,48 @@
       <button
         v-if="navCollapsed"
         v-liquid-glass
-        class="floating-menu-btn export-hide ui-liquid-glass ui-liquid-glass--prominent"
+        class="floating-menu-btn export-hide ui-liquid-glass ui-liquid-glass--prominent ui-glass-optical-detail"
         title="展开统计菜单"
         @click="setNavCollapsed(false)"
       >
         <img src="/data/icon/menu.png" class="floating-menu-icon" alt="菜单" />
       </button>
-      <aside v-liquid-glass="!navCollapsed" class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--prominent" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
+      <aside v-liquid-glass="!navCollapsed" class="stats-nav card-panel ui-liquid-glass ui-liquid-glass--prominent ui-glass-optical-detail" :class="{ 'mobile-floating': isNavTopLayout, 'is-collapsed': navCollapsed, 'is-open': !navCollapsed }">
         <button v-if="!navCollapsed" class="nav-collapse-fab export-hide" @click="setNavCollapsed(true)" title="收起统计菜单">
           <img src="/data/icon/menu_open.png" class="nav-collapse-fab-icon" alt="收起菜单" />
         </button>
 
         <div v-if="!navCollapsed" class="nav-cutoff" :class="{ 'mini-cutoff': isMiniFloatingNav }">
           <div class="mini-cutoff-line">统计活动截止ID：{{ safeMaxEventId }}</div>
-          <p class="config-tips">系统时间：{{ nowStr }} | 在顶栏中输入更大ID可查看预测统计。</p>
+          <div class="mobile-cutoff-controls">
+            <div class="mini-cutoff-line">统计活动截止 ID</div>
+            <div class="nav-cutoff-controls">
+              <button type="button" class="id-step-btn" title="减少 1" @click="adjustDisplayEventId(-1)">
+                <span class="mobile-cutoff-lens ui-liquid-glass ui-liquid-glass--chip" aria-hidden="true"></span>
+                <span class="mobile-cutoff-action-label">－</span>
+              </button>
+              <input
+                v-model="displayEventIdDraft"
+                class="id-input"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="8"
+                aria-label="统计活动截止 ID"
+                @focus="onDisplayEventIdFocus"
+                @input="onDisplayEventIdInput($event.target.value)"
+                @blur="onDisplayEventIdBlur"
+              />
+              <button type="button" class="id-step-btn" title="增加 1" @click="adjustDisplayEventId(1)">
+                <span class="mobile-cutoff-lens ui-liquid-glass ui-liquid-glass--chip" aria-hidden="true"></span>
+                <span class="mobile-cutoff-action-label">＋</span>
+              </button>
+              <button type="button" class="reset-mini-btn" title="恢复当前活动 ID" @click="resetTopBarDisplayEventId">
+                <span class="mobile-cutoff-lens ui-liquid-glass ui-liquid-glass--chip" aria-hidden="true"></span>
+                <img src="/data/icon/reset.png" class="reset-mini-icon" alt="" />
+              </button>
+            </div>
+          </div>
         </div>
 
         <template v-if="!navCollapsed">
@@ -6868,8 +6896,6 @@ const bannerLastEventIdMap = computed(() => {
   return map;
 });
 
-const nowStr = computed(() => spoilerNow.value.toLocaleDateString());
-
 const toFiniteEventId = (value) => {
   if (value === null || value === undefined) return null;
   const raw = String(value).trim();
@@ -11727,7 +11753,7 @@ defineExpose({
   border: 1px solid var(--stats-nav-glass-line);
   border-radius: var(--stats-nav-inner-radius);
   background: rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44), inset 0 -1px 0 rgba(15, 23, 42, 0.03);
+  box-shadow: var(--ui-glass-micro-group-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.44), inset 0 -1px 0 rgba(15, 23, 42, 0.03));
   padding: 8px;
 }
 
@@ -11735,7 +11761,7 @@ defineExpose({
   border: 1px solid var(--stats-nav-glass-line);
   border-radius: var(--stats-nav-inner-radius);
   background: rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44), inset 0 -1px 0 rgba(15, 23, 42, 0.03);
+  box-shadow: var(--ui-glass-micro-group-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.44), inset 0 -1px 0 rgba(15, 23, 42, 0.03));
   padding: 8px;
   display: inline-flex;
   align-items: center;
@@ -12250,6 +12276,10 @@ defineExpose({
   white-space: nowrap;
 }
 
+.mobile-cutoff-controls {
+  display: none;
+}
+
 .reset-mini-btn {
   width: 24px;
   height: 24px;
@@ -12279,11 +12309,75 @@ defineExpose({
   display: block;
 }
 
-.config-tips {
-  font-size: 0.74rem;
-  color: #4b5563;
-  margin: 0;
-  text-align: left;
+@media (max-width: 768px) {
+  .stats-nav .nav-cutoff {
+    padding: 5px;
+  }
+
+  .nav-cutoff > .mini-cutoff-line {
+    display: none;
+  }
+
+  .mobile-cutoff-controls {
+    display: block;
+  }
+
+  .mobile-cutoff-controls > .mini-cutoff-line {
+    margin-bottom: 0;
+    text-align: center;
+  }
+
+  .mobile-cutoff-controls .nav-cutoff-controls {
+    display: grid;
+    grid-template-columns: 40px 56px 40px 40px;
+    gap: 0;
+    justify-content: start;
+  }
+
+  .mobile-cutoff-controls .id-input {
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    box-sizing: border-box;
+    font-size: 16px;
+    border-radius: 999px;
+    border: 1px solid var(--ui-glass-rim-light);
+    background: var(--ui-glass-chip-bg);
+    box-shadow: var(--ui-glass-shadow-chip);
+  }
+
+  .mobile-cutoff-controls .id-step-btn,
+  .mobile-cutoff-controls .reset-mini-btn {
+    position: relative;
+    width: 40px;
+    height: 44px;
+    min-width: 40px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .mobile-cutoff-controls .id-step-btn:hover,
+  .mobile-cutoff-controls .reset-mini-btn:hover {
+    background: transparent;
+  }
+
+  .mobile-cutoff-lens {
+    position: absolute;
+    inset: 6px 4px;
+    display: block;
+    border: 1px solid var(--ui-glass-rim-light);
+    border-radius: 999px;
+    pointer-events: none;
+  }
+
+  .mobile-cutoff-action-label,
+  .mobile-cutoff-controls .reset-mini-icon {
+    position: relative;
+    z-index: 1;
+  }
 }
 
 .matrix-panel,
@@ -16144,7 +16238,7 @@ td.record-char {
 
 @media (min-width: 901px) and (max-width: 1200px) {
   .pjsk-stats {
-    --stats-nav-width: 196px;
+    --stats-nav-width: 187px;
     --stats-nav-left: 34px;
     --stats-nav-top: 78px;
   }
@@ -16196,12 +16290,8 @@ td.record-char {
     height: 14px;
   }
 
-  .config-tips {
-    font-size: 0.68rem;
-  }
-
   .nav-name-format {
-    gap: 6px;
+    gap: 4px;
     padding: 7px;
     justify-content: space-between;
   }
@@ -16279,10 +16369,6 @@ td.record-char {
   .reset-mini-btn {
     font-size: 0.72rem;
     padding: 0;
-  }
-
-  .config-tips {
-    font-size: 0.68rem;
   }
 
   .stats-main h1 {
