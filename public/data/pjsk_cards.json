@@ -20398,34 +20398,6 @@
     "Bundle": "res025_no057"
   },
   {
-    "CardID": "1464",
-    "Name": "凤笑梦",
-    "Affiliation": "ws",
-    "CardName": "Happy Birthday！！2026",
-    "Rarity": "birthday",
-    "Type": "birthday",
-    "Attribute": "Mysterious",
-    "Skill": "birthday",
-    "EventID": "birth_emu5",
-    "GachaID": "birth_emu5",
-    "Date": "2026/9/5",
-    "Bundle": "res014_no057"
-  },
-  {
-    "CardID": "1463",
-    "Name": "MEIKO",
-    "Affiliation": "vbs",
-    "CardName": "酔いどれ知らず",
-    "Rarity": "4",
-    "Type": "collab_t",
-    "Attribute": "Cool",
-    "Skill": "score_up",
-    "EventID": "c6",
-    "GachaID": "c6",
-    "Date": "2026/9/3",
-    "Bundle": "res025_no058"
-  },
-  {
     "CardID": "1458",
     "Name": "星乃一歌",
     "Affiliation": "ln",
@@ -20494,6 +20466,34 @@
     "GachaID": "c6",
     "Date": "2026/9/3",
     "Bundle": "res017_no056"
+  },
+  {
+    "CardID": "1463",
+    "Name": "MEIKO",
+    "Affiliation": "vbs",
+    "CardName": "酔いどれ知らず",
+    "Rarity": "4",
+    "Type": "collab_t",
+    "Attribute": "Cool",
+    "Skill": "score_up",
+    "EventID": "c6",
+    "GachaID": "c6",
+    "Date": "2026/9/3",
+    "Bundle": "res025_no058"
+  },
+  {
+    "CardID": "1464",
+    "Name": "凤笑梦",
+    "Affiliation": "ws",
+    "CardName": "Happy Birthday！！2026",
+    "Rarity": "birthday",
+    "Type": "birthday",
+    "Attribute": "Mysterious",
+    "Skill": "birthday",
+    "EventID": "birth_emu5",
+    "GachaID": "birth_emu5",
+    "Date": "2026/9/5",
+    "Bundle": "res014_no057"
   },
   {
     "CardID": "1465",
