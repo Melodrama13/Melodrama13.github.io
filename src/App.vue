@@ -2,55 +2,55 @@
   <div class="main-app">
     <LiquidGlassFilters />
     <div
-      v-liquid-glass="!isSmallTabletViewport"
       class="nav-tabs"
       :class="{
-        'ui-liquid-glass': !isSmallTabletViewport,
-        'ui-liquid-glass--refractive': !isSmallTabletViewport,
         'is-stats-top-compact': isStatsTopNavCompact
       }"
       role="navigation"
       :aria-label="isSmallTabletViewport ? '页面工具' : '页面切换'"
     >
-      <button 
-        type="button"
-        class="primary-tab-button"
-        :class="{ active: currentTab === 'stats' }"
-        :aria-current="currentTab === 'stats' ? 'page' : undefined"
-        @click="selectPrimaryTab('stats', $event)"
+      <span v-if="!isSmallTabletViewport" v-liquid-glass class="nav-tabs-glass ui-liquid-glass ui-liquid-glass--refractive" aria-hidden="true"></span>
+      <div
+        ref="desktopTabSwitcherRef"
+        class="desktop-tab-switcher"
+        :class="{ 'is-tab-dragging': isDesktopTabDragging }"
+        @pointerdown="onPrimaryTabPointerDown"
+        @pointermove="onPrimaryTabPointerMove"
+        @pointerup="onPrimaryTabPointerUp"
+        @pointercancel="onPrimaryTabPointerCancel"
+        @lostpointercapture="onPrimaryTabPointerCancel"
       >
-        <span class="btn-with-icon">
-          <img src="/data/icon/statistics.png" class="btn-icon" alt="统计" draggable="false" />
-          <span>{{ isStatsTopNavCompact ? '统计' : '统计面板' }}</span>
-        </span>
-      </button>
-      <button 
-        type="button"
-        class="primary-tab-button"
-        :class="{ active: currentTab === 'history' }"
-        :aria-current="currentTab === 'history' ? 'page' : undefined"
-        @click="selectPrimaryTab('history', $event)"
-      >
-        <span class="btn-with-icon">
-          <img src="/data/icon/event.png" class="btn-icon" alt="活动" draggable="false" />
-          <span>{{ isStatsTopNavCompact ? '活动' : '历史活动一览' }}</span>
-        </span>
-      </button>
-      <button
-        type="button"
-        class="primary-tab-button"
-        :class="{ active: currentTab === 'songs' }"
-        :aria-current="currentTab === 'songs' ? 'page' : undefined"
-        @click="selectPrimaryTab('songs', $event)"
-      >
-        <span class="btn-with-icon">
-          <img src="/data/icon/music.png" class="btn-icon" alt="乐曲" draggable="false" />
-          <span>{{ isStatsTopNavCompact ? '乐曲' : '乐曲统计' }}</span>
-        </span>
-      </button>
+        <span v-liquid-glass class="desktop-tab-track mobile-tab-track ui-liquid-glass ui-liquid-glass--refractive" data-ui-glass-profile="lens" aria-hidden="true"></span>
+        <button
+          v-for="(tab, index) in PRIMARY_TABS"
+          :key="tab"
+          type="button"
+          class="primary-tab-button"
+          :class="{ active: currentTab === tab }"
+          :aria-current="currentTab === tab ? 'page' : undefined"
+          @click="selectPrimaryTab(tab, $event)"
+        >
+          <span class="btn-with-icon">
+            <img :src="MOBILE_TAB_ICONS[index]" class="btn-icon" alt="" draggable="false" />
+            <span>{{ isStatsTopNavCompact ? MOBILE_TAB_LABELS[index] : DESKTOP_TAB_LABELS[index] }}</span>
+          </span>
+        </button>
+        <span
+          v-if="mobileTabIndex >= 0 && desktopTabGliderRect.width > 0"
+          v-liquid-glass
+          class="desktop-tab-glider mobile-tab-glider ui-liquid-glass ui-liquid-glass--refractive"
+          data-ui-glass-profile="lens"
+          data-ui-glass-lens-role="selector"
+          :data-ui-glass-pressed="isDesktopTabPressed"
+          :style="desktopTabGliderStyle"
+          aria-hidden="true"
+        ></span>
+      </div>
       <div
         v-if="showStatsTopControlInNav"
-        class="stats-top-nav-wrap"
+        v-liquid-glass
+        class="stats-top-nav-wrap top-nav-glass-capsule ui-liquid-glass ui-liquid-glass--refractive"
+        data-ui-glass-profile="lens"
         title="统计页：快速调整截止活动ID与展开菜单"
       >
         <button class="pjsk-ui-btn-circle stats-top-mini-btn" title="减少 1" @click="adjustStatsTopDisplayEventId(-1)">－</button>
@@ -72,16 +72,18 @@
         </button>
       </div>
       <div class="nav-tabs-spacer"></div>
-      <div class="predict-info" v-if="showPredictInfoInNav">
+      <div v-if="showPredictInfoInNav" v-liquid-glass class="predict-info top-nav-glass-capsule ui-liquid-glass ui-liquid-glass--refractive" data-ui-glass-profile="lens">
         {{ `${predictiveEvents.length}条预测` }}
       </div>
-      <div class="predict-cleanup-info" v-if="cleanedPatchNoticeCount > 0">
+      <div v-if="cleanedPatchNoticeCount > 0" v-liquid-glass class="predict-cleanup-info top-nav-glass-capsule ui-liquid-glass ui-liquid-glass--refractive" data-ui-glass-profile="lens">
         {{ isCompactTopNav ? `已清理 ${cleanedPatchNoticeCount} 条` : `已自动清理 ${cleanedPatchNoticeCount} 条过期/冲突预测` }}
       </div>
       <div v-if="showSourceDropdownInNav" class="source-dropdown" ref="sourceDropdownRef">
         <button
           ref="sourceTriggerRef"
-          class="io-btn source-trigger"
+          v-liquid-glass
+          class="io-btn source-trigger top-nav-glass-capsule ui-liquid-glass ui-liquid-glass--refractive"
+          data-ui-glass-profile="lens"
           :class="{ active: sourceMenuOpen, 'is-disabled': isHistoryPredictEditorOpen }"
           :disabled="isHistoryPredictEditorOpen"
           @pointerdown.stop
@@ -301,15 +303,16 @@
         :class="{ 'is-mobile-tab-dragging': isMobileTabDragging }"
         :style="mobileTabSwitcherStyle"
         aria-label="页面切换"
-        @pointerdown="onMobileTabPointerDown"
-        @pointermove="onMobileTabPointerMove"
-        @pointerup="onMobileTabPointerUp"
-        @pointercancel="onMobileTabPointerCancel"
+        @pointerdown="onPrimaryTabPointerDown"
+        @pointermove="onPrimaryTabPointerMove"
+        @pointerup="onPrimaryTabPointerUp"
+        @pointercancel="onPrimaryTabPointerCancel"
+        @lostpointercapture="onPrimaryTabPointerCancel"
       >
         <span
-          v-if="mobileTabIndex >= 0"
           v-liquid-glass
-          class="mobile-tab-glider ui-liquid-glass ui-liquid-glass--refractive"
+          class="mobile-tab-track ui-liquid-glass ui-liquid-glass--refractive"
+          data-ui-glass-profile="lens"
           aria-hidden="true"
         ></span>
         <button
@@ -326,6 +329,15 @@
             <span>{{ MOBILE_TAB_LABELS[index] }}</span>
           </span>
         </button>
+        <span
+          v-if="mobileTabIndex >= 0"
+          v-liquid-glass
+          class="mobile-tab-glider ui-liquid-glass ui-liquid-glass--refractive"
+          data-ui-glass-profile="lens"
+          data-ui-glass-lens-role="selector"
+          :data-ui-glass-pressed="isMobileTabPressed"
+          aria-hidden="true"
+        ></span>
       </nav>
       <button
         v-if="showSourceDropdownInNav"
@@ -581,8 +593,14 @@ const isSmallTabletViewport = ref(
     && isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.smallTabletMax)
 );
 const primaryTabSwitcherRef = ref(null);
+const desktopTabSwitcherRef = ref(null);
+const desktopTabGliderRect = ref({ left: 0, top: 0, width: 0, height: 0 });
+const desktopTabDragOffset = ref(0);
+const isDesktopTabDragging = ref(false);
+const isDesktopTabPressed = ref(false);
 const mobileTabDragOffset = ref(0);
 const isMobileTabDragging = ref(false);
+const isMobileTabPressed = ref(false);
 const exportBirthdayRowsInPng = ref(true);
 const isScreenshotExporting = ref(false);
 const screenshotStatusText = ref('');
@@ -632,12 +650,14 @@ let cancelInitialAppVersionCheck = null;
 let cancelSmallImageWarmup = null;
 let stopSmallImageWarmupObserver = null;
 let cancelScheduledPublicDataCacheWrite = null;
-let mobileTabDragState = null;
+let primaryTabDragState = null;
+let desktopTabResizeObserver = null;
 let suppressPrimaryTabClick = false;
 let suppressPrimaryTabClickTimer = null;
 
 const PRIMARY_TABS = Object.freeze(['stats', 'history', 'songs']);
 const MOBILE_TAB_LABELS = Object.freeze(['统计', '活动', '乐曲']);
+const DESKTOP_TAB_LABELS = Object.freeze(['统计面板', '历史活动一览', '乐曲统计']);
 const MOBILE_TAB_ICONS = Object.freeze([
   '/data/icon/statistics.png',
   '/data/icon/event.png',
@@ -648,6 +668,33 @@ const mobileTabSwitcherStyle = computed(() => ({
   '--mobile-tab-offset': `${Math.max(0, mobileTabIndex.value) * 100}%`,
   '--mobile-tab-drag-x': `${mobileTabDragOffset.value}px`
 }));
+const desktopTabGliderStyle = computed(() => ({
+  '--desktop-tab-left': `${desktopTabGliderRect.value.left}px`,
+  top: `${desktopTabGliderRect.value.top}px`,
+  width: `${desktopTabGliderRect.value.width}px`,
+  height: `${desktopTabGliderRect.value.height}px`,
+  '--desktop-tab-drag-x': `${desktopTabDragOffset.value}px`
+}));
+
+const updateDesktopTabGlider = () => {
+  const switcher = desktopTabSwitcherRef.value;
+  const button = switcher?.querySelectorAll?.(':scope > .primary-tab-button')?.[mobileTabIndex.value];
+  if (!button || !switcher.offsetWidth) {
+    desktopTabGliderRect.value = { left: 0, top: 0, width: 0, height: 0 };
+    return;
+  }
+  desktopTabGliderRect.value = {
+    left: button.offsetLeft - 2,
+    top: button.offsetTop - 2,
+    width: button.offsetWidth + 4,
+    height: button.offsetHeight + 4
+  };
+};
+
+watch([currentTab, isStatsTopNavCompact, isSmallTabletViewport], async () => {
+  await nextTick();
+  updateDesktopTabGlider();
+}, { flush: 'post' });
 
 const APP_VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const APP_RELEASE_LOG_SKIP_KEY = 'pjsk_skip_release_log_build_id_v1';
@@ -1052,10 +1099,14 @@ const setCurrentTab = (tab) => {
   persistCurrentTab(tab);
 };
 
-const clearMobileTabDrag = () => {
-  mobileTabDragState = null;
+const clearPrimaryTabDrag = () => {
+  isMobileTabPressed.value = false;
+  isDesktopTabPressed.value = false;
+  primaryTabDragState = null;
   mobileTabDragOffset.value = 0;
+  desktopTabDragOffset.value = 0;
   isMobileTabDragging.value = false;
+  isDesktopTabDragging.value = false;
 };
 
 const selectPrimaryTab = (tab, event) => {
@@ -1064,52 +1115,76 @@ const selectPrimaryTab = (tab, event) => {
     return;
   }
   setCurrentTab(tab);
+  if (!isSmallTabletViewport.value) updateDesktopTabGlider();
 };
 
-const onMobileTabPointerDown = (event) => {
-  if (!isSmallTabletViewport.value || mobileTabIndex.value < 0) return;
+const onPrimaryTabPointerDown = (event) => {
+  if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+  const switcher = event.currentTarget;
+  const desktop = switcher === desktopTabSwitcherRef.value && !isSmallTabletViewport.value;
+  const mobile = switcher === primaryTabSwitcherRef.value && isSmallTabletViewport.value;
+  if ((!desktop && !mobile) || mobileTabIndex.value < 0) return;
   const button = event.target?.closest?.('.primary-tab-button');
-  if (!button || !primaryTabSwitcherRef.value?.contains?.(button)) return;
+  if (!button || !switcher.contains(button)) return;
+  if (desktop) isDesktopTabPressed.value = true;
+  else isMobileTabPressed.value = true;
 
-  mobileTabDragState = {
+  primaryTabDragState = {
     pointerId: event.pointerId,
     startX: event.clientX,
     startIndex: mobileTabIndex.value,
+    switcher,
+    desktop,
     moved: false
   };
   button.setPointerCapture?.(event.pointerId);
 };
 
-const onMobileTabPointerMove = (event) => {
-  const drag = mobileTabDragState;
+const onPrimaryTabPointerMove = (event) => {
+  const drag = primaryTabDragState;
   if (!drag || drag.pointerId !== event.pointerId) return;
-  const bounds = primaryTabSwitcherRef.value?.getBoundingClientRect?.();
+  const bounds = drag.switcher?.getBoundingClientRect?.();
   if (!bounds?.width) return;
 
   const deltaX = event.clientX - drag.startX;
-  const segmentWidth = Math.max(1, (bounds.width - 8) / PRIMARY_TABS.length);
-  const minOffset = -drag.startIndex * segmentWidth;
-  const maxOffset = (PRIMARY_TABS.length - 1 - drag.startIndex) * segmentWidth;
-  mobileTabDragOffset.value = Math.min(Math.max(deltaX, minOffset), maxOffset);
+  if (drag.desktop) {
+    const buttons = drag.switcher.querySelectorAll(':scope > .primary-tab-button');
+    const start = buttons[drag.startIndex]?.offsetLeft ?? 0;
+    desktopTabDragOffset.value = Math.min(
+      Math.max(deltaX, (buttons[0]?.offsetLeft ?? start) - start),
+      (buttons[buttons.length - 1]?.offsetLeft ?? start) - start
+    );
+  } else {
+    const segmentWidth = Math.max(1, (bounds.width - 8) / PRIMARY_TABS.length);
+    const minOffset = -drag.startIndex * segmentWidth;
+    const maxOffset = (PRIMARY_TABS.length - 1 - drag.startIndex) * segmentWidth;
+    mobileTabDragOffset.value = Math.min(Math.max(deltaX, minOffset), maxOffset);
+  }
 
   if (Math.abs(deltaX) >= 5) {
     drag.moved = true;
-    isMobileTabDragging.value = true;
+    if (drag.desktop) isDesktopTabDragging.value = true;
+    else isMobileTabDragging.value = true;
     event.preventDefault?.();
   }
 };
 
-const onMobileTabPointerUp = (event) => {
-  const drag = mobileTabDragState;
+const onPrimaryTabPointerUp = (event) => {
+  const drag = primaryTabDragState;
   if (!drag || drag.pointerId !== event.pointerId) return;
-  const bounds = primaryTabSwitcherRef.value?.getBoundingClientRect?.();
+  const bounds = drag.switcher?.getBoundingClientRect?.();
   const deltaX = event.clientX - drag.startX;
 
   if (drag.moved && bounds?.width) {
+    const buttons = drag.desktop ? drag.switcher.querySelectorAll(':scope > .primary-tab-button') : null;
+    const firstCenter = buttons?.length ? buttons[0].offsetLeft + buttons[0].offsetWidth / 2 : 0;
+    const lastCenter = buttons?.length ? buttons[buttons.length - 1].offsetLeft + buttons[buttons.length - 1].offsetWidth / 2 : 0;
     const targetIndex = resolveTabDragTarget({
       startIndex: drag.startIndex,
       deltaX,
-      trackWidth: Math.max(1, bounds.width - 8),
+      trackWidth: drag.desktop
+        ? Math.max(1, (lastCenter - firstCenter) * PRIMARY_TABS.length / (PRIMARY_TABS.length - 1))
+        : Math.max(1, bounds.width - 8),
       tabCount: PRIMARY_TABS.length
     });
     suppressPrimaryTabClick = true;
@@ -1119,14 +1194,15 @@ const onMobileTabPointerUp = (event) => {
       suppressPrimaryTabClickTimer = null;
     }, 0);
     setCurrentTab(PRIMARY_TABS[targetIndex]);
+    if (drag.desktop) updateDesktopTabGlider();
   }
 
-  clearMobileTabDrag();
+  clearPrimaryTabDrag();
 };
 
-const onMobileTabPointerCancel = (event) => {
-  if (mobileTabDragState?.pointerId !== event.pointerId) return;
-  clearMobileTabDrag();
+const onPrimaryTabPointerCancel = (event) => {
+  if (primaryTabDragState?.pointerId !== event.pointerId) return;
+  clearPrimaryTabDrag();
 };
 
 const openSpecialPredictGenerator = () => {
@@ -1782,7 +1858,7 @@ const updateCompactTopNav = () => {
   isCompactTopNav.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
   isStatsTopNavCompact.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax);
   isSmallTabletViewport.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.smallTabletMax);
-  if (!isSmallTabletViewport.value) clearMobileTabDrag();
+  if (primaryTabDragState && primaryTabDragState.desktop === isSmallTabletViewport.value) clearPrimaryTabDrag();
   scheduleStatsTopControlStateSync();
 };
 
@@ -3190,6 +3266,13 @@ const handleGlobalPointerDown = (event) => {
 
 onMounted(() => {
   updateCompactTopNav();
+  void nextTick(() => {
+    updateDesktopTabGlider();
+    if (typeof ResizeObserver === 'function' && desktopTabSwitcherRef.value) {
+      desktopTabResizeObserver = new ResizeObserver(updateDesktopTabGlider);
+      desktopTabResizeObserver.observe(desktopTabSwitcherRef.value);
+    }
+  });
   void scheduleSmallStaticImageWarmup();
   releaseLogSkipBuildId.value = String(localStorage.getItem(APP_RELEASE_LOG_SKIP_KEY) || '').trim();
   syncReleaseLogSkipChecked();
@@ -3206,6 +3289,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  desktopTabResizeObserver?.disconnect();
+  desktopTabResizeObserver = null;
   if (statsTopControlSyncRaf) {
     cancelAnimationFrame(statsTopControlSyncRaf);
     statsTopControlSyncRaf = 0;
@@ -3344,9 +3429,102 @@ watch(isHistoryPredictEditorOpen, (open) => {
   padding: 15px 25px;
   border-bottom-width: 1px;
   border-bottom-style: solid;
+  border-bottom-color: transparent;
+  position: relative;
+  isolation: isolate;
   z-index: 2000;
   flex: 0 0 auto;
   /* 移除 sticky，因为外层已经是 flex 布局，它自然就在最顶部 */
+}
+
+.nav-tabs-glass {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  border-bottom: 1px solid var(--ui-glass-rim-light);
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.nav-tabs > :not(.nav-tabs-glass) {
+  position: relative;
+  z-index: 1;
+}
+
+.desktop-tab-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+  flex: 0 0 auto;
+  isolation: isolate;
+}
+
+.desktop-tab-track {
+  position: absolute;
+  inset: -3px -6px;
+  z-index: 0;
+  border: 1px solid var(--ui-glass-mobile-track-border);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.desktop-tab-switcher > .primary-tab-button {
+  display: inline-flex;
+  position: relative;
+  z-index: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #1e293b;
+  touch-action: pan-y;
+}
+
+.desktop-tab-switcher > .primary-tab-button.active {
+  background: transparent;
+  color: #0891b2;
+}
+
+.desktop-tab-switcher > .primary-tab-button:focus-visible {
+  outline: 2px solid rgba(8, 145, 178, 0.72);
+  outline-offset: -3px;
+}
+
+.nav-tabs .desktop-tab-switcher > .primary-tab-button.active .btn-icon {
+  --app-icon-filter: none;
+}
+
+.desktop-tab-glider.mobile-tab-glider {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  pointer-events: none;
+  transform: translate3d(calc(var(--desktop-tab-left) + var(--desktop-tab-drag-x)), 0, 0);
+  scale: 1;
+  transition: transform 420ms cubic-bezier(0.2, 0.82, 0.2, 1), scale 360ms cubic-bezier(0.22, 1.35, 0.36, 1);
+  will-change: transform, scale;
+}
+
+.desktop-tab-switcher.is-tab-dragging .desktop-tab-glider {
+  transition: scale 260ms cubic-bezier(0.22, 1.35, 0.36, 1);
+}
+
+.desktop-tab-glider[data-ui-glass-pressed='true'] {
+  scale: 1.06 1.28;
+}
+
+:root[data-ui-glass-motion='reduced'] .desktop-tab-glider {
+  transition: none;
+  scale: 1;
 }
 
 .mobile-bottom-controls,
@@ -4586,6 +4764,16 @@ button.active {
 }
 
 @media (min-width: 901px) and (max-width: 1200px) {
+  .desktop-tab-switcher {
+    gap: 10px;
+  }
+
+  .desktop-tab-switcher > .primary-tab-button {
+    min-height: 36px;
+    padding: 7px 12px;
+    font-size: 0.86rem;
+  }
+
   .nav-tabs > button,
   .nav-tabs > .io-btn,
   .nav-tabs > .source-dropdown > .source-trigger,
@@ -4640,6 +4828,16 @@ button.active {
 }
 
 @media (min-width: 769px) and (max-width: 900px) {
+  .desktop-tab-switcher {
+    gap: 6px;
+  }
+
+  .desktop-tab-switcher > .primary-tab-button {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 0.82rem;
+  }
+
   .nav-tabs.is-stats-top-compact > button,
   .nav-tabs.is-stats-top-compact > .io-btn,
   .nav-tabs.is-stats-top-compact > .source-dropdown > .source-trigger,
@@ -4704,6 +4902,7 @@ button.active {
     left: 50%;
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     width: 60vw;
+    max-width: 320px;
     align-items: center;
     justify-content: center;
     transform: translateX(-50%);
@@ -4715,18 +4914,25 @@ button.active {
     flex: 0 0 100%;
     width: 100%;
     min-width: 0;
-    height: 62px;
+    height: 56px;
     padding: 4px;
     box-sizing: border-box;
     align-items: center;
-    border: 1px solid var(--ui-glass-mobile-track-border);
+    border: 1px solid transparent;
     border-radius: 999px;
-    background: var(--ui-glass-mobile-track-bg);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.66),
-      inset 0 -1px 0 rgba(71, 85, 105, 0.12),
-      0 12px 30px rgba(15, 23, 42, 0.18);
     isolation: isolate;
+  }
+
+  /* Sibling glass surfaces let the glider sample the already painted track.
+     A backdrop filter on the nav ancestor would create a new backdrop root. */
+  .mobile-tab-track {
+    position: absolute;
+    inset: -1px;
+    z-index: 0;
+    border: 1px solid var(--ui-glass-mobile-track-border);
+    border-radius: inherit;
+    box-sizing: border-box;
+    pointer-events: none;
   }
 
   .mobile-source-trigger {
@@ -4774,7 +4980,7 @@ button.active {
   .mobile-tab-glider {
     display: block;
     position: absolute;
-    z-index: 0;
+    z-index: 2;
     top: 3px;
     left: 4px;
     width: calc((100% - 8px) / 3);
@@ -4784,12 +4990,18 @@ button.active {
     border-radius: 999px;
     pointer-events: none;
     transform: translate3d(calc(var(--mobile-tab-offset) + var(--mobile-tab-drag-x)), 0, 0);
-    transition: transform 420ms cubic-bezier(0.2, 0.82, 0.2, 1);
-    will-change: transform;
+    scale: 1;
+    transition: transform 420ms cubic-bezier(0.2, 0.82, 0.2, 1), scale 360ms cubic-bezier(0.22, 1.35, 0.36, 1);
+    will-change: transform, scale;
   }
 
   .mobile-tab-switcher.is-mobile-tab-dragging .mobile-tab-glider {
-    transition: none;
+    transition: scale 260ms cubic-bezier(0.22, 1.35, 0.36, 1);
+  }
+
+  .mobile-tab-glider[data-ui-glass-pressed='true'] {
+    /* Let the track's rims enter the lens shoulder, not just its silhouette. */
+    scale: 1.06 1.28;
   }
 
   .mobile-tab-switcher > .primary-tab-button {
@@ -4797,7 +5009,7 @@ button.active {
     z-index: 1;
     flex: 1 1 0;
     min-width: 0;
-    min-height: 52px;
+    min-height: 46px;
     padding: 5px 3px;
     border: 0;
     background: transparent;
@@ -4822,14 +5034,14 @@ button.active {
   .mobile-tab-switcher > .primary-tab-button .btn-with-icon {
     min-height: auto;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     line-height: 1;
   }
 
   .mobile-tab-switcher > .primary-tab-button .btn-icon {
-    width: 22px;
-    height: 22px;
-    flex-basis: 22px;
+    width: 20px;
+    height: 20px;
+    flex-basis: 20px;
     user-select: none;
     -webkit-user-drag: none;
   }
@@ -4850,6 +5062,7 @@ button.active {
 
   :root[data-ui-glass-motion='reduced'] .mobile-tab-glider {
     transition: none;
+    scale: 1;
   }
 
   .nav-tabs button,
@@ -5067,7 +5280,7 @@ button.active {
   }
 
   .floating-top-btn.is-dock-aligned {
-    bottom: calc(21px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   }
 
   .floating-top-btn-icon {

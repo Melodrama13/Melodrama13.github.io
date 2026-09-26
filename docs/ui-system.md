@@ -73,7 +73,7 @@ Liquid Glass 的路径固定为：`tokens.css` 中的 `--ui-glass-*` token → `
 
 | 层级 | class / runtime | 获准 consumer 与限制 |
 | --- | --- | --- |
-| Refractive | `.ui-liquid-glass.ui-liquid-glass--refractive` + `v-liquid-glass` | 背后内容较安静、可优先展示透射时使用：桌面顶部 `.nav-tabs`、Predict Editor 的右侧抽屉（`>900px`）、手机端底部 `.mobile-tab-glider` 与活动页 `.mobile-source-trigger`，以及直达顶部 `.floating-top-btn`。插件为每个已连接表面生成或复用 SVG 边缘位移滤镜；桌面编辑器使用更薄的中性遮色和受限的内部位移，不新增材质等级。 |
+| Refractive | `.ui-liquid-glass.ui-liquid-glass--refractive` + `v-liquid-glass` | 背后内容较安静、可优先展示透射时使用：桌面顶栏背景及其三页切换轨道/滑块、截止活动 ID 外框、数据源按键、预测数量与清理提示胶囊、Predict Editor 的右侧抽屉（`>900px`）、手机端底部 `.mobile-tab-glider` 与活动页 `.mobile-source-trigger`，以及直达顶部 `.floating-top-btn`。插件为每个已连接表面生成或复用 SVG 边缘位移滤镜；桌面编辑器使用更薄的中性遮色和受限的内部位移，不新增材质等级。 |
 | Prominent | `.ui-liquid-glass.ui-liquid-glass--prominent`；主要外层使用 `v-liquid-glass`，重复悬浮窗仅使用 CSS | 背后有滚动内容或密集文字、需要更稳定的可读性时使用：Predict Editor 的底部抽屉（`≤900px`）、Card/Song Stats 的 `.stats-nav` 与紧凑态 `.floating-menu-btn`、Event History 的 `.filter-bar` / `.filter-panel`、App 的 `.source-menu`，以及预测编辑时的悬浮统计配置窗与最多 6 个统计窗。悬浮统计不为每个窗新增 SVG 滤镜。内部 group/control/input/option 使用语义 token，不能追加子级折射。 |
 | Regular | `.ui-liquid-glass.ui-liquid-glass--regular` + `v-liquid-glass` | 介于透射与强调之间的普通悬浮表面；目前用于 Special Predict toolbar，不因视口宽度单独改变材质。 |
 | Modal | `.ui-liquid-glass.ui-liquid-glass--modal`，CSS-only readable frost | App 更新/导出状态弹窗和 Event History 的未保存预测切换弹窗。遮罩与对话框语义仍保持 local。 |
@@ -83,7 +83,13 @@ Liquid Glass 的路径固定为：`tokens.css` 中的 `--ui-glass-*` token → `
 
 材质本身只在 `tokens.css` 中定义：`--ui-glass-ambient-image` 提供带克制暖玫瑰色的中性环境场；各 tier 的 `--ui-glass-*-bg` 保持近无色透射。prominent tier 独占 `--ui-glass-shadow-prominent` 的外部深度与五道静态 inset optical rim，以及 `--ui-glass-optical-rim-prominent` 的 1px conic 边缘 caustic。需强化边缘的 Prominent consumer 与桌面折射编辑器可加 `.ui-glass-optical-detail`：共享 `--ui-glass-optical-prominent-*` 外框 token 与 `--ui-glass-optical-micro-*` 内部中性控件 token；此 class 仅增加光学边缘，不改变 Refractive 的透色或滤镜。`liquid-glass.css` 只把 token 应用于 tier，并以不接收 pointer event 的 `::before` 绘制宽阔的 pointer-driven specular highlight、以 `::after` 绘制仅边缘可见的 masked static rim；SVG 位移仍只属于外层 directive。不得在 consumer 中复制 gradient、shadow、filter 或 pseudo-element recipe。
 
-Event History 的 `.filter-bar`（操作栏）、`.filter-panel` 和 App 的 `.source-menu`（数据源面板）明确使用 `prominent` tier，并各自只拥有一个外层 `v-liquid-glass`/SVG `url(#...)` 位移；Card/Song Stats 的完整与紧凑导航遵循同一规则。它们依靠较高的白色雾化层与语义内部填充在滚动/密集文本上保持可读性；桌面顶部导航维持 refractive tier，手机端以独立折射滑块承载选中态。
+Event History 的 `.filter-bar`（操作栏）、`.filter-panel` 和 App 的 `.source-menu`（数据源展开面板）明确使用 `prominent` tier，并各自只拥有一个外层 `v-liquid-glass`/SVG `url(#...)` 位移；仅桌面顶栏的数据源按键使用折射态，展开面板不随按键改变材质。Card/Song Stats 的完整与紧凑导航遵循同一规则。它们依靠较高的白色雾化层与语义内部填充在滚动/密集文本上保持可读性；桌面顶栏与手机底栏的三页切换均以独立折射滑块承载选中态。
+
+三页切换栏、滑块及桌面顶栏其他胶囊使用 `data-ui-glass-profile="lens"`，仍属于 Refractive 材质。位移沿胶囊轮廓法线计算：弧面宽度为短边的 23%（上限 32px），中央超过一半区域保持低畸变；最外沿较窄的 curl 区域允许局部取样回折，模拟倒影与哈哈镜边缘，回折不延伸到中心。Chromium 在该边缘位移场中分别以 `1.055 / 1 / 0.945` 倍位移采样 RGB，增强局部色散；中心保持零位移、不追加整体模糊。曲率继续控制局部柔散射及方向性明暗反光。Prominent 光学边框及小型镜片的 CSS rim 只在约 1px 边缘加入淡蓝紫过渡，非 Chromium 回退不伪装成真实 RGB 折射。按压通过独立 `scale` 动画放大滑块，`data-ui-glass-pressed` 同步驱动其滤镜强度与反光，拖动平移仍即时跟随；每个透镜使用独立滤镜，避免动画影响其他实例。
+
+内层滑块另标记 `data-ui-glass-lens-role="selector"`：边缘弧面宽度为短边的 25%（同样上限 32px），中央一半保持低畸变。该角色采用向外的背景反向采样，使外层栏的上边线在成像中向下弯、下边线向上弯；滑块自身轮廓仍然外凸。滑块反光沿垂直方向对称分布，顶部左右角不因光照方向出现一明一暗；外层轨道仍保留轻微方向性反光。按压纵向放大至 `1.28`、横向放大至 `1.06`，使外层边线进入曲面区域，最外沿只保留较窄的回折。弯曲来自实时背景而非固定装饰线，因此随拖动作用于外层栏、文字和图标；不改变外层栏及其他玻璃面的曲线。此为视觉近似，不宣称复现苹果的内部光学模型。
+
+外层轨道、文字图标按钮、内层滑块按此顺序绘制，滑块同时折射已合成的外层背景和文字图标。桌面顶栏用独立 `.nav-tabs-glass` 承载背景，`.desktop-tab-switcher` 留在原有顶栏位置；顶栏容器自身不使用 backdrop-filter，避免新增祖先 backdrop root 阻断滑块采样。桌面滑块按实际按钮位置和宽度对齐，保留宽屏原文案及紧凑顶栏短文案；桌面与手机共用拖动距离判定、点击和键盘按钮语义。滑块不接收指针事件。手机切换栏宽度为 `min(60vw, 320px)`，高度为 `56px`，按钮触控高度至少 `46px`，源按钮与回顶按钮同步对齐。WebKit 保留 CSS 磨砂与按压反馈，不宣称支持背景位移；减少动态效果时取消膨胀动画；opaque 模式以实色外框承载内容，滑块改为透明轮廓，避免遮住下层文字。
 
 一个 glass 表面只拥有一个材质。其子元素、重复内容卡片、导出面板、列表行和数据内容 panel 必须保持原有局部表面，不能追加 `.ui-liquid-glass` 或 `v-liquid-glass`。这避免嵌套 backdrop/filter、额外 SVG 位移和导出画面漂移。
 
@@ -147,7 +153,7 @@ Card/Song Stats 共用的导航滚动区不预留可见滚动条槽，仍可滚�
 1. **比较 exact value。** 新增或复用 token 前，在现有 selector 和消费路径中逐项比较值、声明和继承范围。仅 exact duplicate 可进入 `tokens.css`；相似值继续使用 local variable，并保留兼容 alias。
 2. **说明断点含义。** 新增 viewport breakpoint 前写明它解决的 feature、两侧 ownership 和测试宽度；运行时阈值使用 `UI_BREAKPOINTS`，CSS 继续使用数字条件。`680`、pointer/hover、reduced-motion 和 container 条件不能冒充 viewport breakpoint。
 3. **保持 scoped 位置。** 共享 CSS 只抽取 exact duplicated author-source rules；每个消费者用 `<style scoped src>`，并把标签放在被替代规则的原 cascade 位置。不要把 feature/data/export 样式提升为 global。
-4. **完成验证。** 运行第 8 节的 policy、unit、build 和 Git 检查；涉及视觉变化时，还必须在临时开发分支完成对应视口的人工或自动化对比。
+4. **完成验证。** 运行第 8 节的 policy、build 和 Git 检查，并按改动范围运行本地忽略的回归用例；涉及视觉变化时，还必须在临时开发分支完成对应视口的人工或自动化对比。
 5. **隔离阶段资产。** 一次性的视觉基线、实现计划、审查报告和测试输出不得长期进入正式分支；需要保留时放入本地忽略目录，或通过专用归档 tag 保存。
 
 ## 8. 验证命令
@@ -155,14 +161,13 @@ Card/Song Stats 共用的导航滚动区不预留可见滚动条槽，仍可滚�
 每条命令独立执行，并在实现报告中记录真实输出与 exit code：
 
 ```powershell
-npm.cmd run test:unit
 npm.cmd run check:ui
 npm.cmd run build
 git diff --check
 git status --short
 ```
 
-预期是 unit tests 零失败、policy 输出 `UI policy check passed`、Vite production build 成功且 `git diff --check` 无输出。涉及视觉材质、布局或响应式边界的改动，应在临时开发分支补充定向视觉验收；阶段测试与截图资产不长期保留在正式分支。
+预期是 policy 输出 `UI policy check passed`、Vite production build 成功且 `git diff --check` 无输出。本地存在忽略的测试文件时，还应按改动范围运行并记录结果；这些测试文件不随正式仓库发布。涉及视觉材质、布局或响应式边界的改动，应在临时开发分支补充定向视觉验收；阶段测试与截图资产不长期保留在正式分支。
 
 ## 9. 暂缓事项
 

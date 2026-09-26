@@ -143,6 +143,69 @@ body {
   mask-composite: exclude;
 }
 
+.mobile-tab-track.ui-liquid-glass {
+  --ui-glass-surface-bg: var(--ui-glass-mobile-track-bg);
+  --ui-glass-surface-shadow: var(--ui-glass-mobile-track-shadow);
+  --ui-glass-surface-filter: var(--ui-glass-filter-frosted-refractive);
+}
+
+.mobile-tab-track.ui-liquid-glass::before {
+  opacity: 0.18;
+}
+
+:is(.mobile-tab-glider, .top-nav-glass-capsule)[data-ui-glass-profile='lens'] {
+  --ui-glass-refraction-blur-radius: 0.65;
+  --ui-glass-surface-bg: var(--ui-glass-optical-lens-bg);
+  --ui-glass-surface-shadow: var(--ui-glass-lens-bevel-shadow);
+  border-color: transparent;
+}
+
+.nav-tabs .top-nav-glass-capsule.ui-liquid-glass,
+.nav-tabs > .source-dropdown > .source-trigger.top-nav-glass-capsule.ui-liquid-glass,
+.nav-tabs > .source-dropdown > .source-trigger.top-nav-glass-capsule.ui-liquid-glass.active {
+  background: var(--ui-glass-surface-bg);
+  border-color: var(--ui-glass-mobile-track-border);
+  box-shadow: var(--ui-glass-surface-shadow);
+}
+
+.nav-tabs > .source-dropdown > .source-trigger.top-nav-glass-capsule.ui-liquid-glass.active {
+  color: #0f766e;
+}
+
+:is(.mobile-tab-glider, .top-nav-glass-capsule)[data-ui-glass-profile='lens']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  background: var(--ui-glass-lens-reflection);
+  padding: 1.25px;
+}
+
+:is(.mobile-tab-glider, .top-nav-glass-capsule)[data-ui-glass-profile='lens']::before {
+  background: var(--ui-glass-lens-scatter-highlight);
+  opacity: 0.65;
+  transition: opacity 220ms ease;
+}
+
+.mobile-tab-glider[data-ui-glass-pressed='true']::before {
+  opacity: 1;
+}
+
+/* The refractive profile already lights its curved surface in the SVG pass. */
+:root[data-ui-glass-mode='refractive'] :is(.mobile-tab-glider, .top-nav-glass-capsule)[data-ui-glass-profile='lens']::before {
+  opacity: 0.18;
+}
+
 :root[data-ui-glass-mode='frosted'] .ui-liquid-glass--refractive {
   --ui-glass-surface-filter: var(--ui-glass-filter-frosted-refractive);
 }
@@ -159,6 +222,10 @@ body {
   --ui-glass-surface-filter: var(--ui-glass-mobile-lens-filter);
 }
 
+:root[data-ui-glass-mode='frosted'] .mobile-tab-glider.ui-liquid-glass {
+  --ui-glass-surface-filter: var(--ui-glass-mobile-overlay-filter);
+}
+
 :root[data-ui-glass-mode='frosted'] .ui-liquid-glass {
   -webkit-backdrop-filter: var(--ui-glass-surface-filter) !important;
   backdrop-filter: var(--ui-glass-surface-filter) !important;
@@ -172,10 +239,18 @@ body {
   backdrop-filter: none !important;
 }
 
+/* Labels live below the lens: in opaque mode the track supplies the solid
+   surface, while the selected lens becomes an outline instead of hiding text. */
+:root[data-ui-glass-mode='opaque'] .mobile-tab-glider[data-ui-glass-profile='lens'] {
+  background: transparent !important;
+  border-color: var(--ui-glass-rim-dark);
+}
+
 :root[data-ui-glass-mode='opaque'] .ui-liquid-glass::before,
 :root[data-ui-glass-mode='opaque'] .ui-liquid-glass--prominent::after,
 :root[data-ui-glass-mode='opaque'] .ui-liquid-glass--refractive.ui-glass-optical-detail::after,
 :root[data-ui-glass-mode='opaque'] .mobile-tab-glider.ui-liquid-glass::after,
+:root[data-ui-glass-mode='opaque'] .top-nav-glass-capsule.ui-liquid-glass::after,
 :root[data-ui-glass-motion='reduced'] .ui-liquid-glass::before {
   display: none;
 }
@@ -236,7 +311,8 @@ body {
   .ui-liquid-glass::before,
   .ui-liquid-glass--prominent::after,
   .ui-liquid-glass--refractive.ui-glass-optical-detail::after,
-  .mobile-tab-glider.ui-liquid-glass::after {
+  .mobile-tab-glider.ui-liquid-glass::after,
+  .top-nav-glass-capsule.ui-liquid-glass::after {
     display: none;
   }
 }
@@ -263,7 +339,8 @@ body {
   .ui-liquid-glass::before,
   .ui-liquid-glass--prominent::after,
   .ui-liquid-glass--refractive.ui-glass-optical-detail::after,
-  .mobile-tab-glider.ui-liquid-glass::after {
+  .mobile-tab-glider.ui-liquid-glass::after,
+  .top-nav-glass-capsule.ui-liquid-glass::after {
     display: none !important;
   }
 }
@@ -298,10 +375,19 @@ body {
   :root[data-ui-glass-mode] .ui-liquid-glass--prominent::after,
   :root[data-ui-glass-mode] .ui-liquid-glass--refractive.ui-glass-optical-detail::after,
   :root[data-ui-glass-mode] .mobile-tab-glider.ui-liquid-glass::after,
+  :root[data-ui-glass-mode] .top-nav-glass-capsule.ui-liquid-glass::after,
   .ui-liquid-glass::before,
   .ui-liquid-glass--prominent::after,
   .ui-liquid-glass--refractive.ui-glass-optical-detail::after,
-  .mobile-tab-glider.ui-liquid-glass::after {
+  .mobile-tab-glider.ui-liquid-glass::after,
+  .top-nav-glass-capsule.ui-liquid-glass::after {
     display: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+  .mobile-tab-glider[data-ui-glass-profile='lens'] {
+    background: transparent !important;
+    border-color: currentColor;
   }
 }

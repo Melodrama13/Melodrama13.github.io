@@ -36,6 +36,7 @@ const filterRegistry = new Map();
 const mountedSurfaceRefreshers = new Set();
 const registeredGlassSurfaces = new Set();
 let nextFilterId = 0;
+let nextSurfaceId = 0;
 
 export function isChromiumEngine(navigatorLike = {}) {
   const brands = navigatorLike?.userAgentData?.brands;
@@ -144,6 +145,8 @@ export function buildLiquidGlassDisplacement({
   const minDimension = Math.min(surfaceWidth, surfaceHeight);
   const horizontal = new Float32Array(mapWidth * mapHeight);
   const vertical = new Float32Array(mapWidth * mapHeight);
+  const scatter = fieldConfig.profile === 'lens' ? new Float32Array(mapWidth * mapHeight) : null;
+  const reflectionRgba = fieldConfig.profile === 'lens' ? new Uint8ClampedArray(mapWidth * mapHeight * 4) : null;
   let maxAbsoluteOffset = 0;
 
   for (let py = 0; py < mapHeight; py += 1) {
@@ -172,8 +175,61 @@ export function buildLiquidGlassDisplacement({
         -(Math.max(Math.min(cx, 1 - cx), Math.min(cy, 1 - cy)) * minDimension) * 0.3
       ) * fieldConfig.cornerBoost;
       const ripple = Math.sin((distPx / minDimension) * 25) * fieldConfig.rippleEffect * rimFall;
-      const horizontalOffset = (normalX * (total + corner) - normalY * ripple) * pageWidth;
-      const verticalOffset = (normalY * (total + corner) + normalX * ripple) * pageHeight;
+      let horizontalOffset = (normalX * (total + corner) - normalY * ripple) * pageWidth;
+      let verticalOffset = (normalY * (total + corner) + normalX * ripple) * pageHeight;
+      if (fieldConfig.profile === 'lens') {
+        // Rounded-rectangle surface normals: straight edges bend perpendicularly,
+        // while the rounded ends turn continuously. Offsets are local CSS pixels.
+        let nx = Math.max(tx, 0);
+        let ny = Math.max(ty, 0);
+        if (nx === 0 && ny === 0) {
+          nx = tx > ty ? 1 : 0;
+          ny = tx > ty ? 0 : 1;
+        }
+        const length = Math.hypot(nx, ny) || 1;
+        nx = nx / length * Math.sign(cx - 0.5);
+        ny = ny / length * Math.sign(cy - 0.5);
+        const selectorLens = fieldConfig.lensRole === 'selector';
+        const bevel = Math.min(32, minDimension * (selectorLens ? 0.25 : 0.23));
+        const depth = Math.min(1, distPx / bevel);
+        const thickness = bevel * (selectorLens ? 0.86 : 0.51);
+        const rimWidth = Math.max(0.85, Math.min(1.8, minDimension * 0.022));
+        const rimReturn = 4;
+        const rim = Math.exp(-distPx / rimWidth);
+        const shoulder = 1 - depth * depth * (3 - 2 * depth);
+        // Most of the interior stays undistorted. A tightly confined curl folds
+        // the backdrop near the rim, creating an inverted edge image; the wider
+        // shoulder blends back into the clear center without spreading that fold.
+        const curlWidth = bevel * 0.45;
+        const curlPhase = Math.min(1, distPx / curlWidth);
+        const curl = -bevel * 0.42 * Math.pow(Math.sin(Math.PI * curlPhase), 2);
+        const curlSlope = distPx < curlWidth
+          ? -bevel * 0.42 * Math.PI / curlWidth * Math.sin(2 * Math.PI * curlPhase)
+          : 0;
+        let bend = -thickness * shoulder + (thickness + rimReturn) * rim + curl;
+        let slope = (distPx < bevel
+          ? thickness * 6 * depth * (1 - depth) / bevel - (thickness + rimReturn) * rim / rimWidth
+          : 0) + curlSlope;
+        if (selectorLens) {
+          // Inverse backdrop lookup: outward sampling pulls the track's rim
+          // inward in the displayed image. Keep only a small return at the
+          // silhouette; the capsule stays convex while the image bows inward.
+          bend = -bend + curl * 0.5;
+          slope = -slope + curlSlope * 0.5;
+        }
+        horizontalOffset = nx * bend;
+        verticalOffset = ny * bend;
+        const index = py * mapWidth + px;
+        const curvature = Math.min(1, Math.abs(slope) * 0.3);
+        scatter[index] = 0.10 * rim + 0.045 * curvature;
+        // Selector highlights should balance across the two top corners;
+        // larger track lenses can keep a slight directional glint.
+        const light = ny * -0.94 + (selectorLens ? 0 : nx * -0.35);
+        const reflection = (0.65 * rim + 0.35 * curvature) * Math.abs(light);
+        const offset = index * 4;
+        reflectionRgba[offset] = reflectionRgba[offset + 1] = reflectionRgba[offset + 2] = light > 0 ? 255 : 24;
+        reflectionRgba[offset + 3] = clampByte(255 * reflection * (light > 0 ? 0.30 : 0.18));
+      }
       const index = py * mapWidth + px;
 
       horizontal[index] = horizontalOffset;
@@ -189,7 +245,10 @@ export function buildLiquidGlassDisplacement({
     const rgbaOffset = index * 4;
     rgba[rgbaOffset] = clampByte(255 * (0.5 + (horizontal[index] - bias) / scale));
     rgba[rgbaOffset + 1] = clampByte(255 * (0.5 + (vertical[index] - bias) / scale));
-    rgba[rgbaOffset + 2] = 128;
+    // Blue is unused by displacement: it carries a soft-scattering edge mask.
+    rgba[rgbaOffset + 2] = fieldConfig.profile === 'lens'
+      ? clampByte(255 * scatter[index])
+      : 128;
     rgba[rgbaOffset + 3] = 255;
   }
 
@@ -197,6 +256,7 @@ export function buildLiquidGlassDisplacement({
     mapWidth,
     mapHeight,
     rgba,
+    reflectionRgba,
     scale,
     cacheKey: [surfaceWidth, surfaceHeight, surfaceRadius, pageWidth, pageHeight, JSON.stringify(fieldConfig)].join('|')
   };
@@ -236,6 +296,7 @@ export const liquidGlassDirective = {
 };
 
 function createGlassSurfaceLifecycle(element) {
+  const surfaceId = nextSurfaceId++;
   const windowLike = globalThis.window;
   const documentLike = globalThis.document;
   let active = false;
@@ -246,6 +307,35 @@ function createGlassSurfaceLifecycle(element) {
   let resizeTimer = null;
   let pointer = null;
   let resizeObserver = null;
+  let pressureObserver = null;
+  let pressureFrame = null;
+  let pressure = 0;
+  let pressureTarget = 0;
+  let pressureTime = 0;
+
+  const animatePressure = (time = 0) => {
+    pressureFrame = null;
+    if (!active) return;
+    const reduced = documentLike?.documentElement?.dataset?.uiGlassMotion === 'reduced';
+    const elapsed = pressureTime ? Math.min(64, Math.max(0, time - pressureTime)) : 16;
+    pressureTime = time;
+    pressure += (pressureTarget - pressure) * (1 - Math.exp(-elapsed / 65));
+    if (reduced || Math.abs(pressureTarget - pressure) < 0.002) pressure = pressureTarget;
+    for (const node of currentEntry?.node?.querySelectorAll?.('feDisplacementMap') ?? []) {
+      const base = Number(node.dataset.baseScale);
+      if (Number.isFinite(base)) node.setAttribute('scale', String(base * (1 + pressure * 0.28)));
+    }
+    currentEntry?.node?.querySelector?.('[data-lens-reflection]')?.setAttribute('slope', String(1 + pressure * 0.18));
+    if (pressure !== pressureTarget) pressureFrame = requestFrame(animatePressure);
+  };
+
+  const updatePressure = () => {
+    pressureTarget = element.getAttribute?.('data-ui-glass-pressed') === 'true' ? 1 : 0;
+    if (pressureFrame === null) {
+      pressureTime = 0;
+      pressureFrame = requestFrame(animatePressure);
+    }
+  };
 
   const releaseCurrentFilter = () => {
     const entry = currentEntry;
@@ -264,6 +354,11 @@ function createGlassSurfaceLifecycle(element) {
     try {
       const bounds = readBounds(element);
       if (!bounds) return;
+      if (element.getAttribute?.('data-ui-glass-profile') === 'lens') {
+        // CSS press scaling must not be baked into the map a second time.
+        bounds.width = element.offsetWidth || bounds.width;
+        bounds.height = element.offsetHeight || bounds.height;
+      }
 
       setStyleProperty(element, '--ui-glass-surface-width', `${bounds.width}px`);
       setStyleProperty(element, '--ui-glass-surface-height', `${bounds.height}px`);
@@ -283,11 +378,14 @@ function createGlassSurfaceLifecycle(element) {
         viewportHeight: windowLike?.innerHeight,
         config
       });
+      // Pressure animates this surface's filter, so do not share its mutable nodes.
+      if (config.profile === 'lens') field.cacheKey += `|lens-${surfaceId}`;
       if (currentEntry?.key === field.cacheKey && currentEntry.node?.isConnected) return;
 
       clearRefraction();
       currentEntry = acquireFilter(documentLike, field, bounds.width, bounds.height, config);
       setBackdropFilter(element, currentEntry ? `url(#${currentEntry.id})` : '');
+      if (config.profile === 'lens') updatePressure();
     } catch {
       clearRefraction();
     }
@@ -350,6 +448,8 @@ function createGlassSurfaceLifecycle(element) {
       () => element.removeEventListener?.('pointermove', onPointerMove),
       () => element.removeEventListener?.('pointerleave', onPointerLeave),
       () => resizeObserver?.disconnect(),
+      () => pressureObserver?.disconnect(),
+      () => pressureFrame !== null && cancelFrame(pressureFrame),
       () => windowLike?.removeEventListener?.('resize', onWindowResize),
       () => resizeTimer !== null && globalThis.clearTimeout?.(resizeTimer),
       () => pointerFrame !== null && cancelFrame(pointerFrame),
@@ -367,6 +467,8 @@ function createGlassSurfaceLifecycle(element) {
     rebuildFrame = null;
     resizeTimer = null;
     resizeObserver = null;
+    pressureObserver = null;
+    pressureFrame = null;
   };
 
   const resume = () => {
@@ -381,6 +483,10 @@ function createGlassSurfaceLifecycle(element) {
       if (typeof globalThis.ResizeObserver === 'function') {
         resizeObserver = new globalThis.ResizeObserver(scheduleRebuild);
         resizeObserver.observe(element);
+      }
+      if (element.getAttribute?.('data-ui-glass-profile') === 'lens' && typeof globalThis.MutationObserver === 'function') {
+        pressureObserver = new globalThis.MutationObserver(updatePressure);
+        pressureObserver.observe(element, { attributes: true, attributeFilter: ['data-ui-glass-pressed'] });
       }
       windowLike?.addEventListener?.('resize', onWindowResize, { passive: true });
       mountedSurfaceRefreshers.add(refreshSurface);
@@ -516,6 +622,8 @@ function resolveLiquidGlassConfig(element, windowLike) {
     : 0;
   return {
     ...GLASS_PRESET,
+    profile: element.getAttribute?.('data-ui-glass-profile') === 'lens' ? 'lens' : 'standard',
+    lensRole: element.getAttribute?.('data-ui-glass-lens-role') === 'selector' ? 'selector' : 'surface',
     edgeIntensity: GLASS_PRESET.edgeIntensity * strength,
     rimIntensity: GLASS_PRESET.rimIntensity * strength,
     edgeDistance: GLASS_PRESET.edgeDistance / spread,
@@ -557,7 +665,8 @@ function acquireFilter(documentLike, field, width, height, config) {
   if (!filter || !image || !displacement || !blur) return null;
 
   const id = `ui-liquid-glass-${nextFilterId++}`;
-  const marginPx = field.scale / 2 + 3 * config.blurRadius * BLUR_STD_PER_RADIUS;
+  const marginPx = field.scale / 2 * (config.profile === 'lens' ? 1.31 : 1)
+    + 3 * (config.profile === 'lens' ? 0.8 : config.blurRadius * BLUR_STD_PER_RADIUS);
   const marginX = (marginPx / width) * 100;
   const marginY = (marginPx / height) * 100;
   filter.setAttribute('id', id);
@@ -585,7 +694,79 @@ function acquireFilter(documentLike, field, width, height, config) {
 
   blur.setAttribute('in', 'displaced');
   blur.setAttribute('stdDeviation', String(config.blurRadius * BLUR_STD_PER_RADIUS));
-  filter.append(image, displacement, blur);
+  if (config.profile === 'lens') {
+    filter.append(image);
+    // Channel separation follows the same contour field, remaining neutral in
+    // the clear center. This is subtle edge dispersion, not a painted rainbow.
+    for (const [channel, multiplier] of [['r', 1.055], ['g', 1], ['b', 0.945]]) {
+      const warp = displacement.cloneNode();
+      const scale = field.scale * multiplier;
+      warp.setAttribute('scale', String(scale));
+      warp.dataset.baseScale = String(scale);
+      warp.setAttribute('result', `lens-${channel}`);
+      const isolate = documentLike.createElementNS(svgNamespace, 'feColorMatrix');
+      isolate.setAttribute('in', `lens-${channel}`);
+      isolate.setAttribute('type', 'matrix');
+      isolate.setAttribute('values', `${channel === 'r' ? 1 : 0} 0 0 0 0  0 ${channel === 'g' ? 1 : 0} 0 0 0  0 0 ${channel === 'b' ? 1 : 0} 0 0  0 0 0 1 0`);
+      isolate.setAttribute('result', `channel-${channel}`);
+      filter.append(warp, isolate);
+    }
+    for (const [input, other, result] of [['channel-r', 'channel-g', 'lens-rg'], ['lens-rg', 'channel-b', 'displaced']]) {
+      const combine = documentLike.createElementNS(svgNamespace, 'feComposite');
+      combine.setAttribute('in', input);
+      combine.setAttribute('in2', other);
+      combine.setAttribute('operator', 'arithmetic');
+      combine.setAttribute('k2', '1');
+      combine.setAttribute('k3', '1');
+      combine.setAttribute('result', result);
+      filter.append(combine);
+    }
+    const mask = documentLike.createElementNS(svgNamespace, 'feColorMatrix');
+    mask.setAttribute('in', 'map');
+    mask.setAttribute('type', 'matrix');
+    mask.setAttribute('values', '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 1 0 0');
+    mask.setAttribute('result', 'edge-scatter-mask');
+    blur.setAttribute('stdDeviation', '0.8');
+    blur.setAttribute('result', 'soft-scatter');
+    filter.append(mask, blur);
+    for (const [input, operator, result] of [['soft-scatter', 'in', 'edge-scatter'], ['displaced', 'out', 'clear-lens']]) {
+      const maskLayer = documentLike.createElementNS(svgNamespace, 'feComposite');
+      maskLayer.setAttribute('in', input);
+      maskLayer.setAttribute('in2', 'edge-scatter-mask');
+      maskLayer.setAttribute('operator', operator);
+      maskLayer.setAttribute('result', result);
+      filter.append(maskLayer);
+    }
+    const finish = documentLike.createElementNS(svgNamespace, 'feComposite');
+    finish.setAttribute('in', 'clear-lens');
+    finish.setAttribute('in2', 'edge-scatter');
+    finish.setAttribute('operator', 'arithmetic');
+    finish.setAttribute('k2', '1');
+    finish.setAttribute('k3', '1');
+    finish.setAttribute('result', 'transmitted-lens');
+    filter.append(finish);
+    const reflectionUrl = field.reflectionRgba && createMapUrl(documentLike, { ...field, rgba: field.reflectionRgba });
+    if (reflectionUrl) {
+      const reflection = image.cloneNode();
+      reflection.setAttribute('href', reflectionUrl);
+      reflection.setAttribute('result', 'surface-reflection');
+      const intensity = documentLike.createElementNS(svgNamespace, 'feComponentTransfer');
+      intensity.setAttribute('in', 'surface-reflection');
+      intensity.setAttribute('result', 'lit-reflection');
+      const alpha = documentLike.createElementNS(svgNamespace, 'feFuncA');
+      alpha.setAttribute('type', 'linear');
+      alpha.setAttribute('slope', '1');
+      alpha.setAttribute('data-lens-reflection', '');
+      intensity.append(alpha);
+      const surface = documentLike.createElementNS(svgNamespace, 'feComposite');
+      surface.setAttribute('in', 'lit-reflection');
+      surface.setAttribute('in2', 'transmitted-lens');
+      surface.setAttribute('operator', 'over');
+      filter.append(reflection, intensity, surface);
+    }
+  } else {
+    filter.append(image, displacement, blur);
+  }
   defs.appendChild(filter);
 
   const entry = { id, key: field.cacheKey, node: filter, refs: 1 };

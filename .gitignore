@@ -54,9 +54,9 @@ docs/superpowers/
 tests/visual/
 test-results/
 
-# Local UI regression tests (not part of the published site)
-src/ui/*.browser.test.js
-src/ui/mobileTabSwitcher.test.js
+# Local regression tests (not part of the published site)
+*.test.*
+*.spec.*
 
 # Local Git worktrees
 .worktrees/
