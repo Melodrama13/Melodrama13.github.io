@@ -34099,6 +34099,155 @@
     ]
   },
   {
+    "id": 729,
+    "title": "LEMON MELON COOKIE",
+    "pronunciation": "れもんめろんくっきー",
+    "composer": "TAK",
+    "lyricist": "TAK",
+    "arranger": "TAK",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-04 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "mmj"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 18,
+      "expert": 25,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1286,
+        "type": "original_song",
+        "released_at": "2026/10/4",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2089,
+        "type": "sekai",
+        "released_at": "2026/10/4",
+        "characters": [
+          "初音未来",
+          "花里实乃里",
+          "桐谷遥",
+          "桃井爱莉",
+          "日野森雫"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 730,
+    "title": "エメラルド",
+    "pronunciation": "えめらるど",
+    "composer": "キタニタツヤ",
+    "lyricist": "キタニタツヤ",
+    "arranger": "キタニタツヤ",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-09-30 00:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "ln",
+      "mmj",
+      "vbs",
+      "ws",
+      "nc",
+      "vocaloid",
+      "other"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 13,
+      "hard": 18,
+      "expert": 25,
+      "master": 29,
+      "append": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1287,
+        "type": "original_song",
+        "released_at": "2026/9/30",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2081,
+        "type": "virtual_singer",
+        "released_at": "2026/9/30",
+        "characters": [
+          "初音未来",
+          "镜音铃",
+          "镜音连",
+          "巡音流歌",
+          "MEIKO",
+          "KAITO"
+        ]
+      },
+      {
+        "vocal_id": 2082,
+        "type": "sekai",
+        "released_at": "2026/9/30",
+        "characters": [
+          "星乃一歌",
+          "花里实乃里",
+          "小豆泽心羽",
+          "天马司",
+          "宵崎奏",
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2083,
+        "type": "another_vocal",
+        "released_at": "2026/9/30",
+        "characters": [
+          "星乃一歌"
+        ]
+      },
+      {
+        "vocal_id": 2084,
+        "type": "another_vocal",
+        "released_at": "2026/9/30",
+        "characters": [
+          "花里实乃里"
+        ]
+      },
+      {
+        "vocal_id": 2085,
+        "type": "another_vocal",
+        "released_at": "2026/9/30",
+        "characters": [
+          "小豆泽心羽"
+        ]
+      },
+      {
+        "vocal_id": 2086,
+        "type": "another_vocal",
+        "released_at": "2026/9/30",
+        "characters": [
+          "天马司"
+        ]
+      },
+      {
+        "vocal_id": 2087,
+        "type": "another_vocal",
+        "released_at": "2026/9/30",
+        "characters": [
+          "宵崎奏"
+        ]
+      }
+    ]
+  },
+  {
     "id": 732,
     "title": "天藍のアイスヘヴン",
     "pronunciation": "てんらんのあいすへゔん",
@@ -35315,6 +35464,150 @@
           "神代类",
           "晓山瑞希",
           "KAITO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 766,
+    "title": "アブノーマリティ･ダンシンガール",
+    "pronunciation": "あぶのーまりてぃだんしんがーる",
+    "composer": "ぐちり",
+    "lyricist": "ぐちり",
+    "arranger": "ぐちり",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-02 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "ln"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 14,
+      "hard": 19,
+      "expert": 29,
+      "master": 32
+    },
+    "vocals": [
+      {
+        "vocal_id": 1323,
+        "type": "original_song",
+        "released_at": "2026/10/2",
+        "characters": [
+          "flower"
+        ]
+      },
+      {
+        "vocal_id": 2088,
+        "type": "sekai",
+        "released_at": "2026/10/2",
+        "characters": [
+          "镜音铃",
+          "星乃一歌",
+          "天马咲希",
+          "望月穗波",
+          "日野森志步"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 774,
+    "title": "ラビットホール",
+    "pronunciation": "らびっとほーる",
+    "composer": "DECO*27",
+    "lyricist": "DECO*27",
+    "arranger": "tepe",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-03 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 19,
+      "expert": 27,
+      "master": 31
+    },
+    "vocals": [
+      {
+        "vocal_id": 1331,
+        "type": "original_song",
+        "released_at": "2026/10/3",
+        "characters": [
+          "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 775,
+    "title": "ドゥーマー",
+    "pronunciation": "どぅーまー",
+    "composer": "東京真中",
+    "lyricist": "東京真中",
+    "arranger": "東京真中",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-05 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 12,
+      "hard": 17,
+      "expert": 23,
+      "master": 28
+    },
+    "vocals": [
+      {
+        "vocal_id": 1332,
+        "type": "original_song",
+        "released_at": "2026/10/5",
+        "characters": [
+          "重音テト"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 784,
+    "title": "オブソミート",
+    "pronunciation": "おぶそみーと",
+    "composer": "サツキ",
+    "lyricist": "サツキ",
+    "arranger": "サツキ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-01 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 12,
+      "hard": 18,
+      "expert": 26,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1341,
+        "type": "original_song",
+        "released_at": "2026/10/1",
+        "characters": [
+          "初音未来",
+          "重音テト"
         ]
       }
     ]
