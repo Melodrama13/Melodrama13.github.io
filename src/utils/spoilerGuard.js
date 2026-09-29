@@ -1,6 +1,12 @@
 const DATE_ONLY_RE = /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/;
 const DATE_TIME_RE = /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[ T](\d{1,2})(?::(\d{1,2})(?::(\d{1,2}))?)?)?$/;
 
+export const isLocalSpoilerPreview = () => {
+  if (typeof window === 'undefined') return false;
+  const host = String(window.location?.hostname || '').trim().toLowerCase();
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+};
+
 const parseDateParts = (value) => {
   const text = String(value || '').trim();
   if (!text) return null;
@@ -48,6 +54,7 @@ export const getSongReleaseGate = (releaseDate) => {
 };
 
 export const isSongReleased = (song, now = new Date()) => {
+  if (isLocalSpoilerPreview()) return true;
   const gate = getSongReleaseGate(song?.releaseDate);
   if (!gate) return true;
   return now.getTime() >= gate.getTime();
@@ -74,6 +81,7 @@ export const getBirthdayCardImageReleaseGate = (dateText) => {
 const isBirthdayCard = (card) => String(card?.Type || card?.type || '').trim().toLowerCase() === 'birthday';
 
 export const isCardImageReleased = (card, now = new Date()) => {
+  if (isLocalSpoilerPreview()) return true;
   const gate = isBirthdayCard(card)
     ? getBirthdayCardImageReleaseGate(card?.Date || card?.date)
     : getCardImageReleaseGate(card?.Date || card?.date);

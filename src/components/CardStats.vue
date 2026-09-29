@@ -3247,7 +3247,7 @@ import { toCanvas } from 'html-to-image';
 import { buildAssetUrl } from '../utils/assets.js';
 import { getCardImageVariantForMode } from '../utils/cardImageVariants.js';
 import { shouldCountCardAsLimited } from '../utils/cardLimitedRules.js';
-import { isCardImageReleased, isEventStarted } from '../utils/spoilerGuard.js';
+import { isCardImageReleased, isEventStarted, isLocalSpoilerPreview } from '../utils/spoilerGuard.js';
 import { UI_BREAKPOINTS, isViewportAtMost } from '../ui/breakpoints.js';
 import {
   clampHostScrollTop,
@@ -10695,6 +10695,7 @@ const getNuigurumiCardSortTime = (card) => {
 const nuigurumiCardPools = computed(() => {
   const pools = {};
   const now = new Date();
+  const showUnreleased = isLocalSpoilerPreview();
   const sourceCards = Array.isArray(props.allBaseCards) && props.allBaseCards.length
     ? props.allBaseCards
     : [];
@@ -10702,7 +10703,7 @@ const nuigurumiCardPools = computed(() => {
     const cardId = Number(card?.CardID);
     if (!Number.isFinite(cardId) || cardId <= 0) return;
     const cardDate = parseDateSafe(card?.Date);
-    if (!cardDate || cardDate > now) return;
+    if (!cardDate || (!showUnreleased && cardDate > now)) return;
     if (String(card?.Rarity || '').trim() !== '4') return;
     const type = String(card?.Type || '').trim().toLowerCase();
     if (!type) return;
