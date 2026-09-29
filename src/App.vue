@@ -3508,10 +3508,10 @@ watch(isHistoryPredictEditorOpen, (open) => {
   border: 1px solid transparent;
   border-radius: 999px;
   pointer-events: none;
-  transform: translate3d(calc(var(--desktop-tab-left) + var(--desktop-tab-drag-x)), 0, 0);
+  translate: calc(var(--desktop-tab-left) + var(--desktop-tab-drag-x)) 0;
   scale: 1;
-  transition: transform 420ms cubic-bezier(0.2, 0.82, 0.2, 1), scale 360ms cubic-bezier(0.22, 1.35, 0.36, 1);
-  will-change: transform, scale;
+  transition: translate 420ms cubic-bezier(0.2, 0.82, 0.2, 1), scale 360ms cubic-bezier(0.22, 1.35, 0.36, 1);
+  will-change: translate, scale;
 }
 
 .desktop-tab-switcher.is-tab-dragging .desktop-tab-glider {
@@ -4989,10 +4989,10 @@ button.active {
     border: 1px solid rgba(255, 255, 255, 0.72);
     border-radius: 999px;
     pointer-events: none;
-    transform: translate3d(calc(var(--mobile-tab-offset) + var(--mobile-tab-drag-x)), 0, 0);
+    translate: calc(var(--mobile-tab-offset) + var(--mobile-tab-drag-x)) 0;
     scale: 1;
-    transition: transform 420ms cubic-bezier(0.2, 0.82, 0.2, 1), scale 360ms cubic-bezier(0.22, 1.35, 0.36, 1);
-    will-change: transform, scale;
+    transition: translate 420ms cubic-bezier(0.2, 0.82, 0.2, 1), scale 360ms cubic-bezier(0.22, 1.35, 0.36, 1);
+    will-change: translate, scale;
   }
 
   .mobile-tab-switcher.is-mobile-tab-dragging .mobile-tab-glider {
