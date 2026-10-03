@@ -28,6 +28,7 @@
                 class="nav-link nav-link-main"
                 :class="{ active: isGroupActive(group) }"
                 :title="group.title"
+                  :data-nav-target="group.id"
                 @click="handleParentNavClick(group)"
               >
                 {{ group.title }}
@@ -40,6 +41,7 @@
                   :class="{ active: activeNavId === item.id, 'is-duo-subanchor': isNestedNavChild(item) }"
                   v-show="shouldShowNavChild(item)"
                   :title="item.title"
+                  :data-nav-target="item.id"
                   @click="handleChildNavClick(group, item)"
                 >
                   {{ item.title }}
@@ -2166,6 +2168,7 @@ const pickActiveNavTargetIdByViewport = () => {
 };
 
 const syncActiveNavByViewport = () => {
+  if (isStatsNavigationPending()) return;
   try {
     const nextId = pickActiveNavTargetIdByViewport();
     if (nextId && activeNavId.value !== nextId) {
@@ -2617,6 +2620,7 @@ const updateMobileNavState = () => {
 };
 
 const {
+  isNavigating: isStatsNavigationPending,
   isGroupActive,
   isGroupExpanded,
   resetMobileNavGroupExpansion,
@@ -2630,6 +2634,7 @@ const {
   mobileNavExpandedGroups,
   navGroups,
   getScrollContainer,
+  findAnchorElementByKey,
   scheduleNavSync,
   setNavCollapsed
 });

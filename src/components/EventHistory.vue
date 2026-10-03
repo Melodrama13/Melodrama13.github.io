@@ -523,6 +523,7 @@
       @scroll.passive="handleHistoryScroll"
       @wheel.passive="handleHistoryManualScrollIntent"
       @touchmove.passive="handleHistoryManualScrollIntent"
+      @pointerdown="handleHistoryPointerIntent"
     >
       <div ref="filterStickyRef" class="filter-sticky">
         <div
@@ -1188,6 +1189,7 @@ import { buildAssetUrl } from '../utils/assets.js';
 import { getCardImageVariants } from '../utils/cardImageVariants.js';
 import { isCardImageReleased, isEventStarted, isSongReleased } from '../utils/spoilerGuard.js';
 import { UI_BREAKPOINTS, isViewportAtMost } from '../ui/breakpoints.js';
+import { createScrollNavigator, isScrollKeyIntent } from '../composables/scrollNavigation.js';
 import { isCompilationEvent } from '../utils/compilationEvents.js';
 
 
@@ -1798,15 +1800,15 @@ const getPredictStatus = (event) => {
   return 'todo';
 };
 
-const getCurrentEventId = () => {
-  const now = spoilerNow.value;
-  const candidates = (props.allEvents || []).filter(ev => {
-    if (!isNumericEventId(ev?.id)) return false;
-    return isEventStarted(ev, now);
-  });
-  if (candidates.length === 0) return -1;
-  return candidates.reduce((prev, curr) => (Number(prev.id) > Number(curr.id) ? prev : curr)).id;
-};
+const getCurrentEvent = () => (props.allEvents || []).reduce((latest, event) => {
+  if (!isNumericEventId(event?.id) || !isEventStarted(event, spoilerNow.value)) return latest;
+  if (!latest) return event;
+  const time = getDateValue(event.start_date);
+  const latestTime = getDateValue(latest.start_date);
+  return time > latestTime || (time === latestTime && Number(event.id) > Number(latest.id)) ? event : latest;
+}, null);
+
+const getCurrentEventId = () => getCurrentEvent()?.id ?? -1;
 
 const canOpenPredictEditor = (event) => {
   if (!event) return false;
@@ -2281,63 +2283,6 @@ const preserveAnchorWhileLayoutChanges = (eventId, mutator) => {
   const anchor = eventAnchor || getViewportAnchor();
   mutator();
   if (anchor) stabilizeViewportAnchor(anchor);
-};
-
-// 2. 统一的内部滚动函数，解决筛选栏被顶走的问题
-const _internalScrollTo = (eventId, behavior = 'smooth') => {
-  const idKey = normalizeEventId(eventId);
-  if (!idKey) return false;
-
-  const container = historyContainer.value;
-  const el = findEventElementInContainer(idKey);
-  if (!el || !container) return false;
-  if (container.clientHeight <= 0 || container.getClientRects().length === 0) return false;
-  cancelViewportStabilization();
-  setActiveEventItem(idKey);
-
-  // 获取筛选栏的高度作为偏移量
-  const filterBar = container.querySelector('.filter-bar');
-  const offset = filterBar ? filterBar.offsetHeight + 10 : 80;
-  const containerTop = container.getBoundingClientRect().top;
-  const elementTop = el.getBoundingClientRect().top;
-  const targetTop = Math.max(0, container.scrollTop + (elementTop - containerTop) - offset);
-  const correctionToken = scrollCorrectionToken + 1;
-  scrollCorrectionToken = correctionToken;
-  const correctTarget = () => {
-    if (correctionToken !== scrollCorrectionToken) return;
-    const targetEl = findEventElementInContainer(idKey);
-    if (!targetEl || !historyContainer.value) return;
-    const nextContainerTop = historyContainer.value.getBoundingClientRect().top;
-    const nextElementTop = targetEl.getBoundingClientRect().top;
-    const delta = nextElementTop - nextContainerTop - offset;
-    if (Math.abs(delta) > 3) {
-      historyContainer.value.scrollTop += delta;
-      historyScrollTop.value = historyContainer.value.scrollTop || 0;
-      try {
-        sessionStorage.setItem(HISTORY_SCROLL_KEY, String(historyScrollTop.value));
-      } catch (_) {}
-    }
-  };
-  const scheduleCorrections = () => {
-    if (behavior === 'smooth') {
-      setTimeout(correctTarget, 900);
-      setTimeout(correctTarget, 1400);
-      return;
-    }
-    requestAnimationFrame(() => {
-      requestAnimationFrame(correctTarget);
-    });
-    setTimeout(correctTarget, 260);
-  };
-
-  container.scrollTo({ top: targetTop, behavior });
-  suppressRestoreUntil.value = Date.now() + 1000;
-  historyScrollTop.value = targetTop;
-  try {
-    sessionStorage.setItem(HISTORY_SCROLL_KEY, String(targetTop));
-  } catch (_) {}
-  scheduleCorrections();
-  return true;
 };
 
 const setPredictEditorEvent = (event) => {
@@ -3046,15 +2991,15 @@ const clearActiveEventItem = () => {
 };
 
 const lastHandledJumpSeq = ref(0);
-const lastHandledJumpEventId = ref('');
 const pendingJumpSeq = ref(0);
 const queueJumpRequest = (seqValue, idValue) => {
   const seq = Number(seqValue || 0);
   if (!Number.isFinite(seq) || seq <= 0) return false;
   if (seq === lastHandledJumpSeq.value) return false;
 
-  const idKey = normalizeEventId(idValue);
+  const idKey = resolveJumpEventId(idValue);
   if (!idKey) return false;
+  if (pendingJumpSeq.value === seq && pendingJumpEventId.value === idKey) return false;
 
   pendingJumpEventId.value = idKey;
   pendingJumpSeq.value = seq;
@@ -4474,10 +4419,10 @@ watch(previewFloatingPanels, (panels) => {
 
 watch(() => [props.jumpEventSeq, props.jumpEventId], ([seqValue, idValue]) => {
   const queued = queueJumpRequest(seqValue, idValue);
-  if (!queued) return;
+  if (!queued || !isHistoryPageActive) return;
   nextTick(() => {
     requestAnimationFrame(() => {
-      consumePendingJump('auto', 30);
+      consumePendingJump('auto');
     });
   });
 }, { flush: 'post' });
@@ -5017,11 +4962,6 @@ const forceRenderEventNeighborhood = (eventId, options = {}) => {
   return addProgressiveEventRenderKeys(new Set(rows.slice(start, end).map((row) => row.key)));
 };
 
-const forceRenderAllEventRows = () => {
-  const keys = new Set(getProgressiveEventRows().map((row) => row.key));
-  addProgressiveEventRenderKeys(keys);
-};
-
 const cancelProgressiveEventRender = () => {
   if (progressiveRenderTimer) {
     clearTimeout(progressiveRenderTimer);
@@ -5119,7 +5059,7 @@ const markVisibleEventRowsHeavy = () => {
   if (anchor) viewportAnchor.value = anchor;
   if (addProgressiveEventRenderKeys(keys)) {
     nextTick(() => {
-      if (anchor) restoreViewportAnchor(anchor);
+      if (anchor && !historyNavigator.isNavigating()) restoreViewportAnchor(anchor);
     });
     if (!isProgressiveRenderPaused()) {
       scheduleProgressiveEventRender();
@@ -5209,9 +5149,8 @@ const relaxFiltersForJump = (eventId) => {
   if (!idKey) return;
   if (isEventVisibleInRows(idKey)) return;
 
-  if (hideCollabPools.value) {
-    hideCollabPools.value = false;
-  }
+  const event = (props.allEvents || []).find(event => normalizeEventId(event?.id) === idKey);
+  if (hideCollabPools.value && isCollabPoolEvent(event)) hideCollabPools.value = false;
 
   if (isJumpFilterActive()) {
     resetFilters();
@@ -5504,15 +5443,17 @@ const historyScrollTop = ref(0);
 const HISTORY_SCROLL_KEY = 'pjsk_history_scroll_top_v1';
 const viewportAnchor = ref({ id: '', top: 0 });
 const pendingJumpEventId = ref('');
-const suppressRestoreUntil = ref(0);
 const isCompactFilterBar = ref(false);
 const isBottomPredictEditorMode = ref(false);
 const isEditorFilterTight = ref(false);
 const isEditorFilterMobile = ref(false);
 const shouldApplyEditorHideRules = computed(() => isEditorOpen.value && !isBottomPredictEditorMode.value);
 let resizeRafId = 0;
-let jumpRetryTimer = 0;
-let scrollCorrectionToken = 0;
+let activeJumpRequest = null;
+const historyNavigator = createScrollNavigator({
+  getHost: () => historyContainer.value,
+  onPosition: () => saveHistoryScroll()
+});
 let filterAdaptRafId = 0;
 let filterAdaptFramesLeft = 0;
 let isHistoryPageActive = true;
@@ -5535,27 +5476,11 @@ const cancelViewportStabilization = () => {
 };
 
 const cancelScrollCorrections = () => {
-  scrollCorrectionToken += 1;
+  historyNavigator.cancel();
+  activeJumpRequest = null;
+  pendingJumpEventId.value = '';
+  pendingJumpSeq.value = 0;
   cancelViewportStabilization();
-};
-
-const scheduleBoundaryScrollCorrection = (getTargetTop) => {
-  const correctionToken = scrollCorrectionToken;
-  const correct = () => {
-    if (correctionToken !== scrollCorrectionToken) return;
-    const container = historyContainer.value;
-    if (!container) return;
-    const nextTop = Math.max(0, getTargetTop(container));
-    container.scrollTop = nextTop;
-    historyScrollTop.value = nextTop;
-    try {
-      sessionStorage.setItem(HISTORY_SCROLL_KEY, String(nextTop));
-    } catch (_) {}
-  };
-
-  setTimeout(correct, 360);
-  setTimeout(correct, 900);
-  setTimeout(correct, 1500);
 };
 
 const cancelActivationRestore = () => {
@@ -5677,7 +5602,7 @@ const saveHistoryScroll = ({ force = false, requireVisible = false } = {}) => {
 
 const handleHistoryScroll = () => {
   if (!isHistoryPageActive) return;
-  if (isViewportStabilizing) {
+  if (isViewportStabilizing || historyNavigator.isNavigating()) {
     saveHistoryScroll();
     return;
   }
@@ -5811,6 +5736,15 @@ const handleHistoryManualScrollIntent = () => {
   pauseProgressiveRenderForManualScroll();
 };
 
+const handleHistoryPointerIntent = () => {
+  cancelActivationRestore();
+  cancelScrollCorrections();
+};
+
+const handleHistoryKeydown = event => {
+  if (isHistoryPageActive && isScrollKeyIntent(event)) handleHistoryManualScrollIntent();
+};
+
 const restoreViewportAnchor = (anchorOverride = null) => {
   const container = historyContainer.value;
   const anchor = anchorOverride || viewportAnchor.value;
@@ -5872,7 +5806,6 @@ const stabilizeViewportAnchor = (anchor, { frames = 18, delays = [240, 520] } = 
 const restoreHistoryPositionAfterActivation = () => {
   if (pendingJumpEventId.value) return false;
   if (hasUnhandledJumpFromProps()) return false;
-  if (Date.now() < suppressRestoreUntil.value) return false;
   cancelActivationRestore();
   const restoreToken = activationRestoreToken + 1;
   activationRestoreToken = restoreToken;
@@ -5933,20 +5866,6 @@ const toggleBirthdayRowsVisibility = () => toggleVisibilityWithViewportAnchor(hi
 const togglePreviewRowsVisibility = () => toggleVisibilityWithViewportAnchor(hidePreviewRows);
 const toggleCollabPoolsVisibility = () => toggleVisibilityWithViewportAnchor(hideCollabPools);
 
-const schedulePendingJumpAfterRender = (behavior = 'auto', retry = 8) => {
-  if (jumpRetryTimer) clearTimeout(jumpRetryTimer);
-  jumpRetryTimer = window.setTimeout(() => {
-    jumpRetryTimer = 0;
-    nextTick(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          consumePendingJump(behavior, retry);
-        });
-      });
-    });
-  }, 0);
-};
-
 const handleWindowResize = () => {
   if (resizeRafId) cancelAnimationFrame(resizeRafId);
   resizeRafId = requestAnimationFrame(() => {
@@ -5955,7 +5874,7 @@ const handleWindowResize = () => {
       previewConfigPanelPos.value = clampPreviewConfigPanelPos(previewConfigPanelPos.value.x, previewConfigPanelPos.value.y);
     }
     updatePreviewConfigOffset();
-    restoreViewportAnchor();
+    if (!historyNavigator.isNavigating()) restoreViewportAnchor();
     Object.keys(previewPanelState.value).forEach((panelId) => clampPreviewPanelPosition(panelId));
     resizeRafId = 0;
   });
@@ -5970,64 +5889,58 @@ watch([showFilter, isEditorOpen], () => {
   });
 }, { flush: 'post' });
 
-const consumePendingJump = (behavior = 'auto', retry = 8) => {
-  const idKey = pendingJumpEventId.value;
-  if (!idKey) return false;
+// Canonical IDs are shared by DOM anchors and cross-page links. Initial
+// cards use EventID 0 in the card source, but the history row is named ori.
+const resolveJumpEventId = (eventId) => {
+  const key = normalizeEventId(eventId);
+  const canonical = key === '0' ? 'ori' : key;
+  return (props.allEvents || []).some(event => normalizeEventId(event?.id) === canonical) ? canonical : '';
+};
 
-  relaxFiltersForJump(idKey);
-
-  const changedRenderKeys = forceRenderEventNeighborhood(idKey);
-  if (changedRenderKeys && retry > 0) {
-    schedulePendingJumpAfterRender(behavior, retry - 1);
-    return false;
+const consumePendingJump = (behavior = 'auto') => {
+  const idKey = resolveJumpEventId(pendingJumpEventId.value);
+  if (!idKey || !isHistoryPageActive || !isHistoryContainerVisible()) return false;
+  if (activeJumpRequest?.id === idKey && activeJumpRequest.seq === pendingJumpSeq.value) return true;
+  const seq = pendingJumpSeq.value;
+  cancelActivationRestore();
+  cancelScrollCorrections();
+  pendingJumpEventId.value = idKey;
+  pendingJumpSeq.value = seq;
+  const request = { id: idKey, seq };
+  activeJumpRequest = request;
+  // A consumed prop must never resurrect after the user supersedes this jump.
+  if (seq > 0) {
+    lastHandledJumpSeq.value = seq;
   }
-
-  const ok = _internalScrollTo(idKey, behavior);
-  if (ok) {
-    if (pendingJumpSeq.value > 0) {
-      lastHandledJumpSeq.value = pendingJumpSeq.value;
-      lastHandledJumpEventId.value = idKey;
-    }
+  void historyNavigator.navigate({
+    target: () => findEventElementInContainer(idKey),
+    offset: () => (filterStickyRef.value?.getBoundingClientRect().height || 0) + 10,
+    behavior,
+    prepare: async () => {
+      relaxFiltersForJump(idKey);
+      showFilter.value = false;
+      setActiveEventItem(idKey);
+      forceRenderEventNeighborhood(idKey);
+      await nextTick();
+    },
+    isLayoutReady: () => !progressiveRenderTimer && !progressiveVisibleRaf
+  }).then(() => {
+    if (activeJumpRequest !== request) return;
+    activeJumpRequest = null;
     pendingJumpEventId.value = '';
     pendingJumpSeq.value = 0;
-    if (jumpRetryTimer) {
-      clearTimeout(jumpRetryTimer);
-      jumpRetryTimer = 0;
-    }
-    return true;
-  }
-
-  if (retry > 0) {
-    if (jumpRetryTimer) clearTimeout(jumpRetryTimer);
-    jumpRetryTimer = setTimeout(() => {
-      consumePendingJump(behavior, retry - 1);
-    }, 80);
-  }
-  return false;
+    updateViewportAnchor();
+    saveHistoryScroll();
+  });
+  return true;
 };
 
 const jumpToEventById = (eventId, behavior = 'auto') => {
-  const idKey = normalizeEventId(eventId);
-  if (!idKey) return false;
-  const seq = Number(props.jumpEventSeq || 0);
-  if (Number.isFinite(seq) && seq > 0 && seq === lastHandledJumpSeq.value && idKey === lastHandledJumpEventId.value) {
-    return true;
-  }
-  pendingJumpEventId.value = idKey;
-  if (Number.isFinite(seq) && seq > 0) {
-    pendingJumpSeq.value = seq;
-  } else if (pendingJumpSeq.value <= 0) {
-    pendingJumpSeq.value = 0;
-  }
-  return consumePendingJump(behavior, 30);
-};
-
-const scrollToEventById = (eventId, behavior = 'auto', retry = 24) => {
-  const idKey = normalizeEventId(eventId);
+  const idKey = resolveJumpEventId(eventId);
   if (!idKey) return false;
   pendingJumpEventId.value = idKey;
   pendingJumpSeq.value = 0;
-  return consumePendingJump(behavior, retry);
+  return consumePendingJump(behavior);
 };
 
 const sanitizeExportBaseName = (name) => {
@@ -6717,11 +6630,10 @@ const isReloadNavigation = () => {
   }
 };
 
-const restoreHistoryScroll = (restoreToken = null) => {
+const restoreHistoryScroll = (restoreToken = activationRestoreToken) => {
   const container = historyContainer.value;
   if (!container) return false;
   if (pendingJumpEventId.value) return false;
-  if (Date.now() < suppressRestoreUntil.value) return false;
 
   let targetTop = historyScrollTop.value;
   if (!Number.isFinite(targetTop) || targetTop <= 0) {
@@ -6736,10 +6648,10 @@ const restoreHistoryScroll = (restoreToken = null) => {
   container.scrollTop = targetTop;
   historyScrollTop.value = targetTop;
   requestAnimationFrame(() => {
-    if (restoreToken !== null && restoreToken !== activationRestoreToken) return;
+    if (restoreToken !== activationRestoreToken || historyNavigator.isNavigating()) return;
     container.scrollTop = targetTop;
     requestAnimationFrame(() => {
-      if (restoreToken !== null && restoreToken !== activationRestoreToken) return;
+      if (restoreToken !== activationRestoreToken || historyNavigator.isNavigating()) return;
       container.scrollTop = targetTop;
     });
   });
@@ -6787,7 +6699,7 @@ onMounted(() => {
   nextTick(() => {
     queueJumpFromProps();
     if (pendingJumpEventId.value) {
-      consumePendingJump('auto', 20);
+      consumePendingJump('auto');
     } else if (!consumePendingJump('auto')) {
       restoreHistoryScroll();
       saveHistoryScroll();
@@ -6811,10 +6723,6 @@ onDeactivated(() => {
   cancelProgressiveEventRender();
   pendingJumpEventId.value = '';
   pendingJumpSeq.value = 0;
-  if (jumpRetryTimer) {
-    clearTimeout(jumpRetryTimer);
-    jumpRetryTimer = 0;
-  }
   if (resizeRafId) {
     cancelAnimationFrame(resizeRafId);
     resizeRafId = 0;
@@ -6840,6 +6748,7 @@ onDeactivated(() => {
   window.removeEventListener('touchcancel', stopResizePreview);
   window.removeEventListener('resize', handleWindowResize);
   document.removeEventListener('pointerdown', handleTooltipGlobalPointerDown, true);
+  document.removeEventListener('keydown', handleHistoryKeydown);
 });
 
 onActivated(() => {
@@ -6848,12 +6757,11 @@ onActivated(() => {
   queueJumpFromProps();
   if (pendingJumpEventId.value || hasUnhandledJumpFromProps()) {
     cancelActivationRestore();
-    suppressRestoreUntil.value = Date.now() + 1400;
-    if (!consumePendingJump('auto', 20)) {
+    if (!consumePendingJump('auto')) {
       nextTick(() => {
         requestAnimationFrame(() => {
           queueJumpFromProps();
-          consumePendingJump('auto', 20);
+          consumePendingJump('auto');
           updatePreviewConfigOffset();
         });
       });
@@ -6862,7 +6770,7 @@ onActivated(() => {
   nextTick(() => {
     queueJumpFromProps();
     if (pendingJumpEventId.value) {
-      consumePendingJump('auto', 20);
+      consumePendingJump('auto');
     } else if (!consumePendingJump('auto')) {
       restoreHistoryPositionAfterActivation();
     }
@@ -6885,6 +6793,7 @@ onActivated(() => {
   window.addEventListener('touchcancel', stopResizePreview);
   window.addEventListener('resize', handleWindowResize);
   document.addEventListener('pointerdown', handleTooltipGlobalPointerDown, true);
+  document.addEventListener('keydown', handleHistoryKeydown);
 });
 
 onBeforeUnmount(() => {
@@ -6905,10 +6814,6 @@ onBeforeUnmount(() => {
   cancelActivationRestore();
   cancelScrollCorrections();
   cancelProgressiveEventRender();
-  if (jumpRetryTimer) {
-    clearTimeout(jumpRetryTimer);
-    jumpRetryTimer = 0;
-  }
   if (resizeRafId) {
     cancelAnimationFrame(resizeRafId);
     resizeRafId = 0;
@@ -6934,68 +6839,36 @@ onBeforeUnmount(() => {
   window.removeEventListener('touchcancel', stopResizePreview);
   window.removeEventListener('resize', handleWindowResize);
   document.removeEventListener('pointerdown', handleTooltipGlobalPointerDown, true);
+  document.removeEventListener('keydown', handleHistoryKeydown);
 });
 
-// 滚动逻辑优化
+// Boundaries and event links use the same cancellable navigation owner.
 const scrollTo = (target) => {
-  const container = historyContainer.value;
-  if (!container) return;
-
-  if (target === 'top') {
-    cancelScrollCorrections();
-    clearActiveEventItem();
-    container.scrollTo({ top: 0, behavior: 'smooth' });
-    historyScrollTop.value = 0;
-    try {
-      sessionStorage.setItem(HISTORY_SCROLL_KEY, '0');
-    } catch (_) {}
-    scheduleBoundaryScrollCorrection(() => 0);
-  } else if (target === 'bottom') {
-    cancelScrollCorrections();
-    clearActiveEventItem();
-    const bottomTop = Math.max(0, container.scrollHeight - container.clientHeight);
-    container.scrollTo({ top: bottomTop, behavior: 'smooth' });
-    historyScrollTop.value = bottomTop;
-    try {
-      sessionStorage.setItem(HISTORY_SCROLL_KEY, String(bottomTop));
-    } catch (_) {}
-    scheduleBoundaryScrollCorrection((targetContainer) => targetContainer.scrollHeight - targetContainer.clientHeight);
-  } else if (target === 'current') {
-    cancelScrollCorrections();
-    container.scrollTo({ top: container.scrollTop, behavior: 'auto' });
-    const now = spoilerNow.value;
-    const pickLatestStartedEvent = (candidates) => {
-      if (!candidates.length) return null;
-      return candidates.reduce((prev, curr) => {
-        const prevTime = getDateValue(prev?.start_date);
-        const currTime = getDateValue(curr?.start_date);
-        if (prevTime !== currTime) return currTime > prevTime ? curr : prev;
-        return Number(curr.id) > Number(prev.id) ? curr : prev;
-      });
-    };
-    const actualCurrentEvent = pickLatestStartedEvent((props.allEvents || []).filter(ev => {
-      if (!isNumericEventId(ev?.id)) return false;
-      return isEventStarted(ev, now);
-    }));
-    const candidates = displayRows.value
-      .filter((row) => row.kind === 'event')
-      .map((row) => row.event)
-      .filter((ev) => {
-        if (!isNumericEventId(ev?.id)) return false;
-        return isEventStarted(ev, now);
-      });
-
-    if (candidates.length > 0) {
-      const currentEvent = pickLatestStartedEvent(candidates);
-      const isActualCurrentVisible = normalizeEventId(currentEvent?.id) === normalizeEventId(actualCurrentEvent?.id);
-      scrollToEventById(currentEvent.id, 'auto', 24);
-      if (!isActualCurrentVisible) {
-        clearActiveEventItem();
-        requestAnimationFrame(clearActiveEventItem);
-        setTimeout(clearActiveEventItem, 120);
-      }
-    }
+  if (!historyContainer.value) return;
+  if (target === 'current') {
+    const current = getCurrentEvent();
+    if (current) jumpToEventById(current.id);
+    return;
   }
+  if (target !== 'top' && target !== 'bottom') return;
+  cancelActivationRestore();
+  cancelScrollCorrections();
+  clearActiveEventItem();
+  void historyNavigator.navigate({
+    target,
+    prepare: async () => {
+      const rows = getProgressiveEventRows();
+      const boundary = target === 'top' ? rows[0] : rows.at(-1);
+      if (boundary) forceRenderEventNeighborhood(boundary.event.id);
+      await nextTick();
+    },
+    isLayoutReady: () => !progressiveRenderTimer && !progressiveVisibleRaf
+  }).then(ok => {
+    if (ok) {
+      updateViewportAnchor();
+      saveHistoryScroll();
+    }
+  });
 };
 
 const FALLBACK_UNIT_COLORS = {

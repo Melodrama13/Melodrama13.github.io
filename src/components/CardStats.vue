@@ -82,6 +82,7 @@
                   class="nav-link nav-link-main"
                   :class="{ active: isGroupActive(group) }"
                   :title="group.title"
+                  :data-nav-target="group.id"
                   @click="handleParentNavClick(group)"
                 >
                   {{ group.title }}
@@ -93,6 +94,7 @@
                     class="nav-link nav-link-sub"
                     :class="{ active: activeNavId === item.id }"
                     :title="item.title"
+                  :data-nav-target="item.id"
                     @click="handleChildNavClick(group, item)"
                   >
                     {{ item.title }}
@@ -728,7 +730,7 @@
                       <span v-else class="score-empty">-</span>
                     </td>
                     <td>
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)" :data-event-id="row.eventRef?.id">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
                     </td>
                     <td>{{ row.date }}</td>
                     <td>{{ row.months }}个月 | {{ row.periods }}期</td>
@@ -800,7 +802,7 @@
                       <span v-else class="score-empty">-</span>
                     </td>
                     <td>
-                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
+                      <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.eventRef)" :data-event-id="row.eventRef?.id">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
                     </td>
                     <td>{{ row.date }}</td>
                     <td>{{ row.months }}个月 | {{ row.periods }}期</td>
@@ -894,15 +896,15 @@
                     <td class="range-cell" :class="{ 'is-card-mode': intervalFourShowCardImages }">
                       <template v-if="intervalFourShowCardImages">
                         <div class="interval-jump-column">
-                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)" :data-event-id="row.longest?.startRef?.id">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
                           <span class="interval-stack-arrow">↓</span>
-                          <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                          <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)" :data-event-id="row.longest?.endRef?.id">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
                         </div>
                       </template>
                       <template v-else>
-                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)" :data-event-id="row.longest?.startRef?.id">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
                         <span>→</span>
-                        <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                        <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)" :data-event-id="row.longest?.endRef?.id">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
                       </template>
                     </td>
                     <td>{{ formatGapValue(row.longest) }}</td>
@@ -996,15 +998,15 @@
                     <td class="range-cell" :class="{ 'is-card-mode': intervalFourShowCardImages }">
                       <template v-if="intervalFourShowCardImages">
                         <div class="interval-jump-column">
-                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)" :data-event-id="row.shortest?.startRef?.id">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
                           <span class="interval-stack-arrow">↓</span>
-                          <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                          <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)" :data-event-id="row.shortest?.endRef?.id">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
                         </div>
                       </template>
                       <template v-else>
-                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)" :data-event-id="row.shortest?.startRef?.id">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
                         <span>→</span>
-                        <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                        <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)" :data-event-id="row.shortest?.endRef?.id">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
                       </template>
                     </td>
                     <td>{{ formatGapValue(row.shortest) }}</td>
@@ -1106,15 +1108,15 @@
                     <td class="range-cell" :class="{ 'is-card-mode': intervalLimitedShowCardImages }">
                       <template v-if="intervalLimitedShowCardImages">
                         <div class="interval-jump-column">
-                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)" :data-event-id="row.longest?.startRef?.id">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
                           <span class="interval-stack-arrow">↓</span>
-                          <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                          <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)" :data-event-id="row.longest?.endRef?.id">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
                         </div>
                       </template>
                       <template v-else>
-                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)" :data-event-id="row.longest?.startRef?.id">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
                         <span>→</span>
-                        <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                        <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)" :data-event-id="row.longest?.endRef?.id">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
                       </template>
                     </td>
                     <td>{{ formatGapValue(row.longest) }}</td>
@@ -1216,15 +1218,15 @@
                     <td class="range-cell" :class="{ 'is-card-mode': intervalLimitedShowCardImages }">
                       <template v-if="intervalLimitedShowCardImages">
                         <div class="interval-jump-column">
-                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)" :data-event-id="row.shortest?.startRef?.id">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
                           <span class="interval-stack-arrow">↓</span>
-                          <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                          <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)" :data-event-id="row.shortest?.endRef?.id">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
                         </div>
                       </template>
                       <template v-else>
-                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)" :data-event-id="row.shortest?.startRef?.id">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
                         <span>→</span>
-                        <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                        <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)" :data-event-id="row.shortest?.endRef?.id">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
                       </template>
                     </td>
                     <td>{{ formatGapValue(row.shortest) }}</td>
@@ -1336,15 +1338,15 @@
                     <td class="range-cell" :class="{ 'is-card-mode': intervalBanShowCardImages }">
                       <template v-if="intervalBanShowCardImages">
                         <div class="interval-jump-column">
-                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)" :data-event-id="row.longest?.startRef?.id">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
                           <span class="interval-stack-arrow">↓</span>
-                          <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                          <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)" :data-event-id="row.longest?.endRef?.id">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
                         </div>
                       </template>
                       <template v-else>
-                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.longest?.startRef)" :data-event-id="row.longest?.startRef?.id">{{ getJumpLinkLabel(row.longest?.startRef, row.longest?.startMark || '-') }}</button>
                         <span>→</span>
-                        <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
+                        <button class="jump-link" :disabled="!row.longest?.endRef" @click.stop="jumpToHistoryByEventRef(row.longest?.endRef)" :data-event-id="row.longest?.endRef?.id">{{ getJumpLinkLabel(row.longest?.endRef, row.longest?.endMark || '-') }}</button>
                       </template>
                     </td>
                     <td>{{ formatGapValue(row.longest) }}</td>
@@ -1456,15 +1458,15 @@
                     <td class="range-cell" :class="{ 'is-card-mode': intervalBanShowCardImages }">
                       <template v-if="intervalBanShowCardImages">
                         <div class="interval-jump-column">
-                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                          <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)" :data-event-id="row.shortest?.startRef?.id">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
                           <span class="interval-stack-arrow">↓</span>
-                          <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                          <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)" :data-event-id="row.shortest?.endRef?.id">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
                         </div>
                       </template>
                       <template v-else>
-                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
+                        <button class="jump-link" @click.stop="jumpToHistoryByEventRef(row.shortest?.startRef)" :data-event-id="row.shortest?.startRef?.id">{{ getJumpLinkLabel(row.shortest?.startRef, row.shortest?.startMark || '-') }}</button>
                         <span>→</span>
-                        <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
+                        <button class="jump-link" :disabled="!row.shortest?.endRef" @click.stop="jumpToHistoryByEventRef(row.shortest?.endRef)" :data-event-id="row.shortest?.endRef?.id">{{ getJumpLinkLabel(row.shortest?.endRef, row.shortest?.endMark || '-') }}</button>
                       </template>
                     </td>
                     <td>{{ formatGapValue(row.shortest) }}</td>
@@ -1667,13 +1669,13 @@
                           <template v-if="unitRow.showCardImages">
                             <td class="duo-last-event-date-cell">
                               <div class="duo-last-info-stack">
-                                <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
+                                <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)" :data-event-id="row.eventRef?.id">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
                                 <span class="duo-last-date-text">{{ row.date }}</span>
                               </div>
                             </td>
                             <td class="duo-last-info-cell">
                               <div class="duo-last-info-stack">
-                                <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
+                                <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)" :data-event-id="row.eventRef?.id">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
                                 <span class="duo-last-date-text">{{ row.date }}</span>
                                 <span class="duo-last-gap-text">{{ row.gapText }}</span>
                               </div>
@@ -1682,7 +1684,7 @@
                           </template>
                           <template v-else>
                             <td>
-                            <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
+                            <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)" :data-event-id="row.eventRef?.id">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
                             </td>
                             <td>{{ row.date }}</td>
                             <td>{{ row.gapText }}</td>
@@ -1910,7 +1912,7 @@
                       <span v-else class="score-empty">-</span>
                     </td>
                     <td>
-                      <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
+                      <button class="jump-link" :disabled="!row.eventRef" @click.stop="jumpToHistoryByEventRef(row.eventRef)" :data-event-id="row.eventRef?.id">{{ getJumpLinkLabel(row.eventRef, row.eventLabel) }}</button>
                     </td>
                     <td>{{ row.date }}</td>
                     <td>{{ row.days }}天 | {{ row.periods }}期</td>
@@ -2651,7 +2653,7 @@
                     </template>
                     <template v-else>
                       <div class="lineup-member-score">{{ slot.score }}</div>
-                      <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                      <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)" :data-event-id="slot.eventRef?.id">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
                     </template>
                   </template>
                   <span v-else class="lineup-empty">-</span>
@@ -2695,7 +2697,7 @@
                       </template>
                       <template v-else>
                         <div class="lineup-member-score">{{ slot.score }}</div>
-                        <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                        <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)" :data-event-id="slot.eventRef?.id">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
                       </template>
                     </template>
                     <span v-else class="lineup-empty">-</span>
@@ -2796,7 +2798,7 @@
                         :alt="ATTR_LABELS[slot.attr]"
                       />
                       <div class="lineup-member-score">{{ slot.score }}</div>
-                      <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
+                      <button class="jump-link lineup-jump" :disabled="!slot.eventRef" @click.stop="jumpToHistoryByEventRef(slot.eventRef)" :data-event-id="slot.eventRef?.id">{{ getJumpLinkLabel(slot.eventRef, slot.eventLabel) }}</button>
                     </template>
                   </template>
                   <span v-else class="lineup-empty">-</span>
@@ -4526,7 +4528,7 @@ const pickActiveNavTargetIdByViewport = () => {
 };
 
 const syncActiveNavByViewport = () => {
-  if (viewportPreserveLock > 0) return;
+  if (viewportPreserveLock > 0 || isStatsNavigationPending()) return;
   try {
     const nextId = pickActiveNavTargetIdByViewport();
     if (nextId && activeNavId.value !== nextId) {
@@ -4883,6 +4885,7 @@ const updateMobileNavState = () => {
 };
 
 const {
+  isNavigating: isStatsNavigationPending,
   isGroupActive,
   isGroupExpanded,
   resetMobileNavGroupExpansion,

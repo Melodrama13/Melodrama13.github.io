@@ -499,6 +499,7 @@
 
 <script setup>
 import { ref, shallowRef, computed, provide, onMounted, onBeforeUnmount, watch, nextTick, h, defineAsyncComponent } from 'vue';
+import { createScrollNavigator } from './composables/scrollNavigation.js';
 import LiquidGlassFilters from './components/ui/LiquidGlassFilters.vue';
 import {
   collectSmallStaticImageUrls,
@@ -966,24 +967,6 @@ const handlePreviewSyncEventId = (eventId) => {
   previewSyncEventId.value = Number.isFinite(n) && n > 0 ? n : null;
 };
 
-const requestHistoryJump = (eventId, retry = 18) => {
-  const instance = tabComponentRef.value;
-  const jumpFn = instance && typeof instance.jumpToEventById === 'function'
-    ? instance.jumpToEventById
-    : null;
-
-  if (jumpFn) {
-    const ok = jumpFn(eventId, 'auto');
-    if (ok) return;
-  }
-
-  if (retry > 0) {
-    setTimeout(() => {
-      requestHistoryJump(eventId, retry - 1);
-    }, 80);
-  }
-};
-
 const getStatsTabInstance = () => {
   if (currentTab.value !== 'stats') return null;
   return tabComponentRef.value;
@@ -1077,10 +1060,8 @@ const handleContentScroll = () => {
   saveSongsScroll();
 };
 
-const scrollContentToTop = () => {
-  if (!contentAreaRef.value) return;
-  contentAreaRef.value.scrollTo({ top: 0, behavior: 'smooth' });
-};
+const contentNavigator = createScrollNavigator({ getHost: () => contentAreaRef.value });
+const scrollContentToTop = () => contentNavigator.navigate({ target: 'top' });
 
 const setCurrentTab = (tab) => {
   if (!Object.prototype.hasOwnProperty.call(tabs, tab)) return;
@@ -1210,7 +1191,7 @@ const openSpecialPredictGenerator = () => {
   setCurrentTab('specialPredict');
 };
 
-const handleStatsJumpToEvent = async (eventId) => {
+const handleStatsJumpToEvent = (eventId) => {
   const id = String(eventId ?? '').trim();
   if (!id) return;
 
@@ -1218,16 +1199,16 @@ const handleStatsJumpToEvent = async (eventId) => {
   historyJumpEventId.value = id;
   historyJumpSeq.value += 1;
   setCurrentTab('history');
-  await nextTick();
-  requestHistoryJump(id);
 };
 
 watch(currentTab, async (nextTab, prevTab) => {
+  contentNavigator.cancel();
   if (nextTab !== 'history') {
     sourceMenuOpen.value = false;
   }
   if (nextTab === 'stats') {
     await nextTick();
+    if (currentTab.value !== nextTab) return;
     if (contentAreaRef.value) {
       contentAreaRef.value.scrollTop = statsScrollTop.value;
     }
@@ -1236,6 +1217,7 @@ watch(currentTab, async (nextTab, prevTab) => {
   }
   if (nextTab === 'songs') {
     await nextTick();
+    if (currentTab.value !== nextTab) return;
     if (contentAreaRef.value) {
       contentAreaRef.value.scrollTop = songsScrollTop.value;
     }
@@ -3289,6 +3271,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  contentNavigator.cancel();
   desktopTabResizeObserver?.disconnect();
   desktopTabResizeObserver = null;
   if (statsTopControlSyncRaf) {
