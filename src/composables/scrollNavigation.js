@@ -1,6 +1,8 @@
 // Every scroll host has one owner. A new request supersedes both an animation
 // and any layout correction still belonging to the previous request.
 const hostRequests = new WeakMap();
+export const isScrollNavigationActive = host => hostRequests.has(host);
+export const SCROLL_NAVIGATION_CHANGE = 'pjsk-scroll-navigation-change';
 const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 
 export const isScrollKeyIntent = event => SCROLL_KEYS.has(event.key)
@@ -36,8 +38,11 @@ export const createScrollNavigator = ({ getHost, onPosition = () => {} }) => {
           if (!ok && host.isConnected) host.scrollTo({ top: host.scrollTop, behavior: 'instant' });
           for (const type of ['wheel', 'touchstart', 'pointerdown']) host.removeEventListener(type, onIntent);
           document.removeEventListener('keydown', onKey);
-          if (hostRequests.get(host) === request) hostRequests.delete(host);
           if (current === request) current = null;
+          if (hostRequests.get(host) === request) {
+            hostRequests.delete(host);
+            host.dispatchEvent(new Event(SCROLL_NAVIGATION_CHANGE));
+          }
           if (ok) onPosition(host.scrollTop);
           resolve(ok);
         }
@@ -46,6 +51,9 @@ export const createScrollNavigator = ({ getHost, onPosition = () => {} }) => {
       hostRequests.set(host, request);
       for (const type of ['wheel', 'touchstart', 'pointerdown']) host.addEventListener(type, onIntent, { passive: true });
       document.addEventListener('keydown', onKey);
+      // Hand focus ownership over synchronously; native scroll events can
+      // arrive after this navigation has already reached its destination.
+      host.dispatchEvent(new Event(SCROLL_NAVIGATION_CHANGE));
 
       const measure = () => {
         if (!host.isConnected || host.clientHeight <= 0 || !host.getClientRects().length) return null;

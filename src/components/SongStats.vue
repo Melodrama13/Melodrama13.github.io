@@ -1538,6 +1538,7 @@
 </template>
 
 <script setup>
+import { useViewportFocus } from '../composables/useViewportFocus.js';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toCanvas } from 'html-to-image';
 import { toHiragana, toRomaji } from 'wanakana';
@@ -1558,7 +1559,6 @@ import {
 } from '../utils/songCapturePolicy.js';
 import { UI_BREAKPOINTS, isViewportAbove, isViewportAtMost } from '../ui/breakpoints.js';
 import {
-  clampHostScrollTop,
   createStatsNavigationHandlers,
   getDefaultScrollContainer
 } from '../composables/useStatsNavigation';
@@ -1621,9 +1621,7 @@ let duoNameRaf = 0;
 let duoPairGridRaf = 0;
 let duoPairGridResizeObserver = null;
 let songTableResizeObserver = null;
-let resizeViewportRaf = 0;
 let viewportScrollHost = null;
-let lastViewportAnchorSnapshot = null;
 let songImageTitleToastTimer = 0;
 let screenshotModalAutoCloseTimer = 0;
 let navSyncRaf = 0;
@@ -2190,7 +2188,7 @@ const scheduleNavSync = () => {
 const SCROLL_SNAPSHOT_ANCHOR_SELECTOR = '[data-scroll-anchor]';
 
 const getAnchorNodesInStatsMain = () => {
-  const statsMain = document.querySelector('.stats-main');
+  const statsMain = songStatsRootRef.value?.querySelector('.stats-main');
   if (!(statsMain instanceof HTMLElement)) return [];
   return Array.from(statsMain.querySelectorAll(SCROLL_SNAPSHOT_ANCHOR_SELECTOR)).filter((el) => el instanceof HTMLElement);
 };
@@ -2205,189 +2203,30 @@ const findAnchorElementByKey = (key) => {
   return null;
 };
 
-const getViewportCenterAnchorElement = (host) => {
-  if (!(host instanceof HTMLElement)) return null;
-  const hostRect = host.getBoundingClientRect();
-  if (hostRect.width <= 2 || hostRect.height <= 2) return null;
+const viewportFocus = useViewportFocus({
+  getHost: getScrollContainer,
+  getRoot: () => songStatsRootRef.value?.querySelector('.stats-main'),
+  onRestore: scheduleNavSync
+});
 
-  const nodes = getAnchorNodesInStatsMain();
-  const topEdge = hostRect.top + 24;
-  for (const node of nodes) {
-    const rect = node.getBoundingClientRect();
-    if (rect.width <= 1 || rect.height <= 1) continue;
-    if (rect.bottom <= topEdge || rect.top >= hostRect.bottom) continue;
-    return node;
-  }
-  return null;
-};
-
-const snapshotViewportAnchor = () => {
-  const host = getScrollContainer();
-  const hostRect = host.getBoundingClientRect();
-  const centerAnchorEl = getViewportCenterAnchorElement(host);
-  const anchorEl = centerAnchorEl;
-  const anchorRect = anchorEl ? anchorEl.getBoundingClientRect() : null;
-  const anchorTop = anchorRect ? (anchorRect.top - hostRect.top) : 0;
-  return {
-    anchorEl,
-    anchorKey: anchorEl?.dataset?.scrollAnchor || '',
-    hasAnchor: !!anchorEl,
-    anchorTop,
-    scrollTop: host.scrollTop
-  };
-};
-
-const restoreViewportAnchor = (snapshot) => {
-  if (!snapshot) return;
-  const host = getScrollContainer();
-  const hostRect = host.getBoundingClientRect();
-  const clampTop = (top) => {
-    const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
-    return Math.max(0, Math.min(maxTop, top));
-  };
-  const connectedSnapshotAnchor = snapshot.anchorEl instanceof HTMLElement && snapshot.anchorEl.isConnected
-    ? snapshot.anchorEl
-    : null;
-  const anchorEl = connectedSnapshotAnchor || findAnchorElementByKey(snapshot.anchorKey);
-  if (snapshot.hasAnchor && anchorEl) {
-    const afterRect = anchorEl.getBoundingClientRect();
-    const afterTop = afterRect.top - hostRect.top;
-    const nextTop = snapshot.scrollTop + (afterTop - snapshot.anchorTop);
-    host.scrollTop = clampTop(nextTop);
-    return;
-  }
-  // Keep absolute top when no anchor is available to avoid height-ratio jumps.
-  host.scrollTop = clampTop(snapshot.scrollTop);
-};
-
-const rememberViewportAnchor = () => {
-  lastViewportAnchorSnapshot = snapshotViewportAnchor();
-};
-
-const handleViewportScroll = () => {
-  rememberViewportAnchor();
-  scheduleNavSync();
-};
+const handleViewportScroll = () => scheduleNavSync();
 
 const bindViewportScrollTracking = () => {
   const host = getScrollContainer();
-  if (viewportScrollHost && viewportScrollHost !== host) {
-    viewportScrollHost.removeEventListener('scroll', handleViewportScroll);
-  }
+  if (viewportScrollHost && viewportScrollHost !== host) viewportScrollHost.removeEventListener('scroll', handleViewportScroll);
   viewportScrollHost = host;
-  viewportScrollHost.addEventListener('scroll', handleViewportScroll, { passive: true });
+  host.addEventListener('scroll', handleViewportScroll, { passive: true });
 };
 
 const handleWindowResize = () => {
-  const snapshot = snapshotViewportAnchor();
-  if (resizeViewportRaf) cancelAnimationFrame(resizeViewportRaf);
-  resizeViewportRaf = requestAnimationFrame(() => {
-    resizeViewportRaf = 0;
-    updateMobileNavState();
-    void (async () => {
-      await nextTick();
-      await waitNextPaint();
-      updateAnvoFillContentWidth();
-      restoreViewportAnchor(snapshot);
-      rememberViewportAnchor();
-      scheduleNavSync();
-    })();
+  updateMobileNavState();
+  void nextTick().then(() => {
+    updateAnvoFillContentWidth();
+    scheduleNavSync();
   });
 };
 
-const withPinnedElementPosition = async (targetEl, applyChange) => {
-  const snapshot = snapshotViewportAnchor();
-  const pinnedEl = targetEl instanceof HTMLElement ? targetEl : null;
-  const beforeHost = getScrollContainer();
-  const beforeHostRect = beforeHost.getBoundingClientRect();
-  const pinnedTop = pinnedEl
-    ? (pinnedEl.getBoundingClientRect().top - beforeHostRect.top)
-    : null;
-
-  const restoreByPinnedElement = () => {
-    if (!(pinnedEl instanceof HTMLElement) || !pinnedEl.isConnected || !Number.isFinite(pinnedTop)) {
-      return false;
-    }
-    const host = getScrollContainer();
-    const hostRect = host.getBoundingClientRect();
-    const afterTop = pinnedEl.getBoundingClientRect().top - hostRect.top;
-    const nextTop = host.scrollTop + (afterTop - pinnedTop);
-    host.scrollTop = clampHostScrollTop(host, nextTop);
-    return true;
-  };
-
-  applyChange();
-  await nextTick();
-  const restored = restoreByPinnedElement();
-  if (!restored) {
-    restoreViewportAnchor(snapshot);
-  }
-
-  rememberViewportAnchor();
-  scheduleNavSync();
-};
-
-const withPreservedScrollTop = async (applyChange) => {
-  const host = getScrollContainer();
-  const beforeTop = host.scrollTop;
-  applyChange();
-  await nextTick();
-  const nextHost = getScrollContainer();
-  nextHost.scrollTop = clampHostScrollTop(nextHost, beforeTop);
-  rememberViewportAnchor();
-  scheduleNavSync();
-};
-
-const getLayoutAnchorForNavToggle = () => {
-  const activeId = String(activeNavId.value || '').trim();
-  if (activeId) {
-    const activeEl = document.getElementById(activeId);
-    if (activeEl instanceof HTMLElement) {
-      return { anchorId: activeId, anchorEl: activeEl };
-    }
-  }
-
-  const fallbackAnchor = getViewportCenterAnchorElement(getScrollContainer());
-  if (fallbackAnchor instanceof HTMLElement) {
-    return {
-      anchorId: String(fallbackAnchor.id || '').trim(),
-      anchorEl: fallbackAnchor
-    };
-  }
-
-  return { anchorId: '', anchorEl: null };
-};
-
-const withNavAnchorPinnedPosition = async (applyChange) => {
-  const host = getScrollContainer();
-  const hostRect = host.getBoundingClientRect();
-  const { anchorId, anchorEl } = getLayoutAnchorForNavToggle();
-  const beforeAnchor = anchorEl instanceof HTMLElement ? anchorEl : null;
-
-  if (!(beforeAnchor instanceof HTMLElement)) {
-    await withPreservedScrollTop(applyChange);
-    return;
-  }
-
-  const beforeTop = beforeAnchor.getBoundingClientRect().top - hostRect.top;
-  applyChange();
-  await nextTick();
-
-  const nextHost = getScrollContainer();
-  const nextHostRect = nextHost.getBoundingClientRect();
-  const afterAnchor = anchorId
-    ? document.getElementById(anchorId)
-    : (beforeAnchor.isConnected ? beforeAnchor : null);
-
-  if (afterAnchor instanceof HTMLElement) {
-    const afterTop = afterAnchor.getBoundingClientRect().top - nextHostRect.top;
-    const nextTop = nextHost.scrollTop + (afterTop - beforeTop);
-    nextHost.scrollTop = clampHostScrollTop(nextHost, nextTop);
-  }
-
-  rememberViewportAnchor();
-  scheduleNavSync();
-};
+const withPinnedElementPosition = (targetEl, applyChange) => viewportFocus.preserve(applyChange, targetEl);
 
 const rememberInteractiveAnchorFromEvent = (event) => {
   const target = event?.target;
@@ -2420,12 +2259,10 @@ const withInteractionPinnedPosition = async (applyChange, explicitTarget = null)
     await withPinnedElementPosition(target, applyChange);
     return;
   }
-  await withInfoAreaTopLeftPinned(applyChange);
+  await viewportFocus.preserve(applyChange);
 };
 
-const withInfoAreaTopLeftPinned = async (applyChange) => {
-  await withNavAnchorPinnedPosition(applyChange);
-};
+const withReadingPosition = applyChange => viewportFocus.preserve(applyChange);
 
 const onVsSongImageModeChange = (event) => {
   const checked = !!event?.target?.checked;
@@ -2572,18 +2409,18 @@ const onTwoDmvCoverOnlyChange = (event) => {
   }, anchorEl);
 };
 
-function setNavCollapsed(nextCollapsed, preserveCenter = true) {
+function setNavCollapsed(nextCollapsed, preserveReadingPosition = true) {
   const next = !!nextCollapsed;
   if (navCollapsed.value === next) return;
   if (!next) {
     anvoFillDisplay.value = false;
     resetMobileNavGroupExpansion();
   }
-  if (!preserveCenter) {
+  if (!preserveReadingPosition) {
     navCollapsed.value = next;
     return;
   }
-  void withInfoAreaTopLeftPinned(() => {
+  void withReadingPosition(() => {
     navCollapsed.value = next;
   });
 }
@@ -2597,9 +2434,6 @@ const updateMobileNavState = () => {
   const nextCollapsed = prev === null
     ? isTopLayout
     : (prev !== isTopLayout ? isTopLayout : navCollapsed.value);
-  const needPreserve = prev !== null
-    && (isNavTopLayout.value !== isTopLayout || navCollapsed.value !== nextCollapsed);
-
   const applyState = () => {
     isNavTopLayout.value = isTopLayout;
     isMobileNav.value = isTopLayout;
@@ -2610,11 +2444,6 @@ const updateMobileNavState = () => {
     }
   };
 
-  if (needPreserve) {
-    void withInfoAreaTopLeftPinned(applyState);
-    recalcSongTableOverflow();
-    return;
-  }
   applyState();
   recalcSongTableOverflow();
 };
@@ -2714,7 +2543,6 @@ onMounted(() => {
     statsMainInteractionHost.addEventListener('pointerdown', rememberInteractiveAnchorFromEvent, true);
     statsMainInteractionHost.addEventListener('keydown', rememberInteractiveAnchorFromEvent, true);
   }
-  rememberViewportAnchor();
   scheduleNavSync();
   if (typeof ResizeObserver !== 'undefined') {
     duoPairGridResizeObserver = new ResizeObserver(() => {
@@ -2769,7 +2597,6 @@ onBeforeUnmount(() => {
     cancelAnimationFrame(navSyncRaf);
     navSyncRaf = 0;
   }
-  if (resizeViewportRaf) cancelAnimationFrame(resizeViewportRaf);
   if (duoPairGridResizeObserver) {
     duoPairGridResizeObserver.disconnect();
     duoPairGridResizeObserver = null;

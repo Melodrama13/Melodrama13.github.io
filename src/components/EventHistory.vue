@@ -1189,7 +1189,8 @@ import { buildAssetUrl } from '../utils/assets.js';
 import { getCardImageVariants } from '../utils/cardImageVariants.js';
 import { isCardImageReleased, isEventStarted, isSongReleased } from '../utils/spoilerGuard.js';
 import { UI_BREAKPOINTS, isViewportAtMost } from '../ui/breakpoints.js';
-import { createScrollNavigator, isScrollKeyIntent } from '../composables/scrollNavigation.js';
+import { clampScrollTop, createScrollNavigator, isScrollKeyIntent } from '../composables/scrollNavigation.js';
+import { useViewportFocus } from '../composables/useViewportFocus.js';
 import { isCompilationEvent } from '../utils/compilationEvents.js';
 
 
@@ -2279,10 +2280,11 @@ const findRowElementInContainer = (rowId) => {
 };
 
 const preserveAnchorWhileLayoutChanges = (eventId, mutator) => {
-  const eventAnchor = getVisibleRowAnchorById(`event-${normalizeEventId(eventId)}`);
-  const anchor = eventAnchor || getViewportAnchor();
-  mutator();
-  if (anchor) stabilizeViewportAnchor(anchor);
+  const row = findEventElementInContainer(eventId);
+  const target = row && getVisibleRowAnchorById(row.id) ? row : null;
+  cancelActivationRestore();
+  cancelViewportStabilization();
+  void viewportFocus.preserve(mutator, target);
 };
 
 const setPredictEditorEvent = (event) => {
@@ -5056,10 +5058,15 @@ const markVisibleEventRowsHeavy = () => {
     if (idKey) keys.add(`event-${idKey}`);
   });
 
-  if (anchor) viewportAnchor.value = anchor;
+  if (anchor && !viewportFocus.isPreserving()) viewportAnchor.value = anchor;
   if (addProgressiveEventRenderKeys(keys)) {
+    const restoreToken = viewportStabilizationToken;
+    const activationToken = activationRestoreToken;
     nextTick(() => {
-      if (anchor && !historyNavigator.isNavigating()) restoreViewportAnchor(anchor);
+      if (!isHistoryPageActive || restoreToken !== viewportStabilizationToken
+        || activationToken !== activationRestoreToken || historyNavigator.isNavigating()) return;
+      viewportFocus.refresh();
+      if (anchor && !viewportFocus.isPreserving()) restoreViewportAnchor(anchor);
     });
     if (!isProgressiveRenderPaused()) {
       scheduleProgressiveEventRender();
@@ -5454,6 +5461,12 @@ const historyNavigator = createScrollNavigator({
   getHost: () => historyContainer.value,
   onPosition: () => saveHistoryScroll()
 });
+const viewportFocus = useViewportFocus({
+  getHost: () => historyContainer.value,
+  getRoot: () => listRef.value,
+  onRestore: () => { saveHistoryScroll(); updateViewportAnchor(); },
+  deferObservedLayout: true
+});
 let filterAdaptRafId = 0;
 let filterAdaptFramesLeft = 0;
 let isHistoryPageActive = true;
@@ -5624,8 +5637,7 @@ const getViewportVisibleBounds = () => {
   return {
     containerTop: containerRect.top,
     top,
-    bottom: containerRect.bottom,
-    focus: top + Math.max(0, containerRect.bottom - top) / 2
+    bottom: containerRect.bottom
   };
 };
 
@@ -5639,55 +5651,30 @@ const getViewportAnchor = () => {
   if (activeNode) {
     const rect = activeNode.getBoundingClientRect();
     if (rect.bottom > bounds.top && rect.top < bounds.bottom) {
-      return { id: activeNode.id, top: rect.top - bounds.containerTop };
+      return { id: activeNode.id, top: rect.top - bounds.containerTop, screenTop: rect.top };
     }
   }
 
-  const containerRect = container.getBoundingClientRect();
-  const focusX = containerRect.left + containerRect.width / 2;
-  const maxProbeDistance = Math.max(0, (bounds.bottom - bounds.top) / 2 - 1);
-  const probeOffsets = [0, -16, 16, -40, 40, -80, 80]
-    .map((offset) => Math.max(-maxProbeDistance, Math.min(maxProbeDistance, offset)));
-  let fallbackRow = null;
-  for (const offset of probeOffsets) {
-    const elementsAtPoint = document.elementsFromPoint(focusX, bounds.focus + offset);
-    const eventNode = elementsAtPoint
-      .map((node) => node.closest?.('.event-item'))
-      .find((node) => node?.id && container.contains(node));
-    if (eventNode) {
-      return {
-        id: eventNode.id,
-        top: eventNode.getBoundingClientRect().top - bounds.containerTop
-      };
-    }
-    if (!fallbackRow) {
-      fallbackRow = elementsAtPoint
-        .map((node) => node.closest?.('.birthday-row, .preview-row'))
-        .find((node) => node?.id && container.contains(node)) || null;
-    }
-  }
-
-  let anchorNode = null;
-  let anchorDistance = Number.POSITIVE_INFINITY;
-  for (const node of container.querySelectorAll('.event-item')) {
+  // Keep the leading reading row, rather than selecting another event at
+  // the viewport center when card heights change or the page reactivates.
+  const readingEnd = bounds.top + Math.min(180, (bounds.bottom - bounds.top) * 0.35);
+  let firstVisible = null;
+  let leadingRow = null;
+  for (const node of container.querySelectorAll('.event-item, .birthday-row, .preview-row')) {
     if (!node.id) continue;
     const rect = node.getBoundingClientRect();
     if (rect.bottom <= bounds.top) continue;
     if (rect.top >= bounds.bottom) break;
-    const distance = rect.top <= bounds.focus && rect.bottom >= bounds.focus
-      ? 0
-      : Math.min(Math.abs(rect.top - bounds.focus), Math.abs(rect.bottom - bounds.focus));
-    if (distance < anchorDistance || (distance === anchorDistance && node.classList.contains('event-item'))) {
-      anchorNode = node;
-      anchorDistance = distance;
-    }
+    firstVisible ||= node;
+    if (rect.top >= bounds.top + 8 && rect.top <= readingEnd) { leadingRow = node; break; }
   }
-  if (!anchorNode) anchorNode = fallbackRow;
+  const anchorNode = leadingRow || firstVisible;
   if (!anchorNode) return null;
 
   return {
     id: anchorNode.id,
-    top: anchorNode.getBoundingClientRect().top - bounds.containerTop
+    top: anchorNode.getBoundingClientRect().top - bounds.containerTop,
+    screenTop: anchorNode.getBoundingClientRect().top
   };
 };
 
@@ -5710,7 +5697,8 @@ const getVisibleRowAnchorById = (rowId) => {
   if (rect.bottom <= bounds.top || rect.top >= bounds.bottom) return null;
   return {
     id,
-    top: rect.top - bounds.containerTop
+    top: rect.top - bounds.containerTop,
+    screenTop: rect.top
   };
 };
 
@@ -5754,10 +5742,12 @@ const restoreViewportAnchor = (anchorOverride = null) => {
   if (!el) return false;
 
   const containerTop = container.getBoundingClientRect().top;
-  const nextTop = el.getBoundingClientRect().top - containerTop;
-  const delta = nextTop - anchor.top;
+  const screenTop = el.getBoundingClientRect().top;
+  const delta = Number.isFinite(anchor.screenTop)
+    ? screenTop - anchor.screenTop
+    : screenTop - containerTop - anchor.top;
   if (Math.abs(delta) >= 0.5) {
-    container.scrollTop += delta;
+    container.scrollTo({ top: Math.round(clampScrollTop(container, container.scrollTop + delta)), behavior: 'instant' });
   }
   saveHistoryScroll();
   return true;
@@ -5810,10 +5800,12 @@ const restoreHistoryPositionAfterActivation = () => {
   const restoreToken = activationRestoreToken + 1;
   activationRestoreToken = restoreToken;
   const savedAnchor = viewportAnchor.value?.id
-    ? { id: viewportAnchor.value.id, top: viewportAnchor.value.top }
+    ? { ...viewportAnchor.value }
     : null;
   const hadAnchor = !!savedAnchor?.id;
-  const restoredScroll = restoreHistoryScroll(restoreToken);
+  // An anchor and an absolute scrollTop can disagree after lazy card
+  // heights change. Use a single coordinate owner when an anchor exists.
+  const restoredScroll = hadAnchor ? false : restoreHistoryScroll(restoreToken);
   const restoreAnchor = () => {
     if (restoreToken !== activationRestoreToken || !isHistoryPageActive || !hadAnchor || pendingJumpEventId.value) return;
     restoreViewportAnchor(savedAnchor);
@@ -5874,7 +5866,6 @@ const handleWindowResize = () => {
       previewConfigPanelPos.value = clampPreviewConfigPanelPos(previewConfigPanelPos.value.x, previewConfigPanelPos.value.y);
     }
     updatePreviewConfigOffset();
-    if (!historyNavigator.isNavigating()) restoreViewportAnchor();
     Object.keys(previewPanelState.value).forEach((panelId) => clampPreviewPanelPosition(panelId));
     resizeRafId = 0;
   });

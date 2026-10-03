@@ -3244,6 +3244,7 @@
 </template>
 
 <script setup>
+import { useViewportFocus } from '../composables/useViewportFocus.js';
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, reactive } from 'vue';
 import { toCanvas } from 'html-to-image';
 import { buildAssetUrl } from '../utils/assets.js';
@@ -3252,7 +3253,6 @@ import { shouldCountCardAsLimited } from '../utils/cardLimitedRules.js';
 import { isCardImageReleased, isEventStarted, isLocalSpoilerPreview } from '../utils/spoilerGuard.js';
 import { UI_BREAKPOINTS, isViewportAtMost } from '../ui/breakpoints.js';
 import {
-  clampHostScrollTop,
   createStatsNavigationHandlers,
   getDefaultScrollContainer
 } from '../composables/useStatsNavigation';
@@ -4579,173 +4579,11 @@ const findAnchorElementByKey = (key) => {
   return el;
 };
 
-const getViewportCenterAnchorElement = (host) => {
-  if (!(host instanceof HTMLElement)) return null;
-  const hostRect = host.getBoundingClientRect();
-  if (hostRect.width <= 2 || hostRect.height <= 2) return null;
-
-  const nodes = getAnchorNodesInStatsMain();
-  const centerY = hostRect.top + (hostRect.height * 0.35);
-  let bestNode = null;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  for (const node of nodes) {
-    const rect = node.getBoundingClientRect();
-    if (rect.width < 1 || rect.height < 1) continue;
-    const visibleTop = Math.max(rect.top, hostRect.top);
-    const visibleBottom = Math.min(rect.bottom, hostRect.bottom);
-    if ((visibleBottom - visibleTop) < 8) continue;
-    const mid = (visibleTop + visibleBottom) * 0.5;
-    const distance = Math.abs(mid - centerY);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestNode = node;
-    }
-  }
-  return bestNode;
-};
-
-const getActiveNavAnchorElement = () => {
-  const host = getScrollContainer();
-  const hostRect = host.getBoundingClientRect();
-  const isVisibleInViewport = (el) => {
-    if (!(el instanceof HTMLElement)) return false;
-    const rect = el.getBoundingClientRect();
-    if (rect.width < 1 || rect.height < 1) return false;
-    const visibleTop = Math.max(rect.top, hostRect.top);
-    const visibleBottom = Math.min(rect.bottom, hostRect.bottom);
-    return (visibleBottom - visibleTop) >= 10;
-  };
-
-  const activeId = String(activeNavId.value || '').trim();
-  if (activeId) {
-    const exact = findAnchorElementByKey(activeId);
-    if (isVisibleInViewport(exact)) return exact;
-  }
-
-  const byViewportId = pickActiveNavTargetIdByViewport();
-  if (byViewportId) {
-    const byViewport = findAnchorElementByKey(byViewportId);
-    if (isVisibleInViewport(byViewport)) return byViewport;
-  }
-
-  return null;
-};
-
-const snapshotViewportAnchor = (options = {}) => {
-  const preferActiveNav = options?.preferActiveNav === true;
-  const host = getScrollContainer();
-  const hostRect = host.getBoundingClientRect();
-  const activeAnchor = getActiveNavAnchorElement();
-  const viewportAnchor = getViewportCenterAnchorElement(host);
-  const anchorEl = preferActiveNav
-    ? (activeAnchor || viewportAnchor)
-    : (viewportAnchor || activeAnchor);
-  const anchorRect = anchorEl ? anchorEl.getBoundingClientRect() : null;
-  const anchorTop = anchorRect ? (anchorRect.top - hostRect.top) : 0;
-  return {
-    anchorEl,
-    anchorId: String(anchorEl?.id || '').trim(),
-    hasAnchor: !!anchorEl,
-    anchorTop,
-    scrollTop: host.scrollTop
-  };
-};
-
-const restoreViewportAnchor = (snapshot) => {
-  if (!snapshot) return;
-  const host = getScrollContainer();
-  const hostRect = host.getBoundingClientRect();
-  const clampTop = (top) => {
-    const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
-    return Math.max(0, Math.min(maxTop, top));
-  };
-
-  const connectedAnchor = snapshot.anchorEl instanceof HTMLElement && snapshot.anchorEl.isConnected
-    ? snapshot.anchorEl
-    : null;
-  const anchorEl = connectedAnchor || findAnchorElementByKey(snapshot.anchorId);
-
-  if (snapshot.hasAnchor && anchorEl instanceof HTMLElement) {
-    const afterRect = anchorEl.getBoundingClientRect();
-    const afterTop = afterRect.top - hostRect.top;
-    const nextTop = snapshot.scrollTop + (afterTop - snapshot.anchorTop);
-    host.scrollTop = clampTop(nextTop);
-    return;
-  }
-
-  host.scrollTop = clampTop(snapshot.scrollTop);
-};
-
-const withPreservedScrollTop = async (applyChange) => {
-  const host = getScrollContainer();
-  const beforeTop = host.scrollTop;
-  applyChange();
-  await nextTick();
-  const nextHost = getScrollContainer();
-  nextHost.scrollTop = clampHostScrollTop(nextHost, beforeTop);
-  scheduleNavSync();
-};
-
-const getLayoutAnchorForNavToggle = () => {
-  const host = getScrollContainer();
-  const hostRect = host.getBoundingClientRect();
-  const isVisibleInViewport = (el) => {
-    if (!(el instanceof HTMLElement)) return false;
-    const rect = el.getBoundingClientRect();
-    if (rect.width < 1 || rect.height < 1) return false;
-    const visibleTop = Math.max(rect.top, hostRect.top);
-    const visibleBottom = Math.min(rect.bottom, hostRect.bottom);
-    return (visibleBottom - visibleTop) >= 10;
-  };
-
-  const activeId = String(activeNavId.value || '').trim();
-  if (activeId) {
-    const activeEl = findAnchorElementByKey(activeId);
-    if (isVisibleInViewport(activeEl)) {
-      return { anchorId: activeId, anchorEl: activeEl };
-    }
-  }
-
-  const fallbackAnchor = getViewportCenterAnchorElement(getScrollContainer());
-  if (fallbackAnchor instanceof HTMLElement) {
-    return {
-      anchorId: String(fallbackAnchor?.dataset?.scrollAnchor || fallbackAnchor.id || '').trim(),
-      anchorEl: fallbackAnchor
-    };
-  }
-
-  return { anchorId: '', anchorEl: null };
-};
-
-const withNavAnchorPinnedPosition = async (applyChange) => {
-  const host = getScrollContainer();
-  const hostRect = host.getBoundingClientRect();
-  const { anchorId, anchorEl } = getLayoutAnchorForNavToggle();
-  const beforeAnchor = anchorEl instanceof HTMLElement ? anchorEl : null;
-
-  if (!(beforeAnchor instanceof HTMLElement)) {
-    await withPreservedScrollTop(applyChange);
-    return;
-  }
-
-  const beforeTop = beforeAnchor.getBoundingClientRect().top - hostRect.top;
-  applyChange();
-  await nextTick();
-
-  const nextHost = getScrollContainer();
-  const nextHostRect = nextHost.getBoundingClientRect();
-  const afterAnchor = anchorId
-    ? (findAnchorElementByKey(anchorId) || document.getElementById(anchorId))
-    : (beforeAnchor.isConnected ? beforeAnchor : null);
-
-  if (afterAnchor instanceof HTMLElement) {
-    const afterTop = afterAnchor.getBoundingClientRect().top - nextHostRect.top;
-    const nextTop = nextHost.scrollTop + (afterTop - beforeTop);
-    nextHost.scrollTop = clampHostScrollTop(nextHost, nextTop);
-  }
-
-  scheduleNavSync();
-};
+const viewportFocus = useViewportFocus({
+  getHost: getScrollContainer,
+  getRoot: getStatsMainElement,
+  onRestore: scheduleNavSync
+});
 
 const rememberInteractiveAnchorFromEvent = (event) => {
   const target = event?.target;
@@ -4772,36 +4610,7 @@ const consumeRecentInteractiveAnchor = (maxAgeMs = 1200) => {
   return lastInteractiveAnchorEl;
 };
 
-const withPinnedElementPosition = async (targetEl, applyChange) => {
-  const snapshot = snapshotViewportAnchor({ preferActiveNav: false });
-  const pinnedEl = targetEl instanceof HTMLElement ? targetEl : null;
-  const beforeHost = getScrollContainer();
-  const beforeHostRect = beforeHost.getBoundingClientRect();
-  const pinnedTop = pinnedEl
-    ? (pinnedEl.getBoundingClientRect().top - beforeHostRect.top)
-    : null;
-
-  const restoreByPinnedElement = () => {
-    if (!(pinnedEl instanceof HTMLElement) || !pinnedEl.isConnected || !Number.isFinite(pinnedTop)) {
-      return false;
-    }
-    const host = getScrollContainer();
-    const hostRect = host.getBoundingClientRect();
-    const afterTop = pinnedEl.getBoundingClientRect().top - hostRect.top;
-    const nextTop = host.scrollTop + (afterTop - pinnedTop);
-    host.scrollTop = clampHostScrollTop(host, nextTop);
-    return true;
-  };
-
-  applyChange();
-  await nextTick();
-  const restored = restoreByPinnedElement();
-  if (!restored) {
-    restoreViewportAnchor(snapshot);
-  }
-
-  scheduleNavSync();
-};
+const withPinnedElementPosition = (targetEl, applyChange) => viewportFocus.preserve(applyChange, targetEl);
 
 const withInteractionPinnedPosition = async (applyChange, explicitTarget = null) => {
   const target = explicitTarget instanceof HTMLElement ? explicitTarget : consumeRecentInteractiveAnchor();
@@ -4809,12 +4618,10 @@ const withInteractionPinnedPosition = async (applyChange, explicitTarget = null)
     await withPinnedElementPosition(target, applyChange);
     return;
   }
-  await withNavAnchorPinnedPosition(applyChange);
+  await viewportFocus.preserve(applyChange);
 };
 
-const withInfoAreaTopLeftPinned = async (applyChange) => {
-  await withNavAnchorPinnedPosition(applyChange);
-};
+const withReadingPosition = applyChange => viewportFocus.preserve(applyChange);
 
 const handleViewportScroll = () => {
   scheduleNavSync();
@@ -4829,20 +4636,20 @@ const bindViewportScrollTracking = () => {
   viewportScrollHost.addEventListener('scroll', handleViewportScroll, { passive: true });
 };
 
-function setNavCollapsed(nextCollapsed, preserveCenter = true) {
+function setNavCollapsed(nextCollapsed, preserveReadingPosition = true) {
   const next = !!nextCollapsed;
   if (navCollapsed.value === next) return;
   if (!next) {
     resetMobileNavGroupExpansion();
   }
-  if (!preserveCenter) {
+  if (!preserveReadingPosition) {
     navCollapsed.value = next;
     void nextTick(() => {
       triggerLineupCardModeRowLayoutSyncBurst();
     });
     return;
   }
-  void withInfoAreaTopLeftPinned(() => {
+  void withReadingPosition(() => {
     navCollapsed.value = next;
     void nextTick(() => {
       triggerLineupCardModeRowLayoutSyncBurst();
@@ -4857,9 +4664,6 @@ const updateMobileNavState = () => {
   const nextCollapsed = prev === null
     ? isTopLayout
     : (prev !== isTopLayout ? isTopLayout : navCollapsed.value);
-  const needPreserve = prev !== null
-    && (isNavTopLayout.value !== isTopLayout || navCollapsed.value !== nextCollapsed);
-
   const applyState = () => {
     isNavTopLayout.value = isTopLayout;
     isMobileNav.value = isTopLayout;
@@ -4873,13 +4677,6 @@ const updateMobileNavState = () => {
     });
   };
 
-  if (needPreserve) {
-    void withInfoAreaTopLeftPinned(() => {
-      applyState();
-      bindViewportScrollTracking();
-    });
-    return;
-  }
   applyState();
   bindViewportScrollTracking();
 };
@@ -5692,6 +5489,7 @@ const scheduleLineupCardModeRowLayoutSync = () => {
   lineupCardLayoutSyncRaf = requestAnimationFrame(() => {
     lineupCardLayoutSyncRaf = 0;
     syncLineupCardModeRowLayout();
+    viewportFocus.refresh();
   });
 };
 
@@ -6496,6 +6294,7 @@ const scheduleRelatedJumpChipWidthSync = () => {
   relatedJumpChipSyncRaf = requestAnimationFrame(() => {
     relatedJumpChipSyncRaf = 0;
     syncRelatedJumpChipWidths();
+    viewportFocus.refresh();
   });
 };
 
