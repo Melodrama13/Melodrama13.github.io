@@ -75,6 +75,7 @@ jobs:
           import path from 'node:path';
           const files = [
             'musics.json',
+            'musicCategories.json',
             'musicDifficulties.json',
             'musicTags.json',
             'musicVocals.json',

@@ -26714,7 +26714,9 @@
     "arranger": "emon(Tes.)",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-09-01 15:00:00",
-    "categories": [],
+    "categories": [
+      "3DMV"
+    ],
     "units": [
       "all",
       "mmj"
@@ -34107,7 +34109,9 @@
     "arranger": "TAK",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-10-04 15:00:00",
-    "categories": [],
+    "categories": [
+      "3DMV"
+    ],
     "units": [
       "all",
       "mmj"
@@ -34151,7 +34155,9 @@
     "arranger": "キタニタツヤ",
     "isNewlyWrittenMusic": true,
     "releaseDate": "2026-09-30 00:00:00",
-    "categories": [],
+    "categories": [
+      "3DMV"
+    ],
     "units": [
       "all",
       "ln",
@@ -34256,7 +34262,9 @@
     "arranger": "ピノキオピー",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-10-08 15:00:00",
-    "categories": [],
+    "categories": [
+      "3DMV"
+    ],
     "units": [
       "all",
       "ws"
@@ -35423,7 +35431,9 @@
     "arranger": "LonePi",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-10-10 15:00:00",
-    "categories": [],
+    "categories": [
+      "3DMV"
+    ],
     "units": [
       "all",
       "nc"
@@ -35565,7 +35575,9 @@
     "arranger": "ぐちり",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-10-02 15:00:00",
-    "categories": [],
+    "categories": [
+      "3DMV"
+    ],
     "units": [
       "all",
       "ln"
@@ -35609,7 +35621,9 @@
     "arranger": "Kanaria",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-10-06 15:00:00",
-    "categories": [],
+    "categories": [
+      "3DMV"
+    ],
     "units": [
       "all",
       "vbs"
@@ -35653,7 +35667,9 @@
     "arranger": "MARETU",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-10-09 15:00:00",
-    "categories": [],
+    "categories": [
+      "image"
+    ],
     "units": [
       "all",
       "vs",
@@ -35686,7 +35702,9 @@
     "arranger": "tepe",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-10-03 15:00:00",
-    "categories": [],
+    "categories": [
+      "image"
+    ],
     "units": [
       "all",
       "vs",
@@ -35719,7 +35737,9 @@
     "arranger": "東京真中",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-10-05 15:00:00",
-    "categories": [],
+    "categories": [
+      "image"
+    ],
     "units": [
       "all",
       "vs",
@@ -35752,7 +35772,9 @@
     "arranger": "あ子",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-10-07 15:00:00",
-    "categories": [],
+    "categories": [
+      "image"
+    ],
     "units": [
       "all",
       "vs",
@@ -35785,7 +35807,9 @@
     "arranger": "サツキ",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-10-01 15:00:00",
-    "categories": [],
+    "categories": [
+      "original"
+    ],
     "units": [
       "all",
       "vs",
@@ -36127,7 +36151,9 @@
     "arranger": "島田昌典",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-08-28 15:00:00",
-    "categories": [],
+    "categories": [
+      "original"
+    ],
     "units": [
       "all",
       "vs",
@@ -36206,7 +36232,9 @@
     "arranger": "imie",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-09-23 15:00:00",
-    "categories": [],
+    "categories": [
+      "image"
+    ],
     "units": [
       "all",
       "vs",
@@ -36244,7 +36272,9 @@
     "arranger": "たかぴぃ",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-09-19 15:00:00",
-    "categories": [],
+    "categories": [
+      "image"
+    ],
     "units": [
       "all",
       "vs",
@@ -36328,7 +36358,9 @@
     "arranger": "黒魔",
     "isNewlyWrittenMusic": true,
     "releaseDate": "2026-10-11 15:00:00",
-    "categories": [],
+    "categories": [
+      "image"
+    ],
     "units": [
       "all",
       "vs",
@@ -36362,7 +36394,9 @@
     "arranger": "タケノコ少年",
     "isNewlyWrittenMusic": false,
     "releaseDate": "2026-09-22 15:00:00",
-    "categories": [],
+    "categories": [
+      "image"
+    ],
     "units": [
       "all",
       "vs",
