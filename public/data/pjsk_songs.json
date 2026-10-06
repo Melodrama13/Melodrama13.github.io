@@ -34248,6 +34248,50 @@
     ]
   },
   {
+    "id": 731,
+    "title": "アルティメットセンパイ",
+    "pronunciation": "あるてぃめっとせんぱい",
+    "composer": "ピノキオピー",
+    "lyricist": "ピノキオピー",
+    "arranger": "ピノキオピー",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-08 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "ws"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 13,
+      "hard": 18,
+      "expert": 25,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1288,
+        "type": "original_song",
+        "released_at": "2026/10/8",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2091,
+        "type": "sekai",
+        "released_at": "2026/10/8",
+        "characters": [
+          "初音未来",
+          "天马司",
+          "凤笑梦",
+          "草薙宁宁",
+          "神代类"
+        ]
+      }
+    ]
+  },
+  {
     "id": 732,
     "title": "天藍のアイスヘヴン",
     "pronunciation": "てんらんのあいすへゔん",
@@ -35371,6 +35415,50 @@
     ]
   },
   {
+    "id": 763,
+    "title": "ハイドレンジア",
+    "pronunciation": "はいどれんじあ",
+    "composer": "LonePi",
+    "lyricist": "LonePi",
+    "arranger": "LonePi",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-10 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "nc"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 13,
+      "hard": 16,
+      "expert": 23,
+      "master": 28
+    },
+    "vocals": [
+      {
+        "vocal_id": 1320,
+        "type": "original_song",
+        "released_at": "2026/10/10",
+        "characters": [
+          "歌愛ユキ"
+        ]
+      },
+      {
+        "vocal_id": 2092,
+        "type": "sekai",
+        "released_at": "2026/10/10",
+        "characters": [
+          "巡音流歌",
+          "宵崎奏",
+          "朝比奈真冬",
+          "东云绘名",
+          "晓山瑞希"
+        ]
+      }
+    ]
+  },
+  {
     "id": 764,
     "title": "オツキミリサイタル",
     "pronunciation": "おつきみりさいたる",
@@ -35513,6 +35601,83 @@
     ]
   },
   {
+    "id": 767,
+    "title": "デーモンロード",
+    "pronunciation": "でーもんろーど",
+    "composer": "Kanaria",
+    "lyricist": "Kanaria",
+    "arranger": "Kanaria",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-06 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vbs"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 13,
+      "hard": 19,
+      "expert": 25,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1324,
+        "type": "original_song",
+        "released_at": "2026/10/6",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2090,
+        "type": "sekai",
+        "released_at": "2026/10/6",
+        "characters": [
+          "镜音连",
+          "小豆泽心羽",
+          "白石杏",
+          "东云彰人",
+          "青柳冬弥"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 773,
+    "title": "ダーリン",
+    "pronunciation": "だーりん",
+    "composer": "MARETU",
+    "lyricist": "MARETU",
+    "arranger": "MARETU",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-09 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 13,
+      "hard": 17,
+      "expert": 25,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1330,
+        "type": "original_song",
+        "released_at": "2026/10/9",
+        "characters": [
+          "初音未来"
+        ]
+      }
+    ]
+  },
+  {
     "id": 774,
     "title": "ラビットホール",
     "pronunciation": "らびっとほーる",
@@ -35574,6 +35739,39 @@
         "released_at": "2026/10/5",
         "characters": [
           "重音テト"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 776,
+    "title": "推定ラブソング",
+    "pronunciation": "すいていらぶそんぐ",
+    "composer": "あ子",
+    "lyricist": "あ子",
+    "arranger": "あ子",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-07 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 12,
+      "hard": 17,
+      "expert": 26,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1333,
+        "type": "original_song",
+        "released_at": "2026/10/7",
+        "characters": [
+          "KAITO"
         ]
       }
     ]
@@ -36117,6 +36315,40 @@
           "天马司",
           "凤笑梦",
           "神代类"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 813,
+    "title": "at",
+    "pronunciation": "あっと",
+    "composer": "黒魔",
+    "lyricist": "黒魔",
+    "arranger": "黒魔",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-10-11 15:00:00",
+    "categories": [],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 14,
+      "hard": 21,
+      "expert": 29,
+      "master": 33,
+      "append": 36
+    },
+    "vocals": [
+      {
+        "vocal_id": 1857,
+        "type": "original_song",
+        "released_at": "2026/10/11",
+        "characters": [
+          "镜音铃"
         ]
       }
     ]
