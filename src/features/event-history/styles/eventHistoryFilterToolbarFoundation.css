@@ -1,0 +1,206 @@
+
+/* 外层包裹器，使用 flex 布局 */
+/* 1. 最外层容器：强制充满屏幕且不溢出 */
+/* 2. 左侧：活动列表区 */
+
+.event-history > h1 {
+  display: none;
+}
+
+button:not(:disabled) {
+  transition: transform var(--ui-motion-state), background-color var(--ui-motion-state), border-color var(--ui-motion-state), color var(--ui-motion-state);
+}
+
+button:not(:disabled):active {
+  filter: brightness(0.86);
+}
+
+/* 如果你希望编辑器是覆盖式的（Overlapping），则维持 position: fixed
+   但给左侧列表增加 marginRight */
+
+.filter-bar {
+  width: 100%;
+  box-sizing: border-box;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 999px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  gap: 10px;
+}
+
+.nav-btn,
+.sort-btn {
+  font-size: 0.8rem;
+}
+
+.nav-btn {
+  padding: 8px 15px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid var(--history-glass-border);
+  background: var(--ui-glass-control-bg);
+  box-shadow: var(--ui-glass-micro-shadow, var(--history-glass-shadow-soft));
+  transition: opacity var(--ui-motion-state), transform var(--ui-motion-state), background-color var(--ui-motion-state), border-color var(--ui-motion-state), color var(--ui-motion-state);
+  white-space: nowrap;
+  min-height: 32px;
+  line-height: 1;
+}
+
+.nav-btn.is-icon-only {
+  width: 36px;
+  padding: 0;
+  border-radius: 999px;
+  aspect-ratio: 1 / 1;
+}
+
+
+.filter-bar { margin-bottom: 0; }
+.sort-btn {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid var(--history-glass-border);
+  background: var(--ui-glass-control-bg);
+  box-shadow: var(--ui-glass-micro-shadow, var(--history-glass-shadow-soft));
+  flex: 0 0 auto;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  line-height: 1;
+}
+
+.current-btn {
+  min-width: 58px;
+  font-weight: 700;
+}
+
+.filter-bar.is-editor-tight {
+  gap: 4px;
+  padding: 6px;
+  scrollbar-width: none;
+}
+
+.filter-bar.is-editor-tight::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-bar.is-editor-tight .sort-btn,
+.filter-bar.is-editor-tight .nav-btn {
+  height: 31px;
+  min-height: 31px;
+  padding: 0 7px;
+  font-size: 0.72rem;
+  gap: 3px;
+}
+
+.filter-bar.is-editor-tight .sort-btn {
+  min-width: 78px;
+}
+
+.filter-bar.is-editor-tight .nav-btn:not(.is-icon-only) {
+  min-width: 0;
+}
+
+.filter-bar.is-editor-tight .current-btn {
+  min-width: 52px;
+}
+
+.filter-bar.is-editor-tight .compact-btn-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.filter-bar.is-editor-mobile {
+  gap: 3px;
+  padding: 5px 6px;
+  scrollbar-width: none;
+}
+
+.filter-bar.is-editor-mobile::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-bar.is-editor-mobile .sort-btn,
+.filter-bar.is-editor-mobile .nav-btn {
+  min-width: 0;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 6px;
+  font-size: 0.72rem;
+}
+
+.filter-bar.is-editor-mobile .nav-btn.is-icon-only {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+}
+
+.filter-bar.is-editor-mobile .nav-btn.compact-tip.has-count {
+  width: auto;
+  min-width: 52px;
+  padding: 0 8px;
+  gap: 3px;
+  aspect-ratio: auto;
+}
+
+.filter-bar.is-editor-mobile .sort-btn {
+  min-width: 80px;
+}
+
+.filter-bar.is-editor-mobile .current-btn {
+  min-width: 52px;
+}
+
+.filter-bar.is-editor-mobile .compact-btn-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.compact-btn-icon {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+  flex: 0 0 17px;
+  display: block;
+  filter: var(--history-icon-filter, none);
+}
+
+/* Optional PNG tinting for highlighted filter buttons. */
+.nav-btn.active-highlight .compact-btn-icon {
+  --history-icon-filter: brightness(0) saturate(100%) invert(43%) sepia(58%) saturate(900%) hue-rotate(130deg) brightness(95%) contrast(90%);
+}
+
+.nav-btn.active-highlight .compact-btn-icon.birthday-toggle-icon {
+  --history-icon-filter: none;
+}
+
+.compact-filter-count {
+  margin-left: 3px;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.12);
+  border: 1px solid rgba(15, 118, 110, 0.35);
+  color: #0f766e;
+  font-size: 0.66rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

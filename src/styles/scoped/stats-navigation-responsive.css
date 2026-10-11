@@ -1,31 +1,35 @@
-@media (min-width: 901px) and (max-width: 1200px) {
-  .stats-layout {
+@media (min-width: 901px) and (max-width: 1280px) {
+  .stats-layout, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-layout)), :global(:is(.stats-layout):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     grid-template-columns: var(--stats-nav-width) 1fr;
   }
 
-  .stats-layout.nav-collapsed {
+  .stats-layout.nav-collapsed, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-layout.nav-collapsed)), :global(:is(.stats-layout.nav-collapsed):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 900px) {
   .stats-layout,
-  .stats-layout.nav-collapsed {
+  .stats-layout.nav-collapsed,
+  :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-layout)),
+  :global(:is(.stats-layout):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])),
+  :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-layout.nav-collapsed)),
+  :global(:is(.stats-layout.nav-collapsed):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     grid-template-columns: 1fr;
     gap: 10px;
   }
 
-  .stats-layout:not(.nav-collapsed) .stats-main {
+  .stats-layout:not(.nav-collapsed) .stats-main, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-layout:not(.nav-collapsed) .stats-main)), :global(:is(.stats-layout:not(.nav-collapsed) .stats-main):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     grid-column: auto;
   }
 
-  .stats-layout.mobile-nav-open .floating-menu-btn {
+  .stats-layout.mobile-nav-open .floating-menu-btn, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-layout.mobile-nav-open .floating-menu-btn)), :global(:is(.stats-layout.mobile-nav-open .floating-menu-btn):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     background: #ef4444;
     border-color: #b91c1c;
     color: #ffffff;
   }
 
-  .stats-nav {
+  .stats-nav, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-nav)), :global(:is(.stats-nav):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     position: static;
     left: auto;
     width: auto;
@@ -34,7 +38,7 @@
     top: auto;
   }
 
-  .stats-nav.mobile-floating {
+  .stats-nav.mobile-floating, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-nav.mobile-floating)), :global(:is(.stats-nav.mobile-floating):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     position: fixed;
     top: calc(env(safe-area-inset-top, 0px) + 58px);
     left: 8px;
@@ -50,35 +54,31 @@
     overflow: hidden;
   }
 
-  .stats-nav.mobile-floating .nav-quick-wrap {
+  .stats-nav.mobile-floating .nav-quick-wrap, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-nav.mobile-floating .nav-quick-wrap)), :global(:is(.stats-nav.mobile-floating .nav-quick-wrap):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     flex: 0 1 auto;
     max-height: min(70dvh, calc(100dvh - 220px));
   }
 
-  .stats-nav.mobile-floating .nav-scroll {
+  .stats-nav.mobile-floating .nav-scroll, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-nav.mobile-floating .nav-scroll)), :global(:is(.stats-nav.mobile-floating .nav-scroll):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     flex: 0 1 auto;
     max-height: inherit;
   }
 
-  .stats-nav.mobile-floating.is-collapsed {
-    display: none;
-  }
-
-  .nav-scroll {
+  .nav-scroll, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.nav-scroll)), :global(:is(.nav-scroll):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     max-height: none;
   }
 
-  .nav-group {
+  .nav-group, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.nav-group)), :global(:is(.nav-group):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     margin-bottom: 4px;
   }
 
-  .nav-link {
+  .nav-link, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.nav-link)), :global(:is(.nav-link):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     min-height: 26px;
     font-size: 0.72rem;
     padding: 4px 8px;
   }
 
-  .nav-link-sub {
+  .nav-link-sub, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.nav-link-sub)), :global(:is(.nav-link-sub):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     margin-left: 6px;
     width: calc(100% - 6px);
     padding: 3px 8px;
@@ -88,13 +88,13 @@
 }
 
 @media (max-width: 520px) {
-  .floating-menu-btn {
+  .floating-menu-btn, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.floating-menu-btn)), :global(:is(.floating-menu-btn):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     width: 34px;
     height: 34px;
     z-index: 5100;
   }
 
-  .nav-collapse-fab {
+  .nav-collapse-fab, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.nav-collapse-fab)), :global(:is(.nav-collapse-fab):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     width: 30px;
     min-height: 30px;
     height: 30px;
@@ -104,11 +104,15 @@
 
 @media (max-width: 768px) {
   .floating-menu-btn,
-  .stats-nav.mobile-floating {
+  .stats-nav.mobile-floating,
+  :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.floating-menu-btn)),
+  :global(:is(.floating-menu-btn):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])),
+  :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-nav.mobile-floating)),
+  :global(:is(.stats-nav.mobile-floating):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     top: calc(env(safe-area-inset-top, 0px) + 8px);
   }
 
-  .stats-nav.mobile-floating {
+  .stats-nav.mobile-floating, :global(:is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"]) :is(.stats-nav.mobile-floating)), :global(:is(.stats-nav.mobile-floating):is([data-feature-page="cards"], [data-feature-page="songs"], [data-feature-page="history"])) {
     max-height: calc(100dvh - 100px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   }
 }

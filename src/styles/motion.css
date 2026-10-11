@@ -1,0 +1,92 @@
+/* One motion owner for native controls and transient surfaces. Positioning,
+   material and density stay in feature CSS. No permanent layer promotion. */
+/* A neutral state layer preserves the control's fill and selected gradient.
+   Zero specificity keeps fixed positioning and glass pseudo-elements owned
+   by their existing feature/material rules. Tooltips keep ::after. */
+:where(button.pjsk-ui-action, button.pjsk-ui-btn-pill, button.pjsk-ui-btn-circle,
+  button.pjsk-ui-swatch, a.pjsk-ui-action) {
+  position: relative;
+}
+:where(button.pjsk-ui-action, button.pjsk-ui-btn-pill, button.pjsk-ui-btn-circle,
+  button.pjsk-ui-swatch, a.pjsk-ui-action)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background: var(--ui-control-feedback-overlay);
+  opacity: 0;
+  transition: opacity var(--ui-motion-release);
+}
+@media (hover: hover) and (pointer: fine) {
+  :where(:is(button.pjsk-ui-action, button.pjsk-ui-btn-pill, button.pjsk-ui-btn-circle,
+    button.pjsk-ui-swatch, a.pjsk-ui-action):not(:disabled):not([aria-disabled="true"]):hover)::before {
+    opacity: var(--ui-control-hover-opacity);
+    transition: opacity var(--ui-motion-state);
+  }
+}
+:where(:is(button.pjsk-ui-action, button.pjsk-ui-btn-pill, button.pjsk-ui-btn-circle,
+  button.pjsk-ui-swatch, a.pjsk-ui-action):not(:disabled):not([aria-disabled="true"]):is(:active, [data-ui-control-pressed="true"]))::before {
+  opacity: 1;
+  transition: opacity var(--ui-motion-press);
+}
+
+:is(.pjsk-ui-action, .pjsk-ui-btn-pill, .pjsk-ui-btn-circle, .pjsk-ui-swatch) {
+  scale: none;
+  transition: scale var(--ui-motion-release),
+    transform var(--ui-motion-release), opacity var(--ui-motion-state),
+    background-color var(--ui-motion-state), border-color var(--ui-motion-state),
+    color var(--ui-motion-state) !important;
+}
+
+:is(.pjsk-ui-action, .pjsk-ui-btn-pill, .pjsk-ui-btn-circle, .pjsk-ui-swatch):is(:disabled, [aria-disabled="true"]) {
+  scale: none;
+}
+
+/* Primary tab labels stay still; their separate glass selector expands. */
+:is(.pjsk-ui-action, .pjsk-ui-btn-pill, .pjsk-ui-btn-circle, .pjsk-ui-swatch):not(.primary-tab-button):not(:disabled):not([aria-disabled="true"]):is(:active, [data-ui-control-pressed="true"]) {
+  scale: var(--ui-motion-press-scale);
+  transition: scale var(--ui-motion-press), opacity var(--ui-motion-press),
+    background-color var(--ui-motion-state), border-color var(--ui-motion-state),
+    color var(--ui-motion-state) !important;
+}
+
+/* Media retains semantic grayscale filters. Both variants use the same timing. */
+:is(.pjsk-ui-action, .pjsk-ui-btn-pill, .pjsk-ui-btn-circle, .pjsk-ui-swatch):not(.pjsk-ui-action--image):not(:disabled):not([aria-disabled="true"]):is(:active, [data-ui-control-pressed="true"]) {
+  filter: brightness(var(--ui-control-press-brightness)) !important;
+}
+.pjsk-ui-action--image:not(:disabled):not([aria-disabled="true"]):is(:active, [data-ui-control-pressed="true"]) {
+  opacity: var(--ui-motion-image-press-opacity);
+}
+
+:is(.pjsk-ui-field, .pjsk-ui-textarea, .pjsk-ui-choice, .pjsk-ui-range) {
+  transition: border-color var(--ui-motion-state),
+    background-color var(--ui-motion-state), color var(--ui-motion-state),
+    opacity var(--ui-motion-state) !important;
+}
+
+/* Navigation rows share the same centered press without changing layout.
+   Lens optical strength stays in its existing material owner. */
+:is(.desktop-tab-glider, .mobile-tab-glider)[data-ui-glass-pressed="true"] {
+  transition: translate var(--ui-motion-navigation), scale var(--ui-motion-press) !important;
+}
+:is(.desktop-tab-switcher.is-tab-dragging, .mobile-tab-switcher.is-mobile-tab-dragging)
+  :is(.desktop-tab-glider, .mobile-tab-glider) {
+  transition: scale var(--ui-motion-press) !important;
+}
+
+/* Layered !important declarations outrank even scoped !important feedback. */
+@layer ui-motion-accessibility {
+@media (prefers-reduced-motion: reduce) {
+  /* Includes teleported overlays, pseudo-elements and genuine loading loops. */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  :is(.pjsk-ui-action, .pjsk-ui-btn-pill, .pjsk-ui-btn-circle, .pjsk-ui-swatch):is(:active, [data-ui-control-pressed="true"]) {
+    scale: none !important;
+  }
+}
+}

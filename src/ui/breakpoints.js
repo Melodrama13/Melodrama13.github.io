@@ -4,7 +4,7 @@ export const UI_BREAKPOINTS = Object.freeze({
   smallTabletMax: 768,
   compactMax: 900,
   historyPreviewMax: 1000,
-  tabletMax: 1200,
+  tabletMax: 1280,
   cardWideMax: 1360
 });
 

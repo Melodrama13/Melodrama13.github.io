@@ -1,0 +1,1192 @@
+
+@media (min-width: 1281px) {
+  .nav-cutoff-controls, :global([data-feature-page="cards"] :is(.nav-cutoff-controls)), :global(:is(.nav-cutoff-controls)[data-feature-page="cards"]) {
+    justify-content: flex-start;
+  }
+
+  .nav-cutoff-controls .id-input, :global([data-feature-page="cards"] :is(.nav-cutoff-controls .id-input)), :global(:is(.nav-cutoff-controls .id-input)[data-feature-page="cards"]) {
+    width: 72px;
+    padding: 2px 0;
+    text-align: center;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1280px) {
+  .pjsk-stats, :global([data-feature-page="cards"] :is(.pjsk-stats)), :global(:is(.pjsk-stats)[data-feature-page="cards"]) {
+    --stats-nav-width: 187px;
+    --stats-nav-left: 34px;
+    --stats-nav-top: 78px;
+  }
+
+  .stats-nav, :global([data-feature-page="cards"] :is(.stats-nav)), :global(:is(.stats-nav)[data-feature-page="cards"]) {
+    height: calc(100vh - var(--stats-nav-top) - 10px);
+    max-height: calc(100vh - var(--stats-nav-top) - 10px);
+    height: calc(100dvh - var(--stats-nav-top) - 10px);
+    max-height: calc(100dvh - var(--stats-nav-top) - 10px);
+  }
+  .pjsk-stats, :global([data-feature-page="cards"] :is(.pjsk-stats)), :global(:is(.pjsk-stats)[data-feature-page="cards"]) { padding: 14px; }
+
+  .score-attr-wrap, :global([data-feature-page="cards"] :is(.score-attr-wrap)), :global(:is(.score-attr-wrap)[data-feature-page="cards"]) {
+    gap: 2px;
+  }
+
+  .score-attr-icon, :global([data-feature-page="cards"] :is(.score-attr-icon)), :global(:is(.score-attr-icon)[data-feature-page="cards"]) {
+    width: 22px;
+    height: 22px;
+  }
+
+  .nav-cutoff, :global([data-feature-page="cards"] :is(.nav-cutoff)), :global(:is(.nav-cutoff)[data-feature-page="cards"]) {
+    padding: 7px;
+  }
+
+  .nav-cutoff-controls, :global([data-feature-page="cards"] :is(.nav-cutoff-controls)), :global(:is(.nav-cutoff-controls)[data-feature-page="cards"]) {
+    gap: 4px;
+  }
+
+  .id-input, :global([data-feature-page="cards"] :is(.id-input)), :global(:is(.id-input)[data-feature-page="cards"]) {
+    width: 56px;
+    padding: 2px 4px;
+    font-size: 0.8rem;
+  }
+
+  .id-step-btn, :global([data-feature-page="cards"] :is(.id-step-btn)), :global(:is(.id-step-btn)[data-feature-page="cards"]) {
+    width: 26px;
+    height: 26px;
+    font-size: 0.78rem;
+  }
+
+  .reset-mini-btn, :global([data-feature-page="cards"] :is(.reset-mini-btn)), :global(:is(.reset-mini-btn)[data-feature-page="cards"]) {
+    width: 26px;
+    height: 26px;
+  }
+
+  .reset-mini-icon, :global([data-feature-page="cards"] :is(.reset-mini-icon)), :global(:is(.reset-mini-icon)[data-feature-page="cards"]) {
+    width: 14px;
+    height: 14px;
+  }
+
+  .nav-name-format, :global([data-feature-page="cards"] :is(.nav-name-format)), :global(:is(.nav-name-format)[data-feature-page="cards"]) {
+    gap: 4px;
+    padding: 7px;
+    justify-content: space-between;
+  }
+
+  .nav-name-format-title, :global([data-feature-page="cards"] :is(.nav-name-format-title)), :global(:is(.nav-name-format-title)[data-feature-page="cards"]) {
+    font-size: 0.72rem;
+  }
+
+  .nav-name-format-options, :global([data-feature-page="cards"] :is(.nav-name-format-options)), :global(:is(.nav-name-format-options)[data-feature-page="cards"]) {
+    gap: 6px;
+  }
+
+  .nav-name-format-option, :global([data-feature-page="cards"] :is(.nav-name-format-option)), :global(:is(.nav-name-format-option)[data-feature-page="cards"]) {
+    gap: 3px;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 900px) {
+  .pjsk-stats, :global([data-feature-page="cards"] :is(.pjsk-stats)), :global(:is(.pjsk-stats)[data-feature-page="cards"]) {
+    padding: 8px;
+    --matrix-sticky-top: 0px;
+  }
+
+  .stats-layout.mobile-nav-open .stats-main, :global([data-feature-page="cards"] :is(.stats-layout.mobile-nav-open .stats-main)), :global(:is(.stats-layout.mobile-nav-open .stats-main)[data-feature-page="cards"]) {
+    padding-top: 0;
+  }
+
+  .nav-collapse-fab, :global([data-feature-page="cards"] :is(.nav-collapse-fab)), :global(:is(.nav-collapse-fab)[data-feature-page="cards"]) {
+    z-index: 5101;
+  }
+
+  .nav-cutoff, :global([data-feature-page="cards"] :is(.nav-cutoff)), :global(:is(.nav-cutoff)[data-feature-page="cards"]) {
+    padding: 7px;
+  }
+
+  .nav-name-format, :global([data-feature-page="cards"] :is(.nav-name-format)), :global(:is(.nav-name-format)[data-feature-page="cards"]) {
+    padding: 7px;
+  }
+
+  .nav-name-format-title, :global([data-feature-page="cards"] :is(.nav-name-format-title)), :global(:is(.nav-name-format-title)[data-feature-page="cards"]) {
+    font-size: 0.72rem;
+  }
+
+  .nav-name-format-option, :global([data-feature-page="cards"] :is(.nav-name-format-option)), :global(:is(.nav-name-format-option)[data-feature-page="cards"]) {
+    font-size: 0.7rem;
+  }
+
+  .nav-cutoff-title, :global([data-feature-page="cards"] :is(.nav-cutoff-title)), :global(:is(.nav-cutoff-title)[data-feature-page="cards"]) {
+    font-size: 0.72rem;
+  }
+
+  .nav-cutoff-controls, :global([data-feature-page="cards"] :is(.nav-cutoff-controls)), :global(:is(.nav-cutoff-controls)[data-feature-page="cards"]) {
+    gap: 4px;
+  }
+
+  .id-input, :global([data-feature-page="cards"] :is(.id-input)), :global(:is(.id-input)[data-feature-page="cards"]) {
+    width: 54px;
+    font-size: 0.78rem;
+  }
+
+  .id-step-btn,
+  .reset-mini-btn,
+  :global([data-feature-page="cards"] :is(.id-step-btn)),
+  :global(:is(.id-step-btn)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.reset-mini-btn)),
+  :global(:is(.reset-mini-btn)[data-feature-page="cards"]) {
+    width: 24px;
+    height: 24px;
+    font-size: 0.74rem;
+  }
+
+  .reset-mini-icon, :global([data-feature-page="cards"] :is(.reset-mini-icon)), :global(:is(.reset-mini-icon)[data-feature-page="cards"]) {
+    width: 13px;
+    height: 13px;
+  }
+
+  .reset-mini-btn, :global([data-feature-page="cards"] :is(.reset-mini-btn)), :global(:is(.reset-mini-btn)[data-feature-page="cards"]) {
+    font-size: 0.72rem;
+    padding: 0;
+  }
+
+  .stats-main h1, :global([data-feature-page="cards"] :is(.stats-main h1)), :global(:is(.stats-main h1)[data-feature-page="cards"]) {
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+  }
+
+  .stats-main-head, :global([data-feature-page="cards"] :is(.stats-main-head)), :global(:is(.stats-main-head)[data-feature-page="cards"]) {
+    margin-bottom: 8px;
+  }
+
+  .card-export-btn, :global([data-feature-page="cards"] :is(.card-export-btn)), :global(:is(.card-export-btn)[data-feature-page="cards"]) {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+  }
+
+  .card-panel:not(.stats-nav), :global([data-feature-page="cards"] :is(.card-panel:not(.stats-nav))), :global(:is(.card-panel:not(.stats-nav))[data-feature-page="cards"]) {
+    padding: 9px;
+    border-radius: 14px;
+  }
+
+  .card-panel h2, :global([data-feature-page="cards"] :is(.card-panel h2)), :global(:is(.card-panel h2)[data-feature-page="cards"]) {
+    margin-bottom: 8px;
+    font-size: 0.96rem;
+  }
+
+  /* Keep header-row titles aligned with inline controls; avoid extra gap before tables. */
+  .section-head h2, :global([data-feature-page="cards"] :is(.section-head h2)), :global(:is(.section-head h2)[data-feature-page="cards"]) {
+    margin-bottom: 0;
+    line-height: 1.1;
+  }
+
+  .section-head-left, :global([data-feature-page="cards"] :is(.section-head-left)), :global(:is(.section-head-left)[data-feature-page="cards"]) {
+    align-items: center;
+  }
+
+  .stats-grid, :global([data-feature-page="cards"] :is(.stats-grid)), :global(:is(.stats-grid)[data-feature-page="cards"]) {
+    gap: 10px;
+    grid-template-columns: 1fr;
+  }
+
+  .stats-section, :global([data-feature-page="cards"] :is(.stats-section)), :global(:is(.stats-section)[data-feature-page="cards"]) {
+    overflow-x: auto;
+  }
+
+  .festival-panel, :global([data-feature-page="cards"] :is(.festival-panel)), :global(:is(.festival-panel)[data-feature-page="cards"]) {
+    overflow-x: visible;
+  }
+
+  .count-table, :global([data-feature-page="cards"] :is(.count-table)), :global(:is(.count-table)[data-feature-page="cards"]) {
+    min-width: 300px;
+    table-layout: fixed;
+  }
+
+  .count-table th,
+  .count-table td,
+  :global([data-feature-page="cards"] :is(.count-table th)),
+  :global(:is(.count-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.count-table td)),
+  :global(:is(.count-table td)[data-feature-page="cards"]) {
+    padding: 5px 4px;
+    font-size: 0.78rem;
+  }
+
+  .count-table th:first-child,
+  .count-table td:first-child,
+  :global([data-feature-page="cards"] :is(.count-table th:first-child)),
+  :global(:is(.count-table th:first-child)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.count-table td:first-child)),
+  :global(:is(.count-table td:first-child)[data-feature-page="cards"]) {
+    width: 40px;
+    max-width: 40px;
+  }
+
+  .count-cell, :global([data-feature-page="cards"] :is(.count-cell)), :global(:is(.count-cell)[data-feature-page="cards"]) {
+    font-size: 1.1em;
+  }
+
+  .chars-cell, :global([data-feature-page="cards"] :is(.chars-cell)), :global(:is(.chars-cell)[data-feature-page="cards"]) {
+    gap: 2px;
+  }
+
+  .dist-unit-summary, :global([data-feature-page="cards"] :is(.dist-unit-summary)), :global(:is(.dist-unit-summary)[data-feature-page="cards"]) {
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .dist-unit-summary-chip, :global([data-feature-page="cards"] :is(.dist-unit-summary-chip)), :global(:is(.dist-unit-summary-chip)[data-feature-page="cards"]) {
+    gap: 3px;
+    min-height: 22px;
+    padding: 2px 4px;
+  }
+
+  .dist-unit-summary-logo, :global([data-feature-page="cards"] :is(.dist-unit-summary-logo)), :global(:is(.dist-unit-summary-logo)[data-feature-page="cards"]) {
+    width: 14px;
+    height: 14px;
+    flex-basis: 14px;
+  }
+
+  .dist-unit-summary-num, :global([data-feature-page="cards"] :is(.dist-unit-summary-num)), :global(:is(.dist-unit-summary-num)[data-feature-page="cards"]) {
+    font-size: 0.76rem;
+  }
+
+  .count-table.compact-char-table .char-avatar-box, :global([data-feature-page="cards"] :is(.count-table.compact-char-table .char-avatar-box)), :global(:is(.count-table.compact-char-table .char-avatar-box)[data-feature-page="cards"]) {
+    height: auto;
+    min-height: 42px;
+  }
+
+  .count-table.compact-char-table.reward-breakdown-table .char-avatar-box, :global([data-feature-page="cards"] :is(.count-table.compact-char-table.reward-breakdown-table .char-avatar-box)), :global(:is(.count-table.compact-char-table.reward-breakdown-table .char-avatar-box)[data-feature-page="cards"]) {
+    min-height: 48px;
+  }
+
+  .char-avatar-box, :global([data-feature-page="cards"] :is(.char-avatar-box)), :global(:is(.char-avatar-box)[data-feature-page="cards"]) {
+    width: 44px;
+  }
+
+  .avatar-img, :global([data-feature-page="cards"] :is(.avatar-img)), :global(:is(.avatar-img)[data-feature-page="cards"]) {
+    width: 42px;
+    height: 42px;
+  }
+
+  .festival-avatar-wrap, :global([data-feature-page="cards"] :is(.festival-avatar-wrap)), :global(:is(.festival-avatar-wrap)[data-feature-page="cards"]) {
+    width: 42px;
+    height: 42px;
+  }
+
+  .festival-card-table th,
+  .festival-card-table td,
+  :global([data-feature-page="cards"] :is(.festival-card-table th)),
+  :global(:is(.festival-card-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.festival-card-table td)),
+  :global(:is(.festival-card-table td)[data-feature-page="cards"]) {
+    padding: 4px;
+  }
+
+  .festival-card-table, :global([data-feature-page="cards"] :is(.festival-card-table)), :global(:is(.festival-card-table)[data-feature-page="cards"]) {
+    --festival-card-year-width: 42px;
+    --festival-card-max-size: 58px;
+    --festival-card-gap: 4px;
+  }
+
+  .festival-card-year-col, :global([data-feature-page="cards"] :is(.festival-card-year-col)), :global(:is(.festival-card-year-col)[data-feature-page="cards"]) {
+    width: var(--festival-card-year-width);
+  }
+
+  .festival-card-year-head,
+  .festival-card-year-cell,
+  .festival-card-tier-head,
+  :global([data-feature-page="cards"] :is(.festival-card-year-head)),
+  :global(:is(.festival-card-year-head)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.festival-card-year-cell)),
+  :global(:is(.festival-card-year-cell)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.festival-card-tier-head)),
+  :global(:is(.festival-card-tier-head)[data-feature-page="cards"]) {
+    font-size: 0.68rem;
+  }
+
+  .festival-card-image-list, :global([data-feature-page="cards"] :is(.festival-card-image-list)), :global(:is(.festival-card-image-list)[data-feature-page="cards"]) {
+    min-height: 48px;
+  }
+
+  .festival-unit-logo, :global([data-feature-page="cards"] :is(.festival-unit-logo)), :global(:is(.festival-unit-logo)[data-feature-page="cards"]) {
+    width: 13px;
+    height: 13px;
+  }
+
+  .festival-perm-mark,
+  .festival-count-badge,
+  :global([data-feature-page="cards"] :is(.festival-perm-mark)),
+  :global(:is(.festival-perm-mark)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.festival-count-badge)),
+  :global(:is(.festival-count-badge)[data-feature-page="cards"]) {
+    min-width: 12px;
+    height: 12px;
+    line-height: 12px;
+    font-size: 0.52rem;
+  }
+
+  .chars-cell .abbr-text, :global([data-feature-page="cards"] :is(.chars-cell .abbr-text)), :global(:is(.chars-cell .abbr-text)[data-feature-page="cards"]) {
+    display: none;
+  }
+
+  .sub-stat, :global([data-feature-page="cards"] :is(.sub-stat)), :global(:is(.sub-stat)[data-feature-page="cards"]) {
+    font-size: 0.62em;
+    margin-top: 1px;
+  }
+
+  .matrix-wrap, :global([data-feature-page="cards"] :is(.matrix-wrap)), :global(:is(.matrix-wrap)[data-feature-page="cards"]) {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 120px);
+    max-height: calc(100dvh - 120px);
+  }
+
+  .matrix-table, :global([data-feature-page="cards"] :is(.matrix-table)), :global(:is(.matrix-table)[data-feature-page="cards"]) {
+    min-width: 620px;
+  }
+
+  .duo-unit-row, :global([data-feature-page="cards"] :is(.duo-unit-row)), :global(:is(.duo-unit-row)[data-feature-page="cards"]) {
+    padding: 6px;
+    overflow: visible;
+  }
+
+  .duo-unit-combined-head, :global([data-feature-page="cards"] :is(.duo-unit-combined-head)), :global(:is(.duo-unit-combined-head)[data-feature-page="cards"]) {
+    display: none;
+  }
+
+  .duo-unit-card-matrix .duo-unit-subhead, :global([data-feature-page="cards"] :is(.duo-unit-card-matrix .duo-unit-subhead)), :global(:is(.duo-unit-card-matrix .duo-unit-subhead)[data-feature-page="cards"]) {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .duo-unit-card-matrix .duo-unit-filter-row, :global([data-feature-page="cards"] :is(.duo-unit-card-matrix .duo-unit-filter-row)), :global(:is(.duo-unit-card-matrix .duo-unit-filter-row)[data-feature-page="cards"]) {
+    flex: 0 0 100%;
+    width: 100%;
+    gap: 3px;
+    row-gap: 3px;
+  }
+
+  .duo-unit-card-matrix .duo-unit-filter-row .stats-checkbox, :global([data-feature-page="cards"] :is(.duo-unit-card-matrix .duo-unit-filter-row .stats-checkbox)), :global(:is(.duo-unit-card-matrix .duo-unit-filter-row .stats-checkbox)[data-feature-page="cards"]) {
+    font-size: 0.62rem;
+  }
+
+  .duo-unit-export-btn-matrix-mobile, :global([data-feature-page="cards"] :is(.duo-unit-export-btn-matrix-mobile)), :global(:is(.duo-unit-export-btn-matrix-mobile)[data-feature-page="cards"]) {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
+  .duo-unit-pair-grid, :global([data-feature-page="cards"] :is(.duo-unit-pair-grid)), :global(:is(.duo-unit-pair-grid)[data-feature-page="cards"]) {
+    grid-template-columns: 1fr;
+  }
+
+  .duo-unit-card, :global([data-feature-page="cards"] :is(.duo-unit-card)), :global(:is(.duo-unit-card)[data-feature-page="cards"]) {
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .duo-unit-card-last, :global([data-feature-page="cards"] :is(.duo-unit-card-last)), :global(:is(.duo-unit-card-last)[data-feature-page="cards"]) {
+    display: block;
+    height: auto;
+    min-height: max-content;
+    padding-bottom: 12px;
+  }
+
+  .duo-unit-subhead, :global([data-feature-page="cards"] :is(.duo-unit-subhead)), :global(:is(.duo-unit-subhead)[data-feature-page="cards"]) {
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .duo-unit-title-main, :global([data-feature-page="cards"] :is(.duo-unit-title-main)), :global(:is(.duo-unit-title-main)[data-feature-page="cards"]) {
+    min-width: max-content;
+  }
+
+  .duo-unit-title-actions, :global([data-feature-page="cards"] :is(.duo-unit-title-actions)), :global(:is(.duo-unit-title-actions)[data-feature-page="cards"]) {
+    gap: 4px;
+  }
+
+  .duo-unit-card-matrix .duo-unit-title-actions, :global([data-feature-page="cards"] :is(.duo-unit-card-matrix .duo-unit-title-actions)), :global(:is(.duo-unit-card-matrix .duo-unit-title-actions)[data-feature-page="cards"]) {
+    justify-content: flex-start;
+  }
+
+  .duo-unit-last-subhead .duo-unit-title-actions, :global([data-feature-page="cards"] :is(.duo-unit-last-subhead .duo-unit-title-actions)), :global(:is(.duo-unit-last-subhead .duo-unit-title-actions)[data-feature-page="cards"]) {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+
+  .duo-unit-export-btn-inline, :global([data-feature-page="cards"] :is(.duo-unit-export-btn-inline)), :global(:is(.duo-unit-export-btn-inline)[data-feature-page="cards"]) {
+    display: none;
+  }
+
+  .duo-table, :global([data-feature-page="cards"] :is(.duo-table)), :global(:is(.duo-table)[data-feature-page="cards"]) {
+    width: max-content;
+    min-width: 0;
+  }
+
+  .duo-full-table, :global([data-feature-page="cards"] :is(.duo-full-table)), :global(:is(.duo-full-table)[data-feature-page="cards"]) {
+    min-width: 1160px;
+  }
+
+  .duo-unit-table, :global([data-feature-page="cards"] :is(.duo-unit-table)), :global(:is(.duo-unit-table)[data-feature-page="cards"]) {
+    width: 100%;
+    min-width: 100%;
+    height: auto;
+    table-layout: fixed;
+  }
+
+  .duo-full-table .duo-corner-cell,
+  .duo-full-table .duo-row-char,
+  :global([data-feature-page="cards"] :is(.duo-full-table .duo-corner-cell)),
+  :global(:is(.duo-full-table .duo-corner-cell)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-full-table .duo-row-char)),
+  :global(:is(.duo-full-table .duo-row-char)[data-feature-page="cards"]) {
+    width: 58px;
+  }
+
+  .duo-unit-table .duo-corner-cell,
+  .duo-unit-table .duo-row-char,
+  :global([data-feature-page="cards"] :is(.duo-unit-table .duo-corner-cell)),
+  :global(:is(.duo-unit-table .duo-corner-cell)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-unit-table .duo-row-char)),
+  :global(:is(.duo-unit-table .duo-row-char)[data-feature-page="cards"]) {
+    width: 9%;
+  }
+
+  .duo-full-table .duo-char-head,
+  .duo-full-table td.duo-num,
+  :global([data-feature-page="cards"] :is(.duo-full-table .duo-char-head)),
+  :global(:is(.duo-full-table .duo-char-head)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-full-table td.duo-num)),
+  :global(:is(.duo-full-table td.duo-num)[data-feature-page="cards"]) {
+    width: 52px;
+    min-width: 52px;
+    max-width: 52px;
+  }
+
+  .duo-unit-table .duo-char-head,
+  .duo-unit-table td.duo-num,
+  :global([data-feature-page="cards"] :is(.duo-unit-table .duo-char-head)),
+  :global(:is(.duo-unit-table .duo-char-head)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-unit-table td.duo-num)),
+  :global(:is(.duo-unit-table td.duo-num)[data-feature-page="cards"]) {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .duo-head-avatar, :global([data-feature-page="cards"] :is(.duo-head-avatar)), :global(:is(.duo-head-avatar)[data-feature-page="cards"]) {
+    width: 22px;
+    height: 22px;
+  }
+
+  .duo-row-char .mini-avatar, :global([data-feature-page="cards"] :is(.duo-row-char .mini-avatar)), :global(:is(.duo-row-char .mini-avatar)[data-feature-page="cards"]) {
+    width: 22px;
+    height: 22px;
+  }
+
+  .duo-char-head span,
+  .duo-row-char span,
+  :global([data-feature-page="cards"] :is(.duo-char-head span)),
+  :global(:is(.duo-char-head span)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-row-char span)),
+  :global(:is(.duo-row-char span)[data-feature-page="cards"]) {
+    font-size: 0.64rem;
+  }
+
+  .duo-unit-wrap, :global([data-feature-page="cards"] :is(.duo-unit-wrap)), :global(:is(.duo-unit-wrap)[data-feature-page="cards"]) {
+    max-height: none;
+    overflow: visible;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  .duo-unit-table th,
+  .duo-unit-table td,
+  :global([data-feature-page="cards"] :is(.duo-unit-table th)),
+  :global(:is(.duo-unit-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-unit-table td)),
+  :global(:is(.duo-unit-table td)[data-feature-page="cards"]) {
+    padding: 3px 1px;
+  }
+
+  .duo-unit-table thead th,
+  .duo-last-table thead th,
+  :global([data-feature-page="cards"] :is(.duo-unit-table thead th)),
+  :global(:is(.duo-unit-table thead th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-last-table thead th)),
+  :global(:is(.duo-last-table thead th)[data-feature-page="cards"]) {
+    height: 28px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+
+  .duo-unit-table .duo-head-avatar,
+  .duo-unit-table .mini-avatar,
+  :global([data-feature-page="cards"] :is(.duo-unit-table .duo-head-avatar)),
+  :global(:is(.duo-unit-table .duo-head-avatar)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-unit-table .mini-avatar)),
+  :global(:is(.duo-unit-table .mini-avatar)[data-feature-page="cards"]) {
+    width: 22px;
+    height: 22px;
+  }
+
+  .duo-unit-table td.duo-num, :global([data-feature-page="cards"] :is(.duo-unit-table td.duo-num)), :global(:is(.duo-unit-table td.duo-num)[data-feature-page="cards"]) {
+    font-size: 0.82rem;
+    line-height: 1;
+  }
+
+  .duo-pair-avatar, :global([data-feature-page="cards"] :is(.duo-pair-avatar)), :global(:is(.duo-pair-avatar)[data-feature-page="cards"]) {
+    width: 22px;
+    height: 22px;
+  }
+
+  .duo-pair-avatar + .duo-pair-avatar, :global([data-feature-page="cards"] :is(.duo-pair-avatar + .duo-pair-avatar)), :global(:is(.duo-pair-avatar + .duo-pair-avatar)[data-feature-page="cards"]) {
+    margin-left: 5px;
+  }
+
+  .related-panel .duo-last-table th,
+  .related-panel .duo-last-table td,
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table th)),
+  :global(:is(.related-panel .duo-last-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table td)),
+  :global(:is(.related-panel .duo-last-table td)[data-feature-page="cards"]) {
+    padding: 3px 2px;
+    font-size: 0.62rem;
+    line-height: 1.2;
+  }
+
+  .duo-last-table,
+  .related-panel .duo-last-table,
+  :global([data-feature-page="cards"] :is(.duo-last-table)),
+  :global(:is(.duo-last-table)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table)),
+  :global(:is(.related-panel .duo-last-table)[data-feature-page="cards"]) {
+    display: table;
+    flex: none;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+  }
+
+  .related-panel .duo-last-table .jump-link, :global([data-feature-page="cards"] :is(.related-panel .duo-last-table .jump-link)), :global(:is(.related-panel .duo-last-table .jump-link)[data-feature-page="cards"]) {
+    min-height: 0;
+    padding: 2px 5px;
+    font-size: 0.64rem;
+    line-height: 1.25;
+  }
+
+  .duo-last-card-pair, :global([data-feature-page="cards"] :is(.duo-last-card-pair)), :global(:is(.duo-last-card-pair)[data-feature-page="cards"]) {
+    gap: 3px;
+  }
+
+  .duo-last-card-thumb, :global([data-feature-page="cards"] :is(.duo-last-card-thumb)), :global(:is(.duo-last-card-thumb)[data-feature-page="cards"]) {
+    --rel-last-card-frame-size: 58px;
+  }
+
+  .matrix-table th,
+  .matrix-table td,
+  :global([data-feature-page="cards"] :is(.matrix-table th)),
+  :global(:is(.matrix-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.matrix-table td)),
+  :global(:is(.matrix-table td)[data-feature-page="cards"]) {
+    padding: 6px;
+    font-size: 0.8rem;
+  }
+
+  .mini-avatar, :global([data-feature-page="cards"] :is(.mini-avatar)), :global(:is(.mini-avatar)[data-feature-page="cards"]) {
+    width: 30px;
+    height: 30px;
+  }
+
+  .matrix-avatar-wrap, :global([data-feature-page="cards"] :is(.matrix-avatar-wrap)), :global(:is(.matrix-avatar-wrap)[data-feature-page="cards"]) {
+    width: 30px;
+    height: 30px;
+  }
+
+  .matrix-avatar-unit-logo, :global([data-feature-page="cards"] :is(.matrix-avatar-unit-logo)), :global(:is(.matrix-avatar-unit-logo)[data-feature-page="cards"]) {
+    width: 15px;
+    height: 15px;
+    right: -4px;
+    bottom: -4px;
+  }
+
+  .matrix-table td.matrix-num, :global([data-feature-page="cards"] :is(.matrix-table td.matrix-num)), :global(:is(.matrix-table td.matrix-num)[data-feature-page="cards"]) {
+    font-size: 0.98rem;
+  }
+
+  .attr-summary-grid, :global([data-feature-page="cards"] :is(.attr-summary-grid)), :global(:is(.attr-summary-grid)[data-feature-page="cards"]) {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .attr-summary-card, :global([data-feature-page="cards"] :is(.attr-summary-card)), :global(:is(.attr-summary-card)[data-feature-page="cards"]) {
+    padding: 7px;
+  }
+
+  .attr-summary-table th,
+  .attr-summary-table td,
+  :global([data-feature-page="cards"] :is(.attr-summary-table th)),
+  :global(:is(.attr-summary-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.attr-summary-table td)),
+  :global(:is(.attr-summary-table td)[data-feature-page="cards"]) {
+    padding: 4px 2px;
+  }
+
+  .attr-summary-num, :global([data-feature-page="cards"] :is(.attr-summary-num)), :global(:is(.attr-summary-num)[data-feature-page="cards"]) {
+    font-size: 0.98rem;
+  }
+
+  .attr-summary-attr-icon, :global([data-feature-page="cards"] :is(.attr-summary-attr-icon)), :global(:is(.attr-summary-attr-icon)[data-feature-page="cards"]) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .fes-record-table tbody tr:not(.fes-total-row) td, :global([data-feature-page="cards"] :is(.fes-record-table tbody tr:not(.fes-total-row) td)), :global(:is(.fes-record-table tbody tr:not(.fes-total-row) td)[data-feature-page="cards"]) {
+    height: 84px;
+  }
+
+  .fes-attr-icon, :global([data-feature-page="cards"] :is(.fes-attr-icon)), :global(:is(.fes-attr-icon)[data-feature-page="cards"]) {
+    width: 20px;
+    height: 20px;
+  }
+
+  .fes-cell-icons, :global([data-feature-page="cards"] :is(.fes-cell-icons)), :global(:is(.fes-cell-icons)[data-feature-page="cards"]) {
+    min-height: 72px;
+    gap: 1px;
+  }
+
+  .fes-cell-avatar, :global([data-feature-page="cards"] :is(.fes-cell-avatar)), :global(:is(.fes-cell-avatar)[data-feature-page="cards"]) {
+    width: 36px;
+    height: 36px;
+  }
+
+  .fes-row-head, :global([data-feature-page="cards"] :is(.fes-row-head)), :global(:is(.fes-row-head)[data-feature-page="cards"]) {
+    width: 54px;
+    min-width: 54px;
+    font-size: 0.66rem;
+  }
+
+  .fes-total-num, :global([data-feature-page="cards"] :is(.fes-total-num)), :global(:is(.fes-total-num)[data-feature-page="cards"]) {
+    font-size: 0.88rem;
+  }
+
+  .festival-grid, :global([data-feature-page="cards"] :is(.festival-grid)), :global(:is(.festival-grid)[data-feature-page="cards"]) {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .lineup-plan-row, :global([data-feature-page="cards"] :is(.lineup-plan-row)), :global(:is(.lineup-plan-row)[data-feature-page="cards"]) {
+    grid-template-columns: 24px repeat(5, minmax(0, 1fr)) 40px;
+    gap: 4px;
+  }
+
+  .support-unit-title-logo, :global([data-feature-page="cards"] :is(.support-unit-title-logo)), :global(:is(.support-unit-title-logo)[data-feature-page="cards"]) {
+    height: 28px;
+    max-width: 220px;
+  }
+
+  .support-member-avatar, :global([data-feature-page="cards"] :is(.support-member-avatar)), :global(:is(.support-member-avatar)[data-feature-page="cards"]) {
+    width: 27px;
+    height: 27px;
+  }
+
+  .support-member-attr-icon, :global([data-feature-page="cards"] :is(.support-member-attr-icon)), :global(:is(.support-member-attr-icon)[data-feature-page="cards"]) {
+    width: 11px;
+    height: 11px;
+    top: 1px;
+    right: 1px;
+  }
+
+  .lineup-char-head, :global([data-feature-page="cards"] :is(.lineup-char-head)), :global(:is(.lineup-char-head)[data-feature-page="cards"]) {
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .lineup-char-main, :global([data-feature-page="cards"] :is(.lineup-char-main)), :global(:is(.lineup-char-main)[data-feature-page="cards"]) {
+    gap: 6px;
+  }
+
+  .lineup-char-text, :global([data-feature-page="cards"] :is(.lineup-char-text)), :global(:is(.lineup-char-text)[data-feature-page="cards"]) {
+    gap: 4px;
+    align-items: center;
+  }
+
+  .lineup-char-avatar, :global([data-feature-page="cards"] :is(.lineup-char-avatar)), :global(:is(.lineup-char-avatar)[data-feature-page="cards"]) {
+    width: 30px;
+    height: 30px;
+  }
+
+  .lineup-char-name, :global([data-feature-page="cards"] :is(.lineup-char-name)), :global(:is(.lineup-char-name)[data-feature-page="cards"]) {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .lineup-char-sub, :global([data-feature-page="cards"] :is(.lineup-char-sub)), :global(:is(.lineup-char-sub)[data-feature-page="cards"]) {
+    font-size: 0.62rem;
+    max-width: 30vw;
+  }
+
+  .lineup-head-actions, :global([data-feature-page="cards"] :is(.lineup-head-actions)), :global(:is(.lineup-head-actions)[data-feature-page="cards"]) {
+    gap: 3px;
+    flex-wrap: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .lineup-toggle-btn, :global([data-feature-page="cards"] :is(.lineup-toggle-btn)), :global(:is(.lineup-toggle-btn)[data-feature-page="cards"]) {
+    font-size: 0.58rem;
+    padding: 3px 5px;
+    white-space: nowrap;
+  }
+
+  .lineup-toggle-btn-global, :global([data-feature-page="cards"] :is(.lineup-toggle-btn-global)), :global(:is(.lineup-toggle-btn-global)[data-feature-page="cards"]) {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+    line-height: 1;
+  }
+
+  .lineup-head-actions .card-export-btn, :global([data-feature-page="cards"] :is(.lineup-head-actions .card-export-btn)), :global(:is(.lineup-head-actions .card-export-btn)[data-feature-page="cards"]) {
+    font-size: 0.58rem;
+    padding: 3px 5px;
+    white-space: nowrap;
+  }
+
+  .lineup-attr-cell,
+  .lineup-total-cell,
+  .lineup-member-cell,
+  :global([data-feature-page="cards"] :is(.lineup-attr-cell)),
+  :global(:is(.lineup-attr-cell)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.lineup-total-cell)),
+  :global(:is(.lineup-total-cell)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.lineup-member-cell)),
+  :global(:is(.lineup-member-cell)[data-feature-page="cards"]) {
+    min-height: 48px;
+  }
+
+  .lineup-attr-icon, :global([data-feature-page="cards"] :is(.lineup-attr-icon)), :global(:is(.lineup-attr-icon)[data-feature-page="cards"]) {
+    width: 17px;
+    height: 17px;
+  }
+
+  .lineup-member-score, :global([data-feature-page="cards"] :is(.lineup-member-score)), :global(:is(.lineup-member-score)[data-feature-page="cards"]) {
+    font-size: 0.86rem;
+  }
+
+  .lineup-jump, :global([data-feature-page="cards"] :is(.lineup-jump)), :global(:is(.lineup-jump)[data-feature-page="cards"]) {
+    font-size: 0.54rem;
+    padding: 1px 2px;
+  }
+
+  .lineup-total-cell, :global([data-feature-page="cards"] :is(.lineup-total-cell)), :global(:is(.lineup-total-cell)[data-feature-page="cards"]) {
+    font-size: 0.9rem;
+    font-weight: 900;
+  }
+
+  .festival-card, :global([data-feature-page="cards"] :is(.festival-card)), :global(:is(.festival-card)[data-feature-page="cards"]) {
+    padding: 8px;
+  }
+
+  .record-grid, :global([data-feature-page="cards"] :is(.record-grid)), :global(:is(.record-grid)[data-feature-page="cards"]) {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .record-block, :global([data-feature-page="cards"] :is(.record-block)), :global(:is(.record-block)[data-feature-page="cards"]) {
+    padding: 8px;
+    overflow-x: visible;
+  }
+
+  .record-head-row, :global([data-feature-page="cards"] :is(.record-head-row)), :global(:is(.record-head-row)[data-feature-page="cards"]) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .record-head-left, :global([data-feature-page="cards"] :is(.record-head-left)), :global(:is(.record-head-left)[data-feature-page="cards"]) {
+    width: auto;
+    min-width: 0;
+    gap: 4px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .record-head-left h3, :global([data-feature-page="cards"] :is(.record-head-left h3)), :global(:is(.record-head-left h3)[data-feature-page="cards"]) {
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  .record-head-controls, :global([data-feature-page="cards"] :is(.record-head-controls)), :global(:is(.record-head-controls)[data-feature-page="cards"]) {
+    width: auto;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .stats-checkbox, :global([data-feature-page="cards"] :is(.stats-checkbox)), :global(:is(.stats-checkbox)[data-feature-page="cards"]) {
+    font-size: 0.66rem;
+    white-space: nowrap;
+  }
+
+  .record-sort-btn, :global([data-feature-page="cards"] :is(.record-sort-btn)), :global(:is(.record-sort-btn)[data-feature-page="cards"]) {
+    font-size: 0.62rem;
+    padding: 1px 6px;
+  }
+
+  .vs-unit-score-table .record-avatar, :global([data-feature-page="cards"] :is(.vs-unit-score-table .record-avatar)), :global(:is(.vs-unit-score-table .record-avatar)[data-feature-page="cards"]) {
+    width: 24px;
+    height: 24px;
+  }
+
+  .vs-original-stat-table th:first-child,
+  .vs-original-stat-table td:first-child,
+  :global([data-feature-page="cards"] :is(.vs-original-stat-table th:first-child)),
+  :global(:is(.vs-original-stat-table th:first-child)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.vs-original-stat-table td:first-child)),
+  :global(:is(.vs-original-stat-table td:first-child)[data-feature-page="cards"]) {
+    width: 52px;
+    min-width: 52px;
+    max-width: 52px;
+  }
+
+  .mini-unit-logo, :global([data-feature-page="cards"] :is(.mini-unit-logo)), :global(:is(.mini-unit-logo)[data-feature-page="cards"]) {
+    width: 24px;
+    height: 24px;
+  }
+
+  .record-table, :global([data-feature-page="cards"] :is(.record-table)), :global(:is(.record-table)[data-feature-page="cards"]) {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .record-table th,
+  .record-table td,
+  :global([data-feature-page="cards"] :is(.record-table th)),
+  :global(:is(.record-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.record-table td)),
+  :global(:is(.record-table td)[data-feature-page="cards"]) {
+    padding: 4px 3px;
+    font-size: 0.68rem;
+    word-break: break-word;
+  }
+
+  .related-panel .related-table th:first-child,
+  .related-panel .related-table td:first-child,
+  :global([data-feature-page="cards"] :is(.related-panel .related-table th:first-child)),
+  :global(:is(.related-panel .related-table th:first-child)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .related-table td:first-child)),
+  :global(:is(.related-panel .related-table td:first-child)[data-feature-page="cards"]) {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .record-char, :global([data-feature-page="cards"] :is(.record-char)), :global(:is(.record-char)[data-feature-page="cards"]) {
+    gap: 4px;
+  }
+
+  .related-panel .related-table-last.last-record-table-card-mode .record-char > span:not(.record-avatar-stack),
+  .related-panel .related-table-interval.interval-record-table-card-mode .record-char > span:not(.record-avatar-stack),
+  .related-panel .related-table-vs-last.vs-last-four-card-mode .record-char > span:not(.record-avatar-stack),
+  :global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode .record-char > span:not(.record-avatar-stack))),
+  :global(:is(.related-panel .related-table-last.last-record-table-card-mode .record-char > span:not(.record-avatar-stack))[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode .record-char > span:not(.record-avatar-stack))),
+  :global(:is(.related-panel .related-table-interval.interval-record-table-card-mode .record-char > span:not(.record-avatar-stack))[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode .record-char > span:not(.record-avatar-stack))),
+  :global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode .record-char > span:not(.record-avatar-stack))[data-feature-page="cards"]) {
+    display: none;
+  }
+
+  .record-char > span:not(.record-avatar-stack), :global([data-feature-page="cards"] :is(.record-char > span:not(.record-avatar-stack))), :global(:is(.record-char > span:not(.record-avatar-stack))[data-feature-page="cards"]) {
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .related-panel .record-char > span:not(.record-avatar-stack), :global([data-feature-page="cards"] :is(.related-panel .record-char > span:not(.record-avatar-stack))), :global(:is(.related-panel .record-char > span:not(.record-avatar-stack))[data-feature-page="cards"]) {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .record-avatar, :global([data-feature-page="cards"] :is(.record-avatar)), :global(:is(.record-avatar)[data-feature-page="cards"]) {
+    width: 24px;
+    height: 24px;
+  }
+
+  .related-panel, :global([data-feature-page="cards"] :is(.related-panel)), :global(:is(.related-panel)[data-feature-page="cards"]) {
+    --related-record-card-row-height: 78px;
+    --rel-avatar-size: 24px;
+    --rel-avatar-size-card: 30px;
+    --rel-last-card-frame-size: 60px;
+    --rel-interval-card-frame-size: 60px;
+    --rel-jump-chip-min: 64px;
+
+    --rel-min-char-col: 10px;
+    --rel-min-card-col: 60px;
+    --rel-min-event-col: 40px;
+    --rel-min-range-col: 40px;
+    --rel-min-date-col: 10px;
+    --rel-min-gap-col: 10px;
+
+    --rel-last-char-pct: 28%;
+    --rel-last-event-pct: 20%;
+    --rel-last-date-pct: 26%;
+    --rel-last-gap-pct: 26%;
+
+    --rel-last-card-char-pct: 10%;
+    --rel-last-card-card-pct: 24%;
+    --rel-last-card-event-pct: 18%;
+    --rel-last-card-date-pct: 24%;
+    --rel-last-card-gap-pct: 24%;
+
+    --rel-int-char-pct: 28%;
+    --rel-int-range-pct: 44%;
+    --rel-int-gap-pct: 28%;
+
+    --rel-int-card-char-pct: 10%;
+    --rel-int-card-card-pct: 40%;
+    --rel-int-card-range-pct: 26%;
+    --rel-int-card-gap-pct: 26%;
+  }
+
+  .interval-card-column, :global([data-feature-page="cards"] :is(.interval-card-column)), :global(:is(.interval-card-column)[data-feature-page="cards"]) {
+    gap: 2px;
+  }
+
+  .jump-link, :global([data-feature-page="cards"] :is(.jump-link)), :global(:is(.jump-link)[data-feature-page="cards"]) {
+    font-size: 0.62rem;
+    padding: 1px 4px;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .related-panel .jump-link,
+  .related-panel .record-block .jump-link,
+  :global([data-feature-page="cards"] :is(.related-panel .jump-link)),
+  :global(:is(.related-panel .jump-link)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .record-block .jump-link)),
+  :global(:is(.related-panel .record-block .jump-link)[data-feature-page="cards"]) {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
+  }
+
+  .jump-link.lineup-jump, :global([data-feature-page="cards"] :is(.jump-link.lineup-jump)), :global(:is(.jump-link.lineup-jump)[data-feature-page="cards"]) {
+    font-size: 10px;
+    padding: 1px 2px;
+    text-overflow: clip;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .pjsk-stats, :global([data-feature-page="cards"] :is(.pjsk-stats)), :global(:is(.pjsk-stats)[data-feature-page="cards"]) {
+    padding: 6px;
+  }
+
+  .related-panel, :global([data-feature-page="cards"] :is(.related-panel)), :global(:is(.related-panel)[data-feature-page="cards"]) {
+    --related-record-card-row-height: 78px;
+    --rel-avatar-size: 24px;
+    --rel-avatar-size-card: 30px;
+    --rel-last-card-frame-size: 60px;
+    --rel-interval-card-frame-size: 60px;
+    --rel-jump-chip-min: 60px;
+
+    --rel-min-char-col: 10px;
+    --rel-min-card-col: 60px;
+    --rel-min-event-col: 40px;
+    --rel-min-range-col: 40px;
+    --rel-min-date-col: 10px;
+    --rel-min-gap-col: 10px;
+
+    --rel-last-char-pct: 28%;
+    --rel-last-event-pct: 20%;
+    --rel-last-date-pct: 26%;
+    --rel-last-gap-pct: 26%;
+
+    --rel-last-card-char-pct: 10%;
+    --rel-last-card-card-pct: 24%;
+    --rel-last-card-event-pct: 18%;
+    --rel-last-card-date-pct: 24%;
+    --rel-last-card-gap-pct: 24%;
+
+    --rel-int-char-pct: 28%;
+    --rel-int-range-pct: 44%;
+    --rel-int-gap-pct: 28%;
+
+    --rel-int-card-char-pct: 10%;
+    --rel-int-card-card-pct: 40%;
+    --rel-int-card-range-pct: 26%;
+    --rel-int-card-gap-pct: 26%;
+  }
+
+  .stats-main h1, :global([data-feature-page="cards"] :is(.stats-main h1)), :global(:is(.stats-main h1)[data-feature-page="cards"]) {
+    font-size: 1rem;
+    margin-bottom: 6px;
+  }
+
+  .card-panel:not(.stats-nav), :global([data-feature-page="cards"] :is(.card-panel:not(.stats-nav))), :global(:is(.card-panel:not(.stats-nav))[data-feature-page="cards"]) {
+    padding: 8px;
+  }
+
+  .nav-scroll, :global([data-feature-page="cards"] :is(.nav-scroll)), :global(:is(.nav-scroll)[data-feature-page="cards"]) { max-height: none; }
+
+  .count-table, :global([data-feature-page="cards"] :is(.count-table)), :global(:is(.count-table)[data-feature-page="cards"]) {
+    min-width: 0;
+  }
+
+  .count-table.compact-char-table .char-avatar-box, :global([data-feature-page="cards"] :is(.count-table.compact-char-table .char-avatar-box)), :global(:is(.count-table.compact-char-table .char-avatar-box)[data-feature-page="cards"]) {
+    width: 34px;
+    height: auto;
+    min-height: 34px;
+  }
+
+  .count-table.compact-char-table .avatar-img,
+  .count-table.compact-char-table .festival-avatar-wrap,
+  :global([data-feature-page="cards"] :is(.count-table.compact-char-table .avatar-img)),
+  :global(:is(.count-table.compact-char-table .avatar-img)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.count-table.compact-char-table .festival-avatar-wrap)),
+  :global(:is(.count-table.compact-char-table .festival-avatar-wrap)[data-feature-page="cards"]) {
+    width: 34px;
+    height: 34px;
+  }
+
+  .count-table.compact-char-table.reward-breakdown-table .char-avatar-box, :global([data-feature-page="cards"] :is(.count-table.compact-char-table.reward-breakdown-table .char-avatar-box)), :global(:is(.count-table.compact-char-table.reward-breakdown-table .char-avatar-box)[data-feature-page="cards"]) {
+    min-height: 42px;
+  }
+
+  .char-avatar-box, :global([data-feature-page="cards"] :is(.char-avatar-box)), :global(:is(.char-avatar-box)[data-feature-page="cards"]) {
+    width: 38px;
+  }
+
+  .avatar-img, :global([data-feature-page="cards"] :is(.avatar-img)), :global(:is(.avatar-img)[data-feature-page="cards"]) {
+    width: 38px;
+    height: 38px;
+  }
+
+  .score-attr-wrap, :global([data-feature-page="cards"] :is(.score-attr-wrap)), :global(:is(.score-attr-wrap)[data-feature-page="cards"]) {
+    gap: 2px;
+  }
+
+  .score-attr-icon, :global([data-feature-page="cards"] :is(.score-attr-icon)), :global(:is(.score-attr-icon)[data-feature-page="cards"]) {
+    width: 20px;
+    height: 20px;
+  }
+
+  .duo-unit-row, :global([data-feature-page="cards"] :is(.duo-unit-row)), :global(:is(.duo-unit-row)[data-feature-page="cards"]) {
+    padding: 5px;
+  }
+
+  .duo-unit-card, :global([data-feature-page="cards"] :is(.duo-unit-card)), :global(:is(.duo-unit-card)[data-feature-page="cards"]) {
+    padding: 0;
+  }
+
+  .duo-unit-last-subhead .stats-checkbox, :global([data-feature-page="cards"] :is(.duo-unit-last-subhead .stats-checkbox)), :global(:is(.duo-unit-last-subhead .stats-checkbox)[data-feature-page="cards"]) {
+    position: relative;
+    top: 4px;
+  }
+
+  .duo-unit-card-matrix .duo-unit-filter-row, :global([data-feature-page="cards"] :is(.duo-unit-card-matrix .duo-unit-filter-row)), :global(:is(.duo-unit-card-matrix .duo-unit-filter-row)[data-feature-page="cards"]) {
+    gap: 2px;
+    row-gap: 2px;
+  }
+
+  .duo-unit-card-matrix .duo-unit-filter-row .stats-checkbox, :global([data-feature-page="cards"] :is(.duo-unit-card-matrix .duo-unit-filter-row .stats-checkbox)), :global(:is(.duo-unit-card-matrix .duo-unit-filter-row .stats-checkbox)[data-feature-page="cards"]) {
+    font-size: 0.6rem;
+    gap: 2px;
+  }
+
+  .duo-unit-card-last, :global([data-feature-page="cards"] :is(.duo-unit-card-last)), :global(:is(.duo-unit-card-last)[data-feature-page="cards"]) {
+    display: block;
+    height: auto;
+    min-height: max-content;
+    padding-bottom: 11px;
+  }
+
+  .duo-unit-table th,
+  .duo-unit-table td,
+  :global([data-feature-page="cards"] :is(.duo-unit-table th)),
+  :global(:is(.duo-unit-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-unit-table td)),
+  :global(:is(.duo-unit-table td)[data-feature-page="cards"]) {
+    padding: 2px 1px;
+  }
+
+  .duo-unit-table thead th,
+  .duo-last-table thead th,
+  :global([data-feature-page="cards"] :is(.duo-unit-table thead th)),
+  :global(:is(.duo-unit-table thead th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-last-table thead th)),
+  :global(:is(.duo-last-table thead th)[data-feature-page="cards"]) {
+    height: 24px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+  }
+
+  .duo-unit-table .duo-head-avatar,
+  .duo-unit-table .mini-avatar,
+  :global([data-feature-page="cards"] :is(.duo-unit-table .duo-head-avatar)),
+  :global(:is(.duo-unit-table .duo-head-avatar)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.duo-unit-table .mini-avatar)),
+  :global(:is(.duo-unit-table .mini-avatar)[data-feature-page="cards"]) {
+    width: 22px;
+    height: 22px;
+  }
+
+  .duo-unit-table td.duo-num, :global([data-feature-page="cards"] :is(.duo-unit-table td.duo-num)), :global(:is(.duo-unit-table td.duo-num)[data-feature-page="cards"]) {
+    font-size: 0.76rem;
+  }
+
+  .duo-pair-avatar, :global([data-feature-page="cards"] :is(.duo-pair-avatar)), :global(:is(.duo-pair-avatar)[data-feature-page="cards"]) {
+    width: 20px;
+    height: 20px;
+  }
+
+  .duo-pair-avatar + .duo-pair-avatar, :global([data-feature-page="cards"] :is(.duo-pair-avatar + .duo-pair-avatar)), :global(:is(.duo-pair-avatar + .duo-pair-avatar)[data-feature-page="cards"]) {
+    margin-left: 4px;
+  }
+
+  .related-panel .duo-last-table th,
+  .related-panel .duo-last-table td,
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table th)),
+  :global(:is(.related-panel .duo-last-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table td)),
+  :global(:is(.related-panel .duo-last-table td)[data-feature-page="cards"]) {
+    padding: 2px 1px;
+    font-size: 0.58rem;
+  }
+
+  .duo-last-table,
+  .related-panel .duo-last-table,
+  :global([data-feature-page="cards"] :is(.duo-last-table)),
+  :global(:is(.duo-last-table)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table)),
+  :global(:is(.related-panel .duo-last-table)[data-feature-page="cards"]) {
+    display: table;
+    flex: none;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+  }
+
+  .related-panel .duo-last-table .jump-link, :global([data-feature-page="cards"] :is(.related-panel .duo-last-table .jump-link)), :global(:is(.related-panel .duo-last-table .jump-link)[data-feature-page="cards"]) {
+    padding: 2px 4px;
+    font-size: 0.6rem;
+  }
+
+  .duo-last-card-thumb, :global([data-feature-page="cards"] :is(.duo-last-card-thumb)), :global(:is(.duo-last-card-thumb)[data-feature-page="cards"]) {
+    --rel-last-card-frame-size: 52px;
+  }
+
+  .record-table, :global([data-feature-page="cards"] :is(.record-table)), :global(:is(.record-table)[data-feature-page="cards"]) {
+    min-width: 0;
+  }
+}

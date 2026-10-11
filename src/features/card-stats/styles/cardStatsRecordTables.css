@@ -1,0 +1,877 @@
+
+
+.record-table th, :global([data-feature-page="cards"] :is(.record-table th)), :global(:is(.record-table th)[data-feature-page="cards"]) {
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+.range-cell, :global([data-feature-page="cards"] :is(.range-cell)), :global(:is(.range-cell)[data-feature-page="cards"]) {
+  white-space: nowrap;
+}
+
+.range-cell.is-card-mode, :global([data-feature-page="cards"] :is(.range-cell.is-card-mode)), :global(:is(.range-cell.is-card-mode)[data-feature-page="cards"]) {
+  white-space: normal;
+}
+
+.range-cell > span, :global([data-feature-page="cards"] :is(.range-cell > span)), :global(:is(.range-cell > span)[data-feature-page="cards"]) {
+  margin: 0 3px;
+}
+
+.related-panel, :global([data-feature-page="cards"] :is(.related-panel)), :global(:is(.related-panel)[data-feature-page="cards"]) {
+  --related-record-card-row-height: 88px;
+  /* 头像与卡面尺寸 */
+  --rel-avatar-size: 22px;
+  --rel-avatar-size-card: 34px;
+  --rel-last-card-frame-size: 70px;
+  --rel-interval-card-frame-size: 70px;
+  --rel-card-image-scale: 0.9;
+  --rel-card-logo-scale: 0.24;
+  --rel-jump-chip-min: 60px;
+
+  /* 列宽最小值 */
+  --rel-min-char-col: 40px;
+  --rel-min-card-col: 10px;
+  --rel-min-event-col: 10px;
+  --rel-min-range-col: 40px;
+  --rel-min-date-col: 10px;
+  --rel-min-gap-col: 10px;
+
+  /* 上次记录（不显示卡面）列占比 */
+  --rel-last-char-pct: 28%;
+  --rel-last-event-pct: 20%;
+  --rel-last-date-pct: 26%;
+  --rel-last-gap-pct: 26%;
+
+  /* 上次记录（显示卡面）列占比 */
+  --rel-last-card-char-pct: 10%;
+  --rel-last-card-card-pct: 24%;
+  --rel-last-card-event-pct: 20%;
+  --rel-last-card-date-pct: 23%;
+  --rel-last-card-gap-pct: 23%;
+
+  /* 间隔记录（不显示卡面）列占比 */
+  --rel-int-char-pct: 28%;
+  --rel-int-range-pct: 44%;
+  --rel-int-gap-pct: 28%;
+
+  /* 间隔记录（显示卡面）列占比 */
+  --rel-int-card-char-pct: 10%;
+  --rel-int-card-card-pct: 44%;
+  --rel-int-card-range-pct: 22%;
+  --rel-int-card-gap-pct: 26%;
+}
+
+.related-panel .related-table, :global([data-feature-page="cards"] :is(.related-panel .related-table)), :global(:is(.related-panel .related-table)[data-feature-page="cards"]) {
+  width: 100%;
+  min-width: 0;
+  table-layout: auto;
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last:not(.last-record-table-card-mode))),
+:global(:is(.related-panel .related-table-last:not(.last-record-table-card-mode))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode))),
+:global(:is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode))[data-feature-page="cards"]) {
+  min-width: calc(var(--rel-min-char-col) + var(--rel-min-event-col) + var(--rel-min-date-col) + var(--rel-min-gap-col));
+}
+
+.related-panel .related-table-last.last-record-table-card-mode,
+.related-panel .related-table-vs-last.vs-last-four-card-mode,
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode)),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode)),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode)[data-feature-page="cards"]) {
+  min-width: calc(var(--rel-min-char-col) + var(--rel-min-card-col) + var(--rel-min-event-col) + var(--rel-min-date-col) + var(--rel-min-gap-col));
+}
+
+.related-panel .related-table-interval:not(.interval-record-table-card-mode), :global([data-feature-page="cards"] :is(.related-panel .related-table-interval:not(.interval-record-table-card-mode))), :global(:is(.related-panel .related-table-interval:not(.interval-record-table-card-mode))[data-feature-page="cards"]) {
+  min-width: calc(var(--rel-min-char-col) + var(--rel-min-range-col) + var(--rel-min-gap-col));
+}
+
+.related-panel .related-table-interval.interval-record-table-card-mode, :global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode)), :global(:is(.related-panel .related-table-interval.interval-record-table-card-mode)[data-feature-page="cards"]) {
+  min-width: calc(var(--rel-min-char-col) + var(--rel-min-card-col) + var(--rel-min-range-col) + var(--rel-min-gap-col));
+}
+
+.related-panel .related-table th,
+.related-panel .related-table td,
+:global([data-feature-page="cards"] :is(.related-panel .related-table th)),
+:global(:is(.related-panel .related-table th)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table td)),
+:global(:is(.related-panel .related-table td)[data-feature-page="cards"]) {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.related-panel .related-table th:first-child,
+.related-panel .related-table td:first-child,
+:global([data-feature-page="cards"] :is(.related-panel .related-table th:first-child)),
+:global(:is(.related-panel .related-table th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table td:first-child)),
+:global(:is(.related-panel .related-table td:first-child)[data-feature-page="cards"]) {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode) td.record-char,
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) td.record-char,
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td.record-char,
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last:not(.last-record-table-card-mode) td.record-char)),
+:global(:is(.related-panel .related-table-last:not(.last-record-table-card-mode) td.record-char)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) td.record-char)),
+:global(:is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) td.record-char)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td.record-char)),
+:global(:is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td.record-char)[data-feature-page="cards"]) {
+  text-align: left !important;
+}
+
+.related-panel .related-table-last.last-record-table-card-mode td.record-char,
+.related-panel .related-table-interval.interval-record-table-card-mode td.record-char,
+.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char,
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode td.record-char)),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode td.record-char)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode td.record-char)),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode td.record-char)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char)),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char)[data-feature-page="cards"]) {
+  text-align: center !important;
+}
+
+.related-panel .related-table-last.last-record-table-card-mode td.record-char > span.record-avatar-stack,
+.related-panel .related-table-last.last-record-table-card-mode td.record-char > img.record-avatar,
+.related-panel .related-table-interval.interval-record-table-card-mode td.record-char > span.record-avatar-stack,
+.related-panel .related-table-interval.interval-record-table-card-mode td.record-char > img.record-avatar,
+.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char > span.record-avatar-stack,
+.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char > img.record-avatar,
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode td.record-char > span.record-avatar-stack)),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode td.record-char > span.record-avatar-stack)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode td.record-char > img.record-avatar)),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode td.record-char > img.record-avatar)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode td.record-char > span.record-avatar-stack)),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode td.record-char > span.record-avatar-stack)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode td.record-char > img.record-avatar)),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode td.record-char > img.record-avatar)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char > span.record-avatar-stack)),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char > span.record-avatar-stack)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char > img.record-avatar)),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode td.record-char > img.record-avatar)[data-feature-page="cards"]) {
+  margin-right: 0 !important;
+}
+
+.related-panel .related-table .record-char > span:not(.record-avatar-stack), :global([data-feature-page="cards"] :is(.related-panel .related-table .record-char > span:not(.record-avatar-stack))), :global(:is(.related-panel .related-table .record-char > span:not(.record-avatar-stack))[data-feature-page="cards"]) {
+  flex: 0 0 auto;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.related-panel .related-table .record-avatar, :global([data-feature-page="cards"] :is(.related-panel .related-table .record-avatar)), :global(:is(.related-panel .related-table .record-avatar)[data-feature-page="cards"]) {
+  width: var(--rel-avatar-size);
+  height: var(--rel-avatar-size);
+}
+
+.related-panel .related-table .record-avatar-stack, :global([data-feature-page="cards"] :is(.related-panel .related-table .record-avatar-stack)), :global(:is(.related-panel .related-table .record-avatar-stack)[data-feature-page="cards"]) {
+  width: var(--rel-avatar-size);
+  height: var(--rel-avatar-size);
+  flex: 0 0 var(--rel-avatar-size);
+  min-width: var(--rel-avatar-size);
+}
+
+.related-panel .related-table.last-record-table-card-mode .record-avatar,
+.related-panel .related-table.vs-last-four-card-mode .record-avatar,
+.related-panel .related-table .record-avatar.related-last-avatar-large,
+.related-panel .related-table .record-avatar.interval-avatar-large,
+.related-panel .related-table .record-avatar.vs-last-four-avatar-large,
+:global([data-feature-page="cards"] :is(.related-panel .related-table.last-record-table-card-mode .record-avatar)),
+:global(:is(.related-panel .related-table.last-record-table-card-mode .record-avatar)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table.vs-last-four-card-mode .record-avatar)),
+:global(:is(.related-panel .related-table.vs-last-four-card-mode .record-avatar)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table .record-avatar.related-last-avatar-large)),
+:global(:is(.related-panel .related-table .record-avatar.related-last-avatar-large)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table .record-avatar.interval-avatar-large)),
+:global(:is(.related-panel .related-table .record-avatar.interval-avatar-large)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table .record-avatar.vs-last-four-avatar-large)),
+:global(:is(.related-panel .related-table .record-avatar.vs-last-four-avatar-large)[data-feature-page="cards"]) {
+  width: var(--rel-avatar-size-card);
+  height: var(--rel-avatar-size-card);
+}
+
+.related-panel .related-table.vs-last-four-card-mode .record-avatar-stack, :global([data-feature-page="cards"] :is(.related-panel .related-table.vs-last-four-card-mode .record-avatar-stack)), :global(:is(.related-panel .related-table.vs-last-four-card-mode .record-avatar-stack)[data-feature-page="cards"]) {
+  width: var(--rel-avatar-size-card);
+  height: var(--rel-avatar-size-card);
+  flex: 0 0 var(--rel-avatar-size-card);
+  min-width: var(--rel-avatar-size-card);
+}
+
+.related-panel .related-table .lineup-slot-card-img, :global([data-feature-page="cards"] :is(.related-panel .related-table .lineup-slot-card-img)), :global(:is(.related-panel .related-table .lineup-slot-card-img)[data-feature-page="cards"]) {
+  width: calc(100% * var(--rel-card-image-scale));
+  height: calc(100% * var(--rel-card-image-scale));
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode) th:first-child,
+.related-panel .related-table-last:not(.last-record-table-card-mode) td:first-child,
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:first-child,
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:first-child,
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last:not(.last-record-table-card-mode) th:first-child)),
+:global(:is(.related-panel .related-table-last:not(.last-record-table-card-mode) th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last:not(.last-record-table-card-mode) td:first-child)),
+:global(:is(.related-panel .related-table-last:not(.last-record-table-card-mode) td:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:first-child)),
+:global(:is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:first-child)),
+:global(:is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:first-child)[data-feature-page="cards"]) {
+  width: var(--rel-last-char-pct);
+  min-width: var(--rel-min-char-col);
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(2),
+.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(2),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(2),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(2),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(2))),
+:global(:is(.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(2))),
+:global(:is(.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(2))),
+:global(:is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(2))),
+:global(:is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(2))[data-feature-page="cards"]) {
+  width: var(--rel-last-event-pct);
+  min-width: var(--rel-min-event-col);
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(3),
+.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(3),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(3),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(3),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(3))),
+:global(:is(.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(3))),
+:global(:is(.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(3))),
+:global(:is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(3))),
+:global(:is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(3))[data-feature-page="cards"]) {
+  width: var(--rel-last-date-pct);
+  min-width: var(--rel-min-date-col);
+}
+
+.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(4),
+.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(4),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(4),
+.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(4),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(4))),
+:global(:is(.related-panel .related-table-last:not(.last-record-table-card-mode) th:nth-child(4))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(4))),
+:global(:is(.related-panel .related-table-last:not(.last-record-table-card-mode) td:nth-child(4))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(4))),
+:global(:is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) th:nth-child(4))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(4))),
+:global(:is(.related-panel .related-table-vs-last:not(.vs-last-four-card-mode) td:nth-child(4))[data-feature-page="cards"]) {
+  width: var(--rel-last-gap-pct);
+  min-width: var(--rel-min-gap-col);
+}
+
+.related-panel .related-table-last.last-record-table-card-mode th:first-child,
+.related-panel .related-table-last.last-record-table-card-mode td:first-child,
+.related-panel .related-table-vs-last.vs-last-four-card-mode th:first-child,
+.related-panel .related-table-vs-last.vs-last-four-card-mode td:first-child,
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode th:first-child)),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode td:first-child)),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode td:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode th:first-child)),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode td:first-child)),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode td:first-child)[data-feature-page="cards"]) {
+  width: var(--rel-last-card-char-pct);
+  min-width: var(--rel-min-char-col);
+}
+
+.related-panel .related-table-last.last-record-table-card-mode th:nth-child(2),
+.related-panel .related-table-last.last-record-table-card-mode td:nth-child(2),
+.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(2),
+.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(2),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode th:nth-child(2))),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode th:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode td:nth-child(2))),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode td:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(2))),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(2))),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(2))[data-feature-page="cards"]) {
+  width: var(--rel-last-card-card-pct);
+  min-width: var(--rel-min-card-col);
+}
+
+.related-panel .related-table-last.last-record-table-card-mode th:nth-child(3),
+.related-panel .related-table-last.last-record-table-card-mode td:nth-child(3),
+.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(3),
+.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(3),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode th:nth-child(3))),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode th:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode td:nth-child(3))),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode td:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(3))),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(3))),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(3))[data-feature-page="cards"]) {
+  width: var(--rel-last-card-event-pct);
+  min-width: var(--rel-min-event-col);
+}
+
+.related-panel .related-table-last.last-record-table-card-mode th:nth-child(4),
+.related-panel .related-table-last.last-record-table-card-mode td:nth-child(4),
+.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(4),
+.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(4),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode th:nth-child(4))),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode th:nth-child(4))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode td:nth-child(4))),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode td:nth-child(4))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(4))),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(4))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(4))),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(4))[data-feature-page="cards"]) {
+  width: var(--rel-last-card-date-pct);
+  min-width: var(--rel-min-date-col);
+}
+
+.related-panel .related-table-last.last-record-table-card-mode th:nth-child(5),
+.related-panel .related-table-last.last-record-table-card-mode td:nth-child(5),
+.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(5),
+.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(5),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode th:nth-child(5))),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode th:nth-child(5))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-last.last-record-table-card-mode td:nth-child(5))),
+:global(:is(.related-panel .related-table-last.last-record-table-card-mode td:nth-child(5))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(5))),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode th:nth-child(5))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(5))),
+:global(:is(.related-panel .related-table-vs-last.vs-last-four-card-mode td:nth-child(5))[data-feature-page="cards"]) {
+  width: var(--rel-last-card-gap-pct);
+  min-width: var(--rel-min-gap-col);
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:first-child,
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:first-child,
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:first-child)),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:first-child)),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:first-child)[data-feature-page="cards"]) {
+  width: var(--rel-last-char-pct);
+  min-width: var(--rel-min-char-col);
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:nth-child(2),
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:nth-child(2),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:nth-child(2))),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:nth-child(2))),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:nth-child(2))[data-feature-page="cards"]) {
+  width: 14%;
+  min-width: 50px;
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:nth-child(3),
+.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:nth-child(3),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:nth-child(3))),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) th:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:nth-child(3))),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table:not(.vs-last-four-card-mode) td:nth-child(3))[data-feature-page="cards"]) {
+  width: auto;
+  min-width: 200px;
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:first-child,
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:first-child,
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:first-child)),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:first-child)),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:first-child)[data-feature-page="cards"]) {
+  width: var(--rel-last-card-char-pct);
+  min-width: var(--rel-min-char-col);
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:nth-child(2),
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:nth-child(2),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:nth-child(2))),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:nth-child(2))),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:nth-child(2))[data-feature-page="cards"]) {
+  width: 12%;
+  min-width: 50px;
+}
+
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:nth-child(3),
+.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:nth-child(3),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:nth-child(3))),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode th:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:nth-child(3))),
+:global(:is(.related-panel .related-table-vs-last.vs-four-count-detail-table.vs-last-four-card-mode td:nth-child(3))[data-feature-page="cards"]) {
+  width: auto;
+  min-width: 220px;
+}
+
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:first-child,
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:first-child,
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:first-child)),
+:global(:is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:first-child)),
+:global(:is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:first-child)[data-feature-page="cards"]) {
+  width: var(--rel-int-char-pct);
+  min-width: var(--rel-min-char-col);
+}
+
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:nth-child(2),
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:nth-child(2),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:nth-child(2))),
+:global(:is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:nth-child(2))),
+:global(:is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:nth-child(2))[data-feature-page="cards"]) {
+  width: var(--rel-int-range-pct);
+  min-width: var(--rel-min-range-col);
+}
+
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:nth-child(3),
+.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:nth-child(3),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:nth-child(3))),
+:global(:is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) th:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:nth-child(3))),
+:global(:is(.related-panel .related-table-interval:not(.interval-record-table-card-mode) td:nth-child(3))[data-feature-page="cards"]) {
+  width: var(--rel-int-gap-pct);
+  min-width: var(--rel-min-gap-col);
+}
+
+.interval-record-table-card-mode td.record-char, :global([data-feature-page="cards"] :is(.interval-record-table-card-mode td.record-char)), :global(:is(.interval-record-table-card-mode td.record-char)[data-feature-page="cards"]) {
+  text-align: center !important;
+}
+
+.interval-record-table-card-mode td.record-char > span.record-avatar-stack,
+.interval-record-table-card-mode td.record-char > img.record-avatar,
+:global([data-feature-page="cards"] :is(.interval-record-table-card-mode td.record-char > span.record-avatar-stack)),
+:global(:is(.interval-record-table-card-mode td.record-char > span.record-avatar-stack)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.interval-record-table-card-mode td.record-char > img.record-avatar)),
+:global(:is(.interval-record-table-card-mode td.record-char > img.record-avatar)[data-feature-page="cards"]) {
+  margin-right: 0 !important;
+}
+
+.vs-last-four-card-mode tbody td,
+.interval-record-table-card-mode tbody td,
+:global([data-feature-page="cards"] :is(.vs-last-four-card-mode tbody td)),
+:global(:is(.vs-last-four-card-mode tbody td)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.interval-record-table-card-mode tbody td)),
+:global(:is(.interval-record-table-card-mode tbody td)[data-feature-page="cards"]) {
+  height: var(--related-record-card-row-height);
+  vertical-align: middle;
+}
+
+.interval-record-table-card-mode, :global([data-feature-page="cards"] :is(.interval-record-table-card-mode)), :global(:is(.interval-record-table-card-mode)[data-feature-page="cards"]) {
+  table-layout: fixed;
+}
+
+.related-panel .related-table-interval.interval-record-table-card-mode th:first-child,
+.related-panel .related-table-interval.interval-record-table-card-mode td:first-child,
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode th:first-child)),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode td:first-child)),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode td:first-child)[data-feature-page="cards"]) {
+  width: var(--rel-int-card-char-pct);
+  min-width: var(--rel-min-char-col);
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(2),
+.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(2),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(2))),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(2))),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(2))[data-feature-page="cards"]) {
+  width: var(--rel-int-card-card-pct);
+  min-width: var(--rel-min-card-col);
+}
+
+.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(3),
+.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(3),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(3))),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(3))),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(3))[data-feature-page="cards"]) {
+  width: var(--rel-int-card-range-pct);
+  min-width: var(--rel-min-range-col);
+}
+
+.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(4),
+.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(4),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(4))),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode th:nth-child(4))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(4))),
+:global(:is(.related-panel .related-table-interval.interval-record-table-card-mode td:nth-child(4))[data-feature-page="cards"]) {
+  width: var(--rel-int-card-gap-pct);
+  min-width: var(--rel-min-gap-col);
+}
+
+.interval-avatar-large, :global([data-feature-page="cards"] :is(.interval-avatar-large)), :global(:is(.interval-avatar-large)[data-feature-page="cards"]) {
+  width: 34px;
+  height: 34px;
+}
+
+.range-card-cell, :global([data-feature-page="cards"] :is(.range-card-cell)), :global(:is(.range-card-cell)[data-feature-page="cards"]) {
+  white-space: nowrap;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.interval-card-column, :global([data-feature-page="cards"] :is(.interval-card-column)), :global(:is(.interval-card-column)[data-feature-page="cards"]) {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.interval-jump-column, :global([data-feature-page="cards"] :is(.interval-jump-column)), :global(:is(.interval-jump-column)[data-feature-page="cards"]) {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.interval-card-column > .interval-stack-arrow, :global([data-feature-page="cards"] :is(.interval-card-column > .interval-stack-arrow)), :global(:is(.interval-card-column > .interval-stack-arrow)[data-feature-page="cards"]) {
+  display: none;
+}
+
+.interval-card-item, :global([data-feature-page="cards"] :is(.interval-card-item)), :global(:is(.interval-card-item)[data-feature-page="cards"]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--rel-interval-card-frame-size);
+  min-width: var(--rel-interval-card-frame-size);
+  height: var(--rel-interval-card-frame-size);
+  min-height: var(--rel-interval-card-frame-size);
+}
+
+.interval-card-item.is-stack-item, :global([data-feature-page="cards"] :is(.interval-card-item.is-stack-item)), :global(:is(.interval-card-item.is-stack-item)[data-feature-page="cards"]) {
+  min-height: 0;
+}
+
+.interval-card-thumb, :global([data-feature-page="cards"] :is(.interval-card-thumb)), :global(:is(.interval-card-thumb)[data-feature-page="cards"]) {
+  width: 100%;
+  height: 100%;
+}
+
+.interval-stack-arrow, :global([data-feature-page="cards"] :is(.interval-stack-arrow)), :global(:is(.interval-stack-arrow)[data-feature-page="cards"]) {
+  line-height: 1;
+  color: #475569;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.range-cell.is-card-mode .jump-link, :global([data-feature-page="cards"] :is(.range-cell.is-card-mode .jump-link)), :global(:is(.range-cell.is-card-mode .jump-link)[data-feature-page="cards"]) {
+  width: min(100%, 90%);
+  min-width: var(--rel-jump-chip-min);
+  max-width: 90%;
+}
+
+.jump-link, :global([data-feature-page="cards"] :is(.jump-link)), :global(:is(.jump-link)[data-feature-page="cards"]) {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  border-radius: var(--stats-radius-btn, 999px);
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #1f2937;
+  background: var(--record-tint, #e5e7eb);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.related-panel .record-block .jump-link, :global([data-feature-page="cards"] :is(.related-panel .record-block .jump-link)), :global(:is(.related-panel .record-block .jump-link)[data-feature-page="cards"]) {
+  width: var(--record-jump-chip-width, auto);
+  min-width: var(--record-jump-chip-width, auto);
+  max-width: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.related-panel .range-cell.is-card-mode .jump-link, :global([data-feature-page="cards"] :is(.related-panel .range-cell.is-card-mode .jump-link)), :global(:is(.related-panel .range-cell.is-card-mode .jump-link)[data-feature-page="cards"]) {
+  width: min(100%, 90%);
+  min-width: var(--rel-jump-chip-min);
+  max-width: 90%;
+}
+
+.related-panel .duo-unit-wrap.matrix-wrap, :global([data-feature-page="cards"] :is(.related-panel .duo-unit-wrap.matrix-wrap)), :global(:is(.related-panel .duo-unit-wrap.matrix-wrap)[data-feature-page="cards"]) {
+  max-height: none;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+.related-panel .record-block.duo-unit-section, :global([data-feature-page="cards"] :is(.related-panel .record-block.duo-unit-section)), :global(:is(.related-panel .record-block.duo-unit-section)[data-feature-page="cards"]) {
+  overflow: visible;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+.related-panel .duo-last-table, :global([data-feature-page="cards"] :is(.related-panel .duo-last-table)), :global(:is(.related-panel .duo-last-table)[data-feature-page="cards"]) {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.related-panel .duo-last-table th,
+.related-panel .duo-last-table td,
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table th)),
+:global(:is(.related-panel .duo-last-table th)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table td)),
+:global(:is(.related-panel .duo-last-table td)[data-feature-page="cards"]) {
+  border-color: #cbd5e1 !important;
+  border-width: 2px !important;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.related-panel .duo-last-table:not(.duo-last-card-mode) th:first-child,
+.related-panel .duo-last-table:not(.duo-last-card-mode) td:first-child,
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table:not(.duo-last-card-mode) th:first-child)),
+:global(:is(.related-panel .duo-last-table:not(.duo-last-card-mode) th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table:not(.duo-last-card-mode) td:first-child)),
+:global(:is(.related-panel .duo-last-table:not(.duo-last-card-mode) td:first-child)[data-feature-page="cards"]) {
+  width: 22%;
+}
+
+.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(2),
+.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(2),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(2))),
+:global(:is(.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(2))),
+:global(:is(.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(2))[data-feature-page="cards"]) {
+  width: 24%;
+}
+
+.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(3),
+.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(3),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(3))),
+:global(:is(.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(3))),
+:global(:is(.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(3))[data-feature-page="cards"]) {
+  width: 27%;
+}
+
+.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(4),
+.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(4),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(4))),
+:global(:is(.related-panel .duo-last-table:not(.duo-last-card-mode) th:nth-child(4))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(4))),
+:global(:is(.related-panel .duo-last-table:not(.duo-last-card-mode) td:nth-child(4))[data-feature-page="cards"]) {
+  width: 27%;
+}
+
+.related-panel .duo-last-table.duo-last-card-mode th:first-child,
+.related-panel .duo-last-table.duo-last-card-mode td:first-child,
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode th:first-child)),
+:global(:is(.related-panel .duo-last-table.duo-last-card-mode th:first-child)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode td:first-child)),
+:global(:is(.related-panel .duo-last-table.duo-last-card-mode td:first-child)[data-feature-page="cards"]) {
+  width: 24%;
+}
+
+.related-panel .duo-last-table.duo-last-card-mode th:nth-child(2),
+.related-panel .duo-last-table.duo-last-card-mode td:nth-child(2),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(2))),
+:global(:is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(2))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(2))),
+:global(:is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(2))[data-feature-page="cards"]) {
+  width: 42%;
+}
+
+.related-panel .duo-last-table.duo-last-card-mode th:nth-child(3),
+.related-panel .duo-last-table.duo-last-card-mode td:nth-child(3),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(3))),
+:global(:is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(3))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(3))),
+:global(:is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(3))[data-feature-page="cards"]) {
+  width: 0;
+}
+
+.related-panel .duo-last-table.duo-last-card-mode th:nth-child(4),
+.related-panel .duo-last-table.duo-last-card-mode td:nth-child(4),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(4))),
+:global(:is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(4))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(4))),
+:global(:is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(4))[data-feature-page="cards"]) {
+  width: 34%;
+}
+
+.related-panel .duo-last-table.duo-last-card-mode th:nth-child(5),
+.related-panel .duo-last-table.duo-last-card-mode td:nth-child(5),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(5))),
+:global(:is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(5))[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(5))),
+:global(:is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(5))[data-feature-page="cards"]) {
+  width: 0;
+}
+
+.related-panel .duo-last-table .jump-link, :global([data-feature-page="cards"] :is(.related-panel .duo-last-table .jump-link)), :global(:is(.related-panel .duo-last-table .jump-link)[data-feature-page="cards"]) {
+  width: var(--record-jump-chip-width, auto);
+  min-width: var(--record-jump-chip-width, 0);
+  max-width: 100%;
+}
+
+@container (min-width: 500px) {
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-info-head,
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-info-cell,
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-info-head)),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-info-head)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-info-cell)),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-info-cell)[data-feature-page="cards"]) {
+    display: none;
+    width: 0;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-event-date-head,
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-event-date-cell,
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-event-date-head)),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-event-date-head)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-event-date-cell)),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-event-date-cell)[data-feature-page="cards"]) {
+    display: table-cell;
+    width: 26%;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-gap-head,
+  .related-panel .duo-last-table.duo-last-card-mode .duo-last-gap-cell,
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-gap-head)),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-gap-head)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-gap-cell)),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode .duo-last-gap-cell)[data-feature-page="cards"]) {
+    display: table-cell;
+    width: 20%;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode th:first-child,
+  .related-panel .duo-last-table.duo-last-card-mode td:first-child,
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode th:first-child)),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode th:first-child)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode td:first-child)),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode td:first-child)[data-feature-page="cards"]) {
+    width: 16%;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode th:nth-child(2),
+  .related-panel .duo-last-table.duo-last-card-mode td:nth-child(2),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(2))),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(2))[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(2))),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(2))[data-feature-page="cards"]) {
+    width: 38%;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode th:nth-child(3),
+  .related-panel .duo-last-table.duo-last-card-mode td:nth-child(3),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(3))),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(3))[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(3))),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(3))[data-feature-page="cards"]) {
+    width: 26%;
+  }
+
+  .related-panel .duo-last-table.duo-last-card-mode th:nth-child(5),
+  .related-panel .duo-last-table.duo-last-card-mode td:nth-child(5),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(5))),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode th:nth-child(5))[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(5))),
+  :global(:is(.related-panel .duo-last-table.duo-last-card-mode td:nth-child(5))[data-feature-page="cards"]) {
+    width: 20%;
+  }
+
+  .duo-last-card-thumb, :global([data-feature-page="cards"] :is(.duo-last-card-thumb)), :global(:is(.duo-last-card-thumb)[data-feature-page="cards"]) {
+    --rel-last-card-frame-size: 76px;
+  }
+}
+
+.jump-link:hover:not(:disabled), :global([data-feature-page="cards"] :is(.jump-link:hover:not(:disabled))), :global(:is(.jump-link:hover:not(:disabled))[data-feature-page="cards"]) {
+  filter: brightness(0.98);
+}
+
+.jump-link:disabled, :global([data-feature-page="cards"] :is(.jump-link:disabled)), :global(:is(.jump-link:disabled)[data-feature-page="cards"]) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (min-width: 901px) {
+  .matrix-table th,
+  .matrix-table td,
+  :global([data-feature-page="cards"] :is(.matrix-table th)),
+  :global(:is(.matrix-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.matrix-table td)),
+  :global(:is(.matrix-table td)[data-feature-page="cards"]) {
+    font-size: 0.92rem;
+  }
+
+  .matrix-table td.matrix-num, :global([data-feature-page="cards"] :is(.matrix-table td.matrix-num)), :global(:is(.matrix-table td.matrix-num)[data-feature-page="cards"]) {
+    font-size: 1.24rem;
+  }
+
+  .matrix-table td.duo-num, :global([data-feature-page="cards"] :is(.matrix-table td.duo-num)), :global(:is(.matrix-table td.duo-num)[data-feature-page="cards"]) {
+    font-size: 1rem;
+  }
+
+  .vs-unit-score-table th,
+  .vs-unit-score-table td,
+  :global([data-feature-page="cards"] :is(.vs-unit-score-table th)),
+  :global(:is(.vs-unit-score-table th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.vs-unit-score-table td)),
+  :global(:is(.vs-unit-score-table td)[data-feature-page="cards"]) {
+    padding: 12px 10px;
+  }
+
+  .vs-unit-score-table.is-card-mode th,
+  .vs-unit-score-table.is-card-mode td,
+  :global([data-feature-page="cards"] :is(.vs-unit-score-table.is-card-mode th)),
+  :global(:is(.vs-unit-score-table.is-card-mode th)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.vs-unit-score-table.is-card-mode td)),
+  :global(:is(.vs-unit-score-table.is-card-mode td)[data-feature-page="cards"]) {
+    padding: 3px;
+  }
+
+  .vs-unit-last-four-mini-table .vs-mini-days-cell, :global([data-feature-page="cards"] :is(.vs-unit-last-four-mini-table .vs-mini-days-cell)), :global(:is(.vs-unit-last-four-mini-table .vs-mini-days-cell)[data-feature-page="cards"]) {
+    font-size: 1.16rem;
+    font-weight: 800;
+  }
+
+  .score-attr-wrap, :global([data-feature-page="cards"] :is(.score-attr-wrap)), :global(:is(.score-attr-wrap)[data-feature-page="cards"]) {
+    gap: 2px;
+  }
+
+  .score-attr-icon, :global([data-feature-page="cards"] :is(.score-attr-icon)), :global(:is(.score-attr-icon)[data-feature-page="cards"]) {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1360px) {
+  .related-panel .related-table th:first-child,
+  .related-panel .related-table td:first-child,
+  :global([data-feature-page="cards"] :is(.related-panel .related-table th:first-child)),
+  :global(:is(.related-panel .related-table th:first-child)[data-feature-page="cards"]),
+  :global([data-feature-page="cards"] :is(.related-panel .related-table td:first-child)),
+  :global(:is(.related-panel .related-table td:first-child)[data-feature-page="cards"]) {
+    padding-left: 3px;
+    padding-right: 3px;
+  }
+}

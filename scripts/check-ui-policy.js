@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+// Resolve the parser from Vite's declared dependencies, without adding a package.
+const { parse: parseCss, list: cssList } = createRequire(import.meta.resolve('vite'))('postcss');
 
 const ALLOWED_VIEWPORT_WIDTHS = new Set([
   520,
@@ -12,8 +16,8 @@ const ALLOWED_VIEWPORT_WIDTHS = new Set([
   769,
   900,
   901,
-  1200,
-  1201,
+  1280,
+  1281,
   1360,
 ]);
 
@@ -34,6 +38,7 @@ const SHARED_SOURCES = {
 };
 
 const MAIN_SOURCE = 'src/main.js';
+const MOTION_STYLE_SOURCE = 'src/styles/motion.css';
 const UI_TOKENS_SOURCE = 'src/styles/tokens.css';
 const LIQUID_GLASS_STYLE_SOURCE = 'src/styles/liquid-glass.css';
 const LIQUID_GLASS_FILTERS_SOURCE = 'src/components/ui/LiquidGlassFilters.vue';
@@ -483,6 +488,82 @@ export function inspectLiquidGlassGovernance(sourceMap) {
   return diagnostics;
 }
 
+export function inspectMotionGovernance(sourceMap) {
+  const diagnostics = [];
+  for (const [file, text] of sourceMap) {
+    const css = file.endsWith('.vue') ? extractStyleBlocks(text).map(block => block.content).join('\n')
+      : file.endsWith('.css') ? text : '';
+    if (!css.trim()) continue;
+    const root = parseCss(css, { from: file });
+    const expensiveProperties = new Set(['filter', 'backdrop-filter', 'box-shadow', 'text-shadow']);
+    const transitionKeywords = new Set(['all', 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear', 'step-start', 'step-end', 'initial', 'inherit', 'unset', 'revert', 'revert-layer', 'normal', 'allow-discrete']);
+    root.walkAtRules(/^(?:-\w+-)?keyframes$/, keyframes => {
+      keyframes.walkDecls(declaration => {
+        if (expensiveProperties.has(declaration.prop)) {
+          diagnostics.push(`${file}: motion must not animate filters or shadows in keyframes`);
+        }
+      });
+    });
+    root.walkRules(rule => {
+      const declarations = (rule.nodes || []).filter(node => node.type === 'decl');
+      const hasTransitionProperties = declarations.some(declaration => ['transition', 'transition-property'].includes(declaration.prop));
+      const animationNames = declarations.filter(declaration => ['animation', 'animation-name'].includes(declaration.prop)).map(declaration => declaration.value).join(' ');
+      for (const declaration of declarations) {
+        const property = declaration.prop;
+        if (!/^(?:transition(?:-(?:duration|delay|property))?|animation(?:-(?:duration|delay|name|iteration-count))?)$/.test(property)) continue;
+        const value = declaration.value.trim();
+        if (value === 'none') continue;
+        const zeroTiming = /^(?:0(?:ms|s)?)(?:\s*,\s*0(?:ms|s)?)*$/.test(value);
+        const timed = ['transition', 'animation'].includes(property) || /-(?:duration|delay)$/.test(property);
+        const hasNakedTime = [...value.matchAll(/(?:^|[^\w-])(\d*\.?\d+)(?:ms|s)\b/g)].some(match => Number(match[1]) !== 0);
+        if (timed && (hasNakedTime || (!zeroTiming && !/var\(--ui-motion-/.test(value)))) {
+          diagnostics.push(`${file}: motion timing must use a shared --ui-motion-* role`);
+        }
+        if (/^transition-(?:duration|delay)$/.test(property) && !zeroTiming && !hasTransitionProperties) {
+          diagnostics.push(`${file}: motion longhand timing needs explicit transition properties in the same rule`);
+        }
+        if (['transition', 'transition-property'].includes(property)) {
+          for (const part of cssList.comma(value)) {
+            const name = part.trim().split(/\s+/)[0];
+            if (!/^(?:--)?[a-z][\w-]*$/i.test(name) || transitionKeywords.has(name)) {
+              diagnostics.push(`${file}: motion must name explicit transition properties`);
+            }
+            if (expensiveProperties.has(name)) {
+              diagnostics.push(`${file}: motion must not interpolate filters or shadows`);
+            }
+          }
+        }
+        if (['animation', 'animation-iteration-count'].includes(property) && /\binfinite\b/.test(value)
+          && !/shimmer|spinner|loader|spin/.test(property === 'animation' ? value : animationNames)) {
+          diagnostics.push(`${file}: perpetual motion is limited to actual loading indicators`);
+        }
+      }
+    });
+  }
+  if (sourceMap.has(MOTION_STYLE_SOURCE)) {
+    const main = sourceMap.get(MAIN_SOURCE) || '';
+    if ([...main.matchAll(/import\s+['"]\.\/styles\/motion\.css['"]/g)].length !== 1
+      || main.indexOf('styles/motion.css') < main.indexOf('styles/primitives.css')) {
+      diagnostics.push(`${MAIN_SOURCE}: shared motion must be imported once after primitives`);
+    }
+    const tokens = sourceMap.get(UI_TOKENS_SOURCE) || '';
+    for (const role of ['press', 'release', 'state', 'feedback', 'popover', 'dialog', 'drawer', 'navigation', 'dismiss']) {
+      const duration = extractCustomProperty(tokens, `--ui-motion-duration-${role}`);
+      if (!duration || !/^\d+(?:\.\d+)?(?:ms|s)$/.test(duration)) {
+        diagnostics.push(`${UI_TOKENS_SOURCE}: motion role ${role} needs an explicit duration`);
+      }
+      if (!extractCustomProperty(tokens, `--ui-motion-ease-${role}`)) {
+        diagnostics.push(`${UI_TOKENS_SOURCE}: motion role ${role} needs a shared easing curve`);
+      }
+    }
+    const motion = sourceMap.get(MOTION_STYLE_SOURCE);
+    if (!/@layer\s+ui-motion-accessibility/.test(motion) || !/prefers-reduced-motion/.test(motion)) {
+      diagnostics.push(`${MOTION_STYLE_SOURCE}: motion accessibility must outrank scoped feedback`);
+    }
+  }
+  return diagnostics;
+}
+
 export function inspectUiPolicy({ files, readText }) {
   const normalizedFiles = [...new Set(files.map(normalizePath))]
     .filter((file) => /^src\/.*\.(?:vue|css)$/i.test(file) || file === MAIN_SOURCE)
@@ -499,6 +580,7 @@ export function inspectUiPolicy({ files, readText }) {
 
   diagnostics.push(...inspectSharedSources(sourceMap));
   diagnostics.push(...inspectLiquidGlassGovernance(sourceMap));
+  diagnostics.push(...inspectMotionGovernance(sourceMap));
   return [...new Set(diagnostics)].sort();
 }
 

@@ -1,0 +1,63 @@
+
+.pjsk-stats, :global([data-feature-page="cards"] :is(.pjsk-stats)), :global(:is(.pjsk-stats)[data-feature-page="cards"]) {
+  padding: 24px;
+  color: #1f2937;
+  background: transparent;
+  min-height: 100vh;
+  min-height: 100dvh;
+  --matrix-sticky-top: 0px;
+  --stats-radius-panel: 28px;
+  --stats-nav-radius: var(--ui-stats-nav-radius);
+  --stats-nav-inner-radius: var(--ui-stats-nav-inner-radius);
+  --stats-radius-card: 22px;
+  --stats-radius-btn: var(--ui-stats-control-radius);
+  --stats-nav-width: var(--ui-stats-nav-width);
+  --stats-nav-left: var(--ui-stats-nav-left);
+  --stats-nav-top: var(--ui-stats-nav-top);
+  --stats-nav-glass-bg: var(--ui-stats-nav-glass-bg);
+  --stats-nav-glass-border: var(--ui-stats-nav-glass-border);
+  --stats-nav-glass-line: var(--ui-stats-nav-glass-line);
+  --stats-nav-glass-shadow: var(--ui-stats-nav-glass-shadow);
+  --stats-nav-glass-blur: var(--ui-stats-nav-glass-blur);
+  --stats-nav-control-bg: var(--ui-stats-nav-control-bg);
+  --stats-nav-control-bg-hover: var(--ui-stats-nav-control-bg-hover);
+  --stats-nav-active-bg: var(--ui-stats-nav-active-bg);
+  --stats-nav-active-border: var(--ui-stats-nav-active-border);
+}
+
+.pjsk-stats.matrix-sort-anchor-suppressed, :global([data-feature-page="cards"] :is(.pjsk-stats.matrix-sort-anchor-suppressed)), :global(:is(.pjsk-stats.matrix-sort-anchor-suppressed)[data-feature-page="cards"]) {
+  overflow-anchor: none;
+}
+
+.pjsk-stats button:not(:disabled), :global([data-feature-page="cards"] :is(.pjsk-stats button:not(:disabled))), :global(:is(.pjsk-stats button:not(:disabled))[data-feature-page="cards"]) {
+  transition: transform var(--ui-motion-state), background-color var(--ui-motion-state), border-color var(--ui-motion-state), color var(--ui-motion-state);
+}
+
+.pjsk-stats button:not(:disabled):active, :global([data-feature-page="cards"] :is(.pjsk-stats button:not(:disabled):active)), :global(:is(.pjsk-stats button:not(:disabled):active)[data-feature-page="cards"]) {
+  filter: brightness(0.86);
+}
+
+.nav-collapse-fab:hover,
+.id-step-btn:hover,
+.reset-mini-btn:hover,
+.nav-link:hover,
+.lineup-toggle-btn:hover,
+.record-sort-btn:hover:not(.active),
+:global([data-feature-page="cards"] :is(.nav-collapse-fab:hover)),
+:global(:is(.nav-collapse-fab:hover)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.id-step-btn:hover)),
+:global(:is(.id-step-btn:hover)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.reset-mini-btn:hover)),
+:global(:is(.reset-mini-btn:hover)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.nav-link:hover)),
+:global(:is(.nav-link:hover)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.lineup-toggle-btn:hover)),
+:global(:is(.lineup-toggle-btn:hover)[data-feature-page="cards"]),
+:global([data-feature-page="cards"] :is(.record-sort-btn:hover:not(.active))),
+:global(:is(.record-sort-btn:hover:not(.active))[data-feature-page="cards"]) {
+  background: var(--stats-nav-control-bg-hover);
+}
+
+.nav-collapse-fab:hover, :global([data-feature-page="cards"] :is(.nav-collapse-fab:hover)), :global(:is(.nav-collapse-fab:hover)[data-feature-page="cards"]) {
+  background: #dc2626;
+}

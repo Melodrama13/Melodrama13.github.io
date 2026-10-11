@@ -1,0 +1,55 @@
+
+.pjsk-song-stats, :global([data-feature-page="songs"] :is(.pjsk-song-stats)), :global(:is(.pjsk-song-stats)[data-feature-page="songs"]) {
+  padding: 24px;
+  color: #1f2937;
+  background: transparent;
+  min-height: 100vh;
+  min-height: 100dvh;
+  --stats-radius-panel: 18px;
+  --stats-nav-radius: var(--ui-stats-nav-radius);
+  --stats-nav-inner-radius: var(--ui-stats-nav-inner-radius);
+  --stats-radius-btn: var(--ui-stats-control-radius);
+  --stats-nav-width: var(--ui-stats-nav-width);
+  --stats-nav-left: var(--ui-stats-nav-left);
+  --stats-nav-top: var(--ui-stats-nav-top);
+  --stats-nav-glass-bg: var(--ui-stats-nav-glass-bg);
+  --stats-nav-glass-border: var(--ui-stats-nav-glass-border);
+  --stats-nav-glass-line: var(--ui-stats-nav-glass-line);
+  --stats-nav-glass-shadow: var(--ui-stats-nav-glass-shadow);
+  --stats-nav-glass-blur: var(--ui-stats-nav-glass-blur);
+  --stats-nav-control-bg: var(--ui-stats-nav-control-bg);
+  --stats-nav-control-bg-hover: var(--ui-stats-nav-control-bg-hover);
+  --stats-nav-active-bg: var(--ui-stats-nav-active-bg);
+  --stats-nav-active-border: var(--ui-stats-nav-active-border);
+  --song-btn-pad-x: 8px;
+  --song-mini-toggle-size: 20px;
+  --song-stat-min-card-width: 250px;
+  --song-event-mv-col-width: 22px;
+  --song-event-mv-chip-width: 26px;
+  --song-event-mv-chip-height: 14px;
+  --song-event-mv-chip-font-size: 0.52rem;
+  --song-event-mv-chip-pad-x: 4px;
+  --song-vs-text-tag-width: 3.4em;
+  --song-jacket-default-size: 64px;
+  --song-jacket-track-size: 68px;
+  --song-oc-tag-vs-gap: 4px;
+  --song-oc-vs-col-width: 14px;
+  --song-vs-pill-height: 20px;
+  --song-vs-pill-gap: 2px;
+  --song-vs-pill-font-size: 0.74rem;
+  --song-vs-pill-pad-x: 4px;
+  --song-duo-vs-icon-size: 18px;
+  --song-duo-vs-icon-gap: 2px;
+}
+
+.pjsk-song-stats button:not(:disabled), :global([data-feature-page="songs"] :is(.pjsk-song-stats button:not(:disabled))), :global(:is(.pjsk-song-stats button:not(:disabled))[data-feature-page="songs"]) {
+  transition: transform var(--ui-motion-state), background-color var(--ui-motion-state), border-color var(--ui-motion-state), color var(--ui-motion-state);
+}
+
+.pjsk-song-stats button:not(:disabled):active, :global([data-feature-page="songs"] :is(.pjsk-song-stats button:not(:disabled):active)), :global(:is(.pjsk-song-stats button:not(:disabled):active)[data-feature-page="songs"]) {
+  filter: brightness(0.86);
+}
+
+ .nav-link:hover, :global([data-feature-page="songs"] :is(.nav-link:hover)), :global(:is(.nav-link:hover)[data-feature-page="songs"]) {
+  background: var(--stats-nav-control-bg-hover);
+}

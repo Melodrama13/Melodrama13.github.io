@@ -44,7 +44,64 @@
   --ui-control-border-hover: #94a3b8;
   --ui-control-label: #334155;
   --ui-control-label-muted: #475569;
-  --ui-motion-control: 0.16s ease;
+  --ui-control-radius-pill: 999px;
+  --ui-control-disabled-opacity: 0.6;
+  --ui-control-press-scale: var(--ui-motion-press-scale);
+  --ui-control-focus-color: #0f766e;
+  --ui-control-focus-width: 2px;
+  --ui-control-focus-offset: 2px;
+  --ui-control-error-border: #b91c1c;
+  --ui-control-error-label: #991b1b;
+  --ui-control-selected-border: #0f766e;
+  --ui-control-press-brightness: 0.92;
+  --ui-control-feedback-overlay: rgba(15, 23, 42, 0.08);
+  --ui-control-glass-feedback-overlay: rgba(255, 255, 255, 0.28);
+  --ui-control-hover-opacity: 0.65;
+  --ui-control-hover-glass-fill: rgba(255, 255, 255, 0.18);
+  --ui-control-radius-textarea: 12px;
+  /* Routine controls settle directly; navigation panels have one small rebound. */
+  --ui-motion-press-scale: 0.97;
+  --ui-motion-selector-press-scale: 1.2;
+  --ui-motion-image-press-opacity: 0.85;
+  --ui-motion-duration-press: 80ms;
+  --ui-motion-duration-release: 220ms;
+  --ui-motion-duration-state: 160ms;
+  --ui-motion-duration-feedback: 180ms;
+  --ui-motion-duration-popover: 220ms;
+  --ui-motion-duration-dialog: 280ms;
+  --ui-motion-duration-drawer: 320ms;
+  --ui-motion-duration-navigation: 280ms;
+  --ui-motion-duration-navigation-panel: 400ms;
+  --ui-motion-duration-navigation-panel-dismiss: 280ms;
+  --ui-motion-duration-dismiss: 160ms;
+  --ui-motion-ease-press: cubic-bezier(0.2, 0, 0.6, 1);
+  --ui-motion-ease-release: cubic-bezier(0.22, 1, 0.36, 1);
+  --ui-motion-ease-state: cubic-bezier(0.2, 0, 0.2, 1);
+  --ui-motion-ease-continuity: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ui-motion-ease-dismiss: cubic-bezier(0.4, 0, 1, 1);
+  --ui-motion-ease-feedback: var(--ui-motion-ease-state);
+  --ui-motion-ease-popover: var(--ui-motion-ease-continuity);
+  --ui-motion-ease-dialog: var(--ui-motion-ease-continuity);
+  --ui-motion-ease-drawer: var(--ui-motion-ease-continuity);
+  --ui-motion-ease-navigation: var(--ui-motion-ease-continuity);
+  --ui-motion-ease-navigation-panel: linear;
+  --ui-motion-ease-navigation-panel-dismiss: linear;
+  --ui-motion-navigation-folded-size: 40px;
+  --ui-motion-navigation-fallback-scale: 0.9;
+  --ui-motion-press: var(--ui-motion-duration-press) var(--ui-motion-ease-press);
+  --ui-motion-release: var(--ui-motion-duration-release) var(--ui-motion-ease-release);
+  --ui-motion-state: var(--ui-motion-duration-state) var(--ui-motion-ease-state);
+  --ui-motion-feedback: var(--ui-motion-duration-feedback) var(--ui-motion-ease-feedback);
+  --ui-motion-popover: var(--ui-motion-duration-popover) var(--ui-motion-ease-popover);
+  --ui-motion-dialog: var(--ui-motion-duration-dialog) var(--ui-motion-ease-dialog);
+  --ui-motion-drawer: var(--ui-motion-duration-drawer) var(--ui-motion-ease-drawer);
+  --ui-motion-navigation: var(--ui-motion-duration-navigation) var(--ui-motion-ease-navigation);
+  --ui-motion-dismiss: var(--ui-motion-duration-dismiss) var(--ui-motion-ease-dismiss);
+  --ui-motion-control: var(--ui-motion-state);
+  --ui-motion-spin-duration: 850ms;
+  --ui-motion-loader-ring-duration: 3.6s;
+  --ui-motion-loader-core-duration: 5.2s;
+  --ui-motion-loader-orbit-duration: 3.8s;
   --ui-motion-shimmer-duration: 1.05s;
 
   --ui-glass-ambient-image:
@@ -150,8 +207,10 @@
   --ui-glass-mobile-lens-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(241, 245, 249, 0.10) 48%, rgba(186, 230, 253, 0.08));
   --ui-glass-optical-lens-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.16), rgba(248, 250, 252, 0.035) 48%, rgba(100, 116, 139, 0.06));
   --ui-glass-lens-scatter-highlight: radial-gradient(ellipse at 50% -12%, rgba(255, 255, 255, 0.48), transparent 48%), radial-gradient(ellipse at 50% 112%, rgba(255, 255, 255, 0.32), transparent 44%);
-  --ui-glass-lens-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.12) 24%, rgba(15, 23, 42, 0.28) 49%, rgba(255, 255, 255, 0.10) 70%, rgba(255, 255, 255, 0.76));
-  --ui-glass-lens-bevel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -1px 0 rgba(255, 255, 255, 0.7), inset 1px 0 1px rgba(15, 23, 42, 0.22), inset -1px 0 1px rgba(15, 23, 42, 0.18), inset 0 3px 5px rgba(15, 23, 42, 0.12), inset 0 -3px 5px rgba(255, 255, 255, 0.26), 0 5px 12px rgba(15, 23, 42, 0.16);
+  --ui-glass-lens-rim-width: 0.75px;
+  --ui-glass-selector-idle-shadow: 0 2px 7px rgba(15, 23, 42, 0.13), 0 0.5px 1.5px rgba(15, 23, 42, 0.08);
+  --ui-glass-lens-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.08) 24%, rgba(15, 23, 42, 0.14) 49%, rgba(255, 255, 255, 0.06) 70%, rgba(255, 255, 255, 0.48));
+  --ui-glass-lens-bevel-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.52), inset 0 -0.5px 0 rgba(255, 255, 255, 0.38), inset 0.5px 0 0.75px rgba(15, 23, 42, 0.11), inset -0.5px 0 0.75px rgba(15, 23, 42, 0.09), inset 0 1.5px 2px rgba(15, 23, 42, 0.055), inset 0 -1.5px 2px rgba(255, 255, 255, 0.12), 0 3px 9px rgba(15, 23, 42, 0.10);
   --ui-glass-mobile-lens-shadow:
     0 9px 24px rgba(15, 23, 42, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.96),
@@ -168,8 +227,8 @@
     rgba(255, 255, 255, 0.90) 360deg
   );
   --ui-glass-mobile-track-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.20), rgba(148, 163, 184, 0.10));
-  --ui-glass-mobile-track-border: rgba(255, 255, 255, 0.62);
-  --ui-glass-mobile-track-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66), inset 0 -1px 0 rgba(71, 85, 105, 0.12), 0 12px 30px rgba(15, 23, 42, 0.18);
+  --ui-glass-mobile-track-border: rgba(255, 255, 255, 0.28);
+  --ui-glass-mobile-track-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.32), inset 0 -0.5px 0 rgba(71, 85, 105, 0.07), 0 6px 18px rgba(15, 23, 42, 0.10);
   --ui-glass-mobile-lens-filter: saturate(178%) brightness(1.08) blur(2px);
   --ui-glass-mobile-overlay-filter: saturate(125%) brightness(1.025) blur(0.35px);
   --ui-glass-group-bg: rgba(255, 255, 255, 0.24);
@@ -179,5 +238,5 @@
   --ui-glass-option-border: rgba(255, 255, 255, 0.78);
   --ui-glass-pointer-x: 50%;
   --ui-glass-pointer-y: 0%;
-  --ui-glass-motion-duration: 220ms;
+  --ui-glass-motion-duration: var(--ui-motion-duration-release);
 }

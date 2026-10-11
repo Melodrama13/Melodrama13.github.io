@@ -1,8 +1,13 @@
 // Every scroll host has one owner. A new request supersedes both an animation
 // and any layout correction still belonging to the previous request.
 const hostRequests = new WeakMap();
+const SMOOTH_SCROLL_MAX_DURATION_MS = 1000;
 export const isScrollNavigationActive = host => hostRequests.has(host);
 export const SCROLL_NAVIGATION_CHANGE = 'pjsk-scroll-navigation-change';
+export const SCROLL_POSITION_CHANGE = 'pjsk-scroll-position-change';
+// A page restoring its own saved position explicitly takes over reading
+// focus; a later native scroll notification cannot identify that owner.
+export const notifyScrollPositionChange = host => host?.dispatchEvent(new Event(SCROLL_POSITION_CHANGE));
 const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 
 export const isScrollKeyIntent = event => SCROLL_KEYS.has(event.key)
@@ -88,8 +93,9 @@ export const createScrollNavigator = ({ getHost, onPosition = () => {} }) => {
             const aligned = Math.abs(host.scrollTop - top) <= 1;
             const layoutChanged = Math.abs(top - previousTarget) > 0.5;
             if (!aligned || moving || layoutChanged || !isLayoutReady()) stableSince = now;
-            // Let a native smooth animation finish before correcting its geometry.
-            if (!aligned && (!smooth || stillFrames >= 3)) {
+            // Allow normal native motion, but stop a slow animation from
+            // delaying the final position throughout the correction window.
+            if (!aligned && (!smooth || stillFrames >= 3 || now - started >= SMOOTH_SCROLL_MAX_DURATION_MS)) {
               host.scrollTo({ top, behavior: 'instant' });
             }
             previousTop = host.scrollTop;

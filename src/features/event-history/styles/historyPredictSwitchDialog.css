@@ -1,0 +1,123 @@
+
+.predict-switch-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9200;
+  display: grid;
+  place-items: center;
+  padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 28% 20%, rgba(153, 246, 228, 0.18), transparent 42%),
+    radial-gradient(circle at 78% 76%, rgba(125, 211, 252, 0.16), transparent 44%),
+    rgba(15, 23, 42, 0.24);
+  backdrop-filter: blur(12px) saturate(135%);
+  -webkit-backdrop-filter: blur(12px) saturate(135%);
+}
+
+.predict-switch-dialog-card {
+  position: relative;
+  isolation: isolate;
+  width: min(520px, calc(100vw - 36px));
+  overflow: hidden;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 26px;
+  padding: 24px;
+  color: #173042;
+}
+
+.predict-switch-dialog-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 15px;
+  color: #0f766e;
+  font-size: 1.2rem;
+  font-weight: 900;
+  background: linear-gradient(145deg, rgba(204, 251, 241, 0.92), rgba(186, 230, 253, 0.68));
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.predict-switch-dialog-copy h3 {
+  margin: 0 0 8px;
+  font-size: 1.08rem;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+}
+
+.predict-switch-dialog-copy p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.predict-switch-dialog-copy strong {
+  color: #0f766e;
+  font-weight: 850;
+}
+
+.predict-switch-dialog-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 22px;
+}
+
+.predict-switch-dialog-btn {
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 14px;
+  padding: 9px 12px;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 780;
+  line-height: 1.25;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 5px 14px rgba(15, 23, 42, 0.07);
+  transition: transform var(--ui-motion-dialog), border-color var(--ui-motion-dialog), background-color var(--ui-motion-dialog);
+}
+
+.predict-switch-dialog-btn:hover {
+  transform: translateY(-1px);
+}
+
+.predict-switch-dialog-btn:focus-visible {
+  outline: 3px solid rgba(45, 212, 191, 0.30);
+  outline-offset: 2px;
+}
+
+.predict-switch-dialog-btn.is-discard {
+  color: #9f1239;
+  border-color: rgba(251, 113, 133, 0.30);
+  background: rgba(255, 241, 242, 0.66);
+}
+
+.predict-switch-dialog-btn.is-save {
+  color: #ffffff;
+  border-color: rgba(45, 212, 191, 0.70);
+  background: linear-gradient(145deg, rgba(13, 148, 136, 0.94), rgba(14, 165, 233, 0.82));
+  box-shadow: 0 9px 20px rgba(13, 148, 136, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+@media (max-width: 520px) {
+  .predict-switch-dialog-card {
+    width: min(100%, 390px);
+    border-radius: 22px;
+    padding: 20px;
+  }
+
+  .predict-switch-dialog-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .predict-switch-dialog-btn.is-save {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+}

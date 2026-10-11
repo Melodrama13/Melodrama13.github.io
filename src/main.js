@@ -3,6 +3,7 @@ import './styles/tokens.css';
 import './style.css';
 import './styles/liquid-glass.css';
 import './styles/primitives.css';
+import './styles/motion.css';
 import { liquidGlassPlugin } from './ui/liquidGlass.js';
 import App from './App.vue';
 

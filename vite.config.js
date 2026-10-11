@@ -3,10 +3,12 @@ import vue from '@vitejs/plugin-vue'
 import { createHash } from 'node:crypto'
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
+import { lazyModuleRecoveryPlugin } from './scripts/lazyModuleRecoveryPlugin.js'
 
 const buildId = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)
 const publicDataFiles = [
   'public/data/pjsk_events.json',
+  'public/data/pjsk_prediction_order.json',
   'public/data/pjsk_cards.json',
   'public/data/pjsk_songs.json',
   'public/data/pjsk_characters.json',
@@ -93,7 +95,7 @@ const versionManifestPlugin = () => ({
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), versionManifestPlugin()],
+  plugins: [vue(), versionManifestPlugin(), lazyModuleRecoveryPlugin()],
   define: {
     __APP_BUILD_ID__: JSON.stringify(buildId),
     __APP_RELEASE_NOTES__: JSON.stringify(releaseNotes),

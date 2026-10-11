@@ -1,0 +1,2177 @@
+
+/* 3. 恢复并优化你原本的样式 */
+/* App.vue 样式部分 */
+:global(#app) {
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  text-align: left !important;
+}
+
+.main-app, :global([data-feature-page="app"] :is(.main-app)), :global(:is(.main-app)[data-feature-page="app"]) {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;     /* 强制占满一屏高度 */
+  height: 100svh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100svh;
+  max-height: 100dvh;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;  /* 锁定外层，防止整个网页滚动 */
+}
+
+.main-app, :global([data-feature-page="app"] :is(.main-app)), :global(:is(.main-app)[data-feature-page="app"]) {
+  background: transparent;
+}
+
+.nav-tabs, :global([data-feature-page="app"] :is(.nav-tabs)), :global(:is(.nav-tabs)[data-feature-page="app"]) {
+  --top-glass-bg: var(--ui-shell-glass-bg);
+  --top-glass-bg-hover: var(--ui-shell-glass-bg-hover);
+  --top-glass-border: var(--ui-shell-glass-border);
+  --top-glass-shadow: var(--ui-shell-glass-shadow);
+  --top-glass-shadow-soft: var(--ui-shell-glass-shadow-soft);
+  --top-active-bg: var(--ui-shell-active-bg);
+  --top-active-border: var(--ui-shell-active-border);
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 25px;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: transparent;
+  position: relative;
+  isolation: isolate;
+  z-index: 2000;
+  flex: 0 0 auto;
+  /* 移除 sticky，因为外层已经是 flex 布局，它自然就在最顶部 */
+}
+
+.nav-tabs-glass, :global([data-feature-page="app"] :is(.nav-tabs-glass)), :global(:is(.nav-tabs-glass)[data-feature-page="app"]) {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  border-bottom: 1px solid var(--ui-glass-rim-light);
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.nav-tabs > :not(.nav-tabs-glass), :global([data-feature-page="app"] :is(.nav-tabs > :not(.nav-tabs-glass))), :global(:is(.nav-tabs > :not(.nav-tabs-glass))[data-feature-page="app"]) {
+  position: relative;
+  z-index: 1;
+}
+
+.desktop-tab-switcher, :global([data-feature-page="app"] :is(.desktop-tab-switcher)), :global(:is(.desktop-tab-switcher)[data-feature-page="app"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+  flex: 0 0 auto;
+  isolation: isolate;
+}
+
+.desktop-tab-track, :global([data-feature-page="app"] :is(.desktop-tab-track)), :global(:is(.desktop-tab-track)[data-feature-page="app"]) {
+  position: absolute;
+  inset: -3px -6px;
+  z-index: 0;
+  border: 1px solid var(--ui-glass-mobile-track-border);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.desktop-tab-switcher > .primary-tab-button, :global([data-feature-page="app"] :is(.desktop-tab-switcher > .primary-tab-button)), :global(:is(.desktop-tab-switcher > .primary-tab-button)[data-feature-page="app"]) {
+  display: inline-flex;
+  position: relative;
+  z-index: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  font-size: 0.86rem;
+  box-sizing: border-box;
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #1e293b;
+  touch-action: pan-y;
+}
+
+.desktop-tab-switcher > .primary-tab-button.active, :global([data-feature-page="app"] :is(.desktop-tab-switcher > .primary-tab-button.active)), :global(:is(.desktop-tab-switcher > .primary-tab-button.active)[data-feature-page="app"]) {
+  background: transparent;
+  color: #0891b2;
+}
+
+.desktop-tab-switcher > .primary-tab-button:focus-visible, :global([data-feature-page="app"] :is(.desktop-tab-switcher > .primary-tab-button:focus-visible)), :global(:is(.desktop-tab-switcher > .primary-tab-button:focus-visible)[data-feature-page="app"]) {
+  outline: 2px solid rgba(8, 145, 178, 0.72);
+  outline-offset: -3px;
+}
+
+.nav-tabs .desktop-tab-switcher > .primary-tab-button.active .btn-icon, :global([data-feature-page="app"] :is(.nav-tabs .desktop-tab-switcher > .primary-tab-button.active .btn-icon)), :global(:is(.nav-tabs .desktop-tab-switcher > .primary-tab-button.active .btn-icon)[data-feature-page="app"]) {
+  --app-icon-filter: none;
+}
+
+.desktop-tab-glider.mobile-tab-glider, :global([data-feature-page="app"] :is(.desktop-tab-glider.mobile-tab-glider)), :global(:is(.desktop-tab-glider.mobile-tab-glider)[data-feature-page="app"]) {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  pointer-events: none;
+  translate: calc(var(--desktop-tab-left) + var(--desktop-tab-drag-x)) 0;
+  scale: 1;
+  transition: translate var(--ui-motion-navigation), scale var(--ui-motion-release);
+}
+
+.desktop-tab-switcher.is-tab-dragging .desktop-tab-glider, :global([data-feature-page="app"] :is(.desktop-tab-switcher.is-tab-dragging .desktop-tab-glider)), :global(:is(.desktop-tab-switcher.is-tab-dragging .desktop-tab-glider)[data-feature-page="app"]) {
+  transition: scale var(--ui-motion-release);
+}
+
+.desktop-tab-glider[data-ui-glass-pressed='true'], :global([data-feature-page="app"] :is(.desktop-tab-glider[data-ui-glass-pressed='true'])), :global(:is(.desktop-tab-glider[data-ui-glass-pressed='true'])[data-feature-page="app"]) {
+  scale: var(--ui-motion-selector-press-scale);
+}
+
+:root[data-ui-glass-motion='reduced'] .desktop-tab-glider, :global([data-feature-page="app"] :is(:root[data-ui-glass-motion='reduced'] .desktop-tab-glider)), :global(:is(:root[data-ui-glass-motion='reduced'] .desktop-tab-glider)[data-feature-page="app"]) {
+  transition: none;
+  scale: 1;
+}
+
+.mobile-bottom-controls,
+.mobile-tab-switcher,
+.mobile-source-trigger,
+.mobile-tab-glider,
+:global([data-feature-page="app"] :is(.mobile-bottom-controls)),
+:global(:is(.mobile-bottom-controls)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.mobile-tab-switcher)),
+:global(:is(.mobile-tab-switcher)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.mobile-source-trigger)),
+:global(:is(.mobile-source-trigger)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.mobile-tab-glider)),
+:global(:is(.mobile-tab-glider)[data-feature-page="app"]) {
+  display: none;
+}
+
+.app-update-banner, :global([data-feature-page="app"] :is(.app-update-banner)), :global(:is(.app-update-banner)[data-feature-page="app"]) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 14px;
+  background: #ecfeff;
+  border-bottom: 1px solid #99f6e4;
+}
+
+.app-update-text, :global([data-feature-page="app"] :is(.app-update-text)), :global(:is(.app-update-text)[data-feature-page="app"]) {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.app-update-btn, :global([data-feature-page="app"] :is(.app-update-btn)), :global(:is(.app-update-btn)[data-feature-page="app"]) {
+  border: 1px solid #0f766e;
+  background: #14b8a6;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.app-update-btn.app-update-btn-muted, :global([data-feature-page="app"] :is(.app-update-btn.app-update-btn-muted)), :global(:is(.app-update-btn.app-update-btn-muted)[data-feature-page="app"]) {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.app-update-modal-mask, :global([data-feature-page="app"] :is(.app-update-modal-mask)), :global(:is(.app-update-modal-mask)[data-feature-page="app"]) {
+  position: fixed;
+  inset: 0;
+  z-index: 5200;
+  background: rgba(15, 23, 42, 0.38);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.app-update-modal, :global([data-feature-page="app"] :is(.app-update-modal)), :global(:is(.app-update-modal)[data-feature-page="app"]) {
+  width: min(520px, calc(100vw - 20px));
+  max-height: min(78vh, 640px);
+  overflow: auto;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.app-update-modal-title, :global([data-feature-page="app"] :is(.app-update-modal-title)), :global(:is(.app-update-modal-title)[data-feature-page="app"]) {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.app-update-modal-subtitle, :global([data-feature-page="app"] :is(.app-update-modal-subtitle)), :global(:is(.app-update-modal-subtitle)[data-feature-page="app"]) {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.app-update-log-list, :global([data-feature-page="app"] :is(.app-update-log-list)), :global(:is(.app-update-log-list)[data-feature-page="app"]) {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: #1e293b;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.app-update-modal-actions, :global([data-feature-page="app"] :is(.app-update-modal-actions)), :global(:is(.app-update-modal-actions)[data-feature-page="app"]) {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-release-log-image, :global([data-feature-page="app"] :is(.app-release-log-image)), :global(:is(.app-release-log-image)[data-feature-page="app"]) {
+  margin-top: 10px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: min(100%, 120px);
+  max-height: min(48vh, 160px);
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  object-fit: contain;
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.app-release-log-skip-option, :global([data-feature-page="app"] :is(.app-release-log-skip-option)), :global(:is(.app-release-log-skip-option)[data-feature-page="app"]) {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.app-release-log-skip-checkbox, :global([data-feature-page="app"] :is(.app-release-log-skip-checkbox)), :global(:is(.app-release-log-skip-checkbox)[data-feature-page="app"]) {
+  width: 16px;
+  height: 16px;
+  accent-color: #0f766e;
+}
+
+.nav-tabs > button,
+.nav-tabs > .io-btn,
+.nav-tabs > .source-dropdown > .source-trigger,
+:global([data-feature-page="app"] :is(.nav-tabs > button)),
+:global(:is(.nav-tabs > button)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs > .io-btn)),
+:global(:is(.nav-tabs > .io-btn)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs > .source-dropdown > .source-trigger)),
+:global(:is(.nav-tabs > .source-dropdown > .source-trigger)[data-feature-page="app"]) {
+  min-height: 42px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.username-wrap, :global([data-feature-page="app"] :is(.username-wrap)), :global(:is(.username-wrap)[data-feature-page="app"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 5px 8px;
+  border: 1px solid var(--top-glass-border);
+  border-radius: 999px;
+  background: var(--top-glass-bg);
+  box-shadow: var(--top-glass-shadow-soft);
+  box-sizing: border-box;
+}
+
+.stats-top-nav-wrap, :global([data-feature-page="app"] :is(.stats-top-nav-wrap)), :global(:is(.stats-top-nav-wrap)[data-feature-page="app"]) {
+  --stats-top-control-size: 30px;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-height: 42px;
+  padding: 5px 8px;
+  border: 1px solid var(--top-glass-border);
+  border-radius: 999px;
+  background: var(--top-glass-bg);
+  box-shadow: var(--top-glass-shadow-soft);
+  box-sizing: border-box;
+}
+
+.stats-top-label, :global([data-feature-page="app"] :is(.stats-top-label)), :global(:is(.stats-top-label)[data-feature-page="app"]) {
+  font-size: 0.72rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.stats-top-id-input, :global([data-feature-page="app"] :is(.stats-top-id-input)), :global(:is(.stats-top-id-input)[data-feature-page="app"]) {
+  width: 56px;
+  height: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 999px;
+  padding: 0 6px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  text-align: center;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.stats-top-id-input:focus, :global([data-feature-page="app"] :is(.stats-top-id-input:focus)), :global(:is(.stats-top-id-input:focus)[data-feature-page="app"]) {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.15);
+}
+
+.stats-top-mini-btn,
+.stats-top-menu-btn,
+:global([data-feature-page="app"] :is(.stats-top-mini-btn)),
+:global(:is(.stats-top-mini-btn)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.stats-top-menu-btn)),
+:global(:is(.stats-top-menu-btn)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.70);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(240, 253, 250, 0.36));
+  color: #334155;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  font-size: 0.76rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition: transform var(--ui-motion-state), background-color var(--ui-motion-state);
+}
+
+.nav-tabs .stats-top-mini-btn,
+.nav-tabs .stats-top-menu-btn,
+:global([data-feature-page="app"] :is(.nav-tabs .stats-top-mini-btn)),
+:global(:is(.nav-tabs .stats-top-mini-btn)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs .stats-top-menu-btn)),
+:global(:is(.nav-tabs .stats-top-menu-btn)[data-feature-page="app"]) {
+  min-height: 24px;
+  padding: 0 4px;
+}
+
+.nav-tabs .stats-top-mini-btn:active,
+.nav-tabs .stats-top-menu-btn:active,
+:global([data-feature-page="app"] :is(.nav-tabs .stats-top-mini-btn:active)),
+:global(:is(.nav-tabs .stats-top-mini-btn:active)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs .stats-top-menu-btn:active)),
+:global(:is(.nav-tabs .stats-top-menu-btn:active)[data-feature-page="app"]) {
+  filter: brightness(0.82);
+}
+
+.stats-top-reset-btn, :global([data-feature-page="app"] :is(.stats-top-reset-btn)), :global(:is(.stats-top-reset-btn)[data-feature-page="app"]) {
+  min-width: 24px;
+}
+.stats-top-reset-btn, .stats-top-mini-btn, :global([data-feature-page="app"] :is(.stats-top-reset-btn)), :global(:is(.stats-top-reset-btn)[data-feature-page="app"]), :global([data-feature-page="app"] :is(.stats-top-mini-btn)), :global(:is(.stats-top-mini-btn)[data-feature-page="app"]) {
+  padding: 0 !important;
+  border-radius: 50% !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  max-width: 24px !important;
+  max-height: 24px !important;
+  flex: 0 0 24px !important;
+  overflow: hidden !important;
+  aspect-ratio: 1 / 1 !important;
+  line-height: calc(24px - 2px) !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+}
+
+.stats-top-reset-icon, :global([data-feature-page="app"] :is(.stats-top-reset-icon)), :global(:is(.stats-top-reset-icon)[data-feature-page="app"]) {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: block;
+}
+
+.stats-top-menu-btn, :global([data-feature-page="app"] :is(.stats-top-menu-btn)), :global(:is(.stats-top-menu-btn)[data-feature-page="app"]) {
+  min-width: 30px;
+  font-size: 0.88rem;
+}
+
+.stats-top-menu-btn:disabled, :global([data-feature-page="app"] :is(.stats-top-menu-btn:disabled)), :global(:is(.stats-top-menu-btn:disabled)[data-feature-page="app"]) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.nav-tabs.is-stats-top-compact, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact)), :global(:is(.nav-tabs.is-stats-top-compact)[data-feature-page="app"]) {
+  gap: 6px;
+  padding: 8px 10px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.nav-tabs.is-stats-top-compact > button,
+.nav-tabs.is-stats-top-compact > .io-btn,
+.nav-tabs.is-stats-top-compact > .source-dropdown > .source-trigger,
+:global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact > button)),
+:global(:is(.nav-tabs.is-stats-top-compact > button)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact > .io-btn)),
+:global(:is(.nav-tabs.is-stats-top-compact > .io-btn)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact > .source-dropdown > .source-trigger)),
+:global(:is(.nav-tabs.is-stats-top-compact > .source-dropdown > .source-trigger)[data-feature-page="app"]) {
+  min-height: 34px;
+  white-space: nowrap;
+}
+
+.nav-tabs.is-stats-top-compact > button, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact > button)), :global(:is(.nav-tabs.is-stats-top-compact > button)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+}
+
+.nav-tabs.is-stats-top-compact .btn-with-icon, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .btn-with-icon)), :global(:is(.nav-tabs.is-stats-top-compact .btn-with-icon)[data-feature-page="app"]) {
+  gap: 2px;
+}
+
+.nav-tabs.is-stats-top-compact .btn-icon, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .btn-icon)), :global(:is(.nav-tabs.is-stats-top-compact .btn-icon)[data-feature-page="app"]) {
+  width: 13px;
+  height: 13px;
+  flex-basis: 13px;
+}
+
+.nav-tabs.is-stats-top-compact .stats-top-nav-wrap, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .stats-top-nav-wrap)), :global(:is(.nav-tabs.is-stats-top-compact .stats-top-nav-wrap)[data-feature-page="app"]) {
+  --stats-top-control-size: 24px;
+  order: 3;
+  gap: 1px;
+  min-height: 34px;
+  padding: 3px 5px;
+}
+
+.nav-tabs.is-stats-top-compact .stats-top-label, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .stats-top-label)), :global(:is(.nav-tabs.is-stats-top-compact .stats-top-label)[data-feature-page="app"]) {
+  display: none;
+}
+
+.nav-tabs.is-stats-top-compact .stats-top-id-input, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .stats-top-id-input)), :global(:is(.nav-tabs.is-stats-top-compact .stats-top-id-input)[data-feature-page="app"]) {
+  width: 50px;
+}
+
+.nav-tabs.is-stats-top-compact .stats-top-mini-btn, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .stats-top-mini-btn)), :global(:is(.nav-tabs.is-stats-top-compact .stats-top-mini-btn)[data-feature-page="app"]) {
+  font-size: 0.7rem;
+}
+
+.nav-tabs.is-stats-top-compact .stats-top-reset-icon, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .stats-top-reset-icon)), :global(:is(.nav-tabs.is-stats-top-compact .stats-top-reset-icon)[data-feature-page="app"]) {
+  width: 13px;
+  height: 13px;
+}
+
+.username-label, :global([data-feature-page="app"] :is(.username-label)), :global(:is(.username-label)[data-feature-page="app"]) {
+  font-size: 0.75rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.username-input, :global([data-feature-page="app"] :is(.username-input)), :global(:is(.username-input)[data-feature-page="app"]) {
+  width: 112px;
+  height: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.78rem;
+  color: #0f172a;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.username-input:focus, :global([data-feature-page="app"] :is(.username-input:focus)), :global(:is(.username-input:focus)[data-feature-page="app"]) {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.15);
+}
+
+.nav-tabs-spacer, :global([data-feature-page="app"] :is(.nav-tabs-spacer)), :global(:is(.nav-tabs-spacer)[data-feature-page="app"]) {
+  flex: 1 1 auto;
+  min-width: 8px;
+}
+
+.nav-create-btn, :global([data-feature-page="app"] :is(.nav-create-btn)), :global(:is(.nav-create-btn)[data-feature-page="app"]) {
+  order: 98;
+}
+
+.source-dropdown, :global([data-feature-page="app"] :is(.source-dropdown)), :global(:is(.source-dropdown)[data-feature-page="app"]) {
+  order: 99;
+}
+
+.nav-tabs button:not(:disabled),
+.io-btn:not(:disabled),
+.source-item:not(:disabled),
+.source-mini-btn:not(:disabled),
+.source-order-btn:not(:disabled),
+.floating-top-btn:not(:disabled),
+:global([data-feature-page="app"] :is(.nav-tabs button:not(:disabled))),
+:global(:is(.nav-tabs button:not(:disabled))[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.io-btn:not(:disabled))),
+:global(:is(.io-btn:not(:disabled))[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.source-item:not(:disabled))),
+:global(:is(.source-item:not(:disabled))[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.source-mini-btn:not(:disabled))),
+:global(:is(.source-mini-btn:not(:disabled))[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.source-order-btn:not(:disabled))),
+:global(:is(.source-order-btn:not(:disabled))[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.floating-top-btn:not(:disabled))),
+:global(:is(.floating-top-btn:not(:disabled))[data-feature-page="app"]) {
+  transition: transform var(--ui-motion-state), background-color var(--ui-motion-state), border-color var(--ui-motion-state), color var(--ui-motion-state);
+}
+
+.nav-tabs button:not(:disabled):active,
+.io-btn:not(:disabled):active,
+.source-item:not(:disabled):active,
+.source-mini-btn:not(:disabled):active,
+.source-order-btn:not(:disabled):active,
+.floating-top-btn:not(:disabled):active,
+:global([data-feature-page="app"] :is(.nav-tabs button:not(:disabled):active)),
+:global(:is(.nav-tabs button:not(:disabled):active)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.io-btn:not(:disabled):active)),
+:global(:is(.io-btn:not(:disabled):active)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.source-item:not(:disabled):active)),
+:global(:is(.source-item:not(:disabled):active)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.source-mini-btn:not(:disabled):active)),
+:global(:is(.source-mini-btn:not(:disabled):active)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.source-order-btn:not(:disabled):active)),
+:global(:is(.source-order-btn:not(:disabled):active)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.floating-top-btn:not(:disabled):active)),
+:global(:is(.floating-top-btn:not(:disabled):active)[data-feature-page="app"]) {
+  filter: brightness(0.86);
+}
+
+/* 修改并替换 App.vue 中的 .content-area 相关样式 */
+.content-area, :global([data-feature-page="app"] :is(.content-area)), :global(:is(.content-area)[data-feature-page="app"]) {
+  flex: 1;
+  min-height: 0;
+  padding: 20px;
+  overflow-y: auto; /* 默认允许滚动，拯救你的统计面板 */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* 当切换到历史页面时，去掉 padding 并锁定外层滚动 */
+.content-area.history-mode, :global([data-feature-page="app"] :is(.content-area.history-mode)), :global(:is(.content-area.history-mode)[data-feature-page="app"]) {
+  padding: 0;
+  overflow: hidden;
+}
+
+.app-data-loading, :global([data-feature-page="app"] :is(.app-data-loading)), :global(:is(.app-data-loading)[data-feature-page="app"]) {
+  min-height: min(360px, 62vh);
+  display: grid;
+  place-items: center;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.app-data-loader, :global([data-feature-page="app"] :is(.app-data-loader)), :global(:is(.app-data-loader)[data-feature-page="app"]) {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.28) 32%, rgba(255, 255, 255, 0.08) 70%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(148, 163, 184, 0.08));
+  box-shadow:
+    0 24px 62px rgba(15, 23, 42, 0.13),
+    0 0 0 1px rgba(255, 255, 255, 0.62),
+    inset 0 1px 10px rgba(255, 255, 255, 0.72),
+    inset 0 -20px 34px rgba(56, 189, 248, 0.09),
+    inset 12px 0 28px rgba(236, 72, 153, 0.06);
+  backdrop-filter: blur(18px) saturate(1.42);
+  -webkit-backdrop-filter: blur(18px) saturate(1.42);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.app-data-loader::before,
+.app-data-loader::after,
+:global([data-feature-page="app"] :is(.app-data-loader)::before),
+:global(:is(.app-data-loader)[data-feature-page="app"]::before),
+:global([data-feature-page="app"] :is(.app-data-loader)::after),
+:global(:is(.app-data-loader)[data-feature-page="app"]::after) {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+.app-data-loader::before, :global([data-feature-page="app"] :is(.app-data-loader)::before), :global(:is(.app-data-loader)[data-feature-page="app"]::before) {
+  inset: 8px;
+  background: conic-gradient(from 0deg, #3b82f6, #22c55e, #ef476f, #f59e0b, #8b5cf6, #38bdf8, #ec4899, #3b82f6);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  padding: 2px;
+  opacity: 0.72;
+  animation: app-data-loader-spin var(--ui-motion-loader-ring-duration) linear infinite;
+}
+
+.app-data-loader::after, :global([data-feature-page="app"] :is(.app-data-loader)::after), :global(:is(.app-data-loader)[data-feature-page="app"]::after) {
+  inset: 24px;
+  background:
+    radial-gradient(circle at 28% 26%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.62) 28%, transparent 48%),
+    conic-gradient(from 12deg, #65d8e8, #b69cff, #ff9eb7, #ffc56f, #92e99f, #9ab3ff, #65d8e8);
+  box-shadow:
+    0 0 0 7px rgba(255, 255, 255, 0.36),
+    0 10px 22px rgba(15, 23, 42, 0.13),
+    inset 0 1px 8px rgba(255, 255, 255, 0.5);
+  animation: app-data-loader-core var(--ui-motion-loader-core-duration) linear infinite;
+}
+
+.app-data-loader span, :global([data-feature-page="app"] :is(.app-data-loader span)), :global(:is(.app-data-loader span)[data-feature-page="app"]) {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  margin: -6.5px;
+  border-radius: 999px;
+  background: var(--loader-dot-color);
+  box-shadow:
+    0 8px 18px rgba(15, 23, 42, 0.18),
+    inset 0 1px 3px rgba(255, 255, 255, 0.72);
+  transform: rotate(var(--loader-dot-angle)) translateX(29px) scale(1);
+  animation: app-data-loader-orbit var(--ui-motion-loader-orbit-duration) linear infinite;
+}
+
+.app-data-loader span:first-child, :global([data-feature-page="app"] :is(.app-data-loader span:first-child)), :global(:is(.app-data-loader span:first-child)[data-feature-page="app"]) {
+  --loader-dot-angle: -90deg;
+  --loader-dot-color: #3b82f6;
+}
+
+.app-data-loader span:nth-child(2), :global([data-feature-page="app"] :is(.app-data-loader span:nth-child(2))), :global(:is(.app-data-loader span:nth-child(2))[data-feature-page="app"]) {
+  --loader-dot-angle: -18deg;
+  --loader-dot-color: #22c55e;
+}
+
+.app-data-loader span:nth-child(3), :global([data-feature-page="app"] :is(.app-data-loader span:nth-child(3))), :global(:is(.app-data-loader span:nth-child(3))[data-feature-page="app"]) {
+  --loader-dot-angle: 54deg;
+  --loader-dot-color: #ef476f;
+}
+
+.app-data-loader span:nth-child(4), :global([data-feature-page="app"] :is(.app-data-loader span:nth-child(4))), :global(:is(.app-data-loader span:nth-child(4))[data-feature-page="app"]) {
+  --loader-dot-angle: 126deg;
+  --loader-dot-color: #f59e0b;
+}
+
+.app-data-loader span:nth-child(5), :global([data-feature-page="app"] :is(.app-data-loader span:nth-child(5))), :global(:is(.app-data-loader span:nth-child(5))[data-feature-page="app"]) {
+  --loader-dot-angle: 198deg;
+  --loader-dot-color: #8b5cf6;
+}
+
+.app-data-loading-error, :global([data-feature-page="app"] :is(.app-data-loading-error)), :global(:is(.app-data-loading-error)[data-feature-page="app"]) {
+  color: #b91c1c;
+}
+
+@keyframes app-data-loader-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes app-data-loader-core {
+  0% {
+    transform: rotate(0deg) scale(0.94);
+    border-radius: 52% 48% 45% 55%;
+  }
+
+  100% {
+    transform: rotate(-360deg) scale(0.94);
+    border-radius: 52% 48% 45% 55%;
+  }
+
+  50% {
+    transform: rotate(-180deg) scale(1.04);
+    border-radius: 44% 56% 54% 46%;
+  }
+}
+
+@keyframes app-data-loader-orbit {
+  0% {
+    transform: rotate(var(--loader-dot-angle)) translateX(29px) scale(0.9);
+    opacity: 0.72;
+  }
+
+  25% {
+    transform: rotate(calc(var(--loader-dot-angle) + 90deg)) translateX(29px) scale(1.12);
+    opacity: 0.98;
+  }
+
+  50% {
+    transform: rotate(calc(var(--loader-dot-angle) + 180deg)) translateX(29px) scale(0.94);
+    opacity: 0.8;
+  }
+
+  75% {
+    transform: rotate(calc(var(--loader-dot-angle) + 270deg)) translateX(29px) scale(1.1);
+    opacity: 0.96;
+  }
+
+  100% {
+    transform: rotate(calc(var(--loader-dot-angle) + 360deg)) translateX(29px) scale(0.9);
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-data-loader::before,
+  .app-data-loader::after,
+  .app-data-loader span,
+  :global([data-feature-page="app"] :is(.app-data-loader)::before),
+  :global(:is(.app-data-loader)[data-feature-page="app"]::before),
+  :global([data-feature-page="app"] :is(.app-data-loader)::after),
+  :global(:is(.app-data-loader)[data-feature-page="app"]::after),
+  :global([data-feature-page="app"] :is(.app-data-loader span)),
+  :global(:is(.app-data-loader span)[data-feature-page="app"]) {
+    animation: none;
+  }
+}
+
+button, :global([data-feature-page="app"] :is(button)), :global(:is(button)[data-feature-page="app"]) {
+  padding: 10px 20px;
+  border: none;
+  background: #f0f0f0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: opacity var(--ui-motion-state), transform var(--ui-motion-state), background-color var(--ui-motion-state), border-color var(--ui-motion-state), color var(--ui-motion-state);
+}
+
+button.active, :global([data-feature-page="app"] :is(button.active)), :global(:is(button.active)[data-feature-page="app"]) {
+  background: #33ccbb; /* 初音绿高亮 */
+  color: white;
+}
+
+.nav-tabs > button,
+.nav-tabs > .io-btn,
+.nav-tabs > .source-dropdown > .source-trigger,
+:global([data-feature-page="app"] :is(.nav-tabs > button)),
+:global(:is(.nav-tabs > button)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs > .io-btn)),
+:global(:is(.nav-tabs > .io-btn)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs > .source-dropdown > .source-trigger)),
+:global(:is(.nav-tabs > .source-dropdown > .source-trigger)[data-feature-page="app"]) {
+  border: 1px solid var(--top-glass-border);
+  background: var(--top-glass-bg);
+  color: #1e293b;
+  box-shadow: var(--top-glass-shadow-soft);
+}
+
+.nav-tabs > button.active,
+.nav-tabs > .io-btn.active,
+.nav-tabs > .source-dropdown > .source-trigger.active,
+:global([data-feature-page="app"] :is(.nav-tabs > button.active)),
+:global(:is(.nav-tabs > button.active)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs > .io-btn.active)),
+:global(:is(.nav-tabs > .io-btn.active)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs > .source-dropdown > .source-trigger.active)),
+:global(:is(.nav-tabs > .source-dropdown > .source-trigger.active)[data-feature-page="app"]) {
+  border-color: var(--top-active-border);
+  background: var(--top-active-bg);
+  color: #ffffff;
+  box-shadow: 0 8px 22px rgba(20, 184, 166, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.48);
+}
+
+.predict-info, :global([data-feature-page="app"] :is(.predict-info)), :global(:is(.predict-info)[data-feature-page="app"]) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  box-sizing: border-box;
+  font-size: 0.85rem;
+  color: #eb2f96;
+  background: linear-gradient(145deg, rgba(255, 240, 246, 0.72), rgba(255, 255, 255, 0.38));
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 173, 210, 0.62);
+  box-shadow: var(--top-glass-shadow-soft);
+}
+
+.predict-cleanup-info, :global([data-feature-page="app"] :is(.predict-cleanup-info)), :global(:is(.predict-cleanup-info)[data-feature-page="app"]) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  box-sizing: border-box;
+  font-size: 0.8rem;
+  color: #065f46;
+  background: linear-gradient(145deg, rgba(236, 253, 245, 0.72), rgba(255, 255, 255, 0.38));
+  border: 1px solid rgba(167, 243, 208, 0.66);
+  box-shadow: var(--top-glass-shadow-soft);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.io-btn, :global([data-feature-page="app"] :is(.io-btn)), :global(:is(.io-btn)[data-feature-page="app"]) {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  background: var(--top-glass-bg, rgba(255, 255, 255, 0.62));
+  border: 1px solid var(--top-glass-border, rgba(255, 255, 255, 0.72));
+}
+
+.btn-with-icon, :global([data-feature-page="app"] :is(.btn-with-icon)), :global(:is(.btn-with-icon)[data-feature-page="app"]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  line-height: 1;
+}
+
+.nav-tabs > button .btn-with-icon,
+.nav-tabs > .io-btn .btn-with-icon,
+:global([data-feature-page="app"] :is(.nav-tabs > button .btn-with-icon)),
+:global(:is(.nav-tabs > button .btn-with-icon)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.nav-tabs > .io-btn .btn-with-icon)),
+:global(:is(.nav-tabs > .io-btn .btn-with-icon)[data-feature-page="app"]) {
+  min-height: 1em;
+}
+
+.btn-icon, :global([data-feature-page="app"] :is(.btn-icon)), :global(:is(.btn-icon)[data-feature-page="app"]) {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  flex: 0 0 15px;
+  display: block;
+}
+
+/* Optional PNG tinting: keep default dark, use white icon on active tab. */
+.btn-icon, :global([data-feature-page="app"] :is(.btn-icon)), :global(:is(.btn-icon)[data-feature-page="app"]) {
+  filter: var(--app-icon-filter, none);
+}
+
+.nav-tabs button.active .btn-icon, :global([data-feature-page="app"] :is(.nav-tabs button.active .btn-icon)), :global(:is(.nav-tabs button.active .btn-icon)[data-feature-page="app"]) {
+  --app-icon-filter: brightness(0) saturate(100%) invert(100%);
+}
+
+.source-dropdown, :global([data-feature-page="app"] :is(.source-dropdown)), :global(:is(.source-dropdown)[data-feature-page="app"]) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.source-trigger, :global([data-feature-page="app"] :is(.source-trigger)), :global(:is(.source-trigger)[data-feature-page="app"]) {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-trigger.is-disabled,
+.source-trigger:disabled,
+:global([data-feature-page="app"] :is(.source-trigger.is-disabled)),
+:global(:is(.source-trigger.is-disabled)[data-feature-page="app"]),
+:global([data-feature-page="app"] :is(.source-trigger:disabled)),
+:global(:is(.source-trigger:disabled)[data-feature-page="app"]) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.source-menu, :global([data-feature-page="app"] :is(.source-menu)), :global(:is(.source-menu)[data-feature-page="app"]) {
+  --source-glass-border: rgba(255, 255, 255, 0.76);
+  --source-inner-border: rgba(148, 163, 184, 0.42);
+  --source-glass-shadow-soft: 0 8px 22px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.78), inset 0 -1px 0 rgba(15, 23, 42, 0.035);
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 320px;
+  max-width: min(92vw, 420px);
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 22px;
+  padding: 10px;
+  overflow: hidden;
+  z-index: 2800;
+}
+
+.source-menu > *, :global([data-feature-page="app"] :is(.source-menu > *)), :global(:is(.source-menu > *)[data-feature-page="app"]) {
+  position: relative;
+  z-index: 1;
+}
+
+.source-menu-floating, :global([data-feature-page="app"] :is(.source-menu-floating)), :global(:is(.source-menu-floating)[data-feature-page="app"]) {
+  box-sizing: border-box;
+}
+
+.source-menu-title, :global([data-feature-page="app"] :is(.source-menu-title)), :global(:is(.source-menu-title)[data-feature-page="app"]) {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #475569;
+  margin: 2px 0 6px;
+}
+
+.source-menu-mobile-summary, :global([data-feature-page="app"] :is(.source-menu-mobile-summary)), :global(:is(.source-menu-mobile-summary)[data-feature-page="app"]) {
+  margin: 0 0 8px;
+  color: #475569;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.source-menu-username-wrap, :global([data-feature-page="app"] :is(.source-menu-username-wrap)), :global(:is(.source-menu-username-wrap)[data-feature-page="app"]) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--source-glass-border);
+  border-radius: 999px;
+  background: var(--ui-glass-group-bg);
+  box-shadow: var(--source-glass-shadow-soft);
+}
+
+.source-menu-username-label, :global([data-feature-page="app"] :is(.source-menu-username-label)), :global(:is(.source-menu-username-label)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.source-menu-username-input, :global([data-feature-page="app"] :is(.source-menu-username-input)), :global(:is(.source-menu-username-input)[data-feature-page="app"]) {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+  border: 1px solid var(--source-inner-border);
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 0.76rem;
+  color: #0f172a;
+  background: var(--ui-glass-input-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 1px 8px rgba(15, 23, 42, 0.04);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.source-menu-username-input:focus, :global([data-feature-page="app"] :is(.source-menu-username-input:focus)), :global(:is(.source-menu-username-input:focus)[data-feature-page="app"]) {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.15);
+}
+
+.source-special-entry-btn, :global([data-feature-page="app"] :is(.source-special-entry-btn)), :global(:is(.source-special-entry-btn)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(94, 234, 212, 0.78);
+  background: linear-gradient(145deg, rgba(236, 254, 255, 0.72), rgba(255, 255, 255, 0.42));
+  color: #0f766e;
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.source-special-entry-btn:hover, :global([data-feature-page="app"] :is(.source-special-entry-btn:hover)), :global(:is(.source-special-entry-btn:hover)[data-feature-page="app"]) {
+  background: var(--top-glass-bg-hover, #ccfbf1);
+}
+
+.source-special-entry-btn span, :global([data-feature-page="app"] :is(.source-special-entry-btn span)), :global(:is(.source-special-entry-btn span)[data-feature-page="app"]) {
+  display: inline-block;
+  transform: translateX(0.6px);
+}
+
+.source-list, :global([data-feature-page="app"] :is(.source-list)), :global(:is(.source-list)[data-feature-page="app"]) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 7px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 20px;
+  background: var(--ui-glass-group-bg);
+  box-shadow: var(--source-glass-shadow-soft);
+}
+
+.source-list:not(:has(.source-item-row + .source-item-row)), :global([data-feature-page="app"] :is(.source-list:not(:has(.source-item-row + .source-item-row)))), :global(:is(.source-list:not(:has(.source-item-row + .source-item-row)))[data-feature-page="app"]) {
+  border-radius: 999px;
+}
+
+.source-item, :global([data-feature-page="app"] :is(.source-item)), :global(:is(.source-item)[data-feature-page="app"]) {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--ui-glass-option-bg);
+  border: 1px solid var(--ui-glass-option-border);
+  border-radius: 999px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  box-shadow: var(--source-glass-shadow-soft);
+}
+
+.source-item-row, :global([data-feature-page="app"] :is(.source-item-row)), :global(:is(.source-item-row)[data-feature-page="app"]) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 10px;
+}
+
+.source-item-row.is-drag-over, :global([data-feature-page="app"] :is(.source-item-row.is-drag-over)), :global(:is(.source-item-row.is-drag-over)[data-feature-page="app"]) {
+  background: var(--top-glass-bg-hover, #e0f2fe);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.70);
+}
+
+.source-mini-btn, :global([data-feature-page="app"] :is(.source-mini-btn)), :global(:is(.source-mini-btn)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--source-inner-border);
+  background: var(--ui-glass-control-bg);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.mini-btn-icon, :global([data-feature-page="app"] :is(.mini-btn-icon)), :global(:is(.mini-btn-icon)[data-feature-page="app"]) {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  display: block;
+}
+
+.source-order-btn, :global([data-feature-page="app"] :is(.source-order-btn)), :global(:is(.source-order-btn)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--source-inner-border);
+  background: var(--ui-glass-control-bg);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.source-drag-handle, :global([data-feature-page="app"] :is(.source-drag-handle)), :global(:is(.source-drag-handle)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  width: 16px;
+  color: #64748b;
+  font-size: 0.9rem;
+  text-align: center;
+  user-select: none;
+  cursor: move;
+}
+
+.source-item-name, :global([data-feature-page="app"] :is(.source-item-name)), :global(:is(.source-item-name)[data-feature-page="app"]) {
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.source-item-count, :global([data-feature-page="app"] :is(.source-item-count)), :global(:is(.source-item-count)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: #64748b;
+  background: #e2e8f0;
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.source-item.active, :global([data-feature-page="app"] :is(.source-item.active)), :global(:is(.source-item.active)[data-feature-page="app"]) {
+  border-color: rgba(94, 234, 212, 0.82);
+  background: var(--top-active-bg, linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(45, 212, 191, 0.72) 52%, rgba(14, 165, 233, 0.58)));
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(20, 184, 166, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.48);
+}
+
+.source-item.active .source-item-count, :global([data-feature-page="app"] :is(.source-item.active .source-item-count)), :global(:is(.source-item.active .source-item-count)[data-feature-page="app"]) {
+  color: #0f766e;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.58);
+}
+
+.source-actions, :global([data-feature-page="app"] :is(.source-actions)), :global(:is(.source-actions)[data-feature-page="app"]) {
+  display: flex;
+  gap: 5px;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 999px;
+  background: var(--ui-glass-group-bg);
+  box-shadow: var(--source-glass-shadow-soft);
+}
+
+.source-actions .io-btn, :global([data-feature-page="app"] :is(.source-actions .io-btn)), :global(:is(.source-actions .io-btn)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 5px 8px;
+  font-size: 0.74rem;
+  border-radius: 999px;
+  border-color: var(--source-inner-border);
+  background: var(--ui-glass-control-bg);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.source-actions .io-btn:disabled, :global([data-feature-page="app"] :is(.source-actions .io-btn:disabled)), :global(:is(.source-actions .io-btn:disabled)[data-feature-page="app"]) {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Shared control state layers provide hover without replacing glass fills. */
+
+.source-item.active:hover, :global([data-feature-page="app"] :is(.source-item.active:hover)), :global(:is(.source-item.active:hover)[data-feature-page="app"]) {
+  background: var(--top-active-bg, linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(45, 212, 191, 0.72) 52%, rgba(14, 165, 233, 0.58)));
+}
+
+.source-actions .btn-with-icon, :global([data-feature-page="app"] :is(.source-actions .btn-with-icon)), :global(:is(.source-actions .btn-with-icon)[data-feature-page="app"]) {
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.source-export-option, :global([data-feature-page="app"] :is(.source-export-option)), :global(:is(.source-export-option)[data-feature-page="app"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: #475569;
+  padding: 5px 8px;
+  border: 1px solid var(--source-inner-border, rgba(148, 163, 184, 0.42));
+  border-radius: 999px;
+  background: var(--ui-glass-control-bg);
+  box-shadow: var(--source-glass-shadow-soft, inset 0 1px 0 rgba(255, 255, 255, 0.56));
+  margin-bottom: 8px;
+  user-select: none;
+}
+
+.source-export-option input, :global([data-feature-page="app"] :is(.source-export-option input)), :global(:is(.source-export-option input)[data-feature-page="app"]) {
+  margin: 0;
+}
+
+.source-export-status, :global([data-feature-page="app"] :is(.source-export-status)), :global(:is(.source-export-status)[data-feature-page="app"]) {
+  font-size: 0.72rem;
+  color: #0f766e;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 999px;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  box-shadow: var(--source-glass-shadow-soft, 0 5px 16px rgba(15, 23, 42, 0.08));
+}
+
+.app-screenshot-modal-mask, :global([data-feature-page="app"] :is(.app-screenshot-modal-mask)), :global(:is(.app-screenshot-modal-mask)[data-feature-page="app"]) {
+  position: fixed;
+  inset: 0;
+  z-index: 4300;
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: saturate(140%) blur(4px);
+  -webkit-backdrop-filter: saturate(140%) blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.app-screenshot-modal, :global([data-feature-page="app"] :is(.app-screenshot-modal)), :global(:is(.app-screenshot-modal)[data-feature-page="app"]) {
+  position: relative;
+  overflow: hidden;
+  width: min(420px, 100%);
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 22px;
+  padding: 14px;
+}
+
+.app-screenshot-modal > *, :global([data-feature-page="app"] :is(.app-screenshot-modal > *)), :global(:is(.app-screenshot-modal > *)[data-feature-page="app"]) {
+  position: relative;
+  z-index: 1;
+}
+
+.app-screenshot-modal.is-failed, :global([data-feature-page="app"] :is(.app-screenshot-modal.is-failed)), :global(:is(.app-screenshot-modal.is-failed)[data-feature-page="app"]) {
+  border-color: rgba(248, 113, 113, 0.62);
+}
+
+.app-screenshot-modal.is-success, :global([data-feature-page="app"] :is(.app-screenshot-modal.is-success)), :global(:is(.app-screenshot-modal.is-success)[data-feature-page="app"]) {
+  border-color: rgba(74, 222, 128, 0.58);
+}
+
+.app-screenshot-modal-head, :global([data-feature-page="app"] :is(.app-screenshot-modal-head)), :global(:is(.app-screenshot-modal-head)[data-feature-page="app"]) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app-screenshot-modal-head-main, :global([data-feature-page="app"] :is(.app-screenshot-modal-head-main)), :global(:is(.app-screenshot-modal-head-main)[data-feature-page="app"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-screenshot-modal-title, :global([data-feature-page="app"] :is(.app-screenshot-modal-title)), :global(:is(.app-screenshot-modal-title)[data-feature-page="app"]) {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.app-screenshot-modal-message, :global([data-feature-page="app"] :is(.app-screenshot-modal-message)), :global(:is(.app-screenshot-modal-message)[data-feature-page="app"]) {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.app-screenshot-modal-spinner, :global([data-feature-page="app"] :is(.app-screenshot-modal-spinner)), :global(:is(.app-screenshot-modal-spinner)[data-feature-page="app"]) {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #0ea5e9;
+  animation: app-screenshot-spin var(--ui-motion-spin-duration) linear infinite;
+}
+
+.app-screenshot-modal-actions, :global([data-feature-page="app"] :is(.app-screenshot-modal-actions)), :global(:is(.app-screenshot-modal-actions)[data-feature-page="app"]) {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.app-screenshot-modal-btn, :global([data-feature-page="app"] :is(.app-screenshot-modal-btn)), :global(:is(.app-screenshot-modal-btn)[data-feature-page="app"]) {
+  min-width: 84px;
+}
+
+.app-screenshot-modal-btn-secondary, :global([data-feature-page="app"] :is(.app-screenshot-modal-btn-secondary)), :global(:is(.app-screenshot-modal-btn-secondary)[data-feature-page="app"]) {
+  opacity: 0.9;
+}
+
+.app-screenshot-modal-close-btn, :global([data-feature-page="app"] :is(.app-screenshot-modal-close-btn)), :global(:is(.app-screenshot-modal-close-btn)[data-feature-page="app"]) {
+  min-width: 56px;
+  padding: 2px 8px;
+}
+
+@keyframes app-screenshot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.source-export-confirm, :global([data-feature-page="app"] :is(.source-export-confirm)), :global(:is(.source-export-confirm)[data-feature-page="app"]) {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 20px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  margin-bottom: 8px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.78), inset 0 -1px 0 rgba(15, 23, 42, 0.035);
+}
+
+.source-export-confirm > *, :global([data-feature-page="app"] :is(.source-export-confirm > *)), :global(:is(.source-export-confirm > *)[data-feature-page="app"]) {
+  position: relative;
+  z-index: 1;
+}
+
+.source-export-confirm-title, :global([data-feature-page="app"] :is(.source-export-confirm-title)), :global(:is(.source-export-confirm-title)[data-feature-page="app"]) {
+  font-size: 0.75rem;
+  color: #1f2937;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.source-export-confirm-row, :global([data-feature-page="app"] :is(.source-export-confirm-row)), :global(:is(.source-export-confirm-row)[data-feature-page="app"]) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.source-export-range-row, :global([data-feature-page="app"] :is(.source-export-range-row)), :global(:is(.source-export-range-row)[data-feature-page="app"]) {
+  gap: 6px;
+}
+
+.source-export-confirm-row > span, :global([data-feature-page="app"] :is(.source-export-confirm-row > span)), :global(:is(.source-export-confirm-row > span)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: #475569;
+}
+
+.source-export-name-input, :global([data-feature-page="app"] :is(.source-export-name-input)), :global(:is(.source-export-name-input)[data-feature-page="app"]) {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--source-inner-border, rgba(148, 163, 184, 0.42));
+  border-radius: 999px;
+  padding: 5px 7px;
+  font-size: 0.74rem;
+  background: rgba(248, 250, 252, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 1px 8px rgba(15, 23, 42, 0.04);
+}
+
+.source-export-range-input, :global([data-feature-page="app"] :is(.source-export-range-input)), :global(:is(.source-export-range-input)[data-feature-page="app"]) {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid var(--source-inner-border, rgba(148, 163, 184, 0.42));
+  border-radius: 999px;
+  padding: 5px 7px;
+  font-size: 0.74rem;
+  background: rgba(248, 250, 252, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 1px 8px rgba(15, 23, 42, 0.04);
+}
+
+.source-export-range-sep, :global([data-feature-page="app"] :is(.source-export-range-sep)), :global(:is(.source-export-range-sep)[data-feature-page="app"]) {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.source-export-confirm-actions, :global([data-feature-page="app"] :is(.source-export-confirm-actions)), :global(:is(.source-export-confirm-actions)[data-feature-page="app"]) {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.source-export-confirm-actions .io-btn, :global([data-feature-page="app"] :is(.source-export-confirm-actions .io-btn)), :global(:is(.source-export-confirm-actions .io-btn)[data-feature-page="app"]) {
+  border-color: var(--source-inner-border, rgba(148, 163, 184, 0.42));
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.source-create-confirm, :global([data-feature-page="app"] :is(.source-create-confirm)), :global(:is(.source-create-confirm)[data-feature-page="app"]) {
+  margin-top: -2px;
+}
+
+.source-rename-confirm, :global([data-feature-page="app"] :is(.source-rename-confirm)), :global(:is(.source-rename-confirm)[data-feature-page="app"]) {
+  margin-top: -2px;
+}
+
+.source-create-clone-row, :global([data-feature-page="app"] :is(.source-create-clone-row)), :global(:is(.source-create-clone-row)[data-feature-page="app"]) {
+  margin-bottom: 6px;
+}
+
+.source-create-clone-option, :global([data-feature-page="app"] :is(.source-create-clone-option)), :global(:is(.source-create-clone-option)[data-feature-page="app"]) {
+  margin-bottom: 0;
+}
+
+.io-drop-zone, :global([data-feature-page="app"] :is(.io-drop-zone)), :global(:is(.io-drop-zone)[data-feature-page="app"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px dashed rgba(148, 163, 184, 0.30);
+  border-radius: 16px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.50);
+}
+
+.io-drop-zone.is-drag-over, :global([data-feature-page="app"] :is(.io-drop-zone.is-drag-over)), :global(:is(.io-drop-zone.is-drag-over)[data-feature-page="app"]) {
+  border-color: rgba(94, 234, 212, 0.78);
+  background: var(--top-glass-bg-hover, #ecfeff);
+}
+
+.io-drop-hint, :global([data-feature-page="app"] :is(.io-drop-hint)), :global(:is(.io-drop-hint)[data-feature-page="app"]) {
+  font-size: 0.72rem;
+  color: #64748b;
+  user-select: none;
+}
+
+.source-drop-zone, :global([data-feature-page="app"] :is(.source-drop-zone)), :global(:is(.source-drop-zone)[data-feature-page="app"]) {
+  width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.predict-import-input, :global([data-feature-page="app"] :is(.predict-import-input)), :global(:is(.predict-import-input)[data-feature-page="app"]) {
+  display: none;
+}
+
+.floating-top-btn, :global([data-feature-page="app"] :is(.floating-top-btn)), :global(:is(.floating-top-btn)[data-feature-page="app"]) {
+  position: fixed;
+  right: 14px;
+  bottom: 18px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--ui-glass-rim-light);
+  color: var(--ui-control-label);
+  z-index: 2600;
+  cursor: pointer;
+}
+
+.floating-top-btn-icon, :global([data-feature-page="app"] :is(.floating-top-btn-icon)), :global(:is(.floating-top-btn-icon)[data-feature-page="app"]) {
+  display: block;
+  line-height: 1;
+  font-size: 1.05rem;
+  font-weight: 900;
+  -webkit-text-stroke: 1px currentColor;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+}
+
+.floating-top-btn:focus-visible, :global([data-feature-page="app"] :is(.floating-top-btn:focus-visible)), :global(:is(.floating-top-btn:focus-visible)[data-feature-page="app"]) {
+  outline: 2px solid rgba(8, 145, 178, 0.72);
+  outline-offset: 3px;
+}
+
+/* Keep tablet windowing and full-width landscape in the same toolbar scale. */
+@media (min-width: 901px) and (max-width: 1280px) {
+  .desktop-tab-switcher, :global([data-feature-page="app"] :is(.desktop-tab-switcher)), :global(:is(.desktop-tab-switcher)[data-feature-page="app"]) {
+    gap: 10px;
+  }
+
+  .desktop-tab-switcher > .primary-tab-button, :global([data-feature-page="app"] :is(.desktop-tab-switcher > .primary-tab-button)), :global(:is(.desktop-tab-switcher > .primary-tab-button)[data-feature-page="app"]) {
+    min-height: 36px;
+    padding: 7px 12px;
+    font-size: 0.86rem;
+  }
+
+  .nav-tabs > button,
+  .nav-tabs > .io-btn,
+  .nav-tabs > .source-dropdown > .source-trigger,
+  .username-wrap,
+  .stats-top-nav-wrap,
+  .predict-info,
+  .predict-cleanup-info,
+  :global([data-feature-page="app"] :is(.nav-tabs > button)),
+  :global(:is(.nav-tabs > button)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.nav-tabs > .io-btn)),
+  :global(:is(.nav-tabs > .io-btn)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.nav-tabs > .source-dropdown > .source-trigger)),
+  :global(:is(.nav-tabs > .source-dropdown > .source-trigger)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.username-wrap)),
+  :global(:is(.username-wrap)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.stats-top-nav-wrap)),
+  :global(:is(.stats-top-nav-wrap)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.predict-info)),
+  :global(:is(.predict-info)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.predict-cleanup-info)),
+  :global(:is(.predict-cleanup-info)[data-feature-page="app"]) {
+    min-height: 36px;
+  }
+
+  .nav-tabs, :global([data-feature-page="app"] :is(.nav-tabs)), :global(:is(.nav-tabs)[data-feature-page="app"]) {
+    gap: 10px;
+    padding: 10px 16px;
+  }
+
+  .nav-tabs > button, :global([data-feature-page="app"] :is(.nav-tabs > button)), :global(:is(.nav-tabs > button)[data-feature-page="app"]) {
+    padding: 7px 12px;
+    font-size: 0.86rem;
+  }
+
+  .username-wrap,
+  .stats-top-nav-wrap,
+  :global([data-feature-page="app"] :is(.username-wrap)),
+  :global(:is(.username-wrap)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.stats-top-nav-wrap)),
+  :global(:is(.stats-top-nav-wrap)[data-feature-page="app"]) {
+    padding: 3px 7px;
+  }
+
+  .stats-top-nav-wrap, :global([data-feature-page="app"] :is(.stats-top-nav-wrap)), :global(:is(.stats-top-nav-wrap)[data-feature-page="app"]) {
+    --stats-top-control-size: 24px;
+    gap: 3px;
+  }
+
+  .stats-top-id-input, :global([data-feature-page="app"] :is(.stats-top-id-input)), :global(:is(.stats-top-id-input)[data-feature-page="app"]) {
+    width: 52px;
+    padding: 0 5px;
+    font-size: 0.88rem;
+  }
+
+  .username-input, :global([data-feature-page="app"] :is(.username-input)), :global(:is(.username-input)[data-feature-page="app"]) {
+    height: 30px;
+    width: 96px;
+    font-size: 0.74rem;
+  }
+
+  .predict-info, :global([data-feature-page="app"] :is(.predict-info)), :global(:is(.predict-info)[data-feature-page="app"]) {
+    padding: 3px 9px;
+    font-size: 0.74rem;
+  }
+
+  .predict-cleanup-info, :global([data-feature-page="app"] :is(.predict-cleanup-info)), :global(:is(.predict-cleanup-info)[data-feature-page="app"]) {
+    padding: 2px 7px;
+    font-size: 0.64rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 900px) {
+  .desktop-tab-switcher, :global([data-feature-page="app"] :is(.desktop-tab-switcher)), :global(:is(.desktop-tab-switcher)[data-feature-page="app"]) {
+    gap: 6px;
+  }
+
+  .desktop-tab-switcher > .primary-tab-button, :global([data-feature-page="app"] :is(.desktop-tab-switcher > .primary-tab-button)), :global(:is(.desktop-tab-switcher > .primary-tab-button)[data-feature-page="app"]) {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 0.82rem;
+  }
+
+  .nav-tabs.is-stats-top-compact > button,
+  .nav-tabs.is-stats-top-compact > .io-btn,
+  .nav-tabs.is-stats-top-compact > .source-dropdown > .source-trigger,
+  .nav-tabs.is-stats-top-compact .username-wrap,
+  .nav-tabs.is-stats-top-compact .stats-top-nav-wrap,
+  .nav-tabs.is-stats-top-compact .predict-info,
+  .nav-tabs.is-stats-top-compact .predict-cleanup-info,
+  :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact > button)),
+  :global(:is(.nav-tabs.is-stats-top-compact > button)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact > .io-btn)),
+  :global(:is(.nav-tabs.is-stats-top-compact > .io-btn)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact > .source-dropdown > .source-trigger)),
+  :global(:is(.nav-tabs.is-stats-top-compact > .source-dropdown > .source-trigger)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .username-wrap)),
+  :global(:is(.nav-tabs.is-stats-top-compact .username-wrap)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .stats-top-nav-wrap)),
+  :global(:is(.nav-tabs.is-stats-top-compact .stats-top-nav-wrap)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .predict-info)),
+  :global(:is(.nav-tabs.is-stats-top-compact .predict-info)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .predict-cleanup-info)),
+  :global(:is(.nav-tabs.is-stats-top-compact .predict-cleanup-info)[data-feature-page="app"]) {
+    min-height: 32px;
+  }
+
+  .nav-tabs.is-stats-top-compact > button, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact > button)), :global(:is(.nav-tabs.is-stats-top-compact > button)[data-feature-page="app"]) {
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+  }
+
+  .nav-tabs.is-stats-top-compact .btn-with-icon, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .btn-with-icon)), :global(:is(.nav-tabs.is-stats-top-compact .btn-with-icon)[data-feature-page="app"]) {
+    gap: 4px;
+  }
+
+  .nav-tabs.is-stats-top-compact .btn-icon, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .btn-icon)), :global(:is(.nav-tabs.is-stats-top-compact .btn-icon)[data-feature-page="app"]) {
+    width: 13px;
+    height: 13px;
+    flex-basis: 13px;
+  }
+
+  .nav-tabs.is-stats-top-compact .username-wrap,
+  .nav-tabs.is-stats-top-compact .stats-top-nav-wrap,
+  :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .username-wrap)),
+  :global(:is(.nav-tabs.is-stats-top-compact .username-wrap)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .stats-top-nav-wrap)),
+  :global(:is(.nav-tabs.is-stats-top-compact .stats-top-nav-wrap)[data-feature-page="app"]) {
+    padding: 2px 6px;
+  }
+
+  .nav-tabs.is-stats-top-compact .stats-top-nav-wrap, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .stats-top-nav-wrap)), :global(:is(.nav-tabs.is-stats-top-compact .stats-top-nav-wrap)[data-feature-page="app"]) {
+    --stats-top-control-size: 22px;
+  }
+
+  .nav-tabs.is-stats-top-compact .predict-info, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .predict-info)), :global(:is(.nav-tabs.is-stats-top-compact .predict-info)[data-feature-page="app"]) {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+  }
+
+  .nav-tabs.is-stats-top-compact .predict-cleanup-info, :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact .predict-cleanup-info)), :global(:is(.nav-tabs.is-stats-top-compact .predict-cleanup-info)[data-feature-page="app"]) {
+    padding: 2px 6px;
+    font-size: 0.62rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-app, :global([data-feature-page="app"] :is(.main-app)), :global(:is(.main-app)[data-feature-page="app"]) {
+    width: 100%;
+    height: 100dvh;
+  }
+
+  .nav-tabs,
+  .nav-tabs.is-stats-top-compact,
+  :global([data-feature-page="app"] :is(.nav-tabs)),
+  :global(:is(.nav-tabs)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.nav-tabs.is-stats-top-compact)),
+  :global(:is(.nav-tabs.is-stats-top-compact)[data-feature-page="app"]) {
+    display: none;
+  }
+
+  .mobile-bottom-controls, :global([data-feature-page="app"] :is(.mobile-bottom-controls)), :global(:is(.mobile-bottom-controls)[data-feature-page="app"]) {
+    display: flex;
+    position: fixed;
+    z-index: 2600;
+    left: 50%;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: 60vw;
+    max-width: 320px;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-50%);
+  }
+
+  .mobile-tab-switcher, :global([data-feature-page="app"] :is(.mobile-tab-switcher)), :global(:is(.mobile-tab-switcher)[data-feature-page="app"]) {
+    display: flex;
+    position: relative;
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    height: 56px;
+    padding: 4px;
+    box-sizing: border-box;
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    isolation: isolate;
+  }
+
+  /* Sibling glass surfaces let the glider sample the already painted track.
+     A backdrop filter on the nav ancestor would create a new backdrop root. */
+  .mobile-tab-track, :global([data-feature-page="app"] :is(.mobile-tab-track)), :global(:is(.mobile-tab-track)[data-feature-page="app"]) {
+    position: absolute;
+    inset: -1px;
+    z-index: 0;
+    border: 1px solid var(--ui-glass-mobile-track-border);
+    border-radius: inherit;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
+
+  .mobile-source-trigger, :global([data-feature-page="app"] :is(.mobile-source-trigger)), :global(:is(.mobile-source-trigger)[data-feature-page="app"]) {
+    display: inline-flex;
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 8px);
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 50%;
+    box-sizing: border-box;
+    color: #0f766e;
+    font-size: 0.82rem;
+    font-weight: 800;
+    white-space: nowrap;
+    isolation: isolate;
+    transform: translateY(-50%);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-source-trigger:active, :global([data-feature-page="app"] :is(.mobile-source-trigger:active)), :global(:is(.mobile-source-trigger:active)[data-feature-page="app"]) {
+    filter: brightness(0.82);
+  }
+
+  .mobile-source-trigger.is-open, :global([data-feature-page="app"] :is(.mobile-source-trigger.is-open)), :global(:is(.mobile-source-trigger.is-open)[data-feature-page="app"]) {
+    color: #0891b2;
+  }
+
+  .mobile-source-trigger:focus-visible, :global([data-feature-page="app"] :is(.mobile-source-trigger:focus-visible)), :global(:is(.mobile-source-trigger:focus-visible)[data-feature-page="app"]) {
+    outline: 2px solid rgba(8, 145, 178, 0.72);
+    outline-offset: 2px;
+  }
+
+  .mobile-source-trigger:disabled, :global([data-feature-page="app"] :is(.mobile-source-trigger:disabled)), :global(:is(.mobile-source-trigger:disabled)[data-feature-page="app"]) {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .mobile-tab-glider, :global([data-feature-page="app"] :is(.mobile-tab-glider)), :global(:is(.mobile-tab-glider)[data-feature-page="app"]) {
+    display: block;
+    position: absolute;
+    z-index: 2;
+    top: 3px;
+    left: 4px;
+    width: calc((100% - 8px) / 3);
+    height: calc(100% - 6px);
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    pointer-events: none;
+    translate: calc(var(--mobile-tab-offset) + var(--mobile-tab-drag-x)) 0;
+    scale: 1;
+    transition: translate var(--ui-motion-navigation), scale var(--ui-motion-release);
+  }
+
+  .mobile-tab-switcher.is-mobile-tab-dragging .mobile-tab-glider, :global([data-feature-page="app"] :is(.mobile-tab-switcher.is-mobile-tab-dragging .mobile-tab-glider)), :global(:is(.mobile-tab-switcher.is-mobile-tab-dragging .mobile-tab-glider)[data-feature-page="app"]) {
+    transition: scale var(--ui-motion-release);
+  }
+
+  .mobile-tab-glider[data-ui-glass-pressed='true'], :global([data-feature-page="app"] :is(.mobile-tab-glider[data-ui-glass-pressed='true'])), :global(:is(.mobile-tab-glider[data-ui-glass-pressed='true'])[data-feature-page="app"]) {
+    /* Expand only the lens around its center; text and icons keep their size. */
+    scale: var(--ui-motion-selector-press-scale);
+  }
+
+  .mobile-tab-switcher > .primary-tab-button, :global([data-feature-page="app"] :is(.mobile-tab-switcher > .primary-tab-button)), :global(:is(.mobile-tab-switcher > .primary-tab-button)[data-feature-page="app"]) {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 46px;
+    padding: 5px 3px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #475569;
+    touch-action: pan-y;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button.active, :global([data-feature-page="app"] :is(.mobile-tab-switcher > .primary-tab-button.active)), :global(:is(.mobile-tab-switcher > .primary-tab-button.active)[data-feature-page="app"]) {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #0891b2;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button:focus-visible, :global([data-feature-page="app"] :is(.mobile-tab-switcher > .primary-tab-button:focus-visible)), :global(:is(.mobile-tab-switcher > .primary-tab-button:focus-visible)[data-feature-page="app"]) {
+    outline: 2px solid rgba(8, 145, 178, 0.72);
+    outline-offset: -4px;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button .btn-with-icon, :global([data-feature-page="app"] :is(.mobile-tab-switcher > .primary-tab-button .btn-with-icon)), :global(:is(.mobile-tab-switcher > .primary-tab-button .btn-with-icon)[data-feature-page="app"]) {
+    min-height: auto;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button .btn-icon, :global([data-feature-page="app"] :is(.mobile-tab-switcher > .primary-tab-button .btn-icon)), :global(:is(.mobile-tab-switcher > .primary-tab-button .btn-icon)[data-feature-page="app"]) {
+    width: 20px;
+    height: 20px;
+    flex-basis: 20px;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button.active .btn-icon, :global([data-feature-page="app"] :is(.mobile-tab-switcher > .primary-tab-button.active .btn-icon)), :global(:is(.mobile-tab-switcher > .primary-tab-button.active .btn-icon)[data-feature-page="app"]) {
+    filter: saturate(1.16) drop-shadow(0 1px 5px rgba(8, 145, 178, 0.26));
+  }
+
+  .mobile-tab-switcher > .primary-tab-button:active, :global([data-feature-page="app"] :is(.mobile-tab-switcher > .primary-tab-button:active)), :global(:is(.mobile-tab-switcher > .primary-tab-button:active)[data-feature-page="app"]) {
+    filter: brightness(0.82);
+  }
+
+  :root[data-ui-glass-mode='opaque'] .mobile-tab-switcher, :global([data-feature-page="app"] :is(:root[data-ui-glass-mode='opaque'] .mobile-tab-switcher)), :global(:is(:root[data-ui-glass-mode='opaque'] .mobile-tab-switcher)[data-feature-page="app"]) {
+    background: var(--ui-glass-fallback-bg);
+    border-color: var(--ui-glass-rim-dark);
+  }
+
+  :root[data-ui-glass-motion='reduced'] .mobile-tab-glider, :global([data-feature-page="app"] :is(:root[data-ui-glass-motion='reduced'] .mobile-tab-glider)), :global(:is(:root[data-ui-glass-motion='reduced'] .mobile-tab-glider)[data-feature-page="app"]) {
+    transition: none;
+    scale: 1;
+  }
+
+  .nav-tabs button,
+  .reset-btn,
+  :global([data-feature-page="app"] :is(.nav-tabs button)),
+  :global(:is(.nav-tabs button)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.reset-btn)),
+  :global(:is(.reset-btn)[data-feature-page="app"]) {
+    flex: 0 0 auto;
+    padding: 5px 7px;
+    font-size: 0.74rem;
+    min-height: 31px;
+    white-space: nowrap;
+  }
+
+  .btn-with-icon, :global([data-feature-page="app"] :is(.btn-with-icon)), :global(:is(.btn-with-icon)[data-feature-page="app"]) {
+    gap: 4px;
+  }
+
+  .btn-icon, :global([data-feature-page="app"] :is(.btn-icon)), :global(:is(.btn-icon)[data-feature-page="app"]) {
+    width: 13px;
+    height: 13px;
+    flex-basis: 13px;
+  }
+
+  .username-wrap, :global([data-feature-page="app"] :is(.username-wrap)), :global(:is(.username-wrap)[data-feature-page="app"]) {
+    order: 3;
+    gap: 3px;
+    min-height: 31px;
+    padding: 2px 4px;
+    border-radius: 999px;
+  }
+
+  .stats-top-nav-wrap, :global([data-feature-page="app"] :is(.stats-top-nav-wrap)), :global(:is(.stats-top-nav-wrap)[data-feature-page="app"]) {
+    --stats-top-control-size: 21px;
+    order: 3;
+    gap: 2px;
+    min-height: 31px;
+    padding: 2px 3px;
+  }
+
+  .stats-top-label, :global([data-feature-page="app"] :is(.stats-top-label)), :global(:is(.stats-top-label)[data-feature-page="app"]) {
+    font-size: 0.64rem;
+  }
+
+  .stats-top-id-input, :global([data-feature-page="app"] :is(.stats-top-id-input)), :global(:is(.stats-top-id-input)[data-feature-page="app"]) {
+    width: 50px;
+    font-size: 0.88rem;
+    padding: 0 4px;
+  }
+
+  .stats-top-mini-btn,
+  .stats-top-menu-btn,
+  :global([data-feature-page="app"] :is(.stats-top-mini-btn)),
+  :global(:is(.stats-top-mini-btn)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.stats-top-menu-btn)),
+  :global(:is(.stats-top-menu-btn)[data-feature-page="app"]) {
+    font-size: 0.74rem;
+  }
+
+  .stats-top-menu-btn, :global([data-feature-page="app"] :is(.stats-top-menu-btn)), :global(:is(.stats-top-menu-btn)[data-feature-page="app"]) {
+    min-width: 27px;
+    font-size: 0.82rem;
+  }
+
+  .username-label, :global([data-feature-page="app"] :is(.username-label)), :global(:is(.username-label)[data-feature-page="app"]) {
+    font-size: 0.66rem;
+  }
+  .source-export-confirm, :global([data-feature-page="app"] :is(.source-export-confirm)), :global(:is(.source-export-confirm)[data-feature-page="app"]) {
+    padding: 6px;
+  }
+  .source-export-confirm-title, :global([data-feature-page="app"] :is(.source-export-confirm-title)), :global(:is(.source-export-confirm-title)[data-feature-page="app"]) {
+    font-size: 0.68rem;
+  }
+  .source-export-confirm-row, :global([data-feature-page="app"] :is(.source-export-confirm-row)), :global(:is(.source-export-confirm-row)[data-feature-page="app"]) {
+    gap: 6px;
+  }
+  .source-export-confirm-row > span, :global([data-feature-page="app"] :is(.source-export-confirm-row > span)), :global(:is(.source-export-confirm-row > span)[data-feature-page="app"]) {
+    font-size: 0.66rem;
+  }
+  .source-export-name-input, :global([data-feature-page="app"] :is(.source-export-name-input)), :global(:is(.source-export-name-input)[data-feature-page="app"]) {
+    font-size: 0.68rem;
+    padding: 4px 6px;
+  }
+  .source-export-range-input, :global([data-feature-page="app"] :is(.source-export-range-input)), :global(:is(.source-export-range-input)[data-feature-page="app"]) {
+    font-size: 0.68rem;
+    padding: 4px 6px;
+  }
+
+  .username-input, :global([data-feature-page="app"] :is(.username-input)), :global(:is(.username-input)[data-feature-page="app"]) {
+    width: 52px;
+    height: 24px;
+    font-size: 0.64rem;
+    padding: 2px 4px;
+    border-radius: 999px;
+  }
+
+  /* iOS/Safari 聚焦输入框会自动放大页面，移动端统一将关键输入字号提升到 16px 以避免锁定放大态。 */
+  .username-input,
+  .stats-top-id-input,
+  .source-export-name-input,
+  .source-export-range-input,
+  :global([data-feature-page="app"] :is(.username-input)),
+  :global(:is(.username-input)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.stats-top-id-input)),
+  :global(:is(.stats-top-id-input)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.source-export-name-input)),
+  :global(:is(.source-export-name-input)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.source-export-range-input)),
+  :global(:is(.source-export-range-input)[data-feature-page="app"]) {
+    font-size: 16px;
+  }
+
+  .nav-tabs-spacer, :global([data-feature-page="app"] :is(.nav-tabs-spacer)), :global(:is(.nav-tabs-spacer)[data-feature-page="app"]) {
+    display: none;
+  }
+
+  .predict-info, :global([data-feature-page="app"] :is(.predict-info)), :global(:is(.predict-info)[data-feature-page="app"]) {
+    order: 5;
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    width: auto;
+    min-width: fit-content;
+    border-radius: 999px;
+    font-size: 0.64rem;
+    padding: 2px 6px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .predict-cleanup-info, :global([data-feature-page="app"] :is(.predict-cleanup-info)), :global(:is(.predict-cleanup-info)[data-feature-page="app"]) {
+    order: 6;
+    min-height: 32px;
+    font-size: 0.58rem;
+    padding: 2px 5px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .nav-tabs > .io-btn, :global([data-feature-page="app"] :is(.nav-tabs > .io-btn)), :global(:is(.nav-tabs > .io-btn)[data-feature-page="app"]) {
+    order: 7;
+    font-size: 0.66rem;
+    padding: 4px 7px;
+    min-height: 32px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .nav-tabs > .nav-create-btn, :global([data-feature-page="app"] :is(.nav-tabs > .nav-create-btn)), :global(:is(.nav-tabs > .nav-create-btn)[data-feature-page="app"]) {
+    order: 8;
+  }
+
+  .nav-tabs > .source-dropdown, :global([data-feature-page="app"] :is(.nav-tabs > .source-dropdown)), :global(:is(.nav-tabs > .source-dropdown)[data-feature-page="app"]) {
+    order: 99;
+    margin-left: auto;
+  }
+
+  .source-trigger, :global([data-feature-page="app"] :is(.source-trigger)), :global(:is(.source-trigger)[data-feature-page="app"]) {
+    max-width: 66px;
+    min-height: 31px;
+    padding: 4px 6px;
+    font-size: 0.62rem;
+  }
+
+  .source-item, :global([data-feature-page="app"] :is(.source-item)), :global(:is(.source-item)[data-feature-page="app"]) {
+    font-size: 0.72rem;
+    padding: 5px 7px;
+  }
+
+  .source-menu, :global([data-feature-page="app"] :is(.source-menu)), :global(:is(.source-menu)[data-feature-page="app"]) {
+    min-width: 0;
+    max-height: calc(100vh - 74px);
+    max-height: calc(100dvh - 74px);
+    overflow-y: auto;
+  }
+
+  .source-menu .source-list, :global([data-feature-page="app"] :is(.source-menu .source-list)), :global(:is(.source-menu .source-list)[data-feature-page="app"]) {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .source-list:not(:has(.source-item-row + .source-item-row)),
+  .source-actions,
+  :global([data-feature-page="app"] :is(.source-list:not(:has(.source-item-row + .source-item-row)))),
+  :global(:is(.source-list:not(:has(.source-item-row + .source-item-row)))[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.source-actions)),
+  :global(:is(.source-actions)[data-feature-page="app"]) {
+    border-radius: 999px;
+  }
+
+  .source-menu-username-wrap, :global([data-feature-page="app"] :is(.source-menu-username-wrap)), :global(:is(.source-menu-username-wrap)[data-feature-page="app"]) {
+    margin-bottom: 7px;
+    padding: 5px 7px;
+    gap: 6px;
+  }
+
+  .source-menu-username-label, :global([data-feature-page="app"] :is(.source-menu-username-label)), :global(:is(.source-menu-username-label)[data-feature-page="app"]) {
+    font-size: 0.66rem;
+  }
+
+  .source-menu-username-input, :global([data-feature-page="app"] :is(.source-menu-username-input)), :global(:is(.source-menu-username-input)[data-feature-page="app"]) {
+    height: 24px;
+    font-size: 0.66rem;
+    padding: 0 8px;
+  }
+
+  .source-item-count, :global([data-feature-page="app"] :is(.source-item-count)), :global(:is(.source-item-count)[data-feature-page="app"]) {
+    font-size: 0.66rem;
+  }
+
+  .source-drop-zone, :global([data-feature-page="app"] :is(.source-drop-zone)), :global(:is(.source-drop-zone)[data-feature-page="app"]) {
+    display: none;
+  }
+
+  .content-area, :global([data-feature-page="app"] :is(.content-area)), :global(:is(.content-area)[data-feature-page="app"]) {
+    padding: 10px;
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    overflow-x: hidden;
+  }
+
+  .content-area.history-mode, :global([data-feature-page="app"] :is(.content-area.history-mode)), :global(:is(.content-area.history-mode)[data-feature-page="app"]) {
+    padding: 0;
+  }
+
+  .content-area.history-mode :deep(.history-list) {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .floating-top-btn, :global([data-feature-page="app"] :is(.floating-top-btn)), :global(:is(.floating-top-btn)[data-feature-page="app"]) {
+    right: 10px;
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+    width: 44px;
+    height: 44px;
+  }
+
+  .floating-top-btn.is-dock-aligned, :global([data-feature-page="app"] :is(.floating-top-btn.is-dock-aligned)), :global(:is(.floating-top-btn.is-dock-aligned)[data-feature-page="app"]) {
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .floating-top-btn-icon, :global([data-feature-page="app"] :is(.floating-top-btn-icon)), :global(:is(.floating-top-btn-icon)[data-feature-page="app"]) {
+    font-size: 0.95rem;
+  }
+
+  .source-drag-handle, :global([data-feature-page="app"] :is(.source-drag-handle)), :global(:is(.source-drag-handle)[data-feature-page="app"]) {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .nav-tabs, :global([data-feature-page="app"] :is(.nav-tabs)), :global(:is(.nav-tabs)[data-feature-page="app"]) {
+    gap: 3px;
+    padding: 5px 6px;
+  }
+
+  .mobile-tab-switcher > .primary-tab-button, :global([data-feature-page="app"] :is(.mobile-tab-switcher > .primary-tab-button)), :global(:is(.mobile-tab-switcher > .primary-tab-button)[data-feature-page="app"]) {
+    font-size: 0.72rem;
+  }
+
+  .username-wrap, :global([data-feature-page="app"] :is(.username-wrap)), :global(:is(.username-wrap)[data-feature-page="app"]) {
+    min-height: 32px;
+    padding: 2px 5px;
+    border-radius: 999px;
+  }
+
+  .stats-top-nav-wrap, :global([data-feature-page="app"] :is(.stats-top-nav-wrap)), :global(:is(.stats-top-nav-wrap)[data-feature-page="app"]) {
+    --stats-top-control-size: 20px;
+    min-height: 30px;
+    padding: 2px 3px;
+    gap: 2px;
+  }
+
+  .stats-top-label, :global([data-feature-page="app"] :is(.stats-top-label)), :global(:is(.stats-top-label)[data-feature-page="app"]) {
+    display: none;
+  }
+
+  .stats-top-id-input, :global([data-feature-page="app"] :is(.stats-top-id-input)), :global(:is(.stats-top-id-input)[data-feature-page="app"]) {
+    width: 46px;
+  }
+
+  .stats-top-mini-btn,
+  .stats-top-menu-btn,
+  :global([data-feature-page="app"] :is(.stats-top-mini-btn)),
+  :global(:is(.stats-top-mini-btn)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.stats-top-menu-btn)),
+  :global(:is(.stats-top-menu-btn)[data-feature-page="app"]) {
+    font-size: 0.7rem;
+  }
+
+  .username-input, :global([data-feature-page="app"] :is(.username-input)), :global(:is(.username-input)[data-feature-page="app"]) {
+    width: 52px;
+    height: 24px;
+    border-radius: 999px;
+  }
+
+  .nav-tabs button,
+  .reset-btn,
+  :global([data-feature-page="app"] :is(.nav-tabs button)),
+  :global(:is(.nav-tabs button)[data-feature-page="app"]),
+  :global([data-feature-page="app"] :is(.reset-btn)),
+  :global(:is(.reset-btn)[data-feature-page="app"]) {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    min-height: 30px;
+  }
+
+  .predict-info, :global([data-feature-page="app"] :is(.predict-info)), :global(:is(.predict-info)[data-feature-page="app"]) {
+    min-height: 30px;
+    font-size: 0.62rem;
+    padding: 2px 6px;
+  }
+
+  .predict-cleanup-info, :global([data-feature-page="app"] :is(.predict-cleanup-info)), :global(:is(.predict-cleanup-info)[data-feature-page="app"]) {
+    min-height: 30px;
+    font-size: 0.56rem;
+    padding: 2px 5px;
+  }
+
+  .nav-tabs > .io-btn, :global([data-feature-page="app"] :is(.nav-tabs > .io-btn)), :global(:is(.nav-tabs > .io-btn)[data-feature-page="app"]) {
+    font-size: 0.64rem;
+    padding: 4px 6px;
+    min-height: 30px;
+  }
+
+  .source-trigger, :global([data-feature-page="app"] :is(.source-trigger)), :global(:is(.source-trigger)[data-feature-page="app"]) {
+    max-width: 60px;
+    padding: 3px 5px;
+    font-size: 0.6rem;
+  }
+
+  .source-actions, :global([data-feature-page="app"] :is(.source-actions)), :global(:is(.source-actions)[data-feature-page="app"]) {
+    gap: 4px;
+  }
+
+  .source-actions .io-btn, :global([data-feature-page="app"] :is(.source-actions .io-btn)), :global(:is(.source-actions .io-btn)[data-feature-page="app"]) {
+    padding: 4px 7px;
+    font-size: 0.68rem;
+    border-radius: 999px;
+  }
+
+  .source-actions .btn-icon, :global([data-feature-page="app"] :is(.source-actions .btn-icon)), :global(:is(.source-actions .btn-icon)[data-feature-page="app"]) {
+    width: 12px;
+    height: 12px;
+    flex-basis: 12px;
+  }
+
+  .source-export-option, :global([data-feature-page="app"] :is(.source-export-option)), :global(:is(.source-export-option)[data-feature-page="app"]) {
+    font-size: 0.68rem;
+    gap: 4px;
+  }
+
+  .source-menu-username-wrap, :global([data-feature-page="app"] :is(.source-menu-username-wrap)), :global(:is(.source-menu-username-wrap)[data-feature-page="app"]) {
+    margin-bottom: 6px;
+    padding: 4px 6px;
+    gap: 5px;
+  }
+
+  .source-menu-username-label, :global([data-feature-page="app"] :is(.source-menu-username-label)), :global(:is(.source-menu-username-label)[data-feature-page="app"]) {
+    font-size: 0.64rem;
+  }
+
+  .source-menu-username-input, :global([data-feature-page="app"] :is(.source-menu-username-input)), :global(:is(.source-menu-username-input)[data-feature-page="app"]) {
+    height: 22px;
+    font-size: 0.62rem;
+    padding: 0 7px;
+  }
+
+  .source-export-status, :global([data-feature-page="app"] :is(.source-export-status)), :global(:is(.source-export-status)[data-feature-page="app"]) {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+  }
+
+  .source-item, :global([data-feature-page="app"] :is(.source-item)), :global(:is(.source-item)[data-feature-page="app"]) {
+    font-size: 0.68rem;
+  }
+
+  .source-order-btn, :global([data-feature-page="app"] :is(.source-order-btn)), :global(:is(.source-order-btn)[data-feature-page="app"]) {
+    width: 22px;
+    height: 22px;
+    font-size: 0.66rem;
+  }
+
+  .source-drop-zone, :global([data-feature-page="app"] :is(.source-drop-zone)), :global(:is(.source-drop-zone)[data-feature-page="app"]) {
+    display: none;
+  }
+}

@@ -283,6 +283,7 @@ export const liquidGlassDirective = {
     elementDirectiveActive.set(element, isActive);
     if (isActive) {
       if (!lifecycle.resume()) lifecycle.destroy();
+      else lifecycle.scheduleRebuild();
     } else {
       lifecycle.suspend();
     }
@@ -302,6 +303,7 @@ function createGlassSurfaceLifecycle(element) {
   let active = false;
   let destroyed = false;
   let currentEntry = null;
+  let currentGeometryKey = null;
   let pointerFrame = null;
   let rebuildFrame = null;
   let resizeTimer = null;
@@ -340,6 +342,7 @@ function createGlassSurfaceLifecycle(element) {
   const releaseCurrentFilter = () => {
     const entry = currentEntry;
     currentEntry = null;
+    currentGeometryKey = null;
     releaseFilter(entry);
   };
 
@@ -351,6 +354,7 @@ function createGlassSurfaceLifecycle(element) {
   const rebuild = () => {
     rebuildFrame = null;
     if (!active) return;
+    if (element.getAttribute?.('data-ui-glass-defer-rebuild') === 'true') return;
     try {
       const bounds = readBounds(element);
       if (!bounds) return;
@@ -370,6 +374,10 @@ function createGlassSurfaceLifecycle(element) {
 
       const radius = resolveBorderRadius(element, windowLike, bounds.width, bounds.height);
       const config = resolveLiquidGlassConfig(element, windowLike);
+      const geometryKey = JSON.stringify([bounds.width, bounds.height, radius, windowLike?.innerWidth, windowLike?.innerHeight, config]);
+      // A retained editor can hide and reappear at the same size. Check
+      // before calculating the pixel field, rather than after that work.
+      if (currentEntry?.node?.isConnected && currentGeometryKey === geometryKey) return;
       const field = buildLiquidGlassDisplacement({
         width: bounds.width,
         height: bounds.height,
@@ -380,10 +388,14 @@ function createGlassSurfaceLifecycle(element) {
       });
       // Pressure animates this surface's filter, so do not share its mutable nodes.
       if (config.profile === 'lens') field.cacheKey += `|lens-${surfaceId}`;
-      if (currentEntry?.key === field.cacheKey && currentEntry.node?.isConnected) return;
+      if (currentEntry?.key === field.cacheKey && currentEntry.node?.isConnected) {
+        currentGeometryKey = geometryKey;
+        return;
+      }
 
       clearRefraction();
       currentEntry = acquireFilter(documentLike, field, bounds.width, bounds.height, config);
+      if (currentEntry) currentGeometryKey = geometryKey;
       setBackdropFilter(element, currentEntry ? `url(#${currentEntry.id})` : '');
       if (config.profile === 'lens') updatePressure();
     } catch {
@@ -507,7 +519,7 @@ function createGlassSurfaceLifecycle(element) {
     elementLifecycle.delete(element);
   };
 
-  return { suspend, resume, destroy };
+  return { suspend, resume, destroy, scheduleRebuild };
 }
 
 export const liquidGlassPlugin = {

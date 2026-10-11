@@ -4,7 +4,15 @@
 
 ## UI 开发规范
 
-维护者请参阅 [UI 开发规范](docs/ui-system.md)。
+维护者请参阅 [UI 开发规范](docs/ui-system.md)、[代码结构与命名约定](docs/code-conventions.md) 和 [滚动导航规范](docs/scroll-navigation.md)。
+
+## 开发脚本与数据同步
+
+- `scripts/` 保存随公开仓库发布的构建插件和 UI 检查脚本，作用见 [脚本说明](scripts/README.md)。
+- `sync-scripts/` 保存私有的数据抓取、活动/卡片/歌曲同步及图片同步脚本，整个目录由 Git 忽略。脚本内容在 `Melodrama13/pjsk-planner-sync-private` 私有仓库维护。
+- `.sync-private/` 是 GitHub 自动同步任务检出私有仓库的临时目录，本地开发通常没有这个目录；它也由 Git 忽略。
+
+在本地使用同步命令前，将私有仓库 `scripts/` 中的 `.mjs` 文件放入本站的 `sync-scripts/`。例如 `npm run fetch:other-source` 抓取源数据，`npm run sync:songs-other:dry` 预览歌曲同步结果。现有同步命令名称仍可照常使用；CI 会自动将私有脚本安装到该目录。
 
 ## 页面总览
 

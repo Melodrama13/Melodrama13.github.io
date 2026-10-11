@@ -1,0 +1,108 @@
+
+@media (max-width: 1280px) {
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon {
+  width: 20px;
+  height: 20px;
+  }
+}
+
+@media (max-width: 900px) {
+
+  .card-panel:not(.stats-nav) {
+    padding: 9px;
+    border-radius: 10px;
+  }
+
+  .section-head h2 {
+    font-size: 0.96rem;
+  }
+
+  .card-export-btn {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+  }
+
+  .song-oc-unit-logo {
+    height: 28px;
+    max-width: 110px;
+  }
+
+  .song-vs-pill {
+    font-size: 0.76rem;
+  }
+
+  .anvo-mode-switch {
+    gap: 4px;
+  }
+
+  .anvo-mode-btn {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+    line-height: 1;
+  }
+
+  .song-duo-image-toggle {
+    font-size: 0.7rem;
+  }
+
+  .song-duo-image-toggle.is-image-toggle > span {
+    font-size: 0;
+    line-height: 1;
+  }
+
+  .song-duo-image-toggle.is-image-toggle > span::after {
+    content: '曲绘';
+    font-size: 0.7rem;
+  }
+
+  .song-jacket-media {
+    border-radius: 8px;
+  }
+
+  .song-oc-event-vs-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .song-image-count {
+    font-size: 0.86rem;
+  }
+
+  .song-duo-song-jacket-item {
+    border-radius: 7px;
+  }
+
+}
+
+@media (max-width: 520px) {
+
+}
+
+@media (max-width: 520px) {
+
+  .song-image-count-circle {
+    font-size: 0.92rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #0f172a;
+    min-width: 30px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .song-oc-event-vs-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon {
+    width: 20px;
+    height: 20px;
+  }
+}

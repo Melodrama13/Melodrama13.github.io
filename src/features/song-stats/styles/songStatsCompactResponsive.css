@@ -1,0 +1,603 @@
+
+@media (max-width: 1280px) {
+  .pjsk-song-stats, :global([data-feature-page="songs"] :is(.pjsk-song-stats)), :global(:is(.pjsk-song-stats)[data-feature-page="songs"]) {
+    --stats-nav-width: 187px;
+    --stats-nav-left: 34px;
+    --stats-nav-top: 78px;
+    --song-jacket-default-size: 60px;
+    --song-jacket-track-size: 60px;
+    padding: 2px;
+    --song-stat-min-card-width: 220px;
+  }
+
+  .song-image-main-avatar, :global([data-feature-page="songs"] :is(.song-image-main-avatar)), :global(:is(.song-image-main-avatar)[data-feature-page="songs"]) {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    flex-basis: 28px;
+  }
+
+  .song-duo-image-avatar, :global([data-feature-page="songs"] :is(.song-duo-image-avatar)), :global(:is(.song-duo-image-avatar)[data-feature-page="songs"]) {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    flex-basis: 28px;
+  }
+
+  .song-vs-event-image-groups, :global([data-feature-page="songs"] :is(.song-vs-event-image-groups)), :global(:is(.song-vs-event-image-groups)[data-feature-page="songs"]) {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-chip, :global([data-feature-page="songs"] :is(.song-vs-event-unit-counts-image .song-vs-event-unit-chip)), :global(:is(.song-vs-event-unit-counts-image .song-vs-event-unit-chip)[data-feature-page="songs"]) {
+    width: 50px;
+  }
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon, :global([data-feature-page="songs"] :is(.song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon)), :global(:is(.song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon)[data-feature-page="songs"]) {
+  width: 20px;
+  height: 20px;
+  }
+
+  .song-duo-unit-card.is-ws-split .song-duo-pair-grid > .song-duo-card, :global([data-feature-page="songs"] :is(.song-duo-unit-card.is-ws-split .song-duo-pair-grid > .song-duo-card)), :global(:is(.song-duo-unit-card.is-ws-split .song-duo-pair-grid > .song-duo-card)[data-feature-page="songs"]) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .song-3dmv-unit-grid, :global([data-feature-page="songs"] :is(.song-3dmv-unit-grid)), :global(:is(.song-3dmv-unit-grid)[data-feature-page="songs"]) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .pjsk-song-stats, :global([data-feature-page="songs"] :is(.pjsk-song-stats)), :global(:is(.pjsk-song-stats)[data-feature-page="songs"]) {
+    padding: 8px;
+    --song-btn-pad-x: 6px;
+    --song-mini-toggle-size: 20px;
+    --song-stat-min-card-width: 210px;
+    --song-event-mv-col-width: 28px;
+    --song-event-mv-chip-width: 22px;
+    --song-event-mv-chip-height: 11px;
+    --song-event-mv-chip-font-size: 0.5rem;
+    --song-event-mv-chip-pad-x: 3px;
+    --song-jacket-default-size: 56px;
+    --song-jacket-track-size: 52px;
+    --song-oc-vs-col-width: 14px;
+    --song-duo-vs-icon-size: 14px;
+    --song-duo-vs-icon-gap: 1px;
+  }
+
+  .nav-link-sub.is-duo-subanchor, :global([data-feature-page="songs"] :is(.nav-link-sub.is-duo-subanchor)), :global(:is(.nav-link-sub.is-duo-subanchor)[data-feature-page="songs"]) {
+    margin-left: 10px;
+    width: calc(100% - 10px);
+    font-size: 0.66rem;
+  }
+
+  .stats-main-head h1, :global([data-feature-page="songs"] :is(.stats-main-head h1)), :global(:is(.stats-main-head h1)[data-feature-page="songs"]) {
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+  }
+
+  .card-panel:not(.stats-nav), :global([data-feature-page="songs"] :is(.card-panel:not(.stats-nav))), :global(:is(.card-panel:not(.stats-nav))[data-feature-page="songs"]) {
+    padding: 9px;
+    border-radius: 10px;
+  }
+
+  .section-head h2, :global([data-feature-page="songs"] :is(.section-head h2)), :global(:is(.section-head h2)[data-feature-page="songs"]) {
+    font-size: 0.96rem;
+  }
+
+  .card-export-btn, :global([data-feature-page="songs"] :is(.card-export-btn)), :global(:is(.card-export-btn)[data-feature-page="songs"]) {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+  }
+
+  .song-insight-table th,
+  .song-insight-table td,
+  :global([data-feature-page="songs"] :is(.song-insight-table th)),
+  :global(:is(.song-insight-table th)[data-feature-page="songs"]),
+  :global([data-feature-page="songs"] :is(.song-insight-table td)),
+  :global(:is(.song-insight-table td)[data-feature-page="songs"]) {
+    padding: 6px 8px;
+    font-size: 0.76rem;
+  }
+
+  .song-oc-table, :global([data-feature-page="songs"] :is(.song-oc-table)), :global(:is(.song-oc-table)[data-feature-page="songs"]) {
+    min-width: 0;
+  }
+
+  .song-oc-unit-logo, :global([data-feature-page="songs"] :is(.song-oc-unit-logo)), :global(:is(.song-oc-unit-logo)[data-feature-page="songs"]) {
+    height: 28px;
+    max-width: 110px;
+  }
+
+  .song-book-round-layout, :global([data-feature-page="songs"] :is(.song-book-round-layout)), :global(:is(.song-book-round-layout)[data-feature-page="songs"]) {
+    gap: 10px;
+  }
+
+  .song-book-round-table, :global([data-feature-page="songs"] :is(.song-book-round-table)), :global(:is(.song-book-round-table)[data-feature-page="songs"]) {
+    border-spacing: 3px;
+  }
+
+  .song-book-round-table th,
+  .song-book-round-table td,
+  :global([data-feature-page="songs"] :is(.song-book-round-table th)),
+  :global(:is(.song-book-round-table th)[data-feature-page="songs"]),
+  :global([data-feature-page="songs"] :is(.song-book-round-table td)),
+  :global(:is(.song-book-round-table td)[data-feature-page="songs"]) {
+    height: 40px;
+    padding: 3px;
+  }
+
+  .song-book-round-character-icon, :global([data-feature-page="songs"] :is(.song-book-round-character-icon)), :global(:is(.song-book-round-character-icon)[data-feature-page="songs"]) {
+    width: 23px;
+    height: 23px;
+    min-width: 23px;
+  }
+
+  .song-book-round-unit-logo, :global([data-feature-page="songs"] :is(.song-book-round-unit-logo)), :global(:is(.song-book-round-unit-logo)[data-feature-page="songs"]) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .song-vs-event-unit-counts, :global([data-feature-page="songs"] :is(.song-vs-event-unit-counts)), :global(:is(.song-vs-event-unit-counts)[data-feature-page="songs"]) {
+    gap: 4px;
+  }
+
+  .song-vs-pill, :global([data-feature-page="songs"] :is(.song-vs-pill)), :global(:is(.song-vs-pill)[data-feature-page="songs"]) {
+    font-size: 0.76rem;
+  }
+
+  .song-vs-event-unit-logo, :global([data-feature-page="songs"] :is(.song-vs-event-unit-logo)), :global(:is(.song-vs-event-unit-logo)[data-feature-page="songs"]) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .anvo-mode-switch, :global([data-feature-page="songs"] :is(.anvo-mode-switch)), :global(:is(.anvo-mode-switch)[data-feature-page="songs"]) {
+    gap: 4px;
+  }
+
+  .anvo-mode-btn, :global([data-feature-page="songs"] :is(.anvo-mode-btn)), :global(:is(.anvo-mode-btn)[data-feature-page="songs"]) {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+    line-height: 1;
+  }
+
+  .song-toolbar, :global([data-feature-page="songs"] :is(.song-toolbar)), :global(:is(.song-toolbar)[data-feature-page="songs"]) {
+    gap: 8px;
+  }
+
+  .song-duo-image-toggle, :global([data-feature-page="songs"] :is(.song-duo-image-toggle)), :global(:is(.song-duo-image-toggle)[data-feature-page="songs"]) {
+    font-size: 0.7rem;
+  }
+
+  .song-duo-image-toggle.is-image-toggle > span, :global([data-feature-page="songs"] :is(.song-duo-image-toggle.is-image-toggle > span)), :global(:is(.song-duo-image-toggle.is-image-toggle > span)[data-feature-page="songs"]) {
+    font-size: 0;
+    line-height: 1;
+  }
+
+  .song-duo-image-toggle.is-image-toggle > span::after, :global([data-feature-page="songs"] :is(.song-duo-image-toggle.is-image-toggle > span)::after), :global(:is(.song-duo-image-toggle.is-image-toggle > span)[data-feature-page="songs"]::after) {
+    content: '曲绘';
+    font-size: 0.7rem;
+  }
+
+  .song-disclaimer, :global([data-feature-page="songs"] :is(.song-disclaimer)), :global(:is(.song-disclaimer)[data-feature-page="songs"]) {
+    font-size: 0.7rem;
+    line-height: 1.45;
+    padding: 8px;
+  }
+
+  .song-filter-field, :global([data-feature-page="songs"] :is(.song-filter-field)), :global(:is(.song-filter-field)[data-feature-page="songs"]) {
+    font-size: 0.74rem;
+  }
+
+  .song-filter-select, :global([data-feature-page="songs"] :is(.song-filter-select)), :global(:is(.song-filter-select)[data-feature-page="songs"]) {
+    font-size: 0.76rem;
+    padding: 4px 8px;
+    min-height: 29px;
+  }
+
+  .song-th-filter-stack, :global([data-feature-page="songs"] :is(.song-th-filter-stack)), :global(:is(.song-th-filter-stack)[data-feature-page="songs"]) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px;
+  }
+
+  .song-th-select, :global([data-feature-page="songs"] :is(.song-th-select)), :global(:is(.song-th-select)[data-feature-page="songs"]) {
+    min-height: 24px;
+    padding: 2px 6px;
+    font-size: 0.66rem;
+  }
+
+  .song-diff-order-btn, :global([data-feature-page="songs"] :is(.song-diff-order-btn)), :global(:is(.song-diff-order-btn)[data-feature-page="songs"]) {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  .song-diff-order-icon, :global([data-feature-page="songs"] :is(.song-diff-order-icon)), :global(:is(.song-diff-order-icon)[data-feature-page="songs"]) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .song-home-btn, :global([data-feature-page="songs"] :is(.song-home-btn)), :global(:is(.song-home-btn)[data-feature-page="songs"]) {
+    width: 28px;
+    height: 28px;
+    min-height: 28px;
+    min-width: 28px;
+  }
+
+  .song-col-id, :global([data-feature-page="songs"] :is(.song-col-id)), :global(:is(.song-col-id)[data-feature-page="songs"]) {
+    width: 46px;
+  }
+
+  .song-col-jacket, :global([data-feature-page="songs"] :is(.song-col-jacket)), :global(:is(.song-col-jacket)[data-feature-page="songs"]) {
+    width: 72px;
+  }
+
+  .song-col-song, :global([data-feature-page="songs"] :is(.song-col-song)), :global(:is(.song-col-song)[data-feature-page="songs"]) {
+    width: 12%;
+  }
+
+  .song-col-group, :global([data-feature-page="songs"] :is(.song-col-group)), :global(:is(.song-col-group)[data-feature-page="songs"]) {
+    width: 12%;
+  }
+
+  .song-col-mv, :global([data-feature-page="songs"] :is(.song-col-mv)), :global(:is(.song-col-mv)[data-feature-page="songs"]) {
+    width: 9%;
+  }
+
+  .song-col-credit, :global([data-feature-page="songs"] :is(.song-col-credit)), :global(:is(.song-col-credit)[data-feature-page="songs"]) {
+    width: 12%;
+  }
+
+  .song-jacket-media, :global([data-feature-page="songs"] :is(.song-jacket-media)), :global(:is(.song-jacket-media)[data-feature-page="songs"]) {
+    border-radius: 8px;
+  }
+
+  .song-vs-event-image-head,
+  .song-anvo-image-head,
+  :global([data-feature-page="songs"] :is(.song-vs-event-image-head)),
+  :global(:is(.song-vs-event-image-head)[data-feature-page="songs"]),
+  :global([data-feature-page="songs"] :is(.song-anvo-image-head)),
+  :global(:is(.song-anvo-image-head)[data-feature-page="songs"]) {
+    gap: 5px;
+  }
+
+  .song-vs-event-image-groups, :global([data-feature-page="songs"] :is(.song-vs-event-image-groups)), :global(:is(.song-vs-event-image-groups)[data-feature-page="songs"]) {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .song-vs-event-image-group, :global([data-feature-page="songs"] :is(.song-vs-event-image-group)), :global(:is(.song-vs-event-image-group)[data-feature-page="songs"]) {
+    padding: 5px;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-chip, :global([data-feature-page="songs"] :is(.song-vs-event-unit-counts-image .song-vs-event-unit-chip)), :global(:is(.song-vs-event-unit-counts-image .song-vs-event-unit-chip)[data-feature-page="songs"]) {
+    width: 56px;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-stack-total .song-vs-total-mv-chip, :global([data-feature-page="songs"] :is(.song-vs-event-unit-counts-image .song-vs-event-unit-stack-total .song-vs-total-mv-chip)), :global(:is(.song-vs-event-unit-counts-image .song-vs-event-unit-stack-total .song-vs-total-mv-chip)[data-feature-page="songs"]) {
+    min-width: fit-content;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-stack, :global([data-feature-page="songs"] :is(.song-vs-event-unit-counts-image .song-vs-event-unit-stack)), :global(:is(.song-vs-event-unit-counts-image .song-vs-event-unit-stack)[data-feature-page="songs"]) {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips, :global([data-feature-page="songs"] :is(.song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips)), :global(:is(.song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips)[data-feature-page="songs"]) {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip, :global([data-feature-page="songs"] :is(.song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip)), :global(:is(.song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip)[data-feature-page="songs"]) {
+    min-width: 48px;
+  }
+
+  .song-oc-event-vs-icon, :global([data-feature-page="songs"] :is(.song-oc-event-vs-icon)), :global(:is(.song-oc-event-vs-icon)[data-feature-page="songs"]) {
+    width: 14px;
+    height: 14px;
+  }
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon, :global([data-feature-page="songs"] :is(.song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon)), :global(:is(.song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon)[data-feature-page="songs"]) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .song-image-identity, :global([data-feature-page="songs"] :is(.song-image-identity)), :global(:is(.song-image-identity)[data-feature-page="songs"]) {
+    min-width: 42px;
+    gap: 3px;
+  }
+
+  .song-image-main-avatar, :global([data-feature-page="songs"] :is(.song-image-main-avatar)), :global(:is(.song-image-main-avatar)[data-feature-page="songs"]) {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    flex-basis: 24px;
+  }
+
+  .song-image-name, :global([data-feature-page="songs"] :is(.song-image-name)), :global(:is(.song-image-name)[data-feature-page="songs"]) {
+    font-size: 0.66rem;
+  }
+
+  .song-image-count, :global([data-feature-page="songs"] :is(.song-image-count)), :global(:is(.song-image-count)[data-feature-page="songs"]) {
+    font-size: 0.86rem;
+  }
+
+  .song-duo-image-avatar, :global([data-feature-page="songs"] :is(.song-duo-image-avatar)), :global(:is(.song-duo-image-avatar)[data-feature-page="songs"]) {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
+    flex-basis: 22px;
+  }
+
+  .song-duo-jacket-grid, :global([data-feature-page="songs"] :is(.song-duo-jacket-grid)), :global(:is(.song-duo-jacket-grid)[data-feature-page="songs"]) {
+    gap: 5px;
+  }
+
+  .song-duo-song-jacket-item, :global([data-feature-page="songs"] :is(.song-duo-song-jacket-item)), :global(:is(.song-duo-song-jacket-item)[data-feature-page="songs"]) {
+    border-radius: 7px;
+  }
+
+  .song-3dmv-unit-grid, :global([data-feature-page="songs"] :is(.song-3dmv-unit-grid)), :global(:is(.song-3dmv-unit-grid)[data-feature-page="songs"]) {
+    grid-template-columns: 1fr;
+  }
+
+  .song-image-jacket-caption, :global([data-feature-page="songs"] :is(.song-image-jacket-caption)), :global(:is(.song-image-jacket-caption)[data-feature-page="songs"]) {
+    font-size: 0.58rem;
+  }
+
+  .song-title-text, :global([data-feature-page="songs"] :is(.song-title-text)), :global(:is(.song-title-text)[data-feature-page="songs"]) {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
+    line-height: 1.25;
+  }
+
+  .song-table, :global([data-feature-page="songs"] :is(.song-table)), :global(:is(.song-table)[data-feature-page="songs"]) {
+    min-width: 1020px;
+  }
+
+  .song-diff-badge, :global([data-feature-page="songs"] :is(.song-diff-badge)), :global(:is(.song-diff-badge)[data-feature-page="songs"]) {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    max-width: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    flex: 0 0 28px;
+    font-size: 0.78rem;
+  }
+
+}
+
+@media (max-width: 520px) {
+  .pjsk-song-stats, :global([data-feature-page="songs"] :is(.pjsk-song-stats)), :global(:is(.pjsk-song-stats)[data-feature-page="songs"]) {
+    padding: 6px;
+  }
+
+}
+
+
+@media (min-width: 521px) {
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-image-head)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-image-head)[data-feature-page="songs"]) {
+    position: relative;
+    padding-right: 92px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head .song-role-card-tools, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-image-head .song-role-card-tools)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-image-head .song-role-card-tools)[data-feature-page="songs"]) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin-left: 0;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    z-index: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  .pjsk-song-stats, :global([data-feature-page="songs"] :is(.pjsk-song-stats)), :global(:is(.pjsk-song-stats)[data-feature-page="songs"]) {
+    --song-btn-pad-x: 5px;
+    --song-mini-toggle-size: 18px;
+    --song-stat-min-card-width: 100%;
+    --song-event-mv-col-width: 28px;
+    --song-event-mv-chip-width: 21px;
+    --song-event-mv-chip-height: 11px;
+    --song-event-mv-chip-font-size: 0.5rem;
+    --song-event-mv-chip-pad-x: 3px;
+    --song-jacket-default-size: 68px;
+    --song-jacket-track-size: 68px;
+    --song-duo-vs-icon-size: 20px;
+    --song-duo-vs-icon-gap: 1px;
+  }
+
+  .song-anvo-section-head, :global([data-feature-page="songs"] :is(.song-anvo-section-head)), :global(:is(.song-anvo-section-head)[data-feature-page="songs"]) {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .song-anvo-section-head-left, :global([data-feature-page="songs"] :is(.song-anvo-section-head-left)), :global(:is(.song-anvo-section-head-left)[data-feature-page="songs"]) {
+    flex: 1 1 100%;
+  }
+
+  .song-anvo-section-head .section-head-actions, :global([data-feature-page="songs"] :is(.song-anvo-section-head .section-head-actions)), :global(:is(.song-anvo-section-head .section-head-actions)[data-feature-page="songs"]) {
+    margin-left: auto;
+  }
+
+  .song-col-jacket, :global([data-feature-page="songs"] :is(.song-col-jacket)), :global(:is(.song-col-jacket)[data-feature-page="songs"]) {
+    width: 40px;
+  }
+
+  .song-vs-event-image-layout,
+  .song-anvo-image-layout,
+  :global([data-feature-page="songs"] :is(.song-vs-event-image-layout)),
+  :global(:is(.song-vs-event-image-layout)[data-feature-page="songs"]),
+  :global([data-feature-page="songs"] :is(.song-anvo-image-layout)),
+  :global(:is(.song-anvo-image-layout)[data-feature-page="songs"]) {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .song-vs-event-image-head,
+  .song-anvo-image-head,
+  :global([data-feature-page="songs"] :is(.song-vs-event-image-head)),
+  :global(:is(.song-vs-event-image-head)[data-feature-page="songs"]),
+  :global([data-feature-page="songs"] :is(.song-anvo-image-head)),
+  :global(:is(.song-anvo-image-head)[data-feature-page="songs"]) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-width: 0;
+    padding-top: 0;
+    gap: 6px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head-main, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-image-head-main)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-image-head-main)[data-feature-page="songs"]) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: 6px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head .song-role-card-tools, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-image-head .song-role-card-tools)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-image-head .song-role-card-tools)[data-feature-page="songs"]) {
+    margin-left: auto;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head-stats, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-image-head-stats)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-image-head-stats)[data-feature-page="songs"]) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image)[data-feature-page="songs"]) {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    justify-content: stretch;
+    align-items: start;
+    gap: 4px;
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-total-mv-chip-head, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-total-mv-chip-head)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-total-mv-chip-head)[data-feature-page="songs"]) {
+    display: inline-flex;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-stack-total, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-unit-stack-total)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-unit-stack-total)[data-feature-page="songs"]) {
+    display: none;
+  }
+
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-stack, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-stack)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-stack)[data-feature-page="songs"]) {
+    width: auto;
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-chip, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-chip)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-chip)[data-feature-page="songs"]) {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips)[data-feature-page="songs"]) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip)), :global(:is(.song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip)[data-feature-page="songs"]) {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .song-vs-event-card.is-image-mode .song-image-main-avatar, :global([data-feature-page="songs"] :is(.song-vs-event-card.is-image-mode .song-image-main-avatar)), :global(:is(.song-vs-event-card.is-image-mode .song-image-main-avatar)[data-feature-page="songs"]) {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    flex-basis: 30px;
+  }
+
+  .song-image-count-circle, :global([data-feature-page="songs"] :is(.song-image-count-circle)), :global(:is(.song-image-count-circle)[data-feature-page="songs"]) {
+    font-size: 0.92rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #0f172a;
+    min-width: 30px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .song-oc-event-vs-icon, :global([data-feature-page="songs"] :is(.song-oc-event-vs-icon)), :global(:is(.song-oc-event-vs-icon)[data-feature-page="songs"]) {
+    width: 20px;
+    height: 20px;
+  }
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon, :global([data-feature-page="songs"] :is(.song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon)), :global(:is(.song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon)[data-feature-page="songs"]) {
+    width: 20px;
+    height: 20px;
+  }
+
+  .song-duo-image-avatars, :global([data-feature-page="songs"] :is(.song-duo-image-avatars)), :global(:is(.song-duo-image-avatars)[data-feature-page="songs"]) {
+    min-width: 50px;
+    gap: 1px;
+  }
+
+  .song-duo-image-identity, :global([data-feature-page="songs"] :is(.song-duo-image-identity)), :global(:is(.song-duo-image-identity)[data-feature-page="songs"]) {
+    min-width: 62px;
+  }
+
+  .song-col-credit, :global([data-feature-page="songs"] :is(.song-col-credit)), :global(:is(.song-col-credit)[data-feature-page="songs"]) {
+    width: 12.5%;
+  }
+
+  .song-diff-wrap, :global([data-feature-page="songs"] :is(.song-diff-wrap)), :global(:is(.song-diff-wrap)[data-feature-page="songs"]) {
+    gap: 4px;
+  }
+
+  .song-diff-badge, :global([data-feature-page="songs"] :is(.song-diff-badge)), :global(:is(.song-diff-badge)[data-feature-page="songs"]) {
+    width: 25px;
+    height: 25px;
+    min-width: 25px;
+    max-width: 25px;
+    min-height: 25px;
+    max-height: 25px;
+    flex: 0 0 25px;
+    font-size: 0.7rem;
+  }
+}
+
+.stats-nav .nav-quick-wrap, :global([data-feature-page="songs"] :is(.stats-nav .nav-quick-wrap)), :global(:is(.stats-nav .nav-quick-wrap)[data-feature-page="songs"]) {
+  margin-top: 20px;
+}
+
+.stats-nav.mobile-floating .nav-cutoff,
+.stats-nav.mobile-floating .nav-section,
+.stats-nav.mobile-floating .nav-group,
+:global([data-feature-page="songs"] :is(.stats-nav.mobile-floating .nav-cutoff)),
+:global(:is(.stats-nav.mobile-floating .nav-cutoff)[data-feature-page="songs"]),
+:global([data-feature-page="songs"] :is(.stats-nav.mobile-floating .nav-section)),
+:global(:is(.stats-nav.mobile-floating .nav-section)[data-feature-page="songs"]),
+:global([data-feature-page="songs"] :is(.stats-nav.mobile-floating .nav-group)),
+:global(:is(.stats-nav.mobile-floating .nav-group)[data-feature-page="songs"]) {
+  background: rgba(255, 255, 255, 0.4);
+}

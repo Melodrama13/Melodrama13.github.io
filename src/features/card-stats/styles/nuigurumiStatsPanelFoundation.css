@@ -1,0 +1,8 @@
+
+.pjsk-stats button:not(:disabled) {
+  transition: transform var(--ui-motion-state), background-color var(--ui-motion-state), border-color var(--ui-motion-state), color var(--ui-motion-state);
+}
+
+.pjsk-stats button:not(:disabled):active {
+  filter: brightness(0.86);
+}

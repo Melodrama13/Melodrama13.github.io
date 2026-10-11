@@ -1,0 +1,1263 @@
+
+/* 外层包裹器，使用 flex 布局 */
+/* 1. 最外层容器：强制充满屏幕且不溢出 */
+.event-history-wrapper, :global([data-feature-page="history"] :is(.event-history-wrapper)), :global(:is(.event-history-wrapper)[data-feature-page="history"]) {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  position: relative; /* 锁定外层不滚动 */
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  --editor-drawer-width: clamp(320px, 30vw, 380px);
+  --preview-config-top: 16px;
+  --eh-radius-card: 16px;
+  --eh-radius-panel: 16px;
+  --eh-radius-btn: 12px;
+  --history-glass-bg: var(--ui-shell-glass-bg);
+  --history-glass-bg-hover: var(--ui-shell-glass-bg-hover);
+  --history-glass-border: var(--ui-shell-glass-border);
+  --history-glass-shadow: var(--ui-shell-glass-shadow);
+  --history-glass-shadow-soft: var(--ui-shell-glass-shadow-soft);
+  --history-active-bg: var(--ui-shell-active-bg);
+  --history-active-border: var(--ui-shell-active-border);
+}
+
+.predict-preview-floating, :global([data-feature-page="history"] :is(.predict-preview-floating)), :global(:is(.predict-preview-floating)[data-feature-page="history"]) {
+  position: static;
+  z-index: 6200;
+  pointer-events: none;
+}
+
+.preview-config-panel, :global([data-feature-page="history"] :is(.preview-config-panel)), :global(:is(.preview-config-panel)[data-feature-page="history"]) {
+  position: fixed;
+  left: 14px;
+  top: var(--preview-config-top);
+  z-index: 6200;
+  width: 360px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 24px;
+  padding: 8px;
+  pointer-events: auto;
+  max-height: min(84vh, calc(100vh - var(--preview-config-top) - 10px));
+  max-height: min(84dvh, calc(100dvh - var(--preview-config-top) - 10px));
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.preview-config-head, :global([data-feature-page="history"] :is(.preview-config-head)), :global(:is(.preview-config-head)[data-feature-page="history"]) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.preview-config-head:active, :global([data-feature-page="history"] :is(.preview-config-head:active)), :global(:is(.preview-config-head:active)[data-feature-page="history"]) {
+  cursor: grabbing;
+}
+
+.preview-config-actions, :global([data-feature-page="history"] :is(.preview-config-actions)), :global(:is(.preview-config-actions)[data-feature-page="history"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-config-panel.is-collapsed, :global([data-feature-page="history"] :is(.preview-config-panel.is-collapsed)), :global(:is(.preview-config-panel.is-collapsed)[data-feature-page="history"]) {
+  max-height: none;
+  overflow: visible;
+  border-radius: 999px;
+  padding: 6px 8px;
+}
+
+.preview-config-panel.is-collapsed .preview-config-head, :global([data-feature-page="history"] :is(.preview-config-panel.is-collapsed .preview-config-head)), :global(:is(.preview-config-panel.is-collapsed .preview-config-head)[data-feature-page="history"]) {
+  min-height: 30px;
+  margin-bottom: 0;
+  align-items: center;
+}
+
+.preview-config-panel.is-collapsed .preview-config-actions, :global([data-feature-page="history"] :is(.preview-config-panel.is-collapsed .preview-config-actions)), :global(:is(.preview-config-panel.is-collapsed .preview-config-actions)[data-feature-page="history"]) {
+  align-self: center;
+}
+
+.preview-config-panel.is-collapsed .preview-config-reset, :global([data-feature-page="history"] :is(.preview-config-panel.is-collapsed .preview-config-reset)), :global(:is(.preview-config-panel.is-collapsed .preview-config-reset)[data-feature-page="history"]) {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.preview-config-reset, :global([data-feature-page="history"] :is(.preview-config-reset)), :global(:is(.preview-config-reset)[data-feature-page="history"]) {
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 999px;
+  background: var(--ui-glass-optical-control-bg);
+  color: #334155;
+  font-size: 0.68rem;
+  padding: 3px 9px;
+  cursor: pointer;
+  box-shadow: var(--ui-glass-micro-shadow);
+}
+
+.preview-config-reset:hover, :global([data-feature-page="history"] :is(.preview-config-reset:hover)), :global(:is(.preview-config-reset:hover)[data-feature-page="history"]) {
+  background: var(--ui-glass-optical-control-bg-hover);
+}
+
+.preview-config-options, :global([data-feature-page="history"] :is(.preview-config-options)), :global(:is(.preview-config-options)[data-feature-page="history"]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preview-config-btn, :global([data-feature-page="history"] :is(.preview-config-btn)), :global(:is(.preview-config-btn)[data-feature-page="history"]) {
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 999px;
+  background: var(--ui-glass-optical-control-bg);
+  color: #334155;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  box-shadow: var(--ui-glass-micro-shadow);
+}
+
+.preview-config-btn.is-active, :global([data-feature-page="history"] :is(.preview-config-btn.is-active)), :global(:is(.preview-config-btn.is-active)[data-feature-page="history"]) {
+  background: linear-gradient(145deg, rgba(20, 184, 166, 0.90), rgba(14, 165, 233, 0.68));
+  color: #fff;
+  border-color: rgba(94, 234, 212, 0.78);
+}
+
+.preview-config-btn:disabled, :global([data-feature-page="history"] :is(.preview-config-btn:disabled)), :global(:is(.preview-config-btn:disabled)[data-feature-page="history"]) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.preview-char-select, :global([data-feature-page="history"] :is(.preview-char-select)), :global(:is(.preview-char-select)[data-feature-page="history"]) {
+  margin-top: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 18px;
+  padding: 8px;
+  background: var(--ui-glass-optical-group-bg);
+  box-shadow: var(--ui-glass-micro-group-shadow);
+}
+
+.preview-char-select-title, :global([data-feature-page="history"] :is(.preview-char-select-title)), :global(:is(.preview-char-select-title)[data-feature-page="history"]) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.preview-char-select-actions, :global([data-feature-page="history"] :is(.preview-char-select-actions)), :global(:is(.preview-char-select-actions)[data-feature-page="history"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-char-select-toggle, :global([data-feature-page="history"] :is(.preview-char-select-toggle)), :global(:is(.preview-char-select-toggle)[data-feature-page="history"]) {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.54);
+  color: #334155;
+  font-size: 0.64rem;
+  padding: 2px 8px;
+  cursor: pointer;
+  box-shadow: var(--ui-glass-micro-shadow);
+}
+
+.preview-char-select-toggle:disabled, :global([data-feature-page="history"] :is(.preview-char-select-toggle:disabled)), :global(:is(.preview-char-select-toggle:disabled)[data-feature-page="history"]) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.preview-char-select.is-collapsed .preview-char-select-title, :global([data-feature-page="history"] :is(.preview-char-select.is-collapsed .preview-char-select-title)), :global(:is(.preview-char-select.is-collapsed .preview-char-select-title)[data-feature-page="history"]) {
+  margin-bottom: 0;
+}
+
+.preview-char-chips, :global([data-feature-page="history"] :is(.preview-char-chips)), :global(:is(.preview-char-chips)[data-feature-page="history"]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.preview-char-chip, :global([data-feature-page="history"] :is(.preview-char-chip)), :global(:is(.preview-char-chip)[data-feature-page="history"]) {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.34);
+  padding: 0;
+  cursor: pointer;
+  box-shadow: var(--ui-glass-micro-shadow);
+}
+
+.preview-char-chip.is-active, :global([data-feature-page="history"] :is(.preview-char-chip.is-active)), :global(:is(.preview-char-chip.is-active)[data-feature-page="history"]) {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.22);
+}
+
+.preview-char-chip:disabled, :global([data-feature-page="history"] :is(.preview-char-chip:disabled)), :global(:is(.preview-char-chip:disabled)[data-feature-page="history"]) {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.preview-char-chip-avatar, :global([data-feature-page="history"] :is(.preview-char-chip-avatar)), :global(:is(.preview-char-chip-avatar)[data-feature-page="history"]) {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: grayscale(1) saturate(0.2) opacity(0.7);
+}
+
+.preview-char-chip.is-active .preview-char-chip-avatar, :global([data-feature-page="history"] :is(.preview-char-chip.is-active .preview-char-chip-avatar)), :global(:is(.preview-char-chip.is-active .preview-char-chip-avatar)[data-feature-page="history"]) {
+  filter: none;
+}
+
+.preview-festival-select, :global([data-feature-page="history"] :is(.preview-festival-select)), :global(:is(.preview-festival-select)[data-feature-page="history"]) {
+  margin-top: 6px;
+}
+
+.preview-festival-chips, :global([data-feature-page="history"] :is(.preview-festival-chips)), :global(:is(.preview-festival-chips)[data-feature-page="history"]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preview-festival-chip, :global([data-feature-page="history"] :is(.preview-festival-chip)), :global(:is(.preview-festival-chip)[data-feature-page="history"]) {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.54);
+  color: #334155;
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 4px 9px;
+  cursor: pointer;
+  box-shadow: var(--ui-glass-micro-shadow);
+}
+
+.preview-festival-chip.is-active, :global([data-feature-page="history"] :is(.preview-festival-chip.is-active)), :global(:is(.preview-festival-chip.is-active)[data-feature-page="history"]) {
+  border-color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.14);
+  color: #0f172a;
+}
+
+.preview-panel, :global([data-feature-page="history"] :is(.preview-panel)), :global(:is(.preview-panel)[data-feature-page="history"]) {
+  position: fixed;
+  min-width: 0;
+  border-radius: 24px;
+  padding: 10px 10px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.preview-panel.is-collapsed, :global([data-feature-page="history"] :is(.preview-panel.is-collapsed)), :global(:is(.preview-panel.is-collapsed)[data-feature-page="history"]) {
+  min-width: 160px;
+  padding: 8px 10px;
+}
+
+.preview-panel-head, :global([data-feature-page="history"] :is(.preview-panel-head)), :global(:is(.preview-panel-head)[data-feature-page="history"]) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  color: #1f2937;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.preview-panel-head:active, :global([data-feature-page="history"] :is(.preview-panel-head:active)), :global(:is(.preview-panel-head:active)[data-feature-page="history"]) {
+  cursor: grabbing;
+}
+
+.preview-title, :global([data-feature-page="history"] :is(.preview-title)), :global(:is(.preview-title)[data-feature-page="history"]) {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.preview-head-toggle, :global([data-feature-page="history"] :is(.preview-head-toggle)), :global(:is(.preview-head-toggle)[data-feature-page="history"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  font-size: 0.68rem;
+  color: #475569;
+  user-select: none;
+}
+
+.preview-head-toggle input, :global([data-feature-page="history"] :is(.preview-head-toggle input)), :global(:is(.preview-head-toggle input)[data-feature-page="history"]) {
+  width: 12px;
+  height: 12px;
+}
+
+.preview-head-filters, :global([data-feature-page="history"] :is(.preview-head-filters)), :global(:is(.preview-head-filters)[data-feature-page="history"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.preview-head-filter-toggle, :global([data-feature-page="history"] :is(.preview-head-filter-toggle)), :global(:is(.preview-head-filter-toggle)[data-feature-page="history"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.66rem;
+  color: #334155;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: var(--ui-glass-micro-shadow);
+}
+
+.preview-head-filter-toggle input, :global([data-feature-page="history"] :is(.preview-head-filter-toggle input)), :global(:is(.preview-head-filter-toggle input)[data-feature-page="history"]) {
+  width: 11px;
+  height: 11px;
+}
+
+.preview-head-filter-btn, :global([data-feature-page="history"] :is(.preview-head-filter-btn)), :global(:is(.preview-head-filter-btn)[data-feature-page="history"]) {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.54);
+  color: #334155;
+  font-size: 0.66rem;
+  line-height: 1;
+  padding: 3px 8px;
+  cursor: pointer;
+  box-shadow: var(--ui-glass-micro-shadow);
+}
+
+.preview-head-filter-btn:hover, :global([data-feature-page="history"] :is(.preview-head-filter-btn:hover)), :global(:is(.preview-head-filter-btn:hover)[data-feature-page="history"]) {
+  background: var(--ui-glass-optical-control-bg-hover);
+}
+
+.preview-collapse-btn, :global([data-feature-page="history"] :is(.preview-collapse-btn)), :global(:is(.preview-collapse-btn)[data-feature-page="history"]) {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.54);
+  color: #334155;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-left: 6px;
+  padding: 0;
+  line-height: 1;
+  box-shadow: var(--ui-glass-micro-shadow);
+}
+
+.preview-collapse-btn:hover, :global([data-feature-page="history"] :is(.preview-collapse-btn:hover)), :global(:is(.preview-collapse-btn:hover)[data-feature-page="history"]) {
+  background: var(--ui-glass-optical-control-bg-hover);
+}
+
+.preview-drag-hint, :global([data-feature-page="history"] :is(.preview-drag-hint)), :global(:is(.preview-drag-hint)[data-feature-page="history"]) {
+  margin-left: auto;
+  font-size: 0.68rem;
+  color: #6b7280;
+}
+
+.preview-steps, :global([data-feature-page="history"] :is(.preview-steps)), :global(:is(.preview-steps)[data-feature-page="history"]) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.preview-attr-head,
+.preview-attr-row,
+:global([data-feature-page="history"] :is(.preview-attr-head)),
+:global(:is(.preview-attr-head)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.preview-attr-row)),
+:global(:is(.preview-attr-row)[data-feature-page="history"]) {
+  display: grid;
+  grid-template-columns: 30px repeat(5, 26px);
+  align-items: center;
+  justify-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  width: fit-content;
+}
+
+.preview-attr-head, :global([data-feature-page="history"] :is(.preview-attr-head)), :global(:is(.preview-attr-head)[data-feature-page="history"]) {
+  color: #64748b;
+  font-weight: 700;
+  padding: 0 2px;
+}
+
+.preview-attr-head > :first-child,
+.preview-attr-row > :first-child,
+:global([data-feature-page="history"] :is(.preview-attr-head > :first-child)),
+:global(:is(.preview-attr-head > :first-child)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.preview-attr-row > :first-child)),
+:global(:is(.preview-attr-row > :first-child)[data-feature-page="history"]) {
+  justify-self: center;
+}
+
+.preview-attr-head-icon, :global([data-feature-page="history"] :is(.preview-attr-head-icon)), :global(:is(.preview-attr-head-icon)[data-feature-page="history"]) {
+  width: 16px;
+  height: 16px;
+  justify-self: center;
+  object-fit: contain;
+}
+
+.preview-attr-row, :global([data-feature-page="history"] :is(.preview-attr-row)), :global(:is(.preview-attr-row)[data-feature-page="history"]) {
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.preview-attr-row > span:not(:first-child), :global([data-feature-page="history"] :is(.preview-attr-row > span:not(:first-child))), :global(:is(.preview-attr-row > span:not(:first-child))[data-feature-page="history"]) {
+  min-width: 0;
+  overflow: visible;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-attr-summary-row, :global([data-feature-page="history"] :is(.preview-attr-summary-row)), :global(:is(.preview-attr-summary-row)[data-feature-page="history"]) {
+  background: rgba(241, 245, 249, 0.68);
+  border-color: rgba(148, 163, 184, 0.34);
+  color: #334155;
+  font-weight: 800;
+}
+
+.preview-attr-summary-label, :global([data-feature-page="history"] :is(.preview-attr-summary-label)), :global(:is(.preview-attr-summary-label)[data-feature-page="history"]) {
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.preview-attr-avatar, :global([data-feature-page="history"] :is(.preview-attr-avatar)), :global(:is(.preview-attr-avatar)[data-feature-page="history"]) {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.preview-festival-head, :global([data-feature-page="history"] :is(.preview-festival-head)), :global(:is(.preview-festival-head)[data-feature-page="history"]) {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.72rem;
+  color: #334155;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.preview-festival-inline-toggle, :global([data-feature-page="history"] :is(.preview-festival-inline-toggle)), :global(:is(.preview-festival-inline-toggle)[data-feature-page="history"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #0f766e;
+  white-space: nowrap;
+}
+
+.preview-festival-inline-toggle input, :global([data-feature-page="history"] :is(.preview-festival-inline-toggle input)), :global(:is(.preview-festival-inline-toggle input)[data-feature-page="history"]) {
+  width: 12px;
+  height: 12px;
+}
+
+.preview-festival-row, :global([data-feature-page="history"] :is(.preview-festival-row)), :global(:is(.preview-festival-row)[data-feature-page="history"]) {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  border-radius: 16px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-sizing: border-box;
+}
+
+.preview-festival-label, :global([data-feature-page="history"] :is(.preview-festival-label)), :global(:is(.preview-festival-label)[data-feature-page="history"]) {
+  flex: 0 0 30px;
+  min-width: 30px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #065f46;
+}
+
+.preview-festival-avatars, :global([data-feature-page="history"] :is(.preview-festival-avatars)), :global(:is(.preview-festival-avatars)[data-feature-page="history"]) {
+  flex: 1 1 auto;
+}
+
+.preview-festival-avatar-box, :global([data-feature-page="history"] :is(.preview-festival-avatar-box)), :global(:is(.preview-festival-avatar-box)[data-feature-page="history"]) {
+  position: relative;
+}
+
+.preview-festival-unit-logo, :global([data-feature-page="history"] :is(.preview-festival-unit-logo)), :global(:is(.preview-festival-unit-logo)[data-feature-page="history"]) {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 10px;
+  height: 10px;
+  object-fit: contain;
+  z-index: 2;
+}
+
+.preview-festival-count, :global([data-feature-page="history"] :is(.preview-festival-count)), :global(:is(.preview-festival-count)[data-feature-page="history"]) {
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  font-size: 7px;
+  line-height: 11px;
+  font-weight: 700;
+  text-align: center;
+  background: #ef4444;
+  color: #fff;
+}
+
+.preview-festival-perm, :global([data-feature-page="history"] :is(.preview-festival-perm)), :global(:is(.preview-festival-perm)[data-feature-page="history"]) {
+  position: absolute;
+  left: -4px;
+  bottom: -2px;
+  border-radius: 6px;
+  padding: 0 3px;
+  font-size: 8px;
+  line-height: 1.2;
+  background: rgba(15, 23, 42, 0.88);
+  color: #fff;
+}
+
+.preview-daily-card, :global([data-feature-page="history"] :is(.preview-daily-card)), :global(:is(.preview-daily-card)[data-feature-page="history"]) {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.32);
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.preview-daily-head, :global([data-feature-page="history"] :is(.preview-daily-head)), :global(:is(.preview-daily-head)[data-feature-page="history"]) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.preview-daily-avatar, :global([data-feature-page="history"] :is(.preview-daily-avatar)), :global(:is(.preview-daily-avatar)[data-feature-page="history"]) {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.preview-daily-name, :global([data-feature-page="history"] :is(.preview-daily-name)), :global(:is(.preview-daily-name)[data-feature-page="history"]) {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.preview-daily-table, :global([data-feature-page="history"] :is(.preview-daily-table)), :global(:is(.preview-daily-table)[data-feature-page="history"]) {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+  table-layout: fixed;
+}
+
+.preview-daily-plan-row td, :global([data-feature-page="history"] :is(.preview-daily-plan-row td)), :global(:is(.preview-daily-plan-row td)[data-feature-page="history"]) {
+  background: var(--daily-row-bg, rgba(148, 163, 184, 0.16));
+}
+
+.preview-daily-attr-cell, :global([data-feature-page="history"] :is(.preview-daily-attr-cell)), :global(:is(.preview-daily-attr-cell)[data-feature-page="history"]) {
+  width: 14px;
+  text-align: center;
+  padding: 1px 1px;
+  border: 1px solid var(--lineup-row-border, rgba(148, 163, 184, 0.52));
+  border-radius: 6px;
+}
+
+.preview-daily-attr, :global([data-feature-page="history"] :is(.preview-daily-attr)), :global(:is(.preview-daily-attr)[data-feature-page="history"]) {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
+.preview-daily-score-cell, :global([data-feature-page="history"] :is(.preview-daily-score-cell)), :global(:is(.preview-daily-score-cell)[data-feature-page="history"]) {
+  width: 1.55em;
+  height: 1.45em;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 4px;
+  font-size: 0.60rem;
+  line-height: 1;
+  color: #1f2937;
+  text-align: center;
+  padding: 0;
+}
+
+.preview-daily-score-cell.is-empty, :global([data-feature-page="history"] :is(.preview-daily-score-cell.is-empty)), :global(:is(.preview-daily-score-cell.is-empty)[data-feature-page="history"]) {
+  color: #94a3b8;
+}
+
+.preview-daily-score-cell.is-bfes, :global([data-feature-page="history"] :is(.preview-daily-score-cell.is-bfes)), :global(:is(.preview-daily-score-cell.is-bfes)[data-feature-page="history"]) {
+  border-color: #4c1d95;
+  box-shadow: inset 0 0 0 1px rgba(76, 29, 149, 0.28);
+}
+
+.preview-daily-score-cell.is-cfes, :global([data-feature-page="history"] :is(.preview-daily-score-cell.is-cfes)), :global(:is(.preview-daily-score-cell.is-cfes)[data-feature-page="history"]) {
+  border-color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.25);
+}
+
+.preview-daily-total-cell, :global([data-feature-page="history"] :is(.preview-daily-total-cell)), :global(:is(.preview-daily-total-cell)[data-feature-page="history"]) {
+  width: 1.52em;
+  font-size: 0.63rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: center;
+  padding: 0 1px;
+  border: 1px solid var(--lineup-row-border, rgba(148, 163, 184, 0.52));
+  border-radius: 6px;
+}
+
+.preview-char-attr-card, :global([data-feature-page="history"] :is(.preview-char-attr-card)), :global(:is(.preview-char-attr-card)[data-feature-page="history"]) {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.32);
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.preview-char-attr-head, :global([data-feature-page="history"] :is(.preview-char-attr-head)), :global(:is(.preview-char-attr-head)[data-feature-page="history"]) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.preview-char-attr-avatar, :global([data-feature-page="history"] :is(.preview-char-attr-avatar)), :global(:is(.preview-char-attr-avatar)[data-feature-page="history"]) {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.preview-char-attr-name, :global([data-feature-page="history"] :is(.preview-char-attr-name)), :global(:is(.preview-char-attr-name)[data-feature-page="history"]) {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.preview-char-attr-table, :global([data-feature-page="history"] :is(.preview-char-attr-table)), :global(:is(.preview-char-attr-table)[data-feature-page="history"]) {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+  table-layout: fixed;
+}
+
+.preview-char-attr-table th,
+.preview-char-attr-table td,
+:global([data-feature-page="history"] :is(.preview-char-attr-table th)),
+:global(:is(.preview-char-attr-table th)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.preview-char-attr-table td)),
+:global(:is(.preview-char-attr-table td)[data-feature-page="history"]) {
+  text-align: center;
+  font-size: 0.62rem;
+  color: #0f172a;
+  border-radius: 5px;
+  padding: 2px 1px;
+}
+
+.preview-char-attr-table th:first-child,
+.preview-char-attr-table td:first-child,
+:global([data-feature-page="history"] :is(.preview-char-attr-table th:first-child)),
+:global(:is(.preview-char-attr-table th:first-child)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.preview-char-attr-table td:first-child)),
+:global(:is(.preview-char-attr-table td:first-child)[data-feature-page="history"]) {
+  width: 1.7em;
+}
+
+.preview-char-attr-table thead th,
+.preview-char-attr-total-row td,
+:global([data-feature-page="history"] :is(.preview-char-attr-table thead th)),
+:global(:is(.preview-char-attr-table thead th)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.preview-char-attr-total-row td)),
+:global(:is(.preview-char-attr-total-row td)[data-feature-page="history"]) {
+  background: rgba(255, 255, 255, 0.46);
+  font-weight: 700;
+}
+
+.preview-char-attr-table tbody tr td, :global([data-feature-page="history"] :is(.preview-char-attr-table tbody tr td)), :global(:is(.preview-char-attr-table tbody tr td)[data-feature-page="history"]) {
+  background: var(--preview-char-attr-row-bg, rgba(255, 255, 255, 0.42));
+}
+
+.preview-char-attr-attr-cell, :global([data-feature-page="history"] :is(.preview-char-attr-attr-cell)), :global(:is(.preview-char-attr-attr-cell)[data-feature-page="history"]) {
+  padding: 0;
+}
+
+.preview-char-attr-attr-icon, :global([data-feature-page="history"] :is(.preview-char-attr-attr-icon)), :global(:is(.preview-char-attr-attr-icon)[data-feature-page="history"]) {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+.preview-vs-mini-table, :global([data-feature-page="history"] :is(.preview-vs-mini-table)), :global(:is(.preview-vs-mini-table)[data-feature-page="history"]) {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  table-layout: fixed;
+}
+
+.preview-vs-mini-table th,
+.preview-vs-mini-table td,
+:global([data-feature-page="history"] :is(.preview-vs-mini-table th)),
+:global(:is(.preview-vs-mini-table th)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.preview-vs-mini-table td)),
+:global(:is(.preview-vs-mini-table td)[data-feature-page="history"]) {
+  text-align: center;
+  font-size: 0.68rem;
+  color: #0f172a;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.34);
+  padding: 3px 0;
+}
+
+.preview-vs-mini-table thead th, :global([data-feature-page="history"] :is(.preview-vs-mini-table thead th)), :global(:is(.preview-vs-mini-table thead th)[data-feature-page="history"]) {
+  background: rgba(255, 255, 255, 0.44);
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.preview-vs-mini-unit-logo, :global([data-feature-page="history"] :is(.preview-vs-mini-unit-logo)), :global(:is(.preview-vs-mini-unit-logo)[data-feature-page="history"]) {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.preview-vs-mini-avatar, :global([data-feature-page="history"] :is(.preview-vs-mini-avatar)), :global(:is(.preview-vs-mini-avatar)[data-feature-page="history"]) {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  vertical-align: middle;
+}
+
+.preview-vs-score-table, :global([data-feature-page="history"] :is(.preview-vs-score-table)), :global(:is(.preview-vs-score-table)[data-feature-page="history"]) {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  table-layout: fixed;
+}
+
+.preview-vs-score-table th,
+.preview-vs-score-table td,
+:global([data-feature-page="history"] :is(.preview-vs-score-table th)),
+:global(:is(.preview-vs-score-table th)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.preview-vs-score-table td)),
+:global(:is(.preview-vs-score-table td)[data-feature-page="history"]) {
+  text-align: center;
+  font-size: 0.68rem;
+  color: #0f172a;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.34);
+  padding: 3px 2px;
+  vertical-align: middle;
+}
+
+.preview-vs-score-icons, :global([data-feature-page="history"] :is(.preview-vs-score-icons)), :global(:is(.preview-vs-score-icons)[data-feature-page="history"]) {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+}
+
+.preview-vs-score-attr, :global([data-feature-page="history"] :is(.preview-vs-score-attr)), :global(:is(.preview-vs-score-attr)[data-feature-page="history"]) {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
+.preview-vs-score-empty, :global([data-feature-page="history"] :is(.preview-vs-score-empty)), :global(:is(.preview-vs-score-empty)[data-feature-page="history"]) {
+  color: #94a3b8;
+}
+
+.preview-step, :global([data-feature-page="history"] :is(.preview-step)), :global(:is(.preview-step)[data-feature-page="history"]) {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  border-radius: 16px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  color: #065f46;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.preview-count, :global([data-feature-page="history"] :is(.preview-count)), :global(:is(.preview-count)[data-feature-page="history"]) {
+  flex: 0 0 26px;
+  min-width: 26px;
+  text-align: center;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.preview-meta, :global([data-feature-page="history"] :is(.preview-meta)), :global(:is(.preview-meta)[data-feature-page="history"]) {
+  color: #0f766e;
+}
+
+.preview-avatars, :global([data-feature-page="history"] :is(.preview-avatars)), :global(:is(.preview-avatars)[data-feature-page="history"]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: start;
+  max-width: 100%;
+}
+
+.preview-avatar-box, :global([data-feature-page="history"] :is(.preview-avatar-box)), :global(:is(.preview-avatar-box)[data-feature-page="history"]) {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.preview-avatar, :global([data-feature-page="history"] :is(.preview-avatar)), :global(:is(.preview-avatar)[data-feature-page="history"]) {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  border: none;
+  object-fit: cover;
+}
+
+.preview-reward-sub, :global([data-feature-page="history"] :is(.preview-reward-sub)), :global(:is(.preview-reward-sub)[data-feature-page="history"]) {
+  font-size: 9px;
+  line-height: 1;
+  color: #475569;
+}
+
+.preview-step-empty, :global([data-feature-page="history"] :is(.preview-step-empty)), :global(:is(.preview-step-empty)[data-feature-page="history"]) {
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.preview-resize-handle, :global([data-feature-page="history"] :is(.preview-resize-handle)), :global(:is(.preview-resize-handle)[data-feature-page="history"]) {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 0 45%, #94a3b8 45% 55%, transparent 55% 100%);
+}
+/* 2. 左侧：活动列表区 */
+.event-history, :global([data-feature-page="history"] :is(.event-history)), :global(:is(.event-history)[data-feature-page="history"]) {
+  flex: 1; /* 占据剩余所有空间 */
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto; /* 只有列表区可以滚动 */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 20px 20px;
+  box-sizing: border-box;
+  background: transparent;
+  min-width: 0; /* 防止子元素撑开 flex */
+  touch-action: pan-y pinch-zoom;
+  overscroll-behavior-x: contain;
+  overflow-anchor: none;
+}
+
+.event-history > h1, :global([data-feature-page="history"] :is(.event-history > h1)), :global(:is(.event-history > h1)[data-feature-page="history"]) {
+  display: none;
+}
+
+button:not(:disabled), :global([data-feature-page="history"] :is(button:not(:disabled))), :global(:is(button:not(:disabled))[data-feature-page="history"]) {
+  transition: transform var(--ui-motion-state), background-color var(--ui-motion-state), border-color var(--ui-motion-state), color var(--ui-motion-state);
+}
+
+button:not(:disabled):active, :global([data-feature-page="history"] :is(button:not(:disabled):active)), :global(:is(button:not(:disabled):active)[data-feature-page="history"]) {
+  filter: brightness(0.86);
+}
+
+/* 如果你希望编辑器是覆盖式的（Overlapping），则维持 position: fixed
+   但给左侧列表增加 marginRight */
+@media (min-width: 901px) {
+  .event-history-wrapper.with-editor-space .event-history, :global([data-feature-page="history"] :is(.event-history-wrapper.with-editor-space .event-history)), :global(:is(.event-history-wrapper.with-editor-space .event-history)[data-feature-page="history"]) {
+    margin-right: var(--editor-drawer-width); /* 强制拉开距离，绝不重叠 */
+  }
+}
+
+.filter-sticky, :global([data-feature-page="history"] :is(.filter-sticky)), :global(:is(.filter-sticky)[data-feature-page="history"]) {
+  position: sticky;
+  top: 0;
+  z-index: 1500;
+  padding-top: 0;
+  background: transparent;
+  border-bottom: 0;
+  box-shadow: none;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.filter-bar, :global([data-feature-page="history"] :is(.filter-bar)), :global(:is(.filter-bar)[data-feature-page="history"]) {
+  width: 100%;
+  box-sizing: border-box;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 999px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  gap: 10px;
+}
+
+.nav-btn, :global([data-feature-page="history"] :is(.nav-btn)), :global(:is(.nav-btn)[data-feature-page="history"]) {
+  padding: 8px 15px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid var(--history-glass-border);
+  background: var(--ui-glass-control-bg);
+  box-shadow: var(--ui-glass-micro-shadow, var(--history-glass-shadow-soft));
+  transition: opacity var(--ui-motion-state), transform var(--ui-motion-state), background-color var(--ui-motion-state), border-color var(--ui-motion-state), color var(--ui-motion-state);
+  white-space: nowrap;
+  min-height: 32px;
+  line-height: 1;
+}
+
+.nav-btn.is-icon-only, :global([data-feature-page="history"] :is(.nav-btn.is-icon-only)), :global(:is(.nav-btn.is-icon-only)[data-feature-page="history"]) {
+  width: 36px;
+  padding: 0;
+  border-radius: 999px;
+  aspect-ratio: 1 / 1;
+}
+
+
+.filter-bar, :global([data-feature-page="history"] :is(.filter-bar)), :global(:is(.filter-bar)[data-feature-page="history"]) { margin-bottom: 0; }
+.sort-btn, :global([data-feature-page="history"] :is(.sort-btn)), :global(:is(.sort-btn)[data-feature-page="history"]) {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid var(--history-glass-border);
+  background: var(--ui-glass-control-bg);
+  box-shadow: var(--ui-glass-micro-shadow, var(--history-glass-shadow-soft));
+  flex: 0 0 auto;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  line-height: 1;
+}
+
+.current-btn, :global([data-feature-page="history"] :is(.current-btn)), :global(:is(.current-btn)[data-feature-page="history"]) {
+  min-width: 58px;
+  font-weight: 700;
+}
+
+.filter-bar.is-editor-tight, :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight)), :global(:is(.filter-bar.is-editor-tight)[data-feature-page="history"]) {
+  gap: 4px;
+  padding: 6px;
+  scrollbar-width: none;
+}
+
+.filter-bar.is-editor-tight::-webkit-scrollbar, :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight)::-webkit-scrollbar), :global(:is(.filter-bar.is-editor-tight)[data-feature-page="history"]::-webkit-scrollbar) {
+  display: none;
+}
+
+.filter-bar.is-editor-tight .sort-btn,
+.filter-bar.is-editor-tight .nav-btn,
+.filter-bar.is-editor-tight .clear-btn,
+:global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .sort-btn)),
+:global(:is(.filter-bar.is-editor-tight .sort-btn)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .nav-btn)),
+:global(:is(.filter-bar.is-editor-tight .nav-btn)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .clear-btn)),
+:global(:is(.filter-bar.is-editor-tight .clear-btn)[data-feature-page="history"]) {
+  height: 31px;
+  min-height: 31px;
+  padding: 0 7px;
+  font-size: 0.72rem;
+  gap: 3px;
+}
+
+.filter-bar.is-editor-tight .sort-btn, :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .sort-btn)), :global(:is(.filter-bar.is-editor-tight .sort-btn)[data-feature-page="history"]) {
+  min-width: 78px;
+}
+
+.filter-bar.is-editor-tight .nav-btn:not(.is-icon-only), :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .nav-btn:not(.is-icon-only))), :global(:is(.filter-bar.is-editor-tight .nav-btn:not(.is-icon-only))[data-feature-page="history"]) {
+  min-width: 0;
+}
+
+.filter-bar.is-editor-tight .current-btn, :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .current-btn)), :global(:is(.filter-bar.is-editor-tight .current-btn)[data-feature-page="history"]) {
+  min-width: 52px;
+}
+
+.filter-bar.is-editor-tight .compact-btn-icon, :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .compact-btn-icon)), :global(:is(.filter-bar.is-editor-tight .compact-btn-icon)[data-feature-page="history"]) {
+  width: 14px;
+  height: 14px;
+}
+
+.filter-bar.is-editor-mobile, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile)), :global(:is(.filter-bar.is-editor-mobile)[data-feature-page="history"]) {
+  gap: 3px;
+  padding: 5px 6px;
+  scrollbar-width: none;
+}
+
+.filter-bar.is-editor-mobile::-webkit-scrollbar, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile)::-webkit-scrollbar), :global(:is(.filter-bar.is-editor-mobile)[data-feature-page="history"]::-webkit-scrollbar) {
+  display: none;
+}
+
+.filter-bar.is-editor-mobile .sort-btn,
+.filter-bar.is-editor-mobile .nav-btn,
+.filter-bar.is-editor-mobile .clear-btn,
+:global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .sort-btn)),
+:global(:is(.filter-bar.is-editor-mobile .sort-btn)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .nav-btn)),
+:global(:is(.filter-bar.is-editor-mobile .nav-btn)[data-feature-page="history"]),
+:global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .clear-btn)),
+:global(:is(.filter-bar.is-editor-mobile .clear-btn)[data-feature-page="history"]) {
+  min-width: 0;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 6px;
+  font-size: 0.72rem;
+}
+
+.filter-bar.is-editor-mobile .nav-btn.is-icon-only, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .nav-btn.is-icon-only)), :global(:is(.filter-bar.is-editor-mobile .nav-btn.is-icon-only)[data-feature-page="history"]) {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+}
+
+.filter-bar.is-editor-mobile .nav-btn.compact-tip.has-count, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .nav-btn.compact-tip.has-count)), :global(:is(.filter-bar.is-editor-mobile .nav-btn.compact-tip.has-count)[data-feature-page="history"]) {
+  width: auto;
+  min-width: 52px;
+  padding: 0 8px;
+  gap: 3px;
+  aspect-ratio: auto;
+}
+
+.filter-bar.is-editor-mobile .sort-btn, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .sort-btn)), :global(:is(.filter-bar.is-editor-mobile .sort-btn)[data-feature-page="history"]) {
+  min-width: 80px;
+}
+
+.filter-bar.is-editor-mobile .current-btn, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .current-btn)), :global(:is(.filter-bar.is-editor-mobile .current-btn)[data-feature-page="history"]) {
+  min-width: 52px;
+}
+
+.filter-bar.is-editor-mobile .compact-btn-icon, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .compact-btn-icon)), :global(:is(.filter-bar.is-editor-mobile .compact-btn-icon)[data-feature-page="history"]) {
+  width: 14px;
+  height: 14px;
+}
+
+.compact-btn-icon, :global([data-feature-page="history"] :is(.compact-btn-icon)), :global(:is(.compact-btn-icon)[data-feature-page="history"]) {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+  flex: 0 0 17px;
+  display: block;
+  filter: var(--history-icon-filter, none);
+}
+
+/* Optional PNG tinting for highlighted filter buttons. */
+.nav-btn.active-highlight .compact-btn-icon, :global([data-feature-page="history"] :is(.nav-btn.active-highlight .compact-btn-icon)), :global(:is(.nav-btn.active-highlight .compact-btn-icon)[data-feature-page="history"]) {
+  --history-icon-filter: brightness(0) saturate(100%) invert(43%) sepia(58%) saturate(900%) hue-rotate(130deg) brightness(95%) contrast(90%);
+}
+
+.nav-btn.active-highlight .compact-btn-icon.birthday-toggle-icon, :global([data-feature-page="history"] :is(.nav-btn.active-highlight .compact-btn-icon.birthday-toggle-icon)), :global(:is(.nav-btn.active-highlight .compact-btn-icon.birthday-toggle-icon)[data-feature-page="history"]) {
+  --history-icon-filter: none;
+}
+
+.compact-filter-count, :global([data-feature-page="history"] :is(.compact-filter-count)), :global(:is(.compact-filter-count)[data-feature-page="history"]) {
+  margin-left: 3px;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.12);
+  border: 1px solid rgba(15, 118, 110, 0.35);
+  color: #0f766e;
+  font-size: 0.66rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.birthday-inline-icon, :global([data-feature-page="history"] :is(.birthday-inline-icon)), :global(:is(.birthday-inline-icon)[data-feature-page="history"]) {
+  margin-right: 4px;
+}
+
+.clear-btn, :global([data-feature-page="history"] :is(.clear-btn)), :global(:is(.clear-btn)[data-feature-page="history"]) {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.history-list, :global([data-feature-page="history"] :is(.history-list)), :global(:is(.history-list)[data-feature-page="history"]) { display: flex; flex-direction: column; gap: 12px; padding-bottom: 16px;
+  margin-top: 20px;
+  position: relative;
+  container-type: inline-size;
+}
+
+.event-item, :global([data-feature-page="history"] :is(.event-item)), :global(:is(.event-item)[data-feature-page="history"]) {
+  --event-row-pad-x: clamp(14px, 1.7cqw, 20px);
+  --event-row-pad-y: clamp(9px, 1.02cqw, 12px);
+  --event-basic-width: clamp(48px, 5.1cqw, 60px);
+  --event-id-font-size: clamp(0.9rem, 1.49cqw, 1.1rem);
+  --event-date-font-size: clamp(0.64rem, 1.02cqw, 0.75rem);
+  --event-small-tag-font-size: clamp(0.58rem, 0.95cqw, 0.7rem);
+  --event-banner-width: clamp(64px, 6.8cqw, 80px);
+  --event-banner-margin: clamp(7px, 0.85cqw, 10px);
+  --event-banner-avatar-size: clamp(52px, 5.42cqw, 64px);
+  --event-unit-logo-size: clamp(55px, 5.76cqw, 68px);
+  --event-main-width: clamp(130px, 13.56cqw, 160px);
+  --event-main-pad-x: clamp(3px, 0.42cqw, 5px);
+  --event-title-font-size: clamp(0.86rem, 1.36cqw, 1rem);
+  --event-type-gap: clamp(5px, 0.68cqw, 8px);
+  --event-type-font-size: clamp(0.62rem, 0.95cqw, 0.7rem);
+  --event-type-pad-x: clamp(6px, 0.68cqw, 8px);
+  --event-series-font-size: clamp(0.78rem, 1.12cqw, 1rem);
+  --event-members-pad-x: clamp(10px, 1.27cqw, 15px);
+  --event-members-gap: clamp(8px, 0.85cqw, 10px);
+  --event-vs-width: clamp(92px, 9.83cqw, 116px);
+  --event-vs-avatar-size: clamp(36px, 3.81cqw, 45px);
+  --event-vs-gap: clamp(5px, 0.68cqw, 8px);
+  --event-info-icon-size: clamp(20px, 2.03cqw, 24px);
+  --event-song-pill-width: clamp(42px, 4.41cqw, 52px);
+  --event-song-pill-height: clamp(22px, 2.2cqw, 26px);
+  --event-song-pill-font-size: clamp(13px, 1.4cqw, 16.5px);
+  --event-song-grid-gap: clamp(7px, 0.85cqw, 10px);
+  --event-attr-inline-size: clamp(26px, 2.71cqw, 32px);
+  scroll-margin-top: 80px; /* 对应 .sticky-filter 的高度 */
+  position: relative; /* 必须为 relative 以便伪元素定位 */
+  z-index: 1;
+  display: flex; align-items: center; padding: var(--event-row-pad-y) var(--event-row-pad-x); border-radius: var(--eh-radius-card);
+  background: var(--bg-color); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: background-color var(--ui-motion-state), border-color var(--ui-motion-state); border-left: 6px solid transparent;
+  box-sizing: border-box;
+  /* Keep offscreen row heights real. Progressive loading handles heavy content;
+     estimated outer heights make navigation and upward scrolling jump. */
+}
+.event-item:hover, :global([data-feature-page="history"] :is(.event-item:hover)), :global(:is(.event-item:hover)[data-feature-page="history"]) { z-index: 900; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.event-item.is-tooltip-raised, :global([data-feature-page="history"] :is(.event-item.is-tooltip-raised)), :global(:is(.event-item.is-tooltip-raised)[data-feature-page="history"]) {
+  content-visibility: visible;
+  contain-intrinsic-size: none;
+}
+
+.event-item.is-active, :global([data-feature-page="history"] :is(.event-item.is-active)), :global(:is(.event-item.is-active)[data-feature-page="history"]) {
+  content-visibility: visible;
+  contain-intrinsic-size: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-history, :global([data-feature-page="history"] .event-history) {
+    transition: none;
+  }
+}
+
+.birthday-row, :global([data-feature-page="history"] :is(.birthday-row)), :global(:is(.birthday-row)[data-feature-page="history"]) {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 42px;
+  border-radius: var(--eh-radius-panel);
+  padding: 6px 14px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  position: relative;
+  transition: transform var(--ui-motion-state);
+  box-sizing: border-box;
+}
+
+.birthday-row:active, :global([data-feature-page="history"] :is(.birthday-row:active)), :global(:is(.birthday-row:active)[data-feature-page="history"]) {
+  filter: brightness(0.92);
+}
+
+.birthday-row.is-open, :global([data-feature-page="history"] :is(.birthday-row.is-open)), :global(:is(.birthday-row.is-open)[data-feature-page="history"]) {
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  border-color: rgba(14, 116, 144, 0.38);
+  content-visibility: visible;
+  contain-intrinsic-size: none;
+}
+
+.birthday-date, :global([data-feature-page="history"] :is(.birthday-date)), :global(:is(.birthday-date)[data-feature-page="history"]) {
+  width: 95px;
+  font-size: 0.78rem;
+  color: #4b5563;
+}
+
+.birthday-name, :global([data-feature-page="history"] :is(.birthday-name)), :global(:is(.birthday-name)[data-feature-page="history"]) {
+  font-weight: 700;
+  color: #111827;
+  min-width: 92px;
+}
+
+.birthday-main-icon, :global([data-feature-page="history"] :is(.birthday-main-icon)), :global(:is(.birthday-main-icon)[data-feature-page="history"]) {
+  display: inline-flex;
+  align-items: center;
+}
+
+.birthday-attr-end, :global([data-feature-page="history"] :is(.birthday-attr-end)), :global(:is(.birthday-attr-end)[data-feature-page="history"]) {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.birthday-row-icon, :global([data-feature-page="history"] :is(.birthday-row-icon)), :global(:is(.birthday-row-icon)[data-feature-page="history"]) {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.birthday-info-popover, :global([data-feature-page="history"] :is(.birthday-info-popover)), :global(:is(.birthday-info-popover)[data-feature-page="history"]) {
+  position: absolute;
+  left: 10px;
+  top: calc(100% + 8px);
+  z-index: 1400;
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 30px));
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.95));
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.birthday-info-card, :global([data-feature-page="history"] :is(.birthday-info-card)), :global(:is(.birthday-info-card)[data-feature-page="history"]) {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(241, 245, 249, 0.9);
+  object-fit: contain;
+  object-position: center;
+  flex: 0 0 auto;
+}

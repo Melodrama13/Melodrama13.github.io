@@ -1,0 +1,71 @@
+
+
+.song-jacket-fallback {
+  display: none;
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.song-jacket-media.is-failed .song-jacket-fallback {
+  display: inline-block;
+}
+
+.song-mv-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.song-mv-chip.song-event-mv-chip {
+  font-size: var(--song-event-mv-chip-font-size);
+  min-height: var(--song-event-mv-chip-height);
+  height: var(--song-event-mv-chip-height);
+  min-width: var(--song-event-mv-chip-width);
+  width: var(--song-event-mv-chip-width);
+  padding: 0 var(--song-event-mv-chip-pad-x);
+  line-height: 1;
+}
+
+.song-mv-chip.is-3d {
+  border-color: #f91674;
+  background: rgba(254, 170, 197, 0.5);
+  color: #9a3412;
+}
+
+.song-mv-chip.is-2d {
+  border-color: #14b8a6;
+  background: rgba(153, 246, 228, 0.42);
+  color: #0f766e;
+}
+
+.song-mv-chip.is-vs2d {
+  border-color: #0ea5e9;
+  background: rgba(186, 230, 253, 0.52);
+  color: #0c4a6e;
+}
+
+.song-mv-chip.is-original {
+  border-color: #8b5cf6;
+  background: rgba(221, 214, 254, 0.48);
+  color: #5b21b6;
+}
+
+.song-mv-chip.is-other {
+  border-color: #94a3b8;
+  background: rgba(226, 232, 240, 0.58);
+  color: #334155;
+}
+
+.song-empty {
+  text-align: center;
+  color: #64748b;
+}

@@ -1,0 +1,2415 @@
+
+.special-predict-page, :global([data-feature-page="special-prediction"] :is(.special-predict-page)), :global(:is(.special-predict-page)[data-feature-page="special-prediction"]) {
+  --special-toolbar-width: 360px;
+  --special-toolbar-left: 24px;
+  --special-toolbar-top: 78px;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  color: #17313a;
+  overflow-x: hidden;
+}
+
+.special-lock-panel, :global([data-feature-page="special-prediction"] :is(.special-lock-panel)), :global(:is(.special-lock-panel)[data-feature-page="special-prediction"]) {
+  min-height: calc(100dvh - 110px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.special-lock-inner, :global([data-feature-page="special-prediction"] :is(.special-lock-inner)), :global(:is(.special-lock-inner)[data-feature-page="special-prediction"]) {
+  width: min(420px, 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 22px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14);
+}
+
+.special-lock-inner h2, :global([data-feature-page="special-prediction"] :is(.special-lock-inner h2)), :global(:is(.special-lock-inner h2)[data-feature-page="special-prediction"]) {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.special-lock-inner p, :global([data-feature-page="special-prediction"] :is(.special-lock-inner p)), :global(:is(.special-lock-inner p)[data-feature-page="special-prediction"]) {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.special-lock-form, :global([data-feature-page="special-prediction"] :is(.special-lock-form)), :global(:is(.special-lock-form)[data-feature-page="special-prediction"]) {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.special-lock-input, :global([data-feature-page="special-prediction"] :is(.special-lock-input)), :global(:is(.special-lock-input)[data-feature-page="special-prediction"]) {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.special-lock-input:focus, :global([data-feature-page="special-prediction"] :is(.special-lock-input:focus)), :global(:is(.special-lock-input:focus)[data-feature-page="special-prediction"]) {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.14);
+}
+
+.special-lock-error, :global([data-feature-page="special-prediction"] :is(.special-lock-error)), :global(:is(.special-lock-error)[data-feature-page="special-prediction"]) {
+  margin-top: 10px;
+  color: #dc2626;
+  font-size: 0.82rem;
+}
+
+.special-lock-note, :global([data-feature-page="special-prediction"] :is(.special-lock-note)), :global(:is(.special-lock-note)[data-feature-page="special-prediction"]) {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+.special-generator-shell, :global([data-feature-page="special-prediction"] :is(.special-generator-shell)), :global(:is(.special-generator-shell)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: calc(var(--special-toolbar-width) + 16px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.special-toolbar, :global([data-feature-page="special-prediction"] :is(.special-toolbar)), :global(:is(.special-toolbar)[data-feature-page="special-prediction"]) {
+  container-type: inline-size;
+  container-name: special-toolbar;
+  position: fixed;
+  top: var(--special-toolbar-top);
+  left: var(--special-toolbar-left);
+  z-index: 30;
+  display: grid;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  width: var(--special-toolbar-width);
+  height: calc(100vh - var(--special-toolbar-top) - 10px);
+  max-height: calc(100vh - var(--special-toolbar-top) - 10px);
+  height: calc(100dvh - var(--special-toolbar-top) - 10px);
+  max-height: calc(100dvh - var(--special-toolbar-top) - 10px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 22px;
+  padding: 8px;
+}
+
+.special-toolbar-row, :global([data-feature-page="special-prediction"] :is(.special-toolbar-row)), :global(:is(.special-toolbar-row)[data-feature-page="special-prediction"]) {
+  display: grid;
+  width: 100%;
+  gap: 7px;
+  align-items: stretch;
+}
+
+.special-toolbar-row-main,
+.special-toolbar-row-colors,
+:global([data-feature-page="special-prediction"] :is(.special-toolbar-row-main)),
+:global(:is(.special-toolbar-row-main)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-toolbar-row-colors)),
+:global(:is(.special-toolbar-row-colors)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.special-toolbar-row-text, :global([data-feature-page="special-prediction"] :is(.special-toolbar-row-text)), :global(:is(.special-toolbar-row-text)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.special-toolbar-row-actions, :global([data-feature-page="special-prediction"] :is(.special-toolbar-row-actions)), :global(:is(.special-toolbar-row-actions)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.special-toolbar-group, :global([data-feature-page="special-prediction"] :is(.special-toolbar-group)), :global(:is(.special-toolbar-group)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  display: grid;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(248, 250, 252, 0.42) 56%, rgba(226, 232, 240, 0.28));
+  padding: 6px 9px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    inset 0 -1px 0 rgba(148, 163, 184, 0.08),
+    0 7px 18px rgba(71, 85, 105, 0.09);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.special-toolbar-break, :global([data-feature-page="special-prediction"] :is(.special-toolbar-break)), :global(:is(.special-toolbar-break)[data-feature-page="special-prediction"]) {
+  display: none;
+}
+
+.special-toolbar-source, :global([data-feature-page="special-prediction"] :is(.special-toolbar-source)), :global(:is(.special-toolbar-source)[data-feature-page="special-prediction"]) {
+  flex: 1 1 auto;
+}
+
+.special-predict-mode-toggle, :global([data-feature-page="special-prediction"] :is(.special-predict-mode-toggle)), :global(:is(.special-predict-mode-toggle)[data-feature-page="special-prediction"]) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  padding: 2px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.special-predict-mode-toggle button, :global([data-feature-page="special-prediction"] :is(.special-predict-mode-toggle button)), :global(:is(.special-predict-mode-toggle button)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  min-height: 27px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform var(--ui-motion-state), background-color var(--ui-motion-state), color var(--ui-motion-state);
+}
+
+.special-predict-mode-toggle button.active, :global([data-feature-page="special-prediction"] :is(.special-predict-mode-toggle button.active)), :global(:is(.special-predict-mode-toggle button.active)[data-feature-page="special-prediction"]) {
+  background: rgba(20, 184, 166, 0.9);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(20, 184, 166, 0.2);
+}
+
+.special-predict-mode-toggle button:active, :global([data-feature-page="special-prediction"] :is(.special-predict-mode-toggle button:active)), :global(:is(.special-predict-mode-toggle button:active)[data-feature-page="special-prediction"]) {
+  filter: brightness(0.94);
+}
+
+.special-multi-source-picker, :global([data-feature-page="special-prediction"] :is(.special-multi-source-picker)), :global(:is(.special-multi-source-picker)[data-feature-page="special-prediction"]) {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.special-multi-source-trigger, :global([data-feature-page="special-prediction"] :is(.special-multi-source-trigger)), :global(:is(.special-multi-source-trigger)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #475569;
+  padding: 4px 9px 4px 11px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+}
+
+.special-multi-source-trigger span:nth-child(2), :global([data-feature-page="special-prediction"] :is(.special-multi-source-trigger span:nth-child(2))), :global(:is(.special-multi-source-trigger span:nth-child(2))[data-feature-page="special-prediction"]) {
+  text-align: right;
+  color: #0f766e;
+}
+
+.special-multi-source-chevron, :global([data-feature-page="special-prediction"] :is(.special-multi-source-chevron)), :global(:is(.special-multi-source-chevron)[data-feature-page="special-prediction"]) {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 50%;
+  transition: transform var(--ui-motion-state);
+}
+
+.special-multi-source-chevron::before, :global([data-feature-page="special-prediction"] :is(.special-multi-source-chevron)::before), :global(:is(.special-multi-source-chevron)[data-feature-page="special-prediction"]::before) {
+  content: '';
+  width: 6px;
+  height: 6px;
+  box-sizing: border-box;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.special-multi-source-trigger.active .special-multi-source-chevron, :global([data-feature-page="special-prediction"] :is(.special-multi-source-trigger.active .special-multi-source-chevron)), :global(:is(.special-multi-source-trigger.active .special-multi-source-chevron)[data-feature-page="special-prediction"]) {
+  transform: rotate(180deg);
+}
+
+.special-multi-source-list, :global([data-feature-page="special-prediction"] :is(.special-multi-source-list)), :global(:is(.special-multi-source-list)[data-feature-page="special-prediction"]) {
+  max-height: 190px;
+  display: grid;
+  gap: 4px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.special-multi-source-option, :global([data-feature-page="special-prediction"] :is(.special-multi-source-option)), :global(:is(.special-multi-source-option)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  min-height: 30px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.46);
+  color: #475569;
+  padding: 3px 7px 3px 4px;
+  font-size: 0.69rem;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.special-multi-source-option.active, :global([data-feature-page="special-prediction"] :is(.special-multi-source-option.active)), :global(:is(.special-multi-source-option.active)[data-feature-page="special-prediction"]) {
+  border-color: rgba(20, 184, 166, 0.48);
+  background: rgba(204, 251, 241, 0.6);
+  color: #0f766e;
+}
+
+.special-multi-source-order, :global([data-feature-page="special-prediction"] :is(.special-multi-source-order)), :global(:is(.special-multi-source-order)[data-feature-page="special-prediction"]) {
+  width: 21px;
+  height: 21px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.46);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.62);
+  color: transparent;
+  font-size: 0.63rem;
+  font-weight: 900;
+}
+
+.special-multi-source-option.active .special-multi-source-order, :global([data-feature-page="special-prediction"] :is(.special-multi-source-option.active .special-multi-source-order)), :global(:is(.special-multi-source-option.active .special-multi-source-order)[data-feature-page="special-prediction"]) {
+  border-color: rgba(20, 184, 166, 0.72);
+  background: rgba(20, 184, 166, 0.9);
+  color: #ffffff;
+}
+
+.special-multi-source-name, :global([data-feature-page="special-prediction"] :is(.special-multi-source-name)), :global(:is(.special-multi-source-name)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.special-multi-source-count, :global([data-feature-page="special-prediction"] :is(.special-multi-source-count)), :global(:is(.special-multi-source-count)[data-feature-page="special-prediction"]) {
+  color: #94a3b8;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.special-multi-source-empty, :global([data-feature-page="special-prediction"] :is(.special-multi-source-empty)), :global(:is(.special-multi-source-empty)[data-feature-page="special-prediction"]) {
+  color: #64748b;
+  font-size: 0.68rem;
+  text-align: center;
+}
+
+.special-toolbar-range, :global([data-feature-page="special-prediction"] :is(.special-toolbar-range)), :global(:is(.special-toolbar-range)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.special-toolbar-page, :global([data-feature-page="special-prediction"] :is(.special-toolbar-page)), :global(:is(.special-toolbar-page)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+
+.special-page-picker, :global([data-feature-page="special-prediction"] :is(.special-page-picker)), :global(:is(.special-page-picker)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.special-page-picker select, :global([data-feature-page="special-prediction"] :is(.special-page-picker select)), :global(:is(.special-page-picker select)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #0f172a;
+  padding: 5px 28px 5px 9px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.special-page-scope-note, :global([data-feature-page="special-prediction"] :is(.special-page-scope-note)), :global(:is(.special-page-scope-note)[data-feature-page="special-prediction"]) {
+  color: #64748b;
+  font-size: 0.64rem;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.special-toolbar-range .special-toggle-field, :global([data-feature-page="special-prediction"] :is(.special-toolbar-range .special-toggle-field)), :global(:is(.special-toolbar-range .special-toggle-field)[data-feature-page="special-prediction"]) {
+  grid-column: auto;
+}
+
+.special-toolbar-group.special-toolbar-actions, :global([data-feature-page="special-prediction"] :is(.special-toolbar-group.special-toolbar-actions)), :global(:is(.special-toolbar-group.special-toolbar-actions)[data-feature-page="special-prediction"]) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-radius: 999px;
+}
+
+.special-toolbar-actions.has-cover, :global([data-feature-page="special-prediction"] :is(.special-toolbar-actions.has-cover)), :global(:is(.special-toolbar-actions.has-cover)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr) minmax(70px, 0.72fr) minmax(86px, 0.88fr);
+  gap: 5px;
+  border-radius: 22px;
+}
+
+.special-toolbar-actions.has-cover .special-action-btn, :global([data-feature-page="special-prediction"] :is(.special-toolbar-actions.has-cover .special-action-btn)), :global(:is(.special-toolbar-actions.has-cover .special-action-btn)[data-feature-page="special-prediction"]) {
+  grid-column: 1 / -1;
+}
+
+.special-toolbar-actions .special-clear-cover-btn, :global([data-feature-page="special-prediction"] :is(.special-toolbar-actions .special-clear-cover-btn)), :global(:is(.special-toolbar-actions .special-clear-cover-btn)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 5px;
+}
+
+.special-toolbar-colors, :global([data-feature-page="special-prediction"] :is(.special-toolbar-colors)), :global(:is(.special-toolbar-colors)[data-feature-page="special-prediction"]) {
+  grid-template-columns: auto minmax(0, 1fr);
+  border-radius: 22px;
+}
+
+.special-toolbar-text, :global([data-feature-page="special-prediction"] :is(.special-toolbar-text)), :global(:is(.special-toolbar-text)[data-feature-page="special-prediction"]) {
+  border-radius: 22px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.special-cover-opacity-field, :global([data-feature-page="special-prediction"] :is(.special-cover-opacity-field)), :global(:is(.special-cover-opacity-field)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  height: 38px;
+  min-width: 0;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: auto minmax(30px, 1fr) auto;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid rgba(203, 213, 225, 0.78);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #475569;
+  padding: 0 5px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.special-cover-opacity-field input, :global([data-feature-page="special-prediction"] :is(.special-cover-opacity-field input)), :global(:is(.special-cover-opacity-field input)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #0f172a;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.special-toolbar-group.special-toolbar-text, :global([data-feature-page="special-prediction"] :is(.special-toolbar-group.special-toolbar-text)), :global(:is(.special-toolbar-group.special-toolbar-text)[data-feature-page="special-prediction"]) {
+  row-gap: 11px;
+}
+
+.special-toolbar-label, :global([data-feature-page="special-prediction"] :is(.special-toolbar-label)), :global(:is(.special-toolbar-label)[data-feature-page="special-prediction"]) {
+  flex: 0 0 auto;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.special-color-group-label, :global([data-feature-page="special-prediction"] :is(.special-color-group-label)), :global(:is(.special-color-group-label)[data-feature-page="special-prediction"]) {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.special-source-picker, :global([data-feature-page="special-prediction"] :is(.special-source-picker)), :global(:is(.special-source-picker)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.special-source-picker select, :global([data-feature-page="special-prediction"] :is(.special-source-picker select)), :global(:is(.special-source-picker select)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  padding: 6px 30px 6px 10px;
+  font-size: 0.82rem;
+  color: #0f172a;
+}
+
+.special-source-count, :global([data-feature-page="special-prediction"] :is(.special-source-count)), :global(:is(.special-source-count)[data-feature-page="special-prediction"]) {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.special-range-field,
+.special-toggle-field,
+:global([data-feature-page="special-prediction"] :is(.special-range-field)),
+:global(:is(.special-range-field)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-toggle-field)),
+:global(:is(.special-toggle-field)[data-feature-page="special-prediction"]) {
+  display: grid;
+  align-items: center;
+  gap: 5px;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.special-range-field, :global([data-feature-page="special-prediction"] :is(.special-range-field)), :global(:is(.special-range-field)[data-feature-page="special-prediction"]) {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.special-toggle-field, :global([data-feature-page="special-prediction"] :is(.special-toggle-field)), :global(:is(.special-toggle-field)[data-feature-page="special-prediction"]) {
+  grid-template-columns: auto auto;
+}
+
+.special-range-field input, :global([data-feature-page="special-prediction"] :is(.special-range-field input)), :global(:is(.special-range-field input)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  color: #0f172a;
+}
+
+.special-toggle-field input, :global([data-feature-page="special-prediction"] :is(.special-toggle-field input)), :global(:is(.special-toggle-field input)[data-feature-page="special-prediction"]) {
+  margin: 0;
+}
+
+.special-action-btn, :global([data-feature-page="special-prediction"] :is(.special-action-btn)), :global(:is(.special-action-btn)[data-feature-page="special-prediction"]) {
+  flex: 0 0 auto;
+  border: 1px solid rgba(13, 148, 136, 0.42);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #14b8a6, #22c7b8);
+  color: #ffffff;
+  padding: 0 16px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+  min-height: 38px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    0 8px 16px rgba(20, 184, 166, 0.24);
+}
+
+.special-toolbar-actions .special-upload-btn,
+.special-toolbar-actions .special-secondary-btn,
+.special-toolbar-actions .special-action-btn,
+:global([data-feature-page="special-prediction"] :is(.special-toolbar-actions .special-upload-btn)),
+:global(:is(.special-toolbar-actions .special-upload-btn)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-toolbar-actions .special-secondary-btn)),
+:global(:is(.special-toolbar-actions .special-secondary-btn)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-toolbar-actions .special-action-btn)),
+:global(:is(.special-toolbar-actions .special-action-btn)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  height: 38px;
+  min-height: 38px;
+}
+
+.special-action-btn:disabled, :global([data-feature-page="special-prediction"] :is(.special-action-btn:disabled)), :global(:is(.special-action-btn:disabled)[data-feature-page="special-prediction"]) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.special-action-btn,
+.special-secondary-btn,
+.special-upload-btn,
+.special-align-control button,
+.special-style-control button,
+.special-color-swatch,
+:global([data-feature-page="special-prediction"] :is(.special-action-btn)),
+:global(:is(.special-action-btn)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-secondary-btn)),
+:global(:is(.special-secondary-btn)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-upload-btn)),
+:global(:is(.special-upload-btn)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-align-control button)),
+:global(:is(.special-align-control button)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-style-control button)),
+:global(:is(.special-style-control button)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-color-swatch)),
+:global(:is(.special-color-swatch)[data-feature-page="special-prediction"]) {
+  transition: transform var(--ui-motion-state), background-color var(--ui-motion-state);
+}
+
+.special-action-btn:not(:disabled):hover,
+.special-secondary-btn:not(:disabled):hover,
+.special-upload-btn:hover,
+.special-align-control button:hover,
+.special-style-control button:hover,
+.special-color-swatch:hover,
+:global([data-feature-page="special-prediction"] :is(.special-action-btn:not(:disabled):hover)),
+:global(:is(.special-action-btn:not(:disabled):hover)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-secondary-btn:not(:disabled):hover)),
+:global(:is(.special-secondary-btn:not(:disabled):hover)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-upload-btn:hover)),
+:global(:is(.special-upload-btn:hover)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-align-control button:hover)),
+:global(:is(.special-align-control button:hover)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-style-control button:hover)),
+:global(:is(.special-style-control button:hover)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-color-swatch:hover)),
+:global(:is(.special-color-swatch:hover)[data-feature-page="special-prediction"]) {
+  background: rgba(226, 232, 240, 0.86);
+  color: #334155;
+  filter: grayscale(0.2) brightness(0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    0 4px 10px rgba(80, 85, 132, 0.12);
+}
+
+.special-action-btn:not(:disabled):active,
+.special-secondary-btn:not(:disabled):active,
+.special-upload-btn:active,
+.special-align-control button:active,
+.special-style-control button:active,
+.special-color-swatch:active,
+:global([data-feature-page="special-prediction"] :is(.special-action-btn:not(:disabled):active)),
+:global(:is(.special-action-btn:not(:disabled):active)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-secondary-btn:not(:disabled):active)),
+:global(:is(.special-secondary-btn:not(:disabled):active)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-upload-btn:active)),
+:global(:is(.special-upload-btn:active)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-align-control button:active)),
+:global(:is(.special-align-control button:active)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-style-control button:active)),
+:global(:is(.special-style-control button:active)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-color-swatch:active)),
+:global(:is(.special-color-swatch:active)[data-feature-page="special-prediction"]) {
+  filter: grayscale(0.28) brightness(0.92);
+  box-shadow:
+    inset 0 3px 8px rgba(15, 23, 42, 0.16),
+    0 2px 6px rgba(80, 85, 132, 0.1);
+}
+
+.special-color-swatches, :global([data-feature-page="special-prediction"] :is(.special-color-swatches)), :global(:is(.special-color-swatches)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 22px);
+  justify-content: space-between;
+  align-items: center;
+  gap: 5px 5px;
+  max-width: none;
+  overflow: visible;
+  padding: 2px;
+}
+
+.special-inline-color-input, :global([data-feature-page="special-prediction"] :is(.special-inline-color-input)), :global(:is(.special-inline-color-input)[data-feature-page="special-prediction"]) {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.56);
+  padding: 2px;
+  cursor: pointer;
+}
+
+.special-color-custom, :global([data-feature-page="special-prediction"] :is(.special-color-custom)), :global(:is(.special-color-custom)[data-feature-page="special-prediction"]) {
+  background:
+    conic-gradient(from 0deg, #ff4d4f, #f59e0b, #22c55e, #06b6d4, #6366f1, #f472b6, #ff4d4f);
+}
+
+.special-color-swatch, :global([data-feature-page="special-prediction"] :is(.special-color-swatch)), :global(:is(.special-color-swatch)[data-feature-page="special-prediction"]) {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(100, 116, 139, 0.25);
+  cursor: pointer;
+}
+
+.special-color-swatch.active, :global([data-feature-page="special-prediction"] :is(.special-color-swatch.active)), :global(:is(.special-color-swatch.active)[data-feature-page="special-prediction"]) {
+  box-shadow:
+    0 0 0 1px #ffffff,
+    0 0 0 3px #14b8a6;
+}
+
+.special-color-swatch.is-bg, :global([data-feature-page="special-prediction"] :is(.special-color-swatch.is-bg)), :global(:is(.special-color-swatch.is-bg)[data-feature-page="special-prediction"]) {
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.72) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.72) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.72) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.72) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+}
+
+.special-upload-btn, :global([data-feature-page="special-prediction"] :is(.special-upload-btn)), :global(:is(.special-upload-btn)[data-feature-page="special-prediction"]) {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border: 1px solid rgba(249, 168, 212, 0.72);
+  border-radius: 999px;
+  background: rgba(253, 242, 248, 0.68);
+  color: #be185d;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.special-upload-btn input, :global([data-feature-page="special-prediction"] :is(.special-upload-btn input)), :global(:is(.special-upload-btn input)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.special-secondary-btn, :global([data-feature-page="special-prediction"] :is(.special-secondary-btn)), :global(:is(.special-secondary-btn)[data-feature-page="special-prediction"]) {
+  border: 1px solid rgba(203, 213, 225, 0.78);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #475569;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.special-secondary-btn:disabled, :global([data-feature-page="special-prediction"] :is(.special-secondary-btn:disabled)), :global(:is(.special-secondary-btn:disabled)[data-feature-page="special-prediction"]) {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.special-secondary-btn.active, :global([data-feature-page="special-prediction"] :is(.special-secondary-btn.active)), :global(:is(.special-secondary-btn.active)[data-feature-page="special-prediction"]) {
+  border-color: rgba(20, 184, 166, 0.52);
+  background: rgba(204, 251, 241, 0.76);
+  color: #0f766e;
+}
+
+.special-editor-row, :global([data-feature-page="special-prediction"] :is(.special-editor-row)), :global(:is(.special-editor-row)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  align-items: center;
+  gap: 6px;
+}
+
+.special-editor-row-picker, :global([data-feature-page="special-prediction"] :is(.special-editor-row-picker)), :global(:is(.special-editor-row-picker)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.special-picker-field, :global([data-feature-page="special-prediction"] :is(.special-picker-field)), :global(:is(.special-picker-field)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.special-text-picker-controls, :global([data-feature-page="special-prediction"] :is(.special-text-picker-controls)), :global(:is(.special-text-picker-controls)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px 28px;
+  align-items: center;
+  gap: 6px;
+}
+
+.special-history-btn, :global([data-feature-page="special-prediction"] :is(.special-history-btn)), :global(:is(.special-history-btn)[data-feature-page="special-prediction"]) {
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, 0.48);
+  border-radius: 50%;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 3px 8px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+}
+
+.special-history-btn img, :global([data-feature-page="special-prediction"] :is(.special-history-btn img)), :global(:is(.special-history-btn img)[data-feature-page="special-prediction"]) {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+}
+
+.special-history-btn:disabled, :global([data-feature-page="special-prediction"] :is(.special-history-btn:disabled)), :global(:is(.special-history-btn:disabled)[data-feature-page="special-prediction"]) {
+  opacity: 0.34;
+  cursor: not-allowed;
+}
+
+.special-editor-actions, :global([data-feature-page="special-prediction"] :is(.special-editor-actions)), :global(:is(.special-editor-actions)[data-feature-page="special-prediction"]) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.special-editor-actions .special-secondary-btn, :global([data-feature-page="special-prediction"] :is(.special-editor-actions .special-secondary-btn)), :global(:is(.special-editor-actions .special-secondary-btn)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 5px;
+}
+
+.special-editor-row-font, :global([data-feature-page="special-prediction"] :is(.special-editor-row-font)), :global(:is(.special-editor-row-font)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.special-editor-row-font.has-custom-font, :global([data-feature-page="special-prediction"] :is(.special-editor-row-font.has-custom-font)), :global(:is(.special-editor-row-font.has-custom-font)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.special-editor-row-type, :global([data-feature-page="special-prediction"] :is(.special-editor-row-type)), :global(:is(.special-editor-row-type)[data-feature-page="special-prediction"]) {
+  grid-template-columns: 80px 104px minmax(0, 1fr);
+}
+
+.special-editor-row-colors, :global([data-feature-page="special-prediction"] :is(.special-editor-row-colors)), :global(:is(.special-editor-row-colors)[data-feature-page="special-prediction"]) {
+  grid-template-columns: auto auto minmax(0, 1fr);
+}
+
+.special-editor-actions.is-event-note, :global([data-feature-page="special-prediction"] :is(.special-editor-actions.is-event-note)), :global(:is(.special-editor-actions.is-event-note)[data-feature-page="special-prediction"]) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.special-editor-row-colors.is-event-note, :global([data-feature-page="special-prediction"] :is(.special-editor-row-colors.is-event-note)), :global(:is(.special-editor-row-colors.is-event-note)[data-feature-page="special-prediction"]) {
+  grid-template-columns: auto auto minmax(0, 1fr);
+}
+
+.special-editor-row-align, :global([data-feature-page="special-prediction"] :is(.special-editor-row-align)), :global(:is(.special-editor-row-align)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.special-editor-row-align.is-single, :global([data-feature-page="special-prediction"] :is(.special-editor-row-align.is-single)), :global(:is(.special-editor-row-align.is-single)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.special-editor-row-spacing, :global([data-feature-page="special-prediction"] :is(.special-editor-row-spacing)), :global(:is(.special-editor-row-spacing)[data-feature-page="special-prediction"]) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.special-editor-row-geometry, :global([data-feature-page="special-prediction"] :is(.special-editor-row-geometry)), :global(:is(.special-editor-row-geometry)[data-feature-page="special-prediction"]) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.special-editor-row-layer, :global([data-feature-page="special-prediction"] :is(.special-editor-row-layer)), :global(:is(.special-editor-row-layer)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr);
+}
+
+.special-editor-row-global-reset, :global([data-feature-page="special-prediction"] :is(.special-editor-row-global-reset)), :global(:is(.special-editor-row-global-reset)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.special-editor-select-field,
+.special-color-field,
+:global([data-feature-page="special-prediction"] :is(.special-editor-select-field)),
+:global(:is(.special-editor-select-field)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-color-field)),
+:global(:is(.special-color-field)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.special-editor-select-field select, :global([data-feature-page="special-prediction"] :is(.special-editor-select-field select)), :global(:is(.special-editor-select-field select)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(241, 245, 249, 0.5));
+  color: #0f172a;
+  padding: 5px 24px 5px 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.special-editor-select-field.is-compact select, :global([data-feature-page="special-prediction"] :is(.special-editor-select-field.is-compact select)), :global(:is(.special-editor-select-field.is-compact select)[data-feature-page="special-prediction"]) {
+  padding-right: 16px;
+  padding-left: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.special-font-upload-btn, :global([data-feature-page="special-prediction"] :is(.special-font-upload-btn)), :global(:is(.special-font-upload-btn)[data-feature-page="special-prediction"]) {
+  min-width: 82px;
+  min-height: 30px;
+}
+
+.special-font-delete-btn, :global([data-feature-page="special-prediction"] :is(.special-font-delete-btn)), :global(:is(.special-font-delete-btn)[data-feature-page="special-prediction"]) {
+  min-width: 62px;
+  padding-inline: 6px;
+}
+
+.special-font-status, :global([data-feature-page="special-prediction"] :is(.special-font-status)), :global(:is(.special-font-status)[data-feature-page="special-prediction"]) {
+  color: #64748b;
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+.special-editor-row-font,
+.special-editor-row-colors,
+.special-editor-row-geometry,
+:global([data-feature-page="special-prediction"] :is(.special-editor-row-font)),
+:global(:is(.special-editor-row-font)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-editor-row-colors)),
+:global(:is(.special-editor-row-colors)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-editor-row-geometry)),
+:global(:is(.special-editor-row-geometry)[data-feature-page="special-prediction"]) {
+  padding-top: 6px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.special-style-control,
+.special-align-control,
+:global([data-feature-page="special-prediction"] :is(.special-style-control)),
+:global(:is(.special-style-control)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-align-control)),
+:global(:is(.special-align-control)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: grid;
+  padding: 2px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(241, 245, 249, 0.44));
+}
+
+.special-style-control, :global([data-feature-page="special-prediction"] :is(.special-style-control)), :global(:is(.special-style-control)[data-feature-page="special-prediction"]) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.special-align-control, :global([data-feature-page="special-prediction"] :is(.special-align-control)), :global(:is(.special-align-control)[data-feature-page="special-prediction"]) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.special-style-control button,
+.special-align-control button,
+:global([data-feature-page="special-prediction"] :is(.special-style-control button)),
+:global(:is(.special-style-control button)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-align-control button)),
+:global(:is(.special-align-control button)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  height: 25px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #475569;
+  padding: 0 5px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.special-action-btn,
+.special-secondary-btn,
+.special-upload-btn,
+:global([data-feature-page="special-prediction"] :is(.special-action-btn)),
+:global(:is(.special-action-btn)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-secondary-btn)),
+:global(:is(.special-secondary-btn)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-upload-btn)),
+:global(:is(.special-upload-btn)[data-feature-page="special-prediction"]) {
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.special-style-control button.active,
+.special-align-control button.active,
+:global([data-feature-page="special-prediction"] :is(.special-style-control button.active)),
+:global(:is(.special-style-control button.active)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-align-control button.active)),
+:global(:is(.special-align-control button.active)[data-feature-page="special-prediction"]) {
+  background: rgba(20, 184, 166, 0.9);
+  color: #ffffff;
+}
+
+.special-restore-btn, :global([data-feature-page="special-prediction"] :is(.special-restore-btn)), :global(:is(.special-restore-btn)[data-feature-page="special-prediction"]) {
+  width: 100%;
+}
+
+.special-text-select, :global([data-feature-page="special-prediction"] :is(.special-text-select)), :global(:is(.special-text-select)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(241, 245, 249, 0.5));
+  color: #0f172a;
+  padding: 5px 26px 5px 9px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.special-text-color-swatch, :global([data-feature-page="special-prediction"] :is(.special-text-color-swatch)), :global(:is(.special-text-color-swatch)[data-feature-page="special-prediction"]) {
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(100, 116, 139, 0.28);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.special-text-color-swatch.is-mixed, :global([data-feature-page="special-prediction"] :is(.special-text-color-swatch.is-mixed)), :global(:is(.special-text-color-swatch.is-mixed)[data-feature-page="special-prediction"]) {
+  background:
+    linear-gradient(45deg, rgba(148, 163, 184, 0.28) 25%, transparent 25%, transparent 75%, rgba(148, 163, 184, 0.28) 75%),
+    linear-gradient(45deg, rgba(148, 163, 184, 0.28) 25%, rgba(255, 255, 255, 0.76) 25%, rgba(255, 255, 255, 0.76) 75%, rgba(148, 163, 184, 0.28) 75%);
+  background-position: 0 0, 5px 5px;
+  background-size: 10px 10px;
+}
+
+.special-text-color-swatch .special-text-color-input, :global([data-feature-page="special-prediction"] :is(.special-text-color-swatch .special-text-color-input)), :global(:is(.special-text-color-swatch .special-text-color-input)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.special-mini-field, :global([data-feature-page="special-prediction"] :is(.special-mini-field)), :global(:is(.special-mini-field)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.special-mini-field input, :global([data-feature-page="special-prediction"] :is(.special-mini-field input)), :global(:is(.special-mini-field input)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(241, 245, 249, 0.5));
+  color: #0f172a;
+  padding: 4px 5px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.special-follow-btn.active, :global([data-feature-page="special-prediction"] :is(.special-follow-btn.active)), :global(:is(.special-follow-btn.active)[data-feature-page="special-prediction"]) {
+  border-color: rgba(20, 184, 166, 0.52);
+  background: rgba(204, 251, 241, 0.76);
+  color: #0f766e;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 0 0 2px rgba(20, 184, 166, 0.14);
+}
+
+.special-export-status, :global([data-feature-page="special-prediction"] :is(.special-export-status)), :global(:is(.special-export-status)[data-feature-page="special-prediction"]) {
+  grid-column: 2;
+  align-self: center;
+  width: min(980px, 100%);
+  box-sizing: border-box;
+  color: #0f766e;
+  background: #ecfeff;
+  border: 1px solid #99f6e4;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.special-canvas-wrap, :global([data-feature-page="special-prediction"] :is(.special-canvas-wrap)), :global(:is(.special-canvas-wrap)[data-feature-page="special-prediction"]) {
+  grid-column: 2;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  justify-content: center;
+}
+
+.special-canvas-stage, :global([data-feature-page="special-prediction"] :is(.special-canvas-stage)), :global(:is(.special-canvas-stage)[data-feature-page="special-prediction"]) {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.special-canvas, :global([data-feature-page="special-prediction"] :is(.special-canvas)), :global(:is(.special-canvas)[data-feature-page="special-prediction"]) {
+  --special-card-size: 86px;
+  --special-card-gap: 8px;
+  --special-date-width: 118px;
+  --special-row-gap: 10px;
+  --special-detail-pad-x: 12px;
+  --special-canvas-pad: 14px;
+  --special-grid-width: calc((var(--special-card-size) * 6) + (var(--special-card-gap) * 5));
+  --special-detail-width: calc(var(--special-grid-width) + (var(--special-detail-pad-x) * 2));
+  --special-row-width: calc(var(--special-date-width) + var(--special-row-gap) + var(--special-detail-width));
+  --special-cover-width: calc(var(--special-row-width) + 20px);
+  width: var(--special-cover-width);
+  min-height: 280px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  outline: 4px solid rgba(255, 202, 166, 0.92);
+  outline-offset: -4px;
+  border-radius: 10px;
+  background: var(--special-canvas-bg, rgba(200, 201, 232, 0.72));
+  padding: 0 0 var(--special-canvas-pad);
+  box-shadow: 0 14px 36px rgba(80, 85, 132, 0.18);
+  transform: scale(var(--special-preview-scale, 1));
+  transform-origin: top left;
+}
+
+.special-cover-panel, :global([data-feature-page="special-prediction"] :is(.special-cover-panel)), :global(:is(.special-cover-panel)[data-feature-page="special-prediction"]) {
+  position: relative;
+  width: var(--special-cover-width);
+  aspect-ratio: 2520 / 1440;
+  box-sizing: border-box;
+  border-radius: 6px;
+  overflow: hidden;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.special-cover-bg-image, :global([data-feature-page="special-prediction"] :is(.special-cover-bg-image)), :global(:is(.special-cover-bg-image)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.special-cover-panel + .special-month-bar, :global([data-feature-page="special-prediction"] :is(.special-cover-panel + .special-month-bar)), :global(:is(.special-cover-panel + .special-month-bar)[data-feature-page="special-prediction"]) {
+  margin-top: -10px;
+}
+
+.special-cover-panel::before, :global([data-feature-page="special-prediction"] :is(.special-cover-panel)::before), :global(:is(.special-cover-panel)[data-feature-page="special-prediction"]::before) {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+  pointer-events: none;
+}
+
+.special-cover-panel.has-cover-image::before, :global([data-feature-page="special-prediction"] :is(.special-cover-panel.has-cover-image)::before), :global(:is(.special-cover-panel.has-cover-image)[data-feature-page="special-prediction"]::before) {
+  display: none;
+}
+
+.special-cover-text-frame, :global([data-feature-page="special-prediction"] :is(.special-cover-text-frame)), :global(:is(.special-cover-text-frame)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  box-sizing: border-box;
+  min-width: 6%;
+  min-height: 6%;
+  outline: none;
+}
+
+.special-cover-text-frame.is-selected, :global([data-feature-page="special-prediction"] :is(.special-cover-text-frame.is-selected)), :global(:is(.special-cover-text-frame.is-selected)[data-feature-page="special-prediction"]) {
+  box-shadow: 0 0 0 1.5px rgba(14, 165, 233, 0.92), 0 0 0 3px rgba(255, 255, 255, 0.66);
+}
+
+.special-cover-text-frame.is-transforming, :global([data-feature-page="special-prediction"] :is(.special-cover-text-frame.is-transforming)), :global(:is(.special-cover-text-frame.is-transforming)[data-feature-page="special-prediction"]) {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.special-cover-text, :global([data-feature-page="special-prediction"] :is(.special-cover-text)), :global(:is(.special-cover-text)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 1.75rem;
+  font-weight: 900;
+  line-height: 1.28;
+  letter-spacing: 0;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}
+
+.special-cover-text:focus, :global([data-feature-page="special-prediction"] :is(.special-cover-text:focus)), :global(:is(.special-cover-text:focus)[data-feature-page="special-prediction"]) {
+  outline: none;
+}
+
+.special-cover-text :deep(.special-cover-text-line), :global([data-feature-page="special-prediction"] :is(.special-cover-text .special-cover-text-line)), :global(:is(.special-cover-text .special-cover-text-line)[data-feature-page="special-prediction"]) {
+  display: block;
+  flex: 0 0 auto;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 1em;
+  box-sizing: border-box;
+}
+
+.special-cover-text.is-align-left :deep(.special-cover-text-line),
+.special-cover-text.is-align-left :deep(div),
+:global([data-feature-page="special-prediction"] :is(.special-cover-text.is-align-left .special-cover-text-line)),
+:global(:is(.special-cover-text.is-align-left .special-cover-text-line)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-cover-text.is-align-left div)),
+:global(:is(.special-cover-text.is-align-left div)[data-feature-page="special-prediction"]) {
+  align-self: flex-start;
+}
+
+.special-cover-text.is-align-center :deep(.special-cover-text-line),
+.special-cover-text.is-align-center :deep(div),
+:global([data-feature-page="special-prediction"] :is(.special-cover-text.is-align-center .special-cover-text-line)),
+:global(:is(.special-cover-text.is-align-center .special-cover-text-line)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-cover-text.is-align-center div)),
+:global(:is(.special-cover-text.is-align-center div)[data-feature-page="special-prediction"]) {
+  align-self: center;
+}
+
+.special-cover-text.is-align-right :deep(.special-cover-text-line),
+.special-cover-text.is-align-right :deep(div),
+:global([data-feature-page="special-prediction"] :is(.special-cover-text.is-align-right .special-cover-text-line)),
+:global(:is(.special-cover-text.is-align-right .special-cover-text-line)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-cover-text.is-align-right div)),
+:global(:is(.special-cover-text.is-align-right div)[data-feature-page="special-prediction"]) {
+  align-self: flex-end;
+}
+
+.special-cover-text.is-italic :deep(.special-cover-text-line),
+.special-cover-text.is-italic :deep(div),
+:global([data-feature-page="special-prediction"] :is(.special-cover-text.is-italic .special-cover-text-line)),
+:global(:is(.special-cover-text.is-italic .special-cover-text-line)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-cover-text.is-italic div)),
+:global(:is(.special-cover-text.is-italic div)[data-feature-page="special-prediction"]) {
+  transform: skewX(-12deg);
+  transform-origin: center;
+}
+
+.special-cover-move-handle,
+.special-cover-resize-handle,
+:global([data-feature-page="special-prediction"] :is(.special-cover-move-handle)),
+:global(:is(.special-cover-move-handle)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-cover-resize-handle)),
+:global(:is(.special-cover-resize-handle)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  z-index: 20;
+  border: 1px solid rgba(255, 255, 255, 0.94);
+  background: rgba(14, 165, 233, 0.94);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.28);
+  touch-action: none;
+  user-select: none;
+}
+
+.special-cover-move-handle, :global([data-feature-page="special-prediction"] :is(.special-cover-move-handle)), :global(:is(.special-cover-move-handle)[data-feature-page="special-prediction"]) {
+  top: 3px;
+  left: 50%;
+  width: 42px;
+  height: 16px;
+  border-radius: 18px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  padding: 0 0 5px;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 2px;
+  cursor: grab;
+}
+
+.special-cover-move-handle:active, :global([data-feature-page="special-prediction"] :is(.special-cover-move-handle:active)), :global(:is(.special-cover-move-handle:active)[data-feature-page="special-prediction"]) {
+  cursor: grabbing;
+}
+
+.special-cover-resize-handle, :global([data-feature-page="special-prediction"] :is(.special-cover-resize-handle)), :global(:is(.special-cover-resize-handle)[data-feature-page="special-prediction"]) {
+  right: -6px;
+  bottom: -6px;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border-radius: 4px;
+  cursor: nwse-resize;
+}
+
+.special-canvas.is-exporting .special-cover-text-frame.is-selected, :global([data-feature-page="special-prediction"] :is(.special-canvas.is-exporting .special-cover-text-frame.is-selected)), :global(:is(.special-canvas.is-exporting .special-cover-text-frame.is-selected)[data-feature-page="special-prediction"]) {
+  box-shadow: none;
+}
+
+.special-canvas.is-exporting .special-cover-move-handle,
+.special-canvas.is-exporting .special-cover-resize-handle,
+:global([data-feature-page="special-prediction"] :is(.special-canvas.is-exporting .special-cover-move-handle)),
+:global(:is(.special-canvas.is-exporting .special-cover-move-handle)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-canvas.is-exporting .special-cover-resize-handle)),
+:global(:is(.special-canvas.is-exporting .special-cover-resize-handle)[data-feature-page="special-prediction"]) {
+  display: none;
+}
+
+.special-month-bar, :global([data-feature-page="special-prediction"] :is(.special-month-bar)), :global(:is(.special-month-bar)[data-feature-page="special-prediction"]) {
+  width: var(--special-cover-width);
+  height: 36px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--special-month-fill, #ffcaa6);
+  color: #ffffff;
+  font-size: 1.55rem;
+  font-weight: 900;
+  text-shadow: 0 1px 5px rgba(15, 23, 42, 0.16);
+}
+
+.special-event-row, :global([data-feature-page="special-prediction"] :is(.special-event-row)), :global(:is(.special-event-row)[data-feature-page="special-prediction"]) {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--special-date-width) var(--special-detail-width);
+  gap: var(--special-row-gap);
+  align-items: stretch;
+  width: var(--special-row-width);
+  box-sizing: border-box;
+  border-radius: 18px;
+}
+
+.special-multi-case .special-cover-panel + .special-month-bar, :global([data-feature-page="special-prediction"] :is(.special-multi-case .special-cover-panel + .special-month-bar)), :global(:is(.special-multi-case .special-cover-panel + .special-month-bar)[data-feature-page="special-prediction"]) {
+  margin-top: -10px;
+}
+
+.special-multi-event-row, :global([data-feature-page="special-prediction"] :is(.special-multi-event-row)), :global(:is(.special-multi-event-row)[data-feature-page="special-prediction"]) {
+  grid-template-columns: var(--special-date-width) var(--special-detail-width);
+}
+
+.special-multi-case-grid, :global([data-feature-page="special-prediction"] :is(.special-multi-case-grid)), :global(:is(.special-multi-case-grid)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  width: var(--special-detail-width);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
+.special-multi-case-grid.is-single-case, :global([data-feature-page="special-prediction"] :is(.special-multi-case-grid.is-single-case)), :global(:is(.special-multi-case-grid.is-single-case)[data-feature-page="special-prediction"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.special-case-card, :global([data-feature-page="special-prediction"] :is(.special-case-card)), :global(:is(.special-case-card)[data-feature-page="special-prediction"]) {
+  --special-card-size: 62px;
+  --special-card-gap: 4px;
+  position: relative;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(23, 49, 58, 0.12);
+  border-radius: 16px;
+  background: var(--special-row-gradient);
+  padding: 8px;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.08);
+}
+
+.special-case-actions, :global([data-feature-page="special-prediction"] :is(.special-case-actions)), :global(:is(.special-case-actions)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  z-index: 8;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition: opacity var(--ui-motion-state), transform var(--ui-motion-state);
+}
+
+.special-case-card:hover .special-case-actions,
+.special-case-card.is-controls-visible .special-case-actions,
+.special-case-actions:focus-within,
+:global([data-feature-page="special-prediction"] :is(.special-case-card:hover .special-case-actions)),
+:global(:is(.special-case-card:hover .special-case-actions)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-case-card.is-controls-visible .special-case-actions)),
+:global(:is(.special-case-card.is-controls-visible .special-case-actions)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-case-actions:focus-within)),
+:global(:is(.special-case-actions:focus-within)[data-feature-page="special-prediction"]) {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.special-case-actions button, :global([data-feature-page="special-prediction"] :is(.special-case-actions button)), :global(:is(.special-case-actions button)[data-feature-page="special-prediction"]) {
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.52);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  color: #475569;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px) saturate(145%);
+  cursor: pointer;
+}
+
+.special-case-actions button:hover,
+.special-case-actions button:focus-visible,
+:global([data-feature-page="special-prediction"] :is(.special-case-actions button:hover)),
+:global(:is(.special-case-actions button:hover)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-case-actions button:focus-visible)),
+:global(:is(.special-case-actions button:focus-visible)[data-feature-page="special-prediction"]) {
+  border-color: rgba(20, 184, 166, 0.72);
+  background: rgba(204, 251, 241, 0.86);
+  color: #0f766e;
+  outline: none;
+}
+
+.special-case-card.is-limited-event, :global([data-feature-page="special-prediction"] :is(.special-case-card.is-limited-event)), :global(:is(.special-case-card.is-limited-event)[data-feature-page="special-prediction"]) {
+  border: 3px solid #ff4d4f;
+  padding: 6px;
+}
+
+.special-case-card.is-ue-event, :global([data-feature-page="special-prediction"] :is(.special-case-card.is-ue-event)), :global(:is(.special-case-card.is-ue-event)[data-feature-page="special-prediction"]) {
+  border: 3px solid #f59e0b;
+  padding: 6px;
+}
+
+.special-case-card.is-collab-event, :global([data-feature-page="special-prediction"] :is(.special-case-card.is-collab-event)), :global(:is(.special-case-card.is-collab-event)[data-feature-page="special-prediction"]) {
+  border: 4px solid transparent;
+  padding: 5px;
+  background:
+    var(--special-row-gradient) padding-box,
+    var(--special-collab-border-gradient) border-box;
+}
+
+.special-case-head, :global([data-feature-page="special-prediction"] :is(.special-case-head)), :global(:is(.special-case-head)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.special-case-label, :global([data-feature-page="special-prediction"] :is(.special-case-label)), :global(:is(.special-case-label)[data-feature-page="special-prediction"]) {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #ffcaa6;
+  color: #ffffff;
+  padding: 3px 7px;
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.special-case-head .special-unit-logo, :global([data-feature-page="special-prediction"] :is(.special-case-head .special-unit-logo)), :global(:is(.special-case-head .special-unit-logo)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  max-width: 92px;
+  max-height: 24px;
+}
+
+.special-case-head .special-se-logo, :global([data-feature-page="special-prediction"] :is(.special-case-head .special-se-logo)), :global(:is(.special-case-head .special-se-logo)[data-feature-page="special-prediction"]) {
+  width: 46px;
+  height: 23px;
+}
+
+.special-case-head .special-wl-text,
+.special-case-head .special-unknown-text,
+:global([data-feature-page="special-prediction"] :is(.special-case-head .special-wl-text)),
+:global(:is(.special-case-head .special-wl-text)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-case-head .special-unknown-text)),
+:global(:is(.special-case-head .special-unknown-text)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.76rem;
+}
+
+.special-case-head .special-series-label, :global([data-feature-page="special-prediction"] :is(.special-case-head .special-series-label)), :global(:is(.special-case-head .special-series-label)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  padding: 2px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.62rem;
+}
+
+.special-case-member-grid, :global([data-feature-page="special-prediction"] :is(.special-case-member-grid)), :global(:is(.special-case-member-grid)[data-feature-page="special-prediction"]) {
+  min-height: calc(var(--special-card-size) * 2 + var(--special-card-gap));
+  display: grid;
+  grid-template-columns: repeat(4, var(--special-card-size));
+  grid-auto-rows: var(--special-card-size);
+  gap: var(--special-card-gap);
+  justify-content: start;
+  align-content: start;
+}
+
+.special-multi-case-grid.is-single-case .special-case-member-grid, :global([data-feature-page="special-prediction"] :is(.special-multi-case-grid.is-single-case .special-case-member-grid)), :global(:is(.special-multi-case-grid.is-single-case .special-case-member-grid)[data-feature-page="special-prediction"]) {
+  min-height: var(--special-card-size);
+  grid-template-columns: repeat(8, var(--special-card-size));
+}
+
+.special-case-card-placeholder, :global([data-feature-page="special-prediction"] :is(.special-case-card-placeholder)), :global(:is(.special-case-card-placeholder)[data-feature-page="special-prediction"]) {
+  width: var(--special-card-size);
+  height: var(--special-card-size);
+  pointer-events: none;
+}
+
+.special-manual-card-slot, :global([data-feature-page="special-prediction"] :is(.special-manual-card-slot)), :global(:is(.special-manual-card-slot)[data-feature-page="special-prediction"]) {
+  position: relative;
+  width: var(--special-card-size);
+  height: var(--special-card-size);
+  min-width: 0;
+  display: block;
+  border: 1px dashed rgba(100, 116, 139, 0.42);
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.special-manual-card-slot.is-invalid, :global([data-feature-page="special-prediction"] :is(.special-manual-card-slot.is-invalid)), :global(:is(.special-manual-card-slot.is-invalid)[data-feature-page="special-prediction"]) {
+  border-color: rgba(239, 68, 68, 0.76);
+  background: rgba(254, 226, 226, 0.34);
+}
+
+.special-manual-card-slot input, :global([data-feature-page="special-prediction"] :is(.special-manual-card-slot input)), :global(:is(.special-manual-card-slot input)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  z-index: 6;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  width: calc(100% - 4px);
+  height: 17px;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.52);
+  border-radius: 5px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.82);
+  color: #334155;
+  padding: 1px 3px;
+  font-size: 0.44rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
+}
+
+.special-manual-card-slot input:focus, :global([data-feature-page="special-prediction"] :is(.special-manual-card-slot input:focus)), :global(:is(.special-manual-card-slot input:focus)[data-feature-page="special-prediction"]) {
+  border-color: rgba(14, 165, 233, 0.88);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.special-case-fes-row, :global([data-feature-page="special-prediction"] :is(.special-case-fes-row)), :global(:is(.special-case-fes-row)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, var(--special-card-size));
+  grid-auto-rows: var(--special-card-size);
+  align-items: center;
+  justify-content: start;
+  gap: var(--special-card-gap);
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.44);
+}
+
+.special-case-fes-logo-cell, :global([data-feature-page="special-prediction"] :is(.special-case-fes-logo-cell)), :global(:is(.special-case-fes-logo-cell)[data-feature-page="special-prediction"]) {
+  grid-column: span 2;
+  min-width: 0;
+  height: var(--special-card-size);
+  display: grid;
+  place-items: center;
+}
+
+.special-case-fes-logo, :global([data-feature-page="special-prediction"] :is(.special-case-fes-logo)), :global(:is(.special-case-fes-logo)[data-feature-page="special-prediction"]) {
+  max-width: calc(var(--special-card-size) * 2 + var(--special-card-gap) - 8px);
+  max-height: calc(var(--special-card-size) - 8px);
+  object-fit: contain;
+}
+
+.special-multi-case-grid.is-single-case .special-case-fes-row, :global([data-feature-page="special-prediction"] :is(.special-multi-case-grid.is-single-case .special-case-fes-row)), :global(:is(.special-multi-case-grid.is-single-case .special-case-fes-row)[data-feature-page="special-prediction"]) {
+  grid-template-columns: repeat(8, var(--special-card-size));
+}
+
+.special-case-note, :global([data-feature-page="special-prediction"] :is(.special-case-note)), :global(:is(.special-case-note)[data-feature-page="special-prediction"]) {
+  position: relative;
+  min-width: 0;
+  min-height: 28px;
+  box-sizing: border-box;
+  display: block;
+  margin-top: 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  outline: none;
+  padding: 3px 5px;
+  background: rgba(255, 255, 255, 0.12);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.special-case-note:not(.is-empty), :global([data-feature-page="special-prediction"] :is(.special-case-note:not(.is-empty))), :global(:is(.special-case-note:not(.is-empty))[data-feature-page="special-prediction"]) {
+  align-content: center;
+}
+
+.special-case-note.is-empty, :global([data-feature-page="special-prediction"] :is(.special-case-note.is-empty)), :global(:is(.special-case-note.is-empty)[data-feature-page="special-prediction"]) {
+  height: 28px;
+  line-height: 20px !important;
+}
+
+.special-case-note.is-empty::before, :global([data-feature-page="special-prediction"] :is(.special-case-note.is-empty)::before), :global(:is(.special-case-note.is-empty)[data-feature-page="special-prediction"]::before) {
+  content: attr(data-placeholder);
+  color: #64748b;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.special-case-note.is-empty:hover::before,
+.special-case-note.is-empty:focus::before,
+.special-case-note.is-empty.is-selected::before,
+:global([data-feature-page="special-prediction"] :is(.special-case-note.is-empty:hover)::before),
+:global(:is(.special-case-note.is-empty:hover)[data-feature-page="special-prediction"]::before),
+:global([data-feature-page="special-prediction"] :is(.special-case-note.is-empty:focus)::before),
+:global(:is(.special-case-note.is-empty:focus)[data-feature-page="special-prediction"]::before),
+:global([data-feature-page="special-prediction"] :is(.special-case-note.is-empty.is-selected)::before),
+:global(:is(.special-case-note.is-empty.is-selected)[data-feature-page="special-prediction"]::before) {
+  opacity: 0.48;
+}
+
+.special-case-note.is-selected, :global([data-feature-page="special-prediction"] :is(.special-case-note.is-selected)), :global(:is(.special-case-note.is-selected)[data-feature-page="special-prediction"]) {
+  border-color: rgba(14, 165, 233, 0.92);
+  box-shadow: 0 0 0 1.5px rgba(14, 165, 233, 0.92), 0 0 0 3px rgba(255, 255, 255, 0.66);
+}
+
+:deep(.special-note-inline-icon), :global([data-feature-page="special-prediction"] :is(.special-note-inline-icon)), :global(:is(.special-note-inline-icon)[data-feature-page="special-prediction"]) {
+  width: 1.18em;
+  height: 1.18em;
+  display: inline-block;
+  object-fit: contain;
+  vertical-align: -0.23em;
+  margin: 0;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+:deep(.special-note-inline-icon.is-character), :global([data-feature-page="special-prediction"] :is(.special-note-inline-icon.is-character)), :global(:is(.special-note-inline-icon.is-character)[data-feature-page="special-prediction"]) {
+  width: 1.55em;
+  height: 1.55em;
+  vertical-align: -0.43em;
+}
+
+.special-canvas.is-exporting .special-case-note, :global([data-feature-page="special-prediction"] :is(.special-canvas.is-exporting .special-case-note)), :global(:is(.special-canvas.is-exporting .special-case-note)[data-feature-page="special-prediction"]) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.special-canvas.is-exporting .special-case-actions,
+.special-canvas.is-exporting .special-manual-card-slot input,
+:global([data-feature-page="special-prediction"] :is(.special-canvas.is-exporting .special-case-actions)),
+:global(:is(.special-canvas.is-exporting .special-case-actions)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-canvas.is-exporting .special-manual-card-slot input)),
+:global(:is(.special-canvas.is-exporting .special-manual-card-slot input)[data-feature-page="special-prediction"]) {
+  display: none;
+}
+
+.special-canvas.is-exporting .special-case-note.is-empty::before, :global([data-feature-page="special-prediction"] :is(.special-canvas.is-exporting .special-case-note.is-empty)::before), :global(:is(.special-canvas.is-exporting .special-case-note.is-empty)[data-feature-page="special-prediction"]::before) {
+  content: none;
+}
+
+.special-multi-empty-canvas, :global([data-feature-page="special-prediction"] :is(.special-multi-empty-canvas)), :global(:is(.special-multi-empty-canvas)[data-feature-page="special-prediction"]) {
+  width: min(560px, 100%);
+  box-sizing: border-box;
+  border: 1px dashed rgba(148, 163, 184, 0.62);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #64748b;
+  padding: 36px 18px;
+  text-align: center;
+  font-size: 0.86rem;
+}
+
+.special-event-note, :global([data-feature-page="special-prediction"] :is(.special-event-note)), :global(:is(.special-event-note)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  right: 14px;
+  width: min(340px, calc(var(--special-detail-width) - 220px));
+  min-height: 34px;
+  box-sizing: border-box;
+  display: block;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  outline: none;
+  padding: 2px 6px;
+  background: transparent;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.special-event-note:not(.is-empty), :global([data-feature-page="special-prediction"] :is(.special-event-note:not(.is-empty))), :global(:is(.special-event-note:not(.is-empty))[data-feature-page="special-prediction"]) {
+  align-content: center;
+}
+
+.special-event-note.is-empty::before, :global([data-feature-page="special-prediction"] :is(.special-event-note.is-empty)::before), :global(:is(.special-event-note.is-empty)[data-feature-page="special-prediction"]::before) {
+  content: attr(data-placeholder);
+  color: #64748b;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ui-motion-state);
+}
+
+.special-event-note.is-empty, :global([data-feature-page="special-prediction"] :is(.special-event-note.is-empty)), :global(:is(.special-event-note.is-empty)[data-feature-page="special-prediction"]) {
+  display: block;
+  height: 34px;
+  line-height: 28px !important;
+}
+
+.special-event-note.is-empty:hover::before,
+.special-event-note.is-empty:focus::before,
+.special-event-note.is-empty.is-selected::before,
+:global([data-feature-page="special-prediction"] :is(.special-event-note.is-empty:hover)::before),
+:global(:is(.special-event-note.is-empty:hover)[data-feature-page="special-prediction"]::before),
+:global([data-feature-page="special-prediction"] :is(.special-event-note.is-empty:focus)::before),
+:global(:is(.special-event-note.is-empty:focus)[data-feature-page="special-prediction"]::before),
+:global([data-feature-page="special-prediction"] :is(.special-event-note.is-empty.is-selected)::before),
+:global(:is(.special-event-note.is-empty.is-selected)[data-feature-page="special-prediction"]::before) {
+  opacity: 0.48;
+}
+
+.special-event-note:focus, :global([data-feature-page="special-prediction"] :is(.special-event-note:focus)), :global(:is(.special-event-note:focus)[data-feature-page="special-prediction"]) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.special-event-note.is-selected, :global([data-feature-page="special-prediction"] :is(.special-event-note.is-selected)), :global(:is(.special-event-note.is-selected)[data-feature-page="special-prediction"]) {
+  border-color: rgba(14, 165, 233, 0.92);
+  box-shadow:
+    0 0 0 1.5px rgba(14, 165, 233, 0.92),
+    0 0 0 3px rgba(255, 255, 255, 0.66);
+}
+
+.special-canvas.is-exporting .special-event-note, :global([data-feature-page="special-prediction"] :is(.special-canvas.is-exporting .special-event-note)), :global(:is(.special-canvas.is-exporting .special-event-note)[data-feature-page="special-prediction"]) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.special-canvas.is-exporting .special-event-note.is-empty::before, :global([data-feature-page="special-prediction"] :is(.special-canvas.is-exporting .special-event-note.is-empty)::before), :global(:is(.special-canvas.is-exporting .special-event-note.is-empty)[data-feature-page="special-prediction"]::before) {
+  content: none;
+}
+
+.special-date-box,
+.special-detail-box,
+:global([data-feature-page="special-prediction"] :is(.special-date-box)),
+:global(:is(.special-date-box)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-detail-box)),
+:global(:is(.special-detail-box)[data-feature-page="special-prediction"]) {
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 1px solid rgba(23, 49, 58, 0.12);
+  background: #ffffff;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.08);
+}
+
+.special-event-row.is-limited-event .special-date-box,
+.special-event-row.is-limited-event .special-detail-box,
+:global([data-feature-page="special-prediction"] :is(.special-event-row.is-limited-event .special-date-box)),
+:global(:is(.special-event-row.is-limited-event .special-date-box)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-event-row.is-limited-event .special-detail-box)),
+:global(:is(.special-event-row.is-limited-event .special-detail-box)[data-feature-page="special-prediction"]) {
+  border: 3px solid #ff4d4f;
+}
+
+.special-event-row.is-ue-event .special-date-box,
+.special-event-row.is-ue-event .special-detail-box,
+:global([data-feature-page="special-prediction"] :is(.special-event-row.is-ue-event .special-date-box)),
+:global(:is(.special-event-row.is-ue-event .special-date-box)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-event-row.is-ue-event .special-detail-box)),
+:global(:is(.special-event-row.is-ue-event .special-detail-box)[data-feature-page="special-prediction"]) {
+  border: 3px solid #f59e0b;
+}
+
+.special-date-box, :global([data-feature-page="special-prediction"] :is(.special-date-box)), :global(:is(.special-date-box)[data-feature-page="special-prediction"]) {
+  min-height: 132px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  background: var(--special-row-gradient);
+}
+
+.special-date-text, :global([data-feature-page="special-prediction"] :is(.special-date-text)), :global(:is(.special-date-text)[data-feature-page="special-prediction"]) {
+  font-size: 0.94rem;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.special-date-sep, :global([data-feature-page="special-prediction"] :is(.special-date-sep)), :global(:is(.special-date-sep)[data-feature-page="special-prediction"]) {
+  color: #64748b;
+  font-size: 0.94rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.special-event-id, :global([data-feature-page="special-prediction"] :is(.special-event-id)), :global(:is(.special-event-id)[data-feature-page="special-prediction"]) {
+  color: #0f766e;
+  background: transparent;
+  border-radius: 999px;
+  padding: 2px 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.special-credit-box, :global([data-feature-page="special-prediction"] :is(.special-credit-box)), :global(:is(.special-credit-box)[data-feature-page="special-prediction"]) {
+  width: var(--special-row-width);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  outline: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.94);
+  padding: 3px 8px 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+  text-shadow:
+    0 2px 0 var(--special-month-fill, #ffcaa6),
+    0 0 6px var(--special-month-fill, #ffcaa6),
+    0 0 12px rgba(255, 255, 255, 0.58);
+  white-space: pre-wrap;
+}
+
+.special-credit-box:focus, :global([data-feature-page="special-prediction"] :is(.special-credit-box:focus)), :global(:is(.special-credit-box:focus)[data-feature-page="special-prediction"]) {
+  border-color: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.special-credit-box.is-selected, :global([data-feature-page="special-prediction"] :is(.special-credit-box.is-selected)), :global(:is(.special-credit-box.is-selected)[data-feature-page="special-prediction"]) {
+  border-color: rgba(14, 165, 233, 0.92);
+  box-shadow:
+    0 0 0 1.5px rgba(14, 165, 233, 0.92),
+    0 0 0 3px rgba(255, 255, 255, 0.66);
+}
+
+.special-canvas.is-exporting .special-credit-box, :global([data-feature-page="special-prediction"] :is(.special-canvas.is-exporting .special-credit-box)), :global(:is(.special-canvas.is-exporting .special-credit-box)[data-feature-page="special-prediction"]) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.special-detail-box, :global([data-feature-page="special-prediction"] :is(.special-detail-box)), :global(:is(.special-detail-box)[data-feature-page="special-prediction"]) {
+  min-width: 0;
+  width: var(--special-detail-width);
+  padding: 10px var(--special-detail-pad-x);
+  background: var(--special-row-gradient);
+}
+
+.special-event-row.is-collab-event .special-date-box,
+.special-event-row.is-collab-event .special-detail-box,
+:global([data-feature-page="special-prediction"] :is(.special-event-row.is-collab-event .special-date-box)),
+:global(:is(.special-event-row.is-collab-event .special-date-box)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-event-row.is-collab-event .special-detail-box)),
+:global(:is(.special-event-row.is-collab-event .special-detail-box)[data-feature-page="special-prediction"]) {
+  border: 4px solid transparent;
+  background:
+    var(--special-row-gradient) padding-box,
+    var(--special-collab-border-gradient) border-box;
+}
+
+.special-detail-head, :global([data-feature-page="special-prediction"] :is(.special-detail-head)), :global(:is(.special-detail-head)[data-feature-page="special-prediction"]) {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.special-detail-head.is-mixed, :global([data-feature-page="special-prediction"] :is(.special-detail-head.is-mixed)), :global(:is(.special-detail-head.is-mixed)[data-feature-page="special-prediction"]) {
+  background: transparent;
+}
+
+.special-detail-head.is-wl, :global([data-feature-page="special-prediction"] :is(.special-detail-head.is-wl)), :global(:is(.special-detail-head.is-wl)[data-feature-page="special-prediction"]) {
+  background: transparent;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(15, 23, 42, 0.52);
+}
+
+.special-unit-logo, :global([data-feature-page="special-prediction"] :is(.special-unit-logo)), :global(:is(.special-unit-logo)[data-feature-page="special-prediction"]) {
+  max-width: 210px;
+  max-height: 28px;
+  object-fit: contain;
+}
+
+.special-se-logo, :global([data-feature-page="special-prediction"] :is(.special-se-logo)), :global(:is(.special-se-logo)[data-feature-page="special-prediction"]) {
+  width: 62px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.special-wl-text,
+.special-unknown-text,
+:global([data-feature-page="special-prediction"] :is(.special-wl-text)),
+:global(:is(.special-wl-text)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-unknown-text)),
+:global(:is(.special-unknown-text)[data-feature-page="special-prediction"]) {
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.special-series-label, :global([data-feature-page="special-prediction"] :is(.special-series-label)), :global(:is(.special-series-label)[data-feature-page="special-prediction"]) {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #0f172a;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.4);
+}
+
+.special-detail-head.is-wl .special-series-label, :global([data-feature-page="special-prediction"] :is(.special-detail-head.is-wl .special-series-label)), :global(:is(.special-detail-head.is-wl .special-series-label)[data-feature-page="special-prediction"]) {
+  color: #ffffff;
+  text-shadow: 0 1px 5px rgba(15, 23, 42, 0.42);
+}
+
+.special-member-grid,
+.special-bfes-grid,
+:global([data-feature-page="special-prediction"] :is(.special-member-grid)),
+:global(:is(.special-member-grid)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-bfes-grid)),
+:global(:is(.special-bfes-grid)[data-feature-page="special-prediction"]) {
+  display: grid;
+  width: var(--special-grid-width);
+  grid-template-columns: repeat(6, var(--special-card-size));
+  gap: var(--special-card-gap);
+  justify-content: start;
+}
+
+.special-bfes-grid, :global([data-feature-page="special-prediction"] :is(.special-bfes-grid)), :global(:is(.special-bfes-grid)[data-feature-page="special-prediction"]) {
+  margin-top: 8px;
+}
+
+:deep(.special-card-cell), :global([data-feature-page="special-prediction"] :is(.special-card-cell)), :global(:is(.special-card-cell)[data-feature-page="special-prediction"]) {
+  position: relative;
+  width: var(--special-card-size);
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+}
+
+:deep(.special-card-glow), :global([data-feature-page="special-prediction"] :is(.special-card-glow)), :global(:is(.special-card-glow)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  inset: -4%;
+  z-index: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle,
+      transparent 57%,
+      rgba(255, 255, 255, 0.34) 60%,
+      rgba(255, 255, 255, 0.98) 63%,
+      #ffffff 66%,
+      rgba(255, 255, 255, 0.74) 70%,
+      rgba(255, 255, 255, 0.18) 76%,
+      transparent 83%
+    ),
+    radial-gradient(circle,
+      transparent 47%,
+      rgba(255, 255, 255, 0.18) 57%,
+      rgba(255, 255, 255, 0.36) 69%,
+      rgba(255, 255, 255, 0.16) 82%,
+      transparent 92%
+    );
+  pointer-events: none;
+}
+
+:deep(.special-card-bg),
+:deep(.special-card-chibi),
+:deep(.special-card-star),
+:deep(.special-card-attr),
+:deep(.special-card-unit),
+:deep(.special-card-ribbon),
+:global([data-feature-page="special-prediction"] :is(.special-card-bg)),
+:global(:is(.special-card-bg)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-card-chibi)),
+:global(:is(.special-card-chibi)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-card-star)),
+:global(:is(.special-card-star)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-card-attr)),
+:global(:is(.special-card-attr)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-card-unit)),
+:global(:is(.special-card-unit)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-card-ribbon)),
+:global(:is(.special-card-ribbon)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+:deep(.special-card-bg),
+:deep(.special-card-chibi),
+:deep(.special-card-star),
+:deep(.special-card-attr),
+:deep(.special-card-unit),
+:global([data-feature-page="special-prediction"] :is(.special-card-bg)),
+:global(:is(.special-card-bg)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-card-chibi)),
+:global(:is(.special-card-chibi)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-card-star)),
+:global(:is(.special-card-star)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-card-attr)),
+:global(:is(.special-card-attr)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-card-unit)),
+:global(:is(.special-card-unit)[data-feature-page="special-prediction"]) {
+  object-fit: contain;
+}
+
+:deep(.special-card-bg),
+:deep(.special-card-chibi),
+:global([data-feature-page="special-prediction"] :is(.special-card-bg)),
+:global(:is(.special-card-bg)[data-feature-page="special-prediction"]),
+:global([data-feature-page="special-prediction"] :is(.special-card-chibi)),
+:global(:is(.special-card-chibi)[data-feature-page="special-prediction"]) {
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.special-card-bg), :global([data-feature-page="special-prediction"] :is(.special-card-bg)), :global(:is(.special-card-bg)[data-feature-page="special-prediction"]) {
+  inset: 0;
+  z-index: 1;
+  object-fit: contain;
+}
+
+:deep(.special-card-chibi), :global([data-feature-page="special-prediction"] :is(.special-card-chibi)), :global(:is(.special-card-chibi)[data-feature-page="special-prediction"]) {
+  inset: 3%;
+  width: 94%;
+  height: 94%;
+  z-index: 3;
+}
+
+:deep(.special-card-star), :global([data-feature-page="special-prediction"] :is(.special-card-star)), :global(:is(.special-card-star)[data-feature-page="special-prediction"]) {
+  z-index: 6;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.special-card-attr), :global([data-feature-page="special-prediction"] :is(.special-card-attr)), :global(:is(.special-card-attr)[data-feature-page="special-prediction"]) {
+  z-index: 6;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.special-card-unit), :global([data-feature-page="special-prediction"] :is(.special-card-unit)), :global(:is(.special-card-unit)[data-feature-page="special-prediction"]) {
+  z-index: 6;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.special-card-ribbon), :global([data-feature-page="special-prediction"] :is(.special-card-ribbon)), :global(:is(.special-card-ribbon)[data-feature-page="special-prediction"]) {
+  z-index: 5;
+  inset: 3%;
+  width: 94%;
+  height: 94%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+:deep(.special-card-ribbon)::before, :global([data-feature-page="special-prediction"] :is(.special-card-ribbon)::before), :global(:is(.special-card-ribbon)[data-feature-page="special-prediction"]::before) {
+  content: '';
+  position: absolute;
+  top: 20%;
+  right: -28%;
+  width: 100%;
+  height: 12%;
+  transform: rotate(43deg);
+  transform-origin: center;
+  background: linear-gradient(90deg, #ff94ca 0%, #ff67b0 58%, #f74399 100%);
+  box-shadow: 0 1px 4px rgba(143, 21, 76, 0.22);
+}
+
+:deep(.special-card-ribbon-text), :global([data-feature-page="special-prediction"] :is(.special-card-ribbon-text)), :global(:is(.special-card-ribbon-text)[data-feature-page="special-prediction"]) {
+  position: absolute;
+  top: 19%;
+  right: -26%;
+  width: 100%;
+  transform: rotate(43deg);
+  transform-origin: center;
+  display: block;
+  color: #ffffff;
+  font-size: 7px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(143, 21, 76, 0.42);
+}
+
+.special-bfes-logo-cell, :global([data-feature-page="special-prediction"] :is(.special-bfes-logo-cell)), :global(:is(.special-bfes-logo-cell)[data-feature-page="special-prediction"]) {
+  grid-column: span 2;
+  border-radius: 10px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 2 / 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.special-bfes-logo, :global([data-feature-page="special-prediction"] :is(.special-bfes-logo)), :global(:is(.special-bfes-logo)[data-feature-page="special-prediction"]) {
+  max-width: 82%;
+  max-height: 72%;
+  object-fit: contain;
+}
+
+.special-empty, :global([data-feature-page="special-prediction"] :is(.special-empty)), :global(:is(.special-empty)[data-feature-page="special-prediction"]) {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+@container special-toolbar (max-width: 270px) {
+  .special-editor-row-type, :global([data-feature-page="special-prediction"] :is(.special-editor-row-type)), :global(:is(.special-editor-row-type)[data-feature-page="special-prediction"]) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .special-editor-row-type .special-style-control, :global([data-feature-page="special-prediction"] :is(.special-editor-row-type .special-style-control)), :global(:is(.special-editor-row-type .special-style-control)[data-feature-page="special-prediction"]) {
+    grid-column: 1 / -1;
+  }
+
+  .special-editor-row-geometry, :global([data-feature-page="special-prediction"] :is(.special-editor-row-geometry)), :global(:is(.special-editor-row-geometry)[data-feature-page="special-prediction"]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 700px) and (max-width: 1280px) {
+  .special-predict-page, :global([data-feature-page="special-prediction"] :is(.special-predict-page)), :global(:is(.special-predict-page)[data-feature-page="special-prediction"]) {
+    --special-toolbar-width: 320px;
+    --special-toolbar-left: 12px;
+  }
+
+  .special-generator-shell, :global([data-feature-page="special-prediction"] :is(.special-generator-shell)), :global(:is(.special-generator-shell)[data-feature-page="special-prediction"]) {
+    grid-template-columns: calc(var(--special-toolbar-width) + 16px) minmax(0, 1fr);
+  }
+
+  .special-toolbar, :global([data-feature-page="special-prediction"] :is(.special-toolbar)), :global(:is(.special-toolbar)[data-feature-page="special-prediction"]) {
+    padding: 6px;
+    gap: 5px;
+  }
+
+  .special-toolbar-row, :global([data-feature-page="special-prediction"] :is(.special-toolbar-row)), :global(:is(.special-toolbar-row)[data-feature-page="special-prediction"]) {
+    gap: 5px;
+  }
+
+  .special-toolbar-group, :global([data-feature-page="special-prediction"] :is(.special-toolbar-group)), :global(:is(.special-toolbar-group)[data-feature-page="special-prediction"]) {
+    gap: 5px;
+    padding: 5px 7px;
+  }
+}
+
+@media (max-width: 699px) {
+  .special-generator-shell, :global([data-feature-page="special-prediction"] :is(.special-generator-shell)), :global(:is(.special-generator-shell)[data-feature-page="special-prediction"]) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .special-toolbar, :global([data-feature-page="special-prediction"] :is(.special-toolbar)), :global(:is(.special-toolbar)[data-feature-page="special-prediction"]) {
+    position: static;
+    z-index: auto;
+    align-self: center;
+    width: min(980px, 100%);
+    height: auto;
+    max-height: min(42dvh, 430px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: auto;
+  }
+
+  .special-toolbar-text, :global([data-feature-page="special-prediction"] :is(.special-toolbar-text)), :global(:is(.special-toolbar-text)[data-feature-page="special-prediction"]) {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+  }
+
+  .special-toolbar-range, :global([data-feature-page="special-prediction"] :is(.special-toolbar-range)), :global(:is(.special-toolbar-range)[data-feature-page="special-prediction"]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+
+  .special-toolbar-range .special-toggle-field, :global([data-feature-page="special-prediction"] :is(.special-toolbar-range .special-toggle-field)), :global(:is(.special-toolbar-range .special-toggle-field)[data-feature-page="special-prediction"]) {
+    grid-column: auto;
+  }
+
+  .special-export-status,
+  .special-canvas-wrap,
+  :global([data-feature-page="special-prediction"] :is(.special-export-status)),
+  :global(:is(.special-export-status)[data-feature-page="special-prediction"]),
+  :global([data-feature-page="special-prediction"] :is(.special-canvas-wrap)),
+  :global(:is(.special-canvas-wrap)[data-feature-page="special-prediction"]) {
+    grid-column: auto;
+  }
+
+  .special-lock-panel, :global([data-feature-page="special-prediction"] :is(.special-lock-panel)), :global(:is(.special-lock-panel)[data-feature-page="special-prediction"]) {
+    min-height: calc(100dvh - 84px);
+    padding: 14px;
+  }
+
+  .special-lock-inner, :global([data-feature-page="special-prediction"] :is(.special-lock-inner)), :global(:is(.special-lock-inner)[data-feature-page="special-prediction"]) {
+    width: min(460px, 100%);
+    padding: 18px;
+  }
+
+  .special-lock-form, :global([data-feature-page="special-prediction"] :is(.special-lock-form)), :global(:is(.special-lock-form)[data-feature-page="special-prediction"]) {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .special-lock-input, :global([data-feature-page="special-prediction"] :is(.special-lock-input)), :global(:is(.special-lock-input)[data-feature-page="special-prediction"]) {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 13px;
+    font-size: 16px;
+  }
+
+  .special-lock-form .special-action-btn, :global([data-feature-page="special-prediction"] :is(.special-lock-form .special-action-btn)), :global(:is(.special-lock-form .special-action-btn)[data-feature-page="special-prediction"]) {
+    align-self: flex-end;
+    width: auto;
+    min-height: 38px;
+    padding: 0 18px;
+  }
+
+  .special-toolbar, :global([data-feature-page="special-prediction"] :is(.special-toolbar)), :global(:is(.special-toolbar)[data-feature-page="special-prediction"]) {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 5px;
+    padding: 6px;
+    border-radius: 18px;
+  }
+
+  .special-toolbar-row,
+  .special-toolbar-row-main,
+  .special-toolbar-row-colors,
+  .special-toolbar-row-text,
+  :global([data-feature-page="special-prediction"] :is(.special-toolbar-row)),
+  :global(:is(.special-toolbar-row)[data-feature-page="special-prediction"]),
+  :global([data-feature-page="special-prediction"] :is(.special-toolbar-row-main)),
+  :global(:is(.special-toolbar-row-main)[data-feature-page="special-prediction"]),
+  :global([data-feature-page="special-prediction"] :is(.special-toolbar-row-colors)),
+  :global(:is(.special-toolbar-row-colors)[data-feature-page="special-prediction"]),
+  :global([data-feature-page="special-prediction"] :is(.special-toolbar-row-text)),
+  :global(:is(.special-toolbar-row-text)[data-feature-page="special-prediction"]) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .special-toolbar-row-actions, :global([data-feature-page="special-prediction"] :is(.special-toolbar-row-actions)), :global(:is(.special-toolbar-row-actions)[data-feature-page="special-prediction"]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .special-toolbar-group, :global([data-feature-page="special-prediction"] :is(.special-toolbar-group)), :global(:is(.special-toolbar-group)[data-feature-page="special-prediction"]) {
+    width: 100%;
+    box-sizing: border-box;
+    align-items: center;
+    flex-direction: row;
+    gap: 5px;
+    padding: 4px 7px;
+    border-radius: 18px;
+    min-height: 0;
+  }
+
+  .special-toolbar-group.special-toolbar-text, :global([data-feature-page="special-prediction"] :is(.special-toolbar-group.special-toolbar-text)), :global(:is(.special-toolbar-group.special-toolbar-text)[data-feature-page="special-prediction"]) {
+    align-items: stretch;
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .special-toolbar-label,
+  .special-range-field,
+  .special-toggle-field,
+  .special-mini-field,
+  :global([data-feature-page="special-prediction"] :is(.special-toolbar-label)),
+  :global(:is(.special-toolbar-label)[data-feature-page="special-prediction"]),
+  :global([data-feature-page="special-prediction"] :is(.special-range-field)),
+  :global(:is(.special-range-field)[data-feature-page="special-prediction"]),
+  :global([data-feature-page="special-prediction"] :is(.special-toggle-field)),
+  :global(:is(.special-toggle-field)[data-feature-page="special-prediction"]),
+  :global([data-feature-page="special-prediction"] :is(.special-mini-field)),
+  :global(:is(.special-mini-field)[data-feature-page="special-prediction"]) {
+    font-size: 0.72rem;
+  }
+
+  .special-source-picker, :global([data-feature-page="special-prediction"] :is(.special-source-picker)), :global(:is(.special-source-picker)[data-feature-page="special-prediction"]) {
+    width: 100%;
+    align-items: center;
+    flex-direction: row;
+    gap: 5px;
+  }
+
+  .special-source-picker select, :global([data-feature-page="special-prediction"] :is(.special-source-picker select)), :global(:is(.special-source-picker select)[data-feature-page="special-prediction"]) {
+    min-width: 0;
+    font-size: 14px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .special-range-field, :global([data-feature-page="special-prediction"] :is(.special-range-field)), :global(:is(.special-range-field)[data-feature-page="special-prediction"]) {
+    flex: 1 1 92px;
+  }
+
+  .special-range-field input, :global([data-feature-page="special-prediction"] :is(.special-range-field input)), :global(:is(.special-range-field input)[data-feature-page="special-prediction"]) {
+    flex: 1 1 auto;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 14px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .special-toggle-field, :global([data-feature-page="special-prediction"] :is(.special-toggle-field)), :global(:is(.special-toggle-field)[data-feature-page="special-prediction"]) {
+    flex: 0 0 auto;
+  }
+
+  .special-action-btn, :global([data-feature-page="special-prediction"] :is(.special-action-btn)), :global(:is(.special-action-btn)[data-feature-page="special-prediction"]) {
+    width: 100%;
+    min-height: 34px;
+  }
+
+  .special-color-swatches, :global([data-feature-page="special-prediction"] :is(.special-color-swatches)), :global(:is(.special-color-swatches)[data-feature-page="special-prediction"]) {
+    max-width: 100%;
+    flex: 1 1 210px;
+    flex-wrap: wrap;
+    overflow: visible;
+    grid-template-columns: repeat(auto-fill, 17px);
+    gap: 4px 3px;
+    padding: 0;
+  }
+
+  .special-color-swatch, :global([data-feature-page="special-prediction"] :is(.special-color-swatch)), :global(:is(.special-color-swatch)[data-feature-page="special-prediction"]) {
+    width: 17px;
+    height: 17px;
+    border-width: 1px;
+  }
+
+  .special-inline-color-input, :global([data-feature-page="special-prediction"] :is(.special-inline-color-input)), :global(:is(.special-inline-color-input)[data-feature-page="special-prediction"]) {
+    width: 18px;
+    height: 18px;
+    padding: 1px;
+  }
+
+  .special-upload-btn,
+  .special-secondary-btn,
+  :global([data-feature-page="special-prediction"] :is(.special-upload-btn)),
+  :global(:is(.special-upload-btn)[data-feature-page="special-prediction"]),
+  :global([data-feature-page="special-prediction"] :is(.special-secondary-btn)),
+  :global(:is(.special-secondary-btn)[data-feature-page="special-prediction"]) {
+    flex: 1 1 96px;
+    box-sizing: border-box;
+    min-height: 26px;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+  }
+
+  .special-restore-btn, :global([data-feature-page="special-prediction"] :is(.special-restore-btn)), :global(:is(.special-restore-btn)[data-feature-page="special-prediction"]) {
+    width: 100%;
+    flex-basis: auto;
+    align-self: stretch;
+  }
+
+  .special-text-select, :global([data-feature-page="special-prediction"] :is(.special-text-select)), :global(:is(.special-text-select)[data-feature-page="special-prediction"]) {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    font-size: 0.72rem;
+  }
+
+  .special-mini-field input, :global([data-feature-page="special-prediction"] :is(.special-mini-field input)), :global(:is(.special-mini-field input)[data-feature-page="special-prediction"]) {
+    width: 100%;
+    padding: 3px 6px;
+    font-size: 0.72rem;
+  }
+
+  .special-align-control button, :global([data-feature-page="special-prediction"] :is(.special-align-control button)), :global(:is(.special-align-control button)[data-feature-page="special-prediction"]) {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+  }
+
+  .special-cover-text, :global([data-feature-page="special-prediction"] :is(.special-cover-text)), :global(:is(.special-cover-text)[data-feature-page="special-prediction"]) {
+    padding: 16px 18px;
+    font-size: 1.35rem;
+  }
+}

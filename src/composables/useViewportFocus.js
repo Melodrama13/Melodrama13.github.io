@@ -1,15 +1,16 @@
 import { nextTick, onMounted, onActivated, onDeactivated, onBeforeUnmount } from 'vue';
-import { clampScrollTop, isScrollKeyIntent, isScrollNavigationActive, SCROLL_NAVIGATION_CHANGE } from './scrollNavigation.js';
+import { clampScrollTop, isScrollKeyIntent, isScrollNavigationActive, SCROLL_NAVIGATION_CHANGE, SCROLL_POSITION_CHANGE } from './scrollNavigation.js';
 
 // Keep a reading block at its existing screen height, not at a viewport
 // percentage. Cache before reflow: by the time resize fires, CSS has changed.
-export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, deferObservedLayout = false }) => {
+export const useViewportFocus = ({ getHost, getRoot, getReadingCandidates = null, onRestore = () => {}, deferObservedLayout = false }) => {
   let host = null;
   let root = null;
   let observer = null;
   let cached = null;
   let request = null;
   let rememberRaf = 0;
+  let rememberNativePosition = false;
   let observedRaf = 0;
   let touchSnapshot = null;
   let nativeScrollIntent = null;
@@ -72,7 +73,9 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
     nativeScrollTimer = setTimeout(() => handleScrollEnd(true), 800);
   };
   const handleScrollEnd = force => {
-    if (!nativeScrollIntent) return;
+    // Native scrollbar dragging may emit scrollend between pointer moves.
+    // Its input lease lasts until release, including the final native delta.
+    if (!nativeScrollIntent || nativeScrollIntent.pendingPointer) return;
     // A compensation just before keydown can queue its own scrollend.
     // It cannot end an input whose native default has not started yet.
     if (force !== true && !nativeScrollIntent.hasScrolled) return;
@@ -92,10 +95,14 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
     const readingEnd = top + Math.min(220, host.clientHeight * 0.45);
     // A visible section title takes priority. Pinning a huge section's top
     // while reading its middle, or its height ratio, loses the local context.
-    for (const selector of ['h2, h3, .lineup-char-name, .song-role-name', '.event-item, .birthday-row, .preview-row']) {
+    const candidateGroups = getReadingCandidates
+      ? [getReadingCandidates({ top: top + 8, bottom: readingEnd })]
+      : ['h2, h3, .lineup-char-name, .song-role-name', '.event-item, .birthday-row, .preview-row'];
+    for (const group of candidateGroups) {
+      const candidates = typeof group === 'string' ? root.querySelectorAll(group) : group;
       let best = null;
       let bestTop = Infinity;
-      for (const el of root.querySelectorAll(selector)) {
+      for (const el of candidates) {
         const bounds = el.getBoundingClientRect();
         if (bounds.width < 1 || bounds.height < 1 || bounds.top < top + 8 || bounds.top > readingEnd || x < bounds.left || x > bounds.right) continue;
         if (bounds.top < bestTop) { best = el; bestTop = bounds.top; }
@@ -113,7 +120,11 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
     const layout = geometry();
     if (!layout) return null;
     const anchor = element instanceof HTMLElement && root.contains(element) ? element : pickReadingElement();
-    return { anchor, top: anchor?.getBoundingClientRect().top, scrollTop: host.scrollTop, layout, atTop: !element && host.scrollTop <= 1, isControl: !!element };
+    // An explicitly pinned activity is still the reading row. Keep it after
+    // the first correction, so later editor/toolbar reflows cannot select
+    // a different row above it. User scrolling establishes a new snapshot.
+    const isReadingRow = anchor?.matches('.event-item, .birthday-row, .preview-row');
+    return { anchor, top: anchor?.getBoundingClientRect().top, scrollTop: host.scrollTop, layout, atTop: !element && host.scrollTop <= 1, isControl: !!element && !isReadingRow };
   };
   const remember = (force = false) => {
     if (request) return;
@@ -126,16 +137,33 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
     if (!force && cached && Math.abs(host.scrollTop - cached.scrollTop) < 0.5 && cached.anchor?.isConnected) return;
     cached = snapshot();
   };
-  const scheduleRemember = () => {
+  const scheduleRemember = event => {
     trackNativeScroll();
-    // Do not leave the old reading position alive until the next frame:
-    // resize can arrive between the scroll event and that RAF callback.
-    remember();
+    // A native reveal/find can interrupt an outstanding correction without
+    // wheel, focus or page-navigation input. On unchanged layout its real
+    // delta belongs to the browser, in either direction. Our own queued
+    // correction event has no delta from the post-correction baseline.
+    if (!nativeScrollIntent && event?.isTrusted === true && request?.nativeScrollBaseline
+      && sameGeometry(request.nativeScrollBaseline.layout, geometry())
+      && Math.abs(host.scrollTop - request.nativeScrollBaseline.scrollTop) > 0.5) {
+      cancel(true);
+      rememberNativePosition = true;
+    }
+    // Confirmed input and explicit setup notifications update immediately;
+    // a later frame refreshes the reading object after native delivery.
+    if (nativeScrollIntent || event?.isTrusted === false) remember();
     if (rememberRaf) return;
-    rememberRaf = requestAnimationFrame(() => { rememberRaf = 0; remember(); });
+    rememberRaf = requestAnimationFrame(() => {
+      rememberRaf = 0;
+      // Cancellation keeps the old anchor until a queued resize has had a
+      // chance to restore it. Then commit the browser's new reading object,
+      // even though finish() already copied its current scrollTop.
+      remember(rememberNativePosition);
+      rememberNativePosition = false;
+    });
   };
 
-  const finish = (owner) => {
+  const finish = (owner, keepSnapshot = false) => {
     if (request !== owner) return;
     cancelAnimationFrame(owner.raf);
     releaseAnchoring(owner);
@@ -143,14 +171,20 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
     const saved = owner.snapshot;
     // Resize can move the sampling point onto a different row. Keep the
     // original reading row across successive reflows until the user scrolls.
-    if (!saved.isControl && saved.anchor?.isConnected && root.contains(saved.anchor) && !isScrollNavigationActive(host)) {
+    if (keepSnapshot === true) {
+      // A native notification can precede its resize source. Retain even a
+      // blank/control snapshot and its absolute scrollTop until the scroll
+      // RAF commits a new baseline or an explicit layout owner restores it.
+      cached = { ...saved };
+    } else if (!saved.isControl && saved.anchor?.isConnected && root.contains(saved.anchor) && !isScrollNavigationActive(host)) {
       cached = { ...saved, scrollTop: host.scrollTop, layout: geometry() };
     } else remember(true);
   };
-  const cancel = () => { if (request) finish(request); };
+  const cancel = (keepSnapshot = false) => { if (request) finish(request, keepSnapshot); };
   const correct = (owner) => {
     if (request !== owner) return false;
-    if (!geometry() || isScrollNavigationActive(host)) { finish(owner); return false; }
+    const layout = geometry();
+    if (!layout || isScrollNavigationActive(host)) { finish(owner); return false; }
     const { anchor, top, scrollTop, atTop } = owner.snapshot;
     if (anchor && (!anchor.isConnected || !root.contains(anchor))) { finish(owner); return false; }
     // WebKit truncates fractional scrollTo coordinates. Round once so a
@@ -168,6 +202,7 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
       owner.stableSince = performance.now();
       onRestore();
     }
+    owner.nativeScrollBaseline = { scrollTop: host.scrollTop, layout };
     return true;
   };
   const begin = (saved) => {
@@ -192,43 +227,70 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
     return owner;
   };
 
-  const handleLayout = () => {
+  const handleLayout = (forceRestore = false) => {
     const layout = geometry();
     if (!layout) return;
     if (isScrollNavigationActive(host)) { clearTouch(); clearNativeScroll(); cancel(); remember(true); return; }
     trackNativeScroll();
     if (request) { correct(request); return; }
-    if (cached && !sameGeometry(cached.layout, layout)) {
+    if (cached && (forceRestore === true || !sameGeometry(cached.layout, layout))) {
       const owner = begin(cached);
       if (owner) correct(owner);
     } else remember();
   };
+  const handleResize = () => handleLayout(true);
   const scheduleObservedLayout = () => {
     if (!active || observedRaf) return;
     observedRaf = requestAnimationFrame(() => { observedRaf = 0; handleLayout(); });
   };
+  const beginNativeScrollIntent = (event, scrollTop = host.scrollTop) => {
+    if (!event?.isTrusted) return;
+    nativeScrollIntent = { scrollTop, hasScrolled: false };
+    holdAnchoring(nativeScrollIntent);
+    nativeScrollTimer = setTimeout(() => handleScrollEnd(true), 800);
+  };
   const handleIntent = event => {
     clearTouch();
+    // Compositor scrolling can already be visible when a trusted wheel
+    // reaches the main thread. If layout is unchanged since our last
+    // correction, retain that input delta before compensating again.
+    const inputBaseline = request?.nativeScrollBaseline || cached;
+    if (event?.isTrusted && !nativeScrollIntent && inputBaseline
+      && sameGeometry(inputBaseline.layout, geometry())) {
+      beginNativeScrollIntent(event, inputBaseline.scrollTop);
+      trackNativeScroll();
+    }
     // CSS may have reflowed before its resize/observer notification. Finish
     // that compensation before the user's default scroll starts.
     handleLayout();
     cancel();
     remember(true);
     clearNativeScroll();
-    if (event?.isTrusted) {
-      nativeScrollIntent = { scrollTop: host.scrollTop, hasScrolled: false };
-      holdAnchoring(nativeScrollIntent);
-      nativeScrollTimer = setTimeout(() => handleScrollEnd(true), 800);
-    }
+    beginNativeScrollIntent(event);
+  };
+  const rememberInteractionPosition = event => {
+    clearNativeScroll();
+    clearTouch();
+    cancel();
+    remember(true);
+    // Focus scrolls before focusin in Chromium, but can scroll afterward
+    // in WebKit. Retain the latter native delta through a same-frame resize.
+    if (event?.type === 'focusin') beginNativeScrollIntent(event);
   };
   const handlePointer = event => {
     // A touch pointerdown precedes touchstart. Do not overwrite the pending
     // reflow snapshot or move a control before its click is delivered.
     if (event.pointerType === 'touch') return;
-    clearNativeScroll();
-    clearTouch();
-    cancel();
-    remember(true);
+    rememberInteractionPosition(event);
+    beginNativeScrollIntent(event);
+    if (nativeScrollIntent) nativeScrollIntent.pendingPointer = true;
+  };
+  const handlePointerEnd = () => {
+    if (!nativeScrollIntent?.pendingPointer) return;
+    trackNativeScroll();
+    nativeScrollIntent.pendingPointer = false;
+    clearTimeout(nativeScrollTimer);
+    nativeScrollTimer = setTimeout(() => handleScrollEnd(true), 800);
   };
   const handleTouchStart = () => {
     trackNativeScroll();
@@ -285,7 +347,7 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
     remember(true);
   };
   const intentListeners = {
-    wheel: handleIntent, pointerdown: handlePointer,
+    wheel: handleIntent, pointerdown: handlePointer, focusin: rememberInteractionPosition,
     touchstart: handleTouchStart, touchmove: handleTouchMove,
     touchend: handleTouchEnd, touchcancel: handleTouchEnd
   };
@@ -297,6 +359,7 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
     observer = null;
     cancelAnimationFrame(rememberRaf);
     rememberRaf = 0;
+    rememberNativePosition = false;
     cancelAnimationFrame(observedRaf);
     observedRaf = 0;
     clearTouch();
@@ -304,9 +367,13 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
     host?.removeEventListener('scroll', scheduleRemember);
     host?.removeEventListener('scrollend', handleScrollEnd);
     host?.removeEventListener(SCROLL_NAVIGATION_CHANGE, handleNavigationChange);
+    host?.removeEventListener(SCROLL_POSITION_CHANGE, rememberInteractionPosition);
     for (const [type, listener] of Object.entries(intentListeners)) host?.removeEventListener(type, listener);
     document.removeEventListener('keydown', handleKey);
-    window.removeEventListener('resize', handleLayout);
+    document.removeEventListener('pointerup', handlePointerEnd);
+    document.removeEventListener('pointercancel', handlePointerEnd);
+    window.removeEventListener('resize', handleResize);
+    window.visualViewport?.removeEventListener('resize', handleResize);
     cached = null;
   };
   const bind = async () => {
@@ -322,9 +389,13 @@ export const useViewportFocus = ({ getHost, getRoot, onRestore = () => {}, defer
     host.addEventListener('scroll', scheduleRemember, { passive: true });
     host.addEventListener('scrollend', handleScrollEnd, { passive: true });
     host.addEventListener(SCROLL_NAVIGATION_CHANGE, handleNavigationChange);
+    host.addEventListener(SCROLL_POSITION_CHANGE, rememberInteractionPosition);
     for (const [type, listener] of Object.entries(intentListeners)) host.addEventListener(type, listener, { passive: true });
     document.addEventListener('keydown', handleKey);
-    window.addEventListener('resize', handleLayout);
+    document.addEventListener('pointerup', handlePointerEnd, { passive: true });
+    document.addEventListener('pointercancel', handlePointerEnd, { passive: true });
+    window.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
     if (typeof ResizeObserver !== 'undefined') {
       // Scrolling content-visibility rows can itself resize the observed
       // list. Run those corrections outside the observer delivery loop.

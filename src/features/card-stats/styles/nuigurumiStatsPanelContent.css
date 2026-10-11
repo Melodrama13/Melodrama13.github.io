@@ -1,0 +1,525 @@
+
+
+.stats-main > .stats-section + .stats-section {
+  margin-top: 18px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.card-export-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: var(--stats-radius-btn);
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.card-export-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.card-export-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes screenshot-export-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+.section-head h2 {
+  margin: 0;
+}
+
+.section-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+
+  .section-head-left {
+    gap: 6px;
+  }
+
+
+  .festival-hide-name-toggle {
+    font-size: 0.7rem;
+  }
+}
+
+.pjsk-stats h1 {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
+
+
+/* 2x2 网格布局 */
+
+.stats-section { flex: 1; }
+
+.card-panel:not(.stats-nav) {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--stats-radius-panel);
+  padding: 14px;
+  box-shadow: 0 6px 20px rgba(17, 24, 39, 0.06);
+}
+
+.card-panel h2 {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 1.05rem;
+}
+
+/* Support WL card cells reuse the FES attribute class, whose regular size
+   derives from --fes-card-frame-size. This container has no such variable,
+   so make the badge size relative to its own card instead of falling back to
+   the image's intrinsic dimensions. */
+
+.festival-hide-name-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.festival-hide-name-toggle input {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  position: relative;
+  top: -1px;
+}
+
+.record-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.record-table th,
+.record-table td {
+  border: 1px solid #e5e7eb;
+  padding: 7px 9px;
+  text-align: center;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.fes-card-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  user-select: none;
+}
+
+.fes-card-mode-toggle input[type='checkbox'] {
+  margin: 0;
+}
+
+.stats-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1;
+}
+
+.stats-checkbox input[type='checkbox'] {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  position: relative;
+  top: 0px;
+  accent-color: #14b8a6;
+}
+
+.fes-card-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: flex-start;
+  min-height: 60px;
+}
+
+.fes-card-thumb {
+  --fes-card-frame-size: 60px;
+  --fes-card-image-scale: 0.9;
+  position: relative;
+  width: var(--fes-card-frame-size);
+  height: var(--fes-card-frame-size);
+  flex: 0 0 auto;
+}
+
+.fes-card-thumb-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.fes-card-thumb-img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--fes-card-frame-size) * var(--fes-card-image-scale));
+  height: calc(var(--fes-card-frame-size) * var(--fes-card-image-scale));
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  border-radius: 0px;
+  z-index: 1;
+  background-color: #e5e7eb;
+}
+
+.nuigurumi-table-wrap {
+  overflow-x: auto;
+}
+
+.nuigurumi-table {
+  width: 100%;
+  min-width: 700px;
+  table-layout: fixed;
+}
+
+.nuigurumi-mobile-meta-head,
+.nuigurumi-mobile-meta-cell {
+  display: none;
+}
+
+.nuigurumi-round-head,
+.nuigurumi-round-cell {
+  width: 64px;
+  text-align: center;
+}
+
+.nuigurumi-date-head,
+.nuigurumi-date-cell {
+  width: 92px;
+  text-align: center;
+}
+
+.nuigurumi-type-head,
+.nuigurumi-type-cell {
+  width: 108px;
+  text-align: center;
+}
+
+.nuigurumi-table td {
+  vertical-align: middle;
+}
+
+.nuigurumi-table.is-card-mode tbody td {
+  min-height: 76px;
+}
+
+.nuigurumi-table tbody tr.nuigurumi-round-start > td {
+  border-top: 4px solid rgba(15, 23, 42, 0.28);
+}
+
+.nuigurumi-table tbody tr.nuigurumi-round-end > td {
+  border-bottom: 4px solid rgba(15, 23, 42, 0.28);
+}
+
+.nuigurumi-table tbody tr.nuigurumi-candidate-row > td {
+  background: #f8fafc;
+}
+
+.nuigurumi-table tbody tr > td.nuigurumi-round-cell {
+  border-left: 3px solid rgba(15, 23, 42, 0.2);
+}
+
+.nuigurumi-table tbody tr > td:last-child {
+  border-right: 3px solid rgba(15, 23, 42, 0.2);
+}
+
+.nuigurumi-round-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 24px;
+  border-radius: var(--stats-radius-btn);
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+.nuigurumi-date-cell {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.nuigurumi-type-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--stats-radius-btn);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+.nuigurumi-type-chip.is-cfes {
+  background: #fde68a;
+  color: #78350f;
+}
+
+.nuigurumi-type-chip.is-limited {
+  background: #bae6fd;
+  color: #075985;
+}
+
+.nuigurumi-mobile-meta-line {
+  display: block;
+  line-height: 1.12;
+  white-space: nowrap;
+}
+
+.nuigurumi-mobile-date {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.nuigurumi-mobile-type {
+  margin-top: 4px;
+  color: #075985;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.nuigurumi-members-cell {
+  text-align: left;
+}
+
+.nuigurumi-avatar-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.nuigurumi-avatar-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 54px;
+}
+
+.nuigurumi-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  background: #ffffff;
+  object-fit: cover;
+}
+
+.nuigurumi-avatar-label {
+  max-width: 54px;
+  min-height: 14px;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nuigurumi-card-strip {
+  min-height: 64px;
+  gap: 6px;
+  align-items: center;
+}
+
+.nuigurumi-card-thumb {
+  --fes-card-frame-size: 64px;
+}
+
+.nuigurumi-card-missing {
+  position: absolute;
+  inset: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .nuigurumi-table-wrap {
+    overflow-x: visible;
+  }
+
+  .nuigurumi-table {
+    min-width: 0;
+  }
+
+  .nuigurumi-mobile-meta-head,
+  .nuigurumi-mobile-meta-cell {
+    display: table-cell;
+    width: 46px;
+    min-width: 46px;
+    max-width: 46px;
+    text-align: center;
+  }
+
+  .nuigurumi-table th:nth-child(2),
+  .nuigurumi-table td:nth-child(2),
+  .nuigurumi-table th:nth-child(3),
+  .nuigurumi-table td:nth-child(3),
+  .nuigurumi-table th:nth-child(4),
+  .nuigurumi-table td:nth-child(4) {
+    display: none;
+  }
+
+  .nuigurumi-table th,
+  .nuigurumi-table td {
+    padding: 4px 2px;
+  }
+
+  .nuigurumi-table.is-card-mode tbody td {
+    min-height: 0;
+  }
+
+  .nuigurumi-members-cell {
+    padding-left: 1px;
+    padding-right: 1px;
+  }
+
+  .nuigurumi-mobile-meta-line {
+    line-height: 1.05;
+  }
+
+  .nuigurumi-mobile-date {
+    margin-top: 0;
+    font-size: 0.74rem;
+  }
+
+  .nuigurumi-mobile-type {
+    margin-top: 2px;
+    font-size: 0.62rem;
+  }
+
+  .nuigurumi-table tbody tr > td.nuigurumi-mobile-meta-cell {
+    border-left: 3px solid rgba(15, 23, 42, 0.2);
+  }
+
+  .nuigurumi-table tbody tr > td.nuigurumi-members-cell {
+    border-right: 3px solid rgba(15, 23, 42, 0.2);
+  }
+
+  .nuigurumi-round-badge {
+    min-width: 30px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+
+  .nuigurumi-date-cell {
+    font-size: 0.78rem;
+  }
+
+  .nuigurumi-type-chip {
+    min-width: 0;
+    height: 22px;
+    padding: 0 6px;
+    font-size: 0.68rem;
+  }
+
+  .nuigurumi-avatar-strip {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    align-items: center;
+    justify-items: center;
+  }
+
+  .nuigurumi-avatar-item {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .nuigurumi-avatar {
+    width: clamp(30px, 8.8vw, 40px);
+    height: clamp(30px, 8.8vw, 40px);
+  }
+
+  .nuigurumi-avatar-label {
+    display: none;
+  }
+
+  .nuigurumi-card-strip {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    align-items: center;
+    justify-items: center;
+    min-height: 0;
+  }
+
+  .nuigurumi-card-thumb {
+    --fes-card-frame-size: clamp(30px, 8.8vw, 44px);
+  }
+
+  .nuigurumi-card-missing {
+    inset: 6px;
+    font-size: 0.62rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .nuigurumi-mobile-meta-head,
+  .nuigurumi-mobile-meta-cell {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+  }
+}

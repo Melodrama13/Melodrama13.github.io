@@ -1,0 +1,323 @@
+
+
+/* 活跃状态基础样式 */
+
+/* 仅在角色详情悬浮框触发时抬高该活动卡，使 tooltip 可压过筛选栏。 */
+
+/* 专门负责流光的伪元素 */
+
+/* 筛选面板基础样式 */
+
+
+/* 按钮组父容器 */
+/* 按钮样式修改 */
+/* 选中状态保持不变 */
+
+/* Disabled neutral options retain their pre-prominent material; active states own their existing overrides. */
+
+/* 角色 Chip */
+
+/* 图标组高亮控制 */
+
+/* 稀有度星星样式 */
+
+/* 顶部按钮高亮 */
+.active-highlight {
+  background: var(--history-active-bg) !important;
+  color: white !important;
+  border-color: var(--history-active-border) !important;
+  box-shadow: 0 8px 18px rgba(20, 184, 166, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.44) !important;
+}
+
+/* Shared control feedback keeps the base fill and selected state intact. */
+
+/* 展开动画 */
+
+
+/* 1. 基础信息：日期下方居中显示节日 */
+
+/* 2. Banner */
+
+/* 3. 标题 */
+
+/* 4. 角色卡片展示逻辑 */
+
+
+/* 角色卡片详情悬浮 */
+
+/* 5. VS & 音乐 */
+
+/* Match the app-shell tablet scale across windowed and full-width landscape. */
+@media (max-width: 1280px) {
+  .filter-bar {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  .filter-bar .sort-btn,
+  .filter-bar .nav-btn {
+    height: 33px;
+    min-height: 33px;
+    padding: 0 10px;
+    font-size: 0.79rem;
+  }
+
+  .filter-bar .nav-btn.is-icon-only {
+    width: 33px;
+    min-width: 33px;
+    height: 33px;
+    min-height: 33px;
+    padding: 0;
+  }
+
+  .filter-bar .nav-btn.compact-tip.has-count {
+    min-width: 58px;
+    height: 33px;
+    min-height: 33px;
+    padding: 0 9px;
+  }
+
+  .sort-btn {
+    min-width: 94px;
+  }
+
+  .current-btn {
+    min-width: 60px;
+  }
+
+  .compact-btn-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 1280px) and (pointer: coarse) {
+
+  .filter-bar {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  .filter-bar .sort-btn,
+  .filter-bar .nav-btn {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0.8rem;
+  }
+
+  .filter-bar .nav-btn.is-icon-only {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+  }
+
+  .filter-bar .nav-btn.compact-tip.has-count {
+    min-width: 60px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0 10px;
+  }
+
+  .sort-btn {
+    min-width: 96px;
+  }
+
+  .current-btn {
+    min-width: 62px;
+  }
+}
+
+@media (max-width: 900px) {
+
+  .event-history > h1 {
+    display: none;
+  }
+
+  .filter-bar {
+    padding: 5px 6px;
+    gap: 3px;
+    margin-bottom: 0;
+  }
+
+  .filter-bar .sort-btn,
+  .filter-bar .nav-btn {
+    min-width: 0;
+    height: 31px;
+    min-height: 31px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.74rem;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .filter-bar .nav-btn.is-icon-only {
+    width: 31px;
+    min-width: 31px;
+    height: 31px;
+    min-height: 31px;
+    padding: 0;
+    border-radius: 999px;
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
+  }
+
+  .filter-bar .nav-btn.compact-tip.has-count {
+    width: auto;
+    min-width: 56px;
+    height: 31px;
+    min-height: 31px;
+    padding: 0 8px;
+    gap: 4px;
+    border-radius: 999px;
+    aspect-ratio: auto;
+    box-sizing: border-box;
+  }
+
+  .sort-btn {
+    min-width: 86px;
+  }
+
+  .current-btn {
+    min-width: 58px;
+  }
+
+  .compact-btn-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .compact-filter-count {
+    min-width: 22px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 0.68rem;
+  }
+
+  .compact-tip {
+    position: relative;
+  }
+
+  .compact-tip:active::after,
+  .compact-tip:focus-visible::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 4px);
+    transform: translateX(-50%);
+    font-size: 0.62rem;
+    line-height: 1;
+    color: #fff;
+    background: rgba(15, 23, 42, 0.88);
+    border-radius: 6px;
+    padding: 4px 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1200;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 900px) {
+
+  .filter-bar {
+    padding: 7px 3px;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .filter-bar .sort-btn,
+  .filter-bar .nav-btn {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 9px;
+    font-size: 0.76rem;
+  }
+
+  .filter-bar .nav-btn.is-icon-only {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+  }
+
+  .filter-bar .nav-btn.compact-tip.has-count {
+    min-width: 56px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 8px;
+  }
+
+  .sort-btn {
+    min-width: 90px;
+  }
+
+  .current-btn {
+    min-width: 60px;
+  }
+
+  .compact-btn-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .compact-filter-count {
+    min-width: 21px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 0.67rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .filter-bar .sort-btn,
+  .filter-bar .nav-btn {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 6px;
+    font-size: 0.72rem;
+  }
+
+  .filter-bar .nav-btn.is-icon-only {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+    border-radius: 999px;
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
+  }
+
+  .filter-bar .nav-btn.compact-tip.has-count {
+    width: auto;
+    min-width: 52px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 8px;
+    gap: 3px;
+    border-radius: 999px;
+    aspect-ratio: auto;
+    box-sizing: border-box;
+  }
+
+  .current-btn {
+    min-width: 56px;
+  }
+
+  .compact-btn-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .compact-filter-count {
+    min-width: 20px;
+    height: 19px;
+    padding: 0 5px;
+    font-size: 0.66rem;
+  }
+}

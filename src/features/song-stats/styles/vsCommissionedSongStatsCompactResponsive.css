@@ -1,0 +1,287 @@
+
+@media (max-width: 1280px) {
+
+  .song-image-main-avatar {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    flex-basis: 28px;
+  }
+
+  .song-vs-event-image-groups {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-chip {
+    width: 50px;
+  }
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon {
+  width: 20px;
+  height: 20px;
+  }
+}
+
+@media (max-width: 900px) {
+
+  .card-panel:not(.stats-nav) {
+    padding: 9px;
+    border-radius: 10px;
+  }
+
+  .section-head h2 {
+    font-size: 0.96rem;
+  }
+
+  .card-export-btn {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+  }
+
+  .song-vs-event-unit-counts {
+    gap: 4px;
+  }
+
+  .song-vs-pill {
+    font-size: 0.76rem;
+  }
+
+  .song-vs-event-unit-logo {
+    width: 18px;
+    height: 18px;
+  }
+
+  .anvo-mode-switch {
+    gap: 4px;
+  }
+
+  .anvo-mode-btn {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+    line-height: 1;
+  }
+
+  .song-duo-image-toggle {
+    font-size: 0.7rem;
+  }
+
+  .song-duo-image-toggle.is-image-toggle > span {
+    font-size: 0;
+    line-height: 1;
+  }
+
+  .song-duo-image-toggle.is-image-toggle > span::after {
+    content: '曲绘';
+    font-size: 0.7rem;
+  }
+
+  .song-jacket-media {
+    border-radius: 8px;
+  }
+
+  .song-vs-event-image-head {
+    gap: 5px;
+  }
+
+  .song-vs-event-image-groups {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .song-vs-event-image-group {
+    padding: 5px;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-chip {
+    width: 56px;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-stack-total .song-vs-total-mv-chip {
+    min-width: fit-content;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-stack {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip {
+    min-width: 48px;
+  }
+
+  .song-oc-event-vs-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .song-image-main-avatar {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    flex-basis: 24px;
+  }
+
+  .song-image-count {
+    font-size: 0.86rem;
+  }
+
+  .song-duo-song-jacket-item {
+    border-radius: 7px;
+  }
+
+  .song-image-jacket-caption {
+    font-size: 0.58rem;
+  }
+
+}
+
+@media (max-width: 520px) {
+
+}
+
+
+@media (min-width: 521px) {
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head {
+    position: relative;
+    padding-right: 92px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head .song-role-card-tools {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin-left: 0;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    z-index: 1;
+  }
+}
+
+@media (max-width: 520px) {
+
+  .song-vs-event-image-layout {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .song-vs-event-image-head {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-width: 0;
+    padding-top: 0;
+    gap: 6px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head-main {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: 6px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head .song-role-card-tools {
+    margin-left: auto;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-image-head-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    justify-content: stretch;
+    align-items: start;
+    gap: 4px;
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-total-mv-chip-head {
+    display: inline-flex;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-stack-total {
+    display: none;
+  }
+
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-stack {
+    width: auto;
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-chip {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chips {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .song-vs-event-card.is-image-mode .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .song-vs-event-card.is-image-mode .song-image-main-avatar {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    flex-basis: 30px;
+  }
+
+  .song-image-count-circle {
+    font-size: 0.92rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #0f172a;
+    min-width: 30px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .song-oc-event-vs-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .song-oc-event-vs-icons.is-mini .song-oc-event-vs-icon {
+    width: 20px;
+    height: 20px;
+  }
+}

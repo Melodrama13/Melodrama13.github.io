@@ -1,0 +1,70 @@
+
+@media (max-width: 900px) {
+
+  .stats-main h1 {
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+  }
+
+  .card-export-btn {
+    font-size: 0.64rem;
+    padding: 3px 6px;
+  }
+
+  .card-panel:not(.stats-nav) {
+    padding: 9px;
+    border-radius: 14px;
+  }
+
+  .card-panel h2 {
+    margin-bottom: 8px;
+    font-size: 0.96rem;
+  }
+
+  /* Keep header-row titles aligned with inline controls; avoid extra gap before tables. */
+  .section-head h2 {
+    margin-bottom: 0;
+    line-height: 1.1;
+  }
+
+  .section-head-left {
+    align-items: center;
+  }
+
+  .stats-section {
+    overflow-x: auto;
+  }
+
+  .stats-checkbox {
+    font-size: 0.66rem;
+    white-space: nowrap;
+  }
+
+  .record-table {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .record-table th,
+  .record-table td {
+    padding: 4px 3px;
+    font-size: 0.68rem;
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 520px) {
+
+  .stats-main h1 {
+    font-size: 1rem;
+    margin-bottom: 6px;
+  }
+
+  .card-panel:not(.stats-nav) {
+    padding: 8px;
+  }
+
+  .record-table {
+    min-width: 0;
+  }
+}

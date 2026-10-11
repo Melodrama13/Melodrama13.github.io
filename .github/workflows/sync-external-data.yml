@@ -44,6 +44,8 @@ jobs:
 
       - name: Checkout site repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Checkout private sync scripts
         uses: actions/checkout@v4
@@ -55,8 +57,8 @@ jobs:
 
       - name: Install private sync scripts
         run: |
-          mkdir -p scripts
-          cp .sync-private/scripts/*.mjs scripts/
+          mkdir -p sync-scripts
+          cp .sync-private/scripts/*.mjs sync-scripts/
 
       - name: Setup Node
         uses: actions/setup-node@v4

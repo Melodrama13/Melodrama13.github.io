@@ -1,0 +1,763 @@
+
+.predict-drawer, :global([data-feature-page="prediction-editor"] :is(.predict-drawer)), :global(:is(.predict-drawer)[data-feature-page="prediction-editor"]) {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: clamp(320px, 30vw, 380px);
+  height: 100vh;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  color: #102033;
+  overflow: hidden;
+  border-left-width: 1px;
+  border-left-style: solid;
+  --pe-radius-card: 999px;
+  --pe-radius-btn: 999px;
+  --pe-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(248, 250, 252, 0.16) 50%, rgba(226, 232, 240, 0.12));
+  --pe-glass-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(248, 250, 252, 0.22) 54%, rgba(226, 232, 240, 0.18));
+  --pe-glass-bg-strong: linear-gradient(145deg, rgba(255, 255, 255, 0.30), rgba(248, 250, 252, 0.14) 54%, rgba(226, 232, 240, 0.12));
+  --pe-glass-border: var(--ui-glass-editor-inner-border, rgba(255, 255, 255, 0.56));
+  --pe-glass-shadow: 0 12px 30px rgba(15, 23, 42, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -1px 0 rgba(148, 163, 184, 0.12);
+  --pe-glass-shadow-soft: var(--ui-glass-editor-inner-shadow, 0 6px 18px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.88), inset 0 -1px 0 rgba(148, 163, 184, 0.10));
+  --pe-accent: #22b8ad;
+  --pe-accent-strong: #0f9f96;
+  --pe-danger: #ef4444;
+}
+
+.predict-drawer > *, :global([data-feature-page="prediction-editor"] :is(.predict-drawer > *)), :global(:is(.predict-drawer > *)[data-feature-page="prediction-editor"]) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Keep the existing frost until both content reflow and the moving desktop
+   surface settle. Their native timelines can finish on different frames. */
+:global(:root[data-ui-glass-mode='refractive'] .predict-drawer.ui-liquid-glass--refractive:is([data-ui-glass-defer-rebuild='true'], [data-ui-surface-motion])) {
+  -webkit-backdrop-filter: var(--ui-glass-filter-frosted-refractive) !important;
+  backdrop-filter: var(--ui-glass-filter-frosted-refractive) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .predict-drawer, :global(.predict-drawer[data-feature-page="prediction-editor"]) {
+    transition: none !important;
+  }
+}
+
+.predict-drawer.is-mobile-sheet, :global([data-feature-page="prediction-editor"] :is(.predict-drawer.is-mobile-sheet)), :global(:is(.predict-drawer.is-mobile-sheet)[data-feature-page="prediction-editor"]) {
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 62dvh;
+  border-radius: 24px 24px 0 0;
+  border-left-width: 0;
+  border-left-style: none;
+  border-top-width: 1px;
+  border-top-style: solid;
+  transition: height var(--ui-motion-state);
+  --pe-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(248, 250, 252, 0.24) 50%, rgba(226, 232, 240, 0.22));
+  --pe-glass-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(248, 250, 252, 0.30) 54%, rgba(226, 232, 240, 0.28));
+  --pe-glass-bg-strong: linear-gradient(145deg, rgba(255, 255, 255, 0.42), rgba(248, 250, 252, 0.22) 54%, rgba(226, 232, 240, 0.22));
+  --pe-glass-border: var(--ui-glass-editor-inner-border, rgba(255, 255, 255, 0.72));
+}
+
+.predict-drawer.is-sheet-dragging, :global(.predict-drawer.is-sheet-dragging[data-feature-page="prediction-editor"]) {
+  /* The finger owns position until release; only the snap may interpolate. */
+  transition: none !important;
+}
+
+.drawer-grab-handle, :global([data-feature-page="prediction-editor"] :is(.drawer-grab-handle)), :global(:is(.drawer-grab-handle)[data-feature-page="prediction-editor"]) {
+  width: 100%;
+  height: 22px;
+  margin: 0 0 6px;
+  position: relative;
+  touch-action: none;
+  cursor: ns-resize;
+}
+
+.drawer-grab-handle::before, :global([data-feature-page="prediction-editor"] :is(.drawer-grab-handle)::before), :global(:is(.drawer-grab-handle)[data-feature-page="prediction-editor"]::before) {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.drawer-header, :global([data-feature-page="prediction-editor"] :is(.drawer-header)), :global(:is(.drawer-header)[data-feature-page="prediction-editor"]) {
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.70);
+  background: transparent;
+  box-shadow: inset 0 -1px 0 rgba(148, 163, 184, 0.08);
+}
+.header-main, :global([data-feature-page="prediction-editor"] :is(.header-main)), :global(:is(.header-main)[data-feature-page="prediction-editor"]) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.header-main h3, :global([data-feature-page="prediction-editor"] :is(.header-main h3)), :global(:is(.header-main h3)[data-feature-page="prediction-editor"]) {
+  margin: 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.ev-id, :global([data-feature-page="prediction-editor"] :is(.ev-id)), :global(:is(.ev-id)[data-feature-page="prediction-editor"]) {
+  min-height: 24px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  color: #0f766e;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(248, 250, 252, 0.36));
+  border: 1px solid rgba(20, 184, 166, 0.34);
+  box-shadow: var(--pe-glass-shadow-soft);
+}
+.close-btn, :global([data-feature-page="prediction-editor"] :is(.close-btn)), :global(:is(.close-btn)[data-feature-page="prediction-editor"]) {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 22px;
+  line-height: 1;
+  background: var(--pe-glass-bg);
+  box-shadow: var(--pe-glass-shadow-soft);
+  transition: background-color var(--ui-motion-state), border-color var(--ui-motion-state), color var(--ui-motion-state), transform var(--ui-motion-state);
+}
+.close-btn:hover, :global([data-feature-page="prediction-editor"] :is(.close-btn:hover)), :global(:is(.close-btn:hover)[data-feature-page="prediction-editor"]) {
+  color: #0f172a;
+  border-color: rgba(148, 163, 184, 0.34);
+  background: var(--pe-glass-bg-hover);
+}
+
+.global-config-bar, :global([data-feature-page="prediction-editor"] :is(.global-config-bar)), :global(:is(.global-config-bar)[data-feature-page="prediction-editor"]) {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 0 -6px;
+  padding: 7px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-glass-editor-inner-border, rgba(255, 255, 255, 0.42));
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: var(--ui-glass-editor-group-shadow,
+    0 8px 22px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.70),
+    inset 0 -1px 0 rgba(14, 165, 233, 0.10));
+}
+.global-config-bar.has-banner, :global([data-feature-page="prediction-editor"] :is(.global-config-bar.has-banner)), :global(:is(.global-config-bar.has-banner)[data-feature-page="prediction-editor"]) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cfg-group, :global([data-feature-page="prediction-editor"] :is(.cfg-group)), :global(:is(.cfg-group)[data-feature-page="prediction-editor"]) {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.cfg-group label, :global([data-feature-page="prediction-editor"] :is(.cfg-group label)), :global(:is(.cfg-group label)[data-feature-page="prediction-editor"]) {
+  display: block;
+  font-size: 10px;
+  color: #526579;
+  margin-bottom: 3px;
+  font-weight: 800;
+  text-align: center;
+}
+.cfg-group select, :global([data-feature-page="prediction-editor"] :is(.cfg-group select)), :global(:is(.cfg-group select)[data-feature-page="prediction-editor"]) {
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 24px 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-glass-editor-inner-border, rgba(148, 163, 184, 0.28));
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--ui-glass-editor-control-fill, rgba(255, 255, 255, 0.38));
+  background-image:
+    linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position:
+    calc(100% - 13px) 50%,
+    calc(100% - 8px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  box-shadow: var(--pe-glass-shadow-soft);
+  transition: border-color var(--ui-motion-state), background-color var(--ui-motion-state);
+}
+.cfg-group select:focus,
+.mini-select:focus,
+:global([data-feature-page="prediction-editor"] :is(.cfg-group select:focus)),
+:global(:is(.cfg-group select:focus)[data-feature-page="prediction-editor"]),
+:global([data-feature-page="prediction-editor"] :is(.mini-select:focus)),
+:global(:is(.mini-select:focus)[data-feature-page="prediction-editor"]) {
+  outline: none;
+  border-color: rgba(20, 184, 166, 0.56);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.selected-section, :global([data-feature-page="prediction-editor"] :is(.selected-section)), :global(:is(.selected-section)[data-feature-page="prediction-editor"]) {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 10px 8px;
+  scrollbar-width: thin;
+}
+.section-title, :global([data-feature-page="prediction-editor"] :is(.section-title)), :global(:is(.section-title)[data-feature-page="prediction-editor"]) {
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 7px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.tip, :global([data-feature-page="prediction-editor"] :is(.tip)), :global(:is(.tip)[data-feature-page="prediction-editor"]) { font-weight: 600; font-size: 10.5px; color: #64748b; text-align: right; }
+
+.selected-list, :global([data-feature-page="prediction-editor"] :is(.selected-list)), :global(:is(.selected-list)[data-feature-page="prediction-editor"]) { display: flex; flex-direction: column; gap: 8px; }
+.editor-card, :global([data-feature-page="prediction-editor"] :is(.editor-card)), :global(:is(.editor-card)[data-feature-page="prediction-editor"]) {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 7px 12px 7px 7px;
+  background: var(--pe-glass-bg-strong);
+  border: 1px solid var(--pe-glass-border);
+  border-radius: var(--pe-radius-card);
+  box-shadow: var(--pe-glass-shadow-soft);
+  transition: border-color var(--ui-motion-state), transform var(--ui-motion-state);
+}
+.editor-card::before, :global([data-feature-page="prediction-editor"] :is(.editor-card)::before), :global(:is(.editor-card)[data-feature-page="prediction-editor"]::before) {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: var(--pe-radius-card);
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.64), transparent 42%);
+  opacity: 0.72;
+}
+.editor-card > *, :global([data-feature-page="prediction-editor"] :is(.editor-card > *)), :global(:is(.editor-card > *)[data-feature-page="prediction-editor"]) {
+  position: relative;
+  z-index: 1;
+}
+.editor-card:hover, :global([data-feature-page="prediction-editor"] :is(.editor-card:hover)), :global(:is(.editor-card:hover)[data-feature-page="prediction-editor"]) {
+  border-color: rgba(45, 212, 191, 0.36);
+  background: var(--pe-glass-bg-hover);
+  box-shadow: var(--pe-glass-shadow);
+}
+.editor-card.is-banner-card, :global([data-feature-page="prediction-editor"] :is(.editor-card.is-banner-card)), :global(:is(.editor-card.is-banner-card)[data-feature-page="prediction-editor"]) {
+  border-color: rgba(251, 146, 60, 0.36);
+  background:
+    linear-gradient(145deg, rgba(254, 215, 170, 0.26), rgba(255, 247, 237, 0.16) 54%, rgba(255, 255, 255, 0.14)),
+    var(--pe-glass-bg-strong);
+  box-shadow:
+    0 8px 18px rgba(251, 146, 60, 0.08),
+    0 0 0 1px rgba(251, 146, 60, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84),
+    inset 0 -1px 0 rgba(251, 146, 60, 0.10);
+}
+
+.card-left, :global([data-feature-page="prediction-editor"] :is(.card-left)), :global(:is(.card-left)[data-feature-page="prediction-editor"]) {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.editor-avatar, :global([data-feature-page="prediction-editor"] :is(.editor-avatar)), :global(:is(.editor-avatar)[data-feature-page="prediction-editor"]) {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  flex: 0 0 auto;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  clip-path: circle(47% at 50% 50%);
+}
+.card-right, :global([data-feature-page="prediction-editor"] :is(.card-right)), :global(:is(.card-right)[data-feature-page="prediction-editor"]) {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+.name-row, :global([data-feature-page="prediction-editor"] :is(.name-row)), :global(:is(.name-row)[data-feature-page="prediction-editor"]) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 15px;
+}
+.char-name, :global([data-feature-page="prediction-editor"] :is(.char-name)), :global(:is(.char-name)[data-feature-page="prediction-editor"]) { font-weight: 800; font-size: 13px; color: #102033; }
+
+.config-row, :global([data-feature-page="prediction-editor"] :is(.config-row)), :global(:is(.config-row)[data-feature-page="prediction-editor"]) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  align-items: center;
+}
+.mini-select, :global([data-feature-page="prediction-editor"] :is(.mini-select)), :global(:is(.mini-select)[data-feature-page="prediction-editor"]) {
+  width: 100%;
+  min-width: 0;
+  min-height: 25px;
+  padding: 3px 21px 3px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+  border-radius: 999px;
+  border: 1px solid var(--ui-glass-editor-inner-border, rgba(148, 163, 184, 0.26));
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--ui-glass-editor-control-fill, rgba(255, 255, 255, 0.58));
+  background-image:
+    linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position:
+    calc(100% - 12px) 50%,
+    calc(100% - 7px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  box-shadow: var(--pe-glass-shadow-soft);
+  transition: border-color var(--ui-motion-state), background-color var(--ui-motion-state);
+}
+.cfg-group select:disabled,
+.mini-select:disabled,
+:global([data-feature-page="prediction-editor"] :is(.cfg-group select:disabled)),
+:global(:is(.cfg-group select:disabled)[data-feature-page="prediction-editor"]),
+:global([data-feature-page="prediction-editor"] :is(.mini-select:disabled)),
+:global(:is(.mini-select:disabled)[data-feature-page="prediction-editor"]) {
+  background-color: rgba(226, 232, 240, 0.56);
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+.unit-tag, :global([data-feature-page="prediction-editor"] :is(.unit-tag)), :global(:is(.unit-tag)[data-feature-page="prediction-editor"]) {
+  width: 100%;
+  min-width: 0;
+  min-height: 23px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  background: var(--ui-glass-editor-tag-fill, linear-gradient(145deg, rgba(226, 232, 240, 0.66), rgba(241, 245, 249, 0.34) 58%, rgba(203, 213, 225, 0.18)));
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #64748b;
+  border: 1px solid var(--ui-glass-editor-inner-border, rgba(148, 163, 184, 0.24));
+  box-shadow: var(--ui-glass-editor-inner-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.72));
+  box-sizing: border-box;
+}
+
+.pool-section, :global([data-feature-page="prediction-editor"] :is(.pool-section)), :global(:is(.pool-section)[data-feature-page="prediction-editor"]) {
+  height: auto;
+  padding: 7px 10px 10px;
+  box-sizing: border-box;
+  border-top: 1px solid rgba(255, 255, 255, 0.70);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.42));
+}
+.char-pool-grid, :global([data-feature-page="prediction-editor"] :is(.char-pool-grid)), :global(:is(.char-pool-grid)[data-feature-page="prediction-editor"]) {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+  overflow: visible;
+  max-height: none;
+  align-content: start;
+}
+.pool-item, :global([data-feature-page="prediction-editor"] :is(.pool-item)), :global(:is(.pool-item)[data-feature-page="prediction-editor"]) {
+  position: relative;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  transition: transform var(--ui-motion-state);
+}
+.pool-item:hover, :global([data-feature-page="prediction-editor"] :is(.pool-item:hover)), :global(:is(.pool-item:hover)[data-feature-page="prediction-editor"]) {
+  transform: translateY(-1px);
+  filter: saturate(1.08);
+}
+.pool-item img, :global([data-feature-page="prediction-editor"] :is(.pool-item img)), :global(:is(.pool-item img)[data-feature-page="prediction-editor"]) {
+  width: 100%;
+  display: block;
+  border-radius: 9px;
+  filter: grayscale(1);
+  opacity: 0.42;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+}
+.pool-item.is_selected, :global([data-feature-page="prediction-editor"] :is(.pool-item.is_selected)), :global(:is(.pool-item.is_selected)[data-feature-page="prediction-editor"]) {
+  background: transparent;
+  box-shadow: none;
+}
+.pool-item.is_selected img, :global([data-feature-page="prediction-editor"] :is(.pool-item.is_selected img)), :global(:is(.pool-item.is_selected img)[data-feature-page="prediction-editor"]) {
+  filter: grayscale(0);
+  opacity: 1;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.78), 0 7px 14px rgba(20, 184, 166, 0.18);
+}
+.pool-item.is_disabled, :global([data-feature-page="prediction-editor"] :is(.pool-item.is_disabled)), :global(:is(.pool-item.is_disabled)[data-feature-page="prediction-editor"]) { cursor: not-allowed; }
+.pool-item.is_disabled:hover, :global([data-feature-page="prediction-editor"] :is(.pool-item.is_disabled:hover)), :global(:is(.pool-item.is_disabled:hover)[data-feature-page="prediction-editor"]) {
+  transform: none;
+  filter: none;
+}
+.pool-item.is_disabled img, :global([data-feature-page="prediction-editor"] :is(.pool-item.is_disabled img)), :global(:is(.pool-item.is_disabled img)[data-feature-page="prediction-editor"]) { filter: grayscale(1); opacity: 0.2; }
+.pool-disable-popover, :global([data-feature-page="prediction-editor"] :is(.pool-disable-popover)), :global(:is(.pool-disable-popover)[data-feature-page="prediction-editor"]) {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  min-width: 86px;
+  max-width: 120px;
+  padding: 3px 5px;
+  border-radius: 6px;
+  font-size: 9px;
+  line-height: 1.25;
+  text-align: center;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.24);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.pool-disable-popover::after, :global([data-feature-page="prediction-editor"] :is(.pool-disable-popover)::after), :global(:is(.pool-disable-popover)[data-feature-page="prediction-editor"]::after) {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid rgba(15, 23, 42, 0.94);
+}
+.check-mark, :global([data-feature-page="prediction-editor"] :is(.check-mark)), :global(:is(.check-mark)[data-feature-page="prediction-editor"]) {
+  position: absolute;
+  bottom: 1px;
+  right: -3px;
+  background: linear-gradient(145deg, rgba(20, 184, 166, 0.98), rgba(14, 165, 233, 0.78));
+  color: white;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  box-shadow: 0 4px 8px rgba(20, 184, 166, 0.24);
+}
+
+.drawer-footer, :global([data-feature-page="prediction-editor"] :is(.drawer-footer)), :global(:is(.drawer-footer)[data-feature-page="prediction-editor"]) {
+  padding: 9px 10px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.72);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.54));
+}
+.save-all-btn, :global([data-feature-page="prediction-editor"] :is(.save-all-btn)), :global(:is(.save-all-btn)[data-feature-page="prediction-editor"]) {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px;
+  background: linear-gradient(145deg, rgba(20, 184, 166, 0.96), rgba(14, 165, 233, 0.78));
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(20, 184, 166, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  transition: transform var(--ui-motion-state);
+}
+.save-all-btn:hover, :global([data-feature-page="prediction-editor"] :is(.save-all-btn:hover)), :global(:is(.save-all-btn:hover)[data-feature-page="prediction-editor"]) {
+  filter: saturate(1.04) brightness(1.02);
+}
+.close-btn:not(:disabled):active,
+.pool-item:not(.is_disabled):active,
+.save-all-btn:not(:disabled):active,
+:global([data-feature-page="prediction-editor"] :is(.close-btn:not(:disabled):active)),
+:global(:is(.close-btn:not(:disabled):active)[data-feature-page="prediction-editor"]),
+:global([data-feature-page="prediction-editor"] :is(.pool-item:not(.is_disabled):active)),
+:global(:is(.pool-item:not(.is_disabled):active)[data-feature-page="prediction-editor"]),
+:global([data-feature-page="prediction-editor"] :is(.save-all-btn:not(:disabled):active)),
+:global(:is(.save-all-btn:not(:disabled):active)[data-feature-page="prediction-editor"]) {
+  filter: brightness(0.94);
+}
+
+.empty-hint, :global([data-feature-page="prediction-editor"] :is(.empty-hint)), :global(:is(.empty-hint)[data-feature-page="prediction-editor"]) {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: var(--pe-radius-card);
+  background: var(--pe-glass-bg-strong);
+  border: 1px solid var(--pe-glass-border);
+  box-shadow: var(--pe-glass-shadow-soft);
+}
+.wl-lock-note, :global([data-feature-page="prediction-editor"] :is(.wl-lock-note)), :global(:is(.wl-lock-note)[data-feature-page="prediction-editor"]) {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+@media (min-width: 901px) and (max-width: 1280px) {
+  .drawer-header, :global([data-feature-page="prediction-editor"] :is(.drawer-header)), :global(:is(.drawer-header)[data-feature-page="prediction-editor"]) {
+    padding: 14px;
+  }
+
+  .header-main, :global([data-feature-page="prediction-editor"] :is(.header-main)), :global(:is(.header-main)[data-feature-page="prediction-editor"]) {
+    margin-bottom: 10px;
+  }
+
+  .header-main h3, :global([data-feature-page="prediction-editor"] :is(.header-main h3)), :global(:is(.header-main h3)[data-feature-page="prediction-editor"]) {
+    font-size: 1.06rem;
+  }
+
+  .global-config-bar,
+  .global-config-bar.has-banner,
+  :global([data-feature-page="prediction-editor"] :is(.global-config-bar)),
+  :global(:is(.global-config-bar)[data-feature-page="prediction-editor"]),
+  :global([data-feature-page="prediction-editor"] :is(.global-config-bar.has-banner)),
+  :global(:is(.global-config-bar.has-banner)[data-feature-page="prediction-editor"]) {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .cfg-group label, :global([data-feature-page="prediction-editor"] :is(.cfg-group label)), :global(:is(.cfg-group label)[data-feature-page="prediction-editor"]) {
+    font-size: 10px;
+  }
+
+  .cfg-group select, :global([data-feature-page="prediction-editor"] :is(.cfg-group select)), :global(:is(.cfg-group select)[data-feature-page="prediction-editor"]) {
+    font-size: 11px;
+    padding: 5px 24px 5px 9px;
+  }
+
+  .selected-section, :global([data-feature-page="prediction-editor"] :is(.selected-section)), :global(:is(.selected-section)[data-feature-page="prediction-editor"]) {
+    padding: 8px;
+  }
+
+  .editor-card, :global([data-feature-page="prediction-editor"] :is(.editor-card)), :global(:is(.editor-card)[data-feature-page="prediction-editor"]) {
+    gap: 8px;
+    min-height: 58px;
+    padding: 7px;
+  }
+
+  .editor-avatar, :global([data-feature-page="prediction-editor"] :is(.editor-avatar)), :global(:is(.editor-avatar)[data-feature-page="prediction-editor"]) {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 900px) {
+  .predict-drawer, :global([data-feature-page="prediction-editor"] :is(.predict-drawer)), :global(:is(.predict-drawer)[data-feature-page="prediction-editor"]) {
+    width: 100vw;
+    height: 62dvh;
+  }
+
+  .drawer-header, :global([data-feature-page="prediction-editor"] :is(.drawer-header)), :global(:is(.drawer-header)[data-feature-page="prediction-editor"]) {
+    padding: 10px;
+  }
+
+  .global-config-bar, :global([data-feature-page="prediction-editor"] :is(.global-config-bar)), :global(:is(.global-config-bar)[data-feature-page="prediction-editor"]) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    margin: 0 -4px;
+    padding: 6px;
+  }
+
+  .global-config-bar.has-banner, :global([data-feature-page="prediction-editor"] :is(.global-config-bar.has-banner)), :global(:is(.global-config-bar.has-banner)[data-feature-page="prediction-editor"]) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .cfg-group label, :global([data-feature-page="prediction-editor"] :is(.cfg-group label)), :global(:is(.cfg-group label)[data-feature-page="prediction-editor"]) {
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+
+  .cfg-group select, :global([data-feature-page="prediction-editor"] :is(.cfg-group select)), :global(:is(.cfg-group select)[data-feature-page="prediction-editor"]) {
+    font-size: 11px;
+    padding: 4px 22px 4px 8px;
+  }
+
+  .selected-section, :global([data-feature-page="prediction-editor"] :is(.selected-section)), :global(:is(.selected-section)[data-feature-page="prediction-editor"]) {
+    padding: 6px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+
+  .selected-list, :global([data-feature-page="prediction-editor"] :is(.selected-list)), :global(:is(.selected-list)[data-feature-page="prediction-editor"]) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .editor-card, :global([data-feature-page="prediction-editor"] :is(.editor-card)), :global(:is(.editor-card)[data-feature-page="prediction-editor"]) {
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    min-height: 54px;
+    padding: 6px;
+  }
+
+  .card-left, :global([data-feature-page="prediction-editor"] :is(.card-left)), :global(:is(.card-left)[data-feature-page="prediction-editor"]) {
+    flex: 0 0 auto;
+    align-self: center;
+  }
+
+  .editor-avatar, :global([data-feature-page="prediction-editor"] :is(.editor-avatar)), :global(:is(.editor-avatar)[data-feature-page="prediction-editor"]) {
+    width: 38px;
+    height: 38px;
+  }
+
+  .card-right, :global([data-feature-page="prediction-editor"] :is(.card-right)), :global(:is(.card-right)[data-feature-page="prediction-editor"]) {
+    flex: 1 1 auto;
+    width: auto;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .char-name, :global([data-feature-page="prediction-editor"] :is(.char-name)), :global(:is(.char-name)[data-feature-page="prediction-editor"]) {
+    display: none;
+  }
+
+  .name-row, :global([data-feature-page="prediction-editor"] :is(.name-row)), :global(:is(.name-row)[data-feature-page="prediction-editor"]) {
+    display: none;
+  }
+
+  .config-row, :global([data-feature-page="prediction-editor"] :is(.config-row)), :global(:is(.config-row)[data-feature-page="prediction-editor"]) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 0;
+    row-gap: 4px;
+  }
+
+  .mini-select,
+  .unit-tag,
+  :global([data-feature-page="prediction-editor"] :is(.mini-select)),
+  :global(:is(.mini-select)[data-feature-page="prediction-editor"]),
+  :global([data-feature-page="prediction-editor"] :is(.unit-tag)),
+  :global(:is(.unit-tag)[data-feature-page="prediction-editor"]) {
+    width: 94%;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 10px;
+    justify-self: center;
+  }
+
+  .config-row > :nth-child(odd), :global([data-feature-page="prediction-editor"] :is(.config-row > :nth-child(odd))), :global(:is(.config-row > :nth-child(odd))[data-feature-page="prediction-editor"]) {
+    justify-self: end;
+    margin-right: 1px;
+  }
+
+  .config-row > :nth-child(even), :global([data-feature-page="prediction-editor"] :is(.config-row > :nth-child(even))), :global(:is(.config-row > :nth-child(even))[data-feature-page="prediction-editor"]) {
+    justify-self: start;
+    margin-left: 1px;
+  }
+
+  .mini-select, :global([data-feature-page="prediction-editor"] :is(.mini-select)), :global(:is(.mini-select)[data-feature-page="prediction-editor"]) {
+    padding: 2px 10px 2px 8px;
+  }
+
+  .unit-tag, :global([data-feature-page="prediction-editor"] :is(.unit-tag)), :global(:is(.unit-tag)[data-feature-page="prediction-editor"]) {
+    padding: 2px 8px;
+    min-height: 24px;
+  }
+
+  .empty-hint, :global([data-feature-page="prediction-editor"] :is(.empty-hint)), :global(:is(.empty-hint)[data-feature-page="prediction-editor"]) {
+    min-height: 54px;
+    padding: 6px;
+  }
+
+  .pool-section, :global([data-feature-page="prediction-editor"] :is(.pool-section)), :global(:is(.pool-section)[data-feature-page="prediction-editor"]) {
+    height: auto;
+    padding: 6px;
+  }
+
+  .char-pool-grid, :global([data-feature-page="prediction-editor"] :is(.char-pool-grid)), :global(:is(.char-pool-grid)[data-feature-page="prediction-editor"]) {
+    grid-template-columns: repeat(auto-fill, minmax(26px, 1fr));
+    max-height: none;
+    gap: 3px;
+    overflow-y: visible;
+  }
+
+  .pool-item img, :global([data-feature-page="prediction-editor"] :is(.pool-item img)), :global(:is(.pool-item img)[data-feature-page="prediction-editor"]) {
+    border-radius: 8px;
+  }
+
+  .check-mark, :global([data-feature-page="prediction-editor"] :is(.check-mark)), :global(:is(.check-mark)[data-feature-page="prediction-editor"]) {
+    width: 10px;
+    height: 10px;
+    font-size: 8px;
+    right: -2px;
+    bottom: 1px;
+  }
+}
+
+@media (max-width: 520px) {
+  .header-main h3, :global([data-feature-page="prediction-editor"] :is(.header-main h3)), :global(:is(.header-main h3)[data-feature-page="prediction-editor"]) {
+    font-size: 1rem;
+  }
+
+  .cfg-group label, :global([data-feature-page="prediction-editor"] :is(.cfg-group label)), :global(:is(.cfg-group label)[data-feature-page="prediction-editor"]) {
+    font-size: 10px;
+  }
+
+  .cfg-group select, :global([data-feature-page="prediction-editor"] :is(.cfg-group select)), :global(:is(.cfg-group select)[data-feature-page="prediction-editor"]) {
+    font-size: 10px;
+  }
+
+  .global-config-bar, :global([data-feature-page="prediction-editor"] :is(.global-config-bar)), :global(:is(.global-config-bar)[data-feature-page="prediction-editor"]) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .global-config-bar.has-banner, :global([data-feature-page="prediction-editor"] :is(.global-config-bar.has-banner)), :global(:is(.global-config-bar.has-banner)[data-feature-page="prediction-editor"]) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .char-name, :global([data-feature-page="prediction-editor"] :is(.char-name)), :global(:is(.char-name)[data-feature-page="prediction-editor"]) {
+    font-size: 11px;
+  }
+
+  .config-row, :global([data-feature-page="prediction-editor"] :is(.config-row)), :global(:is(.config-row)[data-feature-page="prediction-editor"]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 0;
+    row-gap: 3px;
+  }
+
+  .save-all-btn, :global([data-feature-page="prediction-editor"] :is(.save-all-btn)), :global(:is(.save-all-btn)[data-feature-page="prediction-editor"]) {
+    padding: 8px;
+    font-size: 0.84rem;
+  }
+}

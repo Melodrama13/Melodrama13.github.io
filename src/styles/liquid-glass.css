@@ -1,9 +1,11 @@
 body {
   background-image: var(--ui-glass-ambient-image);
   background-size: 112% 112%;
-  animation: ui-glass-ambient-drift 18s ease-in-out infinite alternate;
+  animation: none;
 }
 
+/* Keep the environment still: interaction surfaces provide purposeful motion
+   without continuously invalidating the whole page's glass backdrops. */
 .ui-liquid-glass {
   position: relative;
   isolation: isolate;
@@ -22,6 +24,19 @@ body {
   z-index: -1;
   pointer-events: none;
   background: var(--ui-glass-specular-highlight);
+  opacity: 1;
+}
+
+/* Glass keeps its optical pseudo-elements. A color beneath the existing
+   surface image provides persistent hover feedback without rebuilding SVG. */
+.ui-liquid-glass :where(button.pjsk-ui-action, button.pjsk-ui-btn-pill,
+  button.pjsk-ui-btn-circle, button.pjsk-ui-swatch) {
+  --ui-control-feedback-overlay: var(--ui-control-glass-feedback-overlay);
+}
+@media (hover: hover) and (pointer: fine) {
+  :where(button.pjsk-ui-action.ui-liquid-glass:not(:disabled):not([aria-disabled="true"]):hover) {
+    background-color: var(--ui-control-hover-glass-fill) !important;
+  }
 }
 
 .ui-liquid-glass--refractive {
@@ -188,13 +203,13 @@ body {
     linear-gradient(#000 0 0);
   mask-composite: exclude;
   background: var(--ui-glass-lens-reflection);
-  padding: 1.25px;
+  padding: var(--ui-glass-lens-rim-width);
 }
 
 :is(.mobile-tab-glider, .top-nav-glass-capsule)[data-ui-glass-profile='lens']::before {
   background: var(--ui-glass-lens-scatter-highlight);
   opacity: 0.65;
-  transition: opacity 220ms ease;
+  transition: translate var(--ui-motion-navigation), scale var(--ui-motion-release);
 }
 
 .mobile-tab-glider[data-ui-glass-pressed='true']::before {
@@ -206,8 +221,41 @@ body {
   opacity: 0.18;
 }
 
+/* Selected tabs rest as a shadow. The same cached lens becomes glass while
+   held or moving, without a drop shadow or an extra backdrop surface. */
+.mobile-tab-glider[data-ui-glass-lens-role='selector'][data-ui-glass-active] {
+  --ui-glass-surface-shadow: none;
+  box-shadow: none !important;
+}
+
+:root[data-ui-glass-mode] .mobile-tab-glider[data-ui-glass-lens-role='selector'][data-ui-glass-active='false'] {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: var(--ui-glass-selector-idle-shadow) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+:root[data-ui-glass-mode] .mobile-tab-glider[data-ui-glass-lens-role='selector'][data-ui-glass-active='false']::before,
+:root[data-ui-glass-mode] .mobile-tab-glider[data-ui-glass-lens-role='selector'][data-ui-glass-active='false']::after {
+  opacity: 0;
+}
+
+/* High-contrast selection must not depend on a shadow. */
+:root[data-ui-glass-mode='opaque'] .mobile-tab-glider[data-ui-glass-lens-role='selector'][data-ui-glass-active] {
+  box-shadow: none !important;
+  border-color: currentColor !important;
+}
+
 :root[data-ui-glass-mode='frosted'] .ui-liquid-glass--refractive {
   --ui-glass-surface-filter: var(--ui-glass-filter-frosted-refractive);
+}
+
+/* Moving dense content invalidates every SVG backdrop above it. Use each
+   surface's existing frost until all large-motion owners release their lease. */
+:root[data-ui-glass-mode='refractive'][data-ui-glass-motion-deferred='true'] .ui-liquid-glass {
+  -webkit-backdrop-filter: var(--ui-glass-surface-filter) !important;
+  backdrop-filter: var(--ui-glass-surface-filter) !important;
 }
 
 :root[data-ui-glass-mode='frosted'] .ui-liquid-glass--regular {
@@ -269,16 +317,6 @@ body {
   background-position: 50% 50%;
 }
 
-@keyframes ui-glass-ambient-drift {
-  from {
-    background-position: 48% 48%;
-  }
-
-  to {
-    background-position: 52% 52%;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   body {
     animation: none;
@@ -301,7 +339,7 @@ body {
   }
 
   .ui-liquid-glass {
-    background: var(--ui-glass-fallback-bg);
+    background: var(--ui-glass-fallback-bg) !important;
     background-image: none;
     box-shadow: none;
     -webkit-backdrop-filter: none;

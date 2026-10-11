@@ -1,0 +1,6 @@
+/* Shared chip integrity; page controls and text presentation keep their sizing. */
+.song-commissioned-stats-panel.is-image-mode .song-vs-pill,
+.song-commissioned-stats-panel.is-image-mode .song-vs-pill > span,
+.song-commissioned-stats-panel.is-image-mode .song-vs-pill > img {
+  flex-shrink: 0;
+}

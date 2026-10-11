@@ -2,6 +2,35 @@
    Global Generic UI Components
    ========================================================= */
 
+/* Native control families share interaction rules; feature CSS owns density,
+   layout and material. These classes add no wrappers or export geometry. */
+.pjsk-ui-field {
+  border-radius: var(--ui-control-radius-pill) !important;
+}
+.pjsk-ui-textarea {
+  border-radius: var(--ui-control-radius-textarea);
+}
+:is(.pjsk-ui-field, .pjsk-ui-textarea, .pjsk-ui-action, .pjsk-ui-choice,
+    .pjsk-ui-swatch, .pjsk-ui-range):focus-visible {
+  /* Scoped page styles cannot remove the keyboard user's focus indicator. */
+  outline: var(--ui-control-focus-width) solid var(--ui-control-focus-color) !important;
+  outline-offset: var(--ui-control-focus-offset) !important;
+}
+:is(.pjsk-ui-field, .pjsk-ui-textarea, .pjsk-ui-action, .pjsk-ui-choice,
+    .pjsk-ui-swatch, .pjsk-ui-range):is(:disabled, [aria-disabled="true"]) {
+  opacity: var(--ui-control-disabled-opacity) !important;
+  cursor: not-allowed;
+}
+:is(.pjsk-ui-field, .pjsk-ui-textarea)[aria-invalid="true"] {
+  border-color: var(--ui-control-error-border) !important;
+}
+.pjsk-ui-action:is([aria-pressed="true"], [aria-checked="true"]) {
+  border-color: var(--ui-control-selected-border);
+}
+:is(.pjsk-ui-action, .pjsk-ui-field)[aria-busy="true"] {
+  cursor: progress;
+}
+
 /* Generic Checkbox Toggle */
 .pjsk-ui-checkbox {
   display: inline-flex;
@@ -32,21 +61,17 @@
   gap: 4px;
   padding: 4px 8px;
   border: 1px solid var(--ui-control-border);
-  border-radius: 999px;
+  border-radius: var(--ui-control-radius-pill);
   background: var(--ui-control-bg);
   color: var(--ui-control-label);
   font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all var(--ui-motion-control);
   white-space: nowrap;
 }
 .pjsk-ui-btn-pill:hover {
   background: var(--ui-control-bg-hover);
   border-color: var(--ui-control-border-hover);
-}
-.pjsk-ui-btn-pill:active {
-  transform: scale(0.96);
 }
 .pjsk-ui-btn-pill img.btn-icon {
   width: 14px;
@@ -55,7 +80,7 @@
 }
 
 .pjsk-ui-btn-pill:disabled, .pjsk-ui-checkbox input:disabled {
-  opacity: 0.6;
+  opacity: var(--ui-control-disabled-opacity);
   cursor: not-allowed;
   pointer-events: none;
 }
@@ -103,18 +128,35 @@
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all var(--ui-motion-control);
   flex-shrink: 0;
 }
 .pjsk-ui-btn-circle:hover {
   background: var(--ui-control-bg-hover);
   border-color: var(--ui-control-border-hover);
 }
-.pjsk-ui-btn-circle:active {
-  transform: scale(0.96);
-}
 .pjsk-ui-btn-circle:disabled {
-  opacity: 0.6;
+  opacity: var(--ui-control-disabled-opacity);
   cursor: not-allowed;
   pointer-events: none;
+}
+
+.pjsk-ui-btn-pill:focus-visible,
+.pjsk-ui-btn-circle:focus-visible,
+.pjsk-ui-checkbox input[type="checkbox"]:focus-visible {
+  outline: var(--ui-control-focus-width) solid var(--ui-control-focus-color);
+  outline-offset: var(--ui-control-focus-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pjsk-ui-field,
+  .pjsk-ui-textarea,
+  .pjsk-ui-action,
+  .pjsk-ui-choice,
+  .pjsk-ui-swatch,
+  .pjsk-ui-range,
+  .pjsk-ui-btn-pill,
+  .pjsk-ui-btn-circle {
+    /* Accessibility preference takes priority over scoped page feedback. */
+    transition: none !important;
+  }
 }

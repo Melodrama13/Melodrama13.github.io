@@ -1,0 +1,119 @@
+/* Query each singer card's available width, including detached export clones. */
+.song-commissioned-stats-panel.is-image-mode .song-vs-event-card {
+  container: commissioned-song-summary / inline-size;
+}
+
+.song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-image-head {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  position: static;
+  padding: 0;
+}
+
+.song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-image-head-main {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-image-head .song-role-card-tools {
+  order: 3;
+  position: static;
+  margin-left: auto;
+  align-self: center;
+  flex: 0 0 auto;
+}
+
+.song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-total-mv-chip-head {
+  display: none;
+}
+
+.song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image {
+  display: grid;
+  grid-template-columns: max-content repeat(5, minmax(max-content, 1fr));
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  min-width: max-content;
+  margin-bottom: 0;
+  flex: 1 1 auto;
+}
+
+.song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image .song-vs-event-unit-stack {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-width: max-content;
+}
+
+.song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image .song-vs-event-unit-chip,
+.song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip {
+  width: auto;
+  min-width: 56px;
+}
+
+/* Intermediate widths keep the summary in one row and stack each unit's pair. */
+@container commissioned-song-summary (max-width: 56rem) {
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image {
+    grid-template-columns: max-content repeat(5, minmax(3.5rem, 5rem));
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image .song-vs-event-unit-stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image .song-vs-event-unit-stack:not(.song-vs-event-unit-stack-total) {
+    width: 100%;
+    max-width: 5rem;
+    justify-self: center;
+  }
+
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image .song-vs-event-unit-chip,
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image .song-vs-event-unit-mv-chip {
+    width: 100%;
+  }
+}
+
+/* Only narrow cards move the unit collection below identity and MV totals. */
+@container commissioned-song-summary (max-width: 36rem) {
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-image-head {
+    flex-wrap: wrap;
+  }
+
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-image-head-main {
+    flex: 1 1 auto;
+  }
+
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-total-mv-chip-head {
+    display: inline-flex;
+  }
+
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image {
+    order: 4;
+    grid-template-columns: repeat(5, minmax(3.5rem, 5rem));
+    min-width: 0;
+    width: 100%;
+    flex: 0 0 100%;
+  }
+
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image .song-vs-event-unit-stack {
+    min-width: 0;
+  }
+
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image .song-vs-event-unit-stack-total {
+    display: none;
+  }
+}
+
+/* Below five minimum-width columns, wrap without exceeding the same pill cap. */
+@container commissioned-song-summary (max-width: 18.5rem) {
+  .song-commissioned-stats-panel.is-image-mode .song-vs-event-card .song-vs-event-unit-counts-image {
+    grid-template-columns: repeat(auto-fit, minmax(3.5rem, 1fr));
+  }
+}
