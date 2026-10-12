@@ -26586,6 +26586,14 @@
           "望月穗波",
           "日野森志步"
         ]
+      },
+      {
+        "vocal_id": 2093,
+        "type": "another_vocal",
+        "released_at": "2026/10/12",
+        "characters": [
+          "望月穗波"
+        ]
       }
     ]
   },
@@ -35929,6 +35937,30 @@
           "望月穗波",
           "日野森志步"
         ]
+      },
+      {
+        "vocal_id": 2094,
+        "type": "another_vocal",
+        "released_at": "2026/10/12",
+        "characters": [
+          "星乃一歌"
+        ]
+      },
+      {
+        "vocal_id": 2095,
+        "type": "another_vocal",
+        "released_at": "2026/10/12",
+        "characters": [
+          "日野森志步"
+        ]
+      },
+      {
+        "vocal_id": 2096,
+        "type": "another_vocal",
+        "released_at": "2026/10/12",
+        "characters": [
+          "镜音铃"
+        ]
       }
     ]
   },
@@ -36033,6 +36065,52 @@
         "released_at": "2026/7/21",
         "characters": [
           "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 793,
+    "title": "バカ通信",
+    "pronunciation": "ばかつうしん",
+    "composer": "isonosuke",
+    "lyricist": "isonosuke",
+    "arranger": "isonosuke",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-19 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "ws"
+    ],
+    "difficulties": {
+      "easy": 9,
+      "normal": 14,
+      "hard": 21,
+      "expert": 27,
+      "master": 31
+    },
+    "vocals": [
+      {
+        "vocal_id": 1350,
+        "type": "original_song",
+        "released_at": "2026/10/19",
+        "characters": [
+          "知声"
+        ]
+      },
+      {
+        "vocal_id": 2098,
+        "type": "sekai",
+        "released_at": "2026/10/19",
+        "characters": [
+          "MEIKO",
+          "天马司",
+          "凤笑梦",
+          "草薙宁宁",
+          "神代类"
         ]
       }
     ]
@@ -36351,6 +36429,52 @@
     ]
   },
   {
+    "id": 812,
+    "title": "星、ときどき光",
+    "pronunciation": "ほし、ときどきひかり",
+    "composer": "あばらや",
+    "lyricist": "あばらや",
+    "arranger": "あばらや",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-10-12 15:00:00",
+    "categories": [
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "ln"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 12,
+      "hard": 18,
+      "expert": 25,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1856,
+        "type": "original_song",
+        "released_at": "2026/10/12",
+        "characters": [
+          "flower"
+        ]
+      },
+      {
+        "vocal_id": 2097,
+        "type": "sekai",
+        "released_at": "2026/10/12",
+        "characters": [
+          "望月穗波",
+          "MEIKO",
+          "星乃一歌",
+          "天马咲希",
+          "日野森志步"
+        ]
+      }
+    ]
+  },
+  {
     "id": 813,
     "title": "at",
     "pronunciation": "あっと",
@@ -36418,6 +36542,41 @@
         "released_at": "2026/9/22",
         "characters": [
           "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 824,
+    "title": "Palette",
+    "pronunciation": "ぱれっと",
+    "composer": "ゆよゆっぺ・meola",
+    "lyricist": "ゆよゆっぺ・meola",
+    "arranger": "ゆよゆっぺ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-16 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 17,
+      "expert": 26,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1868,
+        "type": "original_song",
+        "released_at": "2026/10/16",
+        "characters": [
+          "巡音流歌"
         ]
       }
     ]
