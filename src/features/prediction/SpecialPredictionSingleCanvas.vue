@@ -49,7 +49,9 @@
           </div>
           <template v-for="row in renderedRows" :key="row.key">
             <div v-if="row.monthLabel" class="special-month-bar" :style="monthTextStyle">{{ row.monthLabel }}</div>
+            <SpecialPredictionCompilationRow v-if="row.isCompilation" :row="row" :text-style="eventMetaTextStyle" />
             <div
+              v-else
               :class="['special-event-row', row.rowClass]"
               :style="row.detailStyle"
             >
@@ -146,6 +148,7 @@
 
 <script setup>
 import SpecialPredictionCardCell from './SpecialPredictionCardCell.vue';
+import SpecialPredictionCompilationRow from './SpecialPredictionCompilationRow.vue';
 // Feature objects retain the actual instance refs used by native controls and canvas elements.
 
 const props = defineProps(["preview","capture","presentation","textTransform","background","textSettings","coverText","caseRows","metadata","eventNotes","noteEditing","credit"]);

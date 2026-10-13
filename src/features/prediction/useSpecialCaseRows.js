@@ -1,6 +1,7 @@
 import { computed } from "vue";
 import { getBaseName, hexToRgb, rgbaFromHex, mixHexWithWhite, normalizeId } from './specialPredictionFormatters.js';
 import { mergeCollaborationCardPredictions } from '../../domain/collaborationEvents.js';
+import { isCompilationEvent } from '../../utils/compilationEvents.js';
 
 /** Owns special prediction case rows with explicit instance dependencies. */
 export function useSpecialCaseRows(ports = {}) {
@@ -183,13 +184,65 @@ const buildRenderedCase = ({ base, patch, source, caseIndex = 0, multi = false }
   };
 };
 
+const isDisplayableEvent = (event) => ports.eventCatalog.isPredictableBaseEvent(event)
+  || (ports.rangeSelection.showUnpredictedRows.value && isCompilationEvent(event));
+
+const buildCompilationEventRow = ({ event, index, scheduleIndex }) => {
+  const unit = ports.eventCatalog.getEventUnit(event);
+  const color = ports.metadata.unitColorMap.value[unit] || '#14b8a6';
+  return {
+    key: `compilation-${normalizeId(event.id)}-${index}`,
+    id: normalizeId(event.id),
+    isCompilation: true,
+    sortKey: scheduleIndex,
+    startDate: ports.eventCatalog.formatDate(event.start_date || event.date),
+    endDate: ports.eventCatalog.formatDate(event.end_date),
+    unitLabel: unit.toUpperCase(),
+    unitLogo: ports.noteTokens.UNIT_LOGOS[unit] || '',
+    unitColor: color
+  };
+};
+
+const groupCompilationRows = (rows) => {
+  const grouped = [];
+  rows.forEach((row) => {
+    if (!row.isCompilation) {
+      grouped.push(row);
+      return;
+    }
+    const monthKey = ports.eventCatalog.getMonthInfoFromDate(row.endDate || row.startDate)?.key;
+    const previous = grouped.at(-1);
+    if (monthKey && previous?.isCompilation && previous.monthKey === monthKey && previous.events.length < 2) {
+      previous.events.push(row);
+      previous.endDate = row.endDate || row.startDate;
+    } else {
+      grouped.push({
+        key: row.key, isCompilation: true, monthKey, sortKey: row.sortKey,
+        startDate: row.startDate, endDate: row.endDate, events: [row]
+      });
+    }
+  });
+  return grouped.map((row) => {
+    if (!row.isCompilation) return row;
+    const startColor = rgbaFromHex(row.events[0].unitColor, 0.32);
+    const endColor = row.events.length > 1
+      ? rgbaFromHex(row.events.at(-1).unitColor, 0.32)
+      : 'rgba(255, 255, 255, 0.8)';
+    return {
+      ...row,
+      detailStyle: { '--special-compilation-fill': `linear-gradient(115deg, ${startColor}, ${endColor})` }
+    };
+  });
+};
+
 const renderedRows = computed(() => {
   const range = ports.rangeSelection.effectiveRange.value;
   if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) return [];
 
-  return ports.eventCatalog.numericEvents.value
-    .filter(({ event, idNum }) => ports.eventCatalog.isPredictableBaseEvent(event) && idNum >= range.start && idNum <= range.end)
+  const rows = ports.eventCatalog.numericEvents.value
+    .filter(({ event, idNum }) => isDisplayableEvent(event) && idNum >= range.start && idNum <= range.end)
     .map(({ event: base, index, scheduleIndex }) => {
+      if (isCompilationEvent(base)) return buildCompilationEventRow({ event: base, index, scheduleIndex });
       const idKey = normalizeId(base.id);
       const patch = ports.eventCatalog.predictPatchById.value.get(idKey) || null;
       if (!patch && !ports.rangeSelection.showUnpredictedRows.value) return null;
@@ -205,8 +258,8 @@ const renderedRows = computed(() => {
       };
     })
     .filter(Boolean)
-    .sort((a, b) => a.sortKey - b.sortKey)
-    .map((row, index, rows) => {
+    .sort((a, b) => a.sortKey - b.sortKey);
+  return groupCompilationRows(rows).map((row, index, rows) => {
       const monthInfo = ports.eventCatalog.getMonthInfoFromDate(row.endDate || row.startDate);
       const prevMonthInfo = index > 0 ? ports.eventCatalog.getMonthInfoFromDate(rows[index - 1]?.endDate || rows[index - 1]?.startDate) : null;
       return {
@@ -219,9 +272,11 @@ const renderedRows = computed(() => {
 const multiCaseRows = computed(() => {
   const range = ports.rangeSelection.effectiveRange.value;
   if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) return [];
-  return ports.eventCatalog.numericEvents.value
-    .filter(({ event, idNum }) => ports.eventCatalog.isPredictableBaseEvent(event) && idNum >= range.start && idNum <= range.end)
+  if (ports.sourceSelection.selectedMultiSources.value.length === 0) return [];
+  const rows = ports.eventCatalog.numericEvents.value
+    .filter(({ event, idNum }) => isDisplayableEvent(event) && idNum >= range.start && idNum <= range.end)
     .map(({ event: base, index, scheduleIndex }) => {
+      if (isCompilationEvent(base)) return buildCompilationEventRow({ event: base, index, scheduleIndex });
       const idKey = normalizeId(base.id);
       const groupedCases = new Map();
       ports.sourceSelection.selectedMultiSources.value.forEach((source) => {
@@ -314,6 +369,7 @@ const multiCaseRows = computed(() => {
     })
     .filter(Boolean)
     .sort((a, b) => a.sortKey - b.sortKey);
+  return groupCompilationRows(rows);
 });
 
 const monthlyMultiPages = computed(() => {
@@ -322,10 +378,11 @@ const monthlyMultiPages = computed(() => {
     const monthInfo = ports.eventCatalog.getMonthInfoFromDate(row.endDate || row.startDate) || { key: 'undated', label: '月份未定' };
     let page = pages.find((item) => item.key === monthInfo.key);
     if (!page) {
-      page = { key: monthInfo.key, label: monthInfo.label, rows: [] };
+      page = { key: monthInfo.key, label: monthInfo.label, rows: [], eventCount: 0 };
       pages.push(page);
     }
     page.rows.push(row);
+    page.eventCount += row.isCompilation ? row.events.length : 1;
   });
   return pages;
 });

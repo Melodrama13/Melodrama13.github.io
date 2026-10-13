@@ -64,9 +64,10 @@
 
               <div class="special-month-bar" :style="getPageMonthTextStyle(page.key)">{{ page.label }}</div>
 
+              <template v-for="row in page.rows" :key="row.key">
+              <SpecialPredictionCompilationRow v-if="row.isCompilation" :row="row" :text-style="getPageEventMetaTextStyle(page.key)" />
               <div
-                v-for="row in page.rows"
-                :key="row.key"
+                v-else
                 :class="['special-event-row', 'special-multi-event-row', row.rowClass]"
                 :style="row.detailStyle"
               >
@@ -175,6 +176,7 @@
                 </div>
               </div>
 
+              </template>
               <div
                 class="special-credit-box"
                 :class="{ 'is-selected': isPageAppearanceActive(page.key) && isPredictorTextMode }"
@@ -196,6 +198,7 @@
 
 <script setup>
 import SpecialPredictionCardCell from './SpecialPredictionCardCell.vue';
+import SpecialPredictionCompilationRow from './SpecialPredictionCompilationRow.vue';
 // Feature objects retain the actual instance refs used by native controls and canvas elements.
 
 const props = defineProps(["caseRows","preview","capture","presentation","textTransform","pageAppearance","textSettings","coverText","manualCases","metadata","eventNotes","noteEditing","credit"]);

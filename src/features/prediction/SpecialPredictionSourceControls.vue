@@ -49,7 +49,7 @@
             <span>图片</span>
             <select class="pjsk-ui-field" :value="selectedPageConfigKey" @change="selectPageConfig($event.target.value)">
               <option :value="ALL_PAGE_CONFIG_KEY">全部图</option>
-              <option v-for="page in monthlyMultiPages" :key="page.key" :value="page.key">{{ page.label }}（{{ page.rows.length }}期）</option>
+              <option v-for="page in monthlyMultiPages" :key="page.key" :value="page.key">{{ page.label }}（{{ page.eventCount }}期）</option>
             </select>
           </label>
           <span class="special-page-scope-note">{{ selectedPageConfigKey === ALL_PAGE_CONFIG_KEY ? '修改将应用到全部月份' : '仅修改当前月份' }}</span>

@@ -43,6 +43,16 @@ const characterCommandMap = computed(() => {
   return map;
 });
 
+const unitColorMap = computed(() => {
+  const map = {};
+  (ports.props.allCharacters || []).forEach((char) => {
+    const unit = normalizeUnit(char?.unit);
+    const color = String(char?.unit_color || '').trim();
+    if (unit && hexToRgb(color)) map[unit] = color;
+  });
+  return map;
+});
+
 const vsNameSet = computed(() => new Set(
   Object.entries(charMap.value)
     .filter(([, meta]) => meta.unit === 'vs')
@@ -59,6 +69,7 @@ const characterColorOptions = computed(() => (Array.isArray(ports.props.allChara
 
 return { baseCardsByEventId,
 charMap,
+unitColorMap,
 characterCommandMap,
 vsNameSet,
 characterColorOptions };

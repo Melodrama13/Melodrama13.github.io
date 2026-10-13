@@ -28,6 +28,7 @@ const collectScopedMultiEventNotes = (pages, pageKey, notesBySource) => {
   const seen = new Set();
   scopedPages.forEach((page) => {
     page.rows.forEach((row) => {
+      if (row.isCompilation) return;
       row.cases.forEach((caseItem) => {
         if (!caseItem.hasPrediction) return;
         const sourceId = normalizeId(caseItem.noteSourceId);
