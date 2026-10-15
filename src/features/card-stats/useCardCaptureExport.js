@@ -3,6 +3,7 @@ import { waitForCaptureAssetsReady } from '../../services/capture/captureAssetRe
 import { freezeCaptureCssVariables, hideUnreadyCaptureImages } from '../../services/capture/captureElementState.js';
 import { runCaptureRenderAttempts } from '../../services/capture/captureRenderAttempts.js';
 import { renderCaptureToCanvas as toCanvas } from '../../services/capture/captureEngineLoader.js';
+import { renderCardYearCaptureToCanvas } from './cardYearCaptureRendering.js';
 
 /** Owns card capture export behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -190,6 +191,9 @@ export function useCardCaptureExport(inputs) {
       const width = Math.max(1, Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0));
       const height = Math.max(1, Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0));
       const heavyMediaCount = inputs.captureRendering.countHeavyMediaNodes(renderEl);
+      const yearCardCount = targetEl.matches('.year-stats-panel')
+        ? targetEl.querySelectorAll('.year-stats-card-entry').length
+        : 0;
       const pixelRatioPlan = inputs.captureRendering.buildCapturePixelRatioPlan(deviceTier);
       const canvas = await runCaptureRenderAttempts({
         attemptCount: pixelRatioPlan.length,
@@ -199,7 +203,8 @@ export function useCardCaptureExport(inputs) {
           const canvasHeight = Math.max(1, Math.round(height * pixelRatio));
           const renderTimeoutMs = Math.min(
             56000,
-            Math.max(12000, Math.round(inputs.captureRendering.computeRenderTimeoutMs({
+            // Whole-year exports serialize hundreds of cards even when the canvas is small.
+            Math.max(12000, yearCardCount * 40, Math.round(inputs.captureRendering.computeRenderTimeoutMs({
               deviceTier,
               heavyMediaCount,
               width,
@@ -217,7 +222,8 @@ export function useCardCaptureExport(inputs) {
           return { canvasWidth, canvasHeight, renderTimeoutMs };
         },
         renderAttempt: async ({ canvasWidth, canvasHeight, renderTimeoutMs }) => {
-          const renderTask = inputs.captureRendering.trackCardCaptureRenderTask(toCanvas(renderEl, {
+          let attemptFinished = false;
+          const renderTask = inputs.captureRendering.trackCardCaptureRenderTask(renderCardYearCaptureToCanvas(renderEl, {
             backgroundColor: '#ffffff',
             width,
             height,
@@ -234,8 +240,12 @@ export function useCardCaptureExport(inputs) {
               }
               return true;
             }
-          }));
-          return await inputs.captureRendering.withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
+          }, toCanvas, () => attemptFinished || cancelContext.isCancelled()));
+          try {
+            return await inputs.captureRendering.withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
+          } finally {
+            attemptFinished = true;
+          }
         },
         handleAttemptError: async (renderError) => {
           if (isCaptureRenderTimeoutError(renderError)) {

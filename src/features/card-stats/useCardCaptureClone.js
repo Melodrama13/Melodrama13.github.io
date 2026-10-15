@@ -1,5 +1,6 @@
 import { copyCaptureCssVariables, copyCaptureCssVariablesFromAncestors, copyCaptureFeatureBoundary } from '../../services/capture/captureStyleContext.js';
 import { syncCaptureCloneFormControls } from '../../services/capture/captureElementState.js';
+import { syncCardYearCaptureLayout } from './cardYearCaptureLayout.js';
 
 /** Owns card capture clone behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -619,6 +620,10 @@ export function useCardCaptureClone(inputs) {
       await inputs.captureExport.waitNextPaint();
       clone.style.height = 'auto';
       clone.style.minHeight = '0';
+    }
+
+    if (syncCardYearCaptureLayout(targetEl, clone)) {
+      await inputs.captureExport.waitNextPaint();
     }
 
     const finalWidth = Math.max(clone.scrollWidth, clone.clientWidth, clone.getBoundingClientRect().width);

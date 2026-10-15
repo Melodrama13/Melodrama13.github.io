@@ -148,6 +148,14 @@ export function useCardNavigationCatalog(inputs) {
         children: attrSummaryUnitNavChildren.value
       },
       {
+        id: 'panel-year',
+        title: '年份统计',
+        children: inputs.yearStats.yearPanels.value.map(panel => ({
+          id: panel.anchorId,
+          title: panel.navTitle
+        }))
+      },
+      {
         id: 'panel-matrix',
         title: '角色矩阵',
         children: []

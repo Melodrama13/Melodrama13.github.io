@@ -312,6 +312,36 @@
           :ATTR_LABELS="ATTR_LABELS"
         />
 
+        <CardYearStatsPanel
+          :yearPanels="yearPanels"
+          :yearRarityOptions="yearRarityOptions"
+          :yearCardTypeOptions="yearCardTypeOptions"
+          v-model:yearRarities="yearRarities"
+          v-model:yearCardTypes="yearCardTypes"
+          v-model:yearShowCardImages="yearShowCardImages"
+          v-model:yearShowCardDates="yearShowCardDates"
+          v-model:yearUseOperatingYear="yearUseOperatingYear"
+          v-model:yearNewYearNextYear="yearNewYearNextYear"
+          :includeVsInYearUnitSummary="includeVsInYearUnitSummary"
+          :includeVsInYearUnitSummaryIndeterminate="includeVsInYearUnitSummaryIndeterminate"
+          :onIncludeVsInYearUnitSummaryChange="onIncludeVsInYearUnitSummaryChange"
+          :onYearVsUnitSummaryChange="onYearVsUnitSummaryChange"
+          :getDistUnitSummaryChipStyle="getDistUnitSummaryChipStyle"
+          :unitLogoMap="unitLogoMap"
+          v-model:hideYearCharNames="hideYearCharNames"
+          :showDesktopNameControls="showDesktopNameControls"
+          :isExportingPng="isExportingPng"
+          :exportElementPng="exportElementPng"
+          :getCharAbbr="getCharAbbr"
+          :getStepFestivalAvatarStyle="getStepFestivalAvatarStyle"
+          :getDistNameLabel="getDistNameLabel"
+          :getCharTint="getCharTint"
+          :buildCardImageSrc="buildCardImageSrc"
+          :onMediaImageLoad="onMediaImageLoad"
+          :onMediaImageError="onMediaImageError"
+          :ATTR_LABELS="ATTR_LABELS"
+        />
+
         <CharacterCardAttributeMatrixPanel
           :includeUnitScoreInPureScore="includeUnitScoreInPureScore"
           :onIncludeUnitScoreInPureScoreChange="onIncludeUnitScoreInPureScoreChange"
@@ -404,6 +434,7 @@ import CardSpecialRecordsPanel from '../features/card-stats/CardSpecialRecordsPa
 import CardLineupPanel from '../features/card-stats/CardLineupPanel.vue';
 import CardSupportPanel from '../features/card-stats/CardSupportPanel.vue';
 import CardAttributeSummaryPanel from '../features/card-stats/CardAttributeSummaryPanel.vue';
+import CardYearStatsPanel from '../features/card-stats/CardYearStatsPanel.vue';
 import CharacterCardAttributeMatrixPanel from '../features/card-stats/CharacterCardAttributeMatrixPanel.vue';
 import AffiliatedVsCardAttributeMatrixPanel from '../features/card-stats/AffiliatedVsCardAttributeMatrixPanel.vue';
 import CardStatsNavigation from '../features/card-stats/CardStatsNavigation.vue';
@@ -429,6 +460,7 @@ import { useCardCaptureModal } from '../features/card-stats/useCardCaptureModal.
 import { useCardResponsiveLayout } from '../features/card-stats/useCardResponsiveLayout.js';
 import { useCardCaptureRendering } from '../features/card-stats/useCardCaptureRendering.js';
 import { useCardAttributeSummary } from '../features/card-stats/useCardAttributeSummary.js';
+import { useCardYearStats } from '../features/card-stats/useCardYearStats.js';
 import { useCardCaptureExport } from '../features/card-stats/useCardCaptureExport.js';
 import { useCardCaptureClone } from '../features/card-stats/useCardCaptureClone.js';
 import { useCardEventCatalog } from '../features/card-stats/useCardEventCatalog.js';
@@ -468,6 +500,7 @@ const navigationCatalog = useCardNavigationCatalog({
   get presentation() { return presentation; },
   get support() { return support; },
   get attributeSummary() { return attributeSummary; },
+  get yearStats() { return yearStats; },
   get distribution() { return distribution; },
 });
 
@@ -640,6 +673,14 @@ const attributeSummary = useCardAttributeSummary({
   get constants() { return constants; },
 });
 
+const yearStats = useCardYearStats({
+  props,
+  get eventCatalog() { return eventCatalog; },
+  get presentation() { return presentation; },
+  get metadata() { return metadata; },
+  get navigation() { return navigation; },
+});
+
 const captureExport = useCardCaptureExport({
   get captureRendering() { return captureRendering; },
   get captureModal() { return captureModal; },
@@ -726,12 +767,14 @@ const { specialLimitedShowCardImages, onSpecialLimitedShowCardImagesChange, spec
 const { isDuoUnitGlobalFilterChecked, isDuoUnitGlobalFilterIndeterminate, onDuoFilterChange, duoLastPoolShowCardImagesAll, duoLastPoolShowCardImagesIndeterminate, onDuoLastPoolShowCardImagesChange, duoUnitRows, onDuoUnitFilterChange, getDuoHeadCellStyle, getDuoMatrixCellClass, getDuoMatrixCellStyle, formatDuoCount, onDuoUnitLastPoolShowCardImagesChange, duoPoolFilters, duoPoolMatrix, duoEventFilters, duoEventMatrix } = duo;
 const { isExportingPng, screenshotModalVisible, closeScreenshotModal, screenshotModalState, screenshotModalTitle, forceCancelScreenshotExport, screenshotModalMessage, retryScreenshotExport } = captureModal;
 const { attrSummaryCards } = attributeSummary;
+const { yearRarityOptions, yearRarities, yearCardTypeOptions, yearCardTypes, yearShowCardImages, yearShowCardDates, yearUseOperatingYear, yearNewYearNextYear, hideYearCharNames, yearPanels } = yearStats;
+const { includeVsInYearUnitSummary, includeVsInYearUnitSummaryIndeterminate, onIncludeVsInYearUnitSummaryChange, onYearVsUnitSummaryChange } = yearStats;
 const { exportElementPng } = captureExport;
 const { safeMaxEventId } = eventCatalog;
 const { getLineupRowStyle, getLineupMemberCellStyle } = lineupRules;
 const { getJumpLinkLabel } = eventLabels;
 const { specialPanelShowCardImagesAll, specialPanelShowCardImagesIndeterminate, onSpecialPanelShowAllCardImagesChange } = panelControls;
-const { onMediaImageLoad, onMediaImageError, getLineupSlotCardImageSrc } = media;
+const { onMediaImageLoad, onMediaImageError, getLineupSlotCardImageSrc, buildCardImageSrc } = media;
 
 defineExpose({
   getTopBarState,
