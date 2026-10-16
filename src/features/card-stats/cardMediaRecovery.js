@@ -1,5 +1,6 @@
 const RETRY_DELAYS = [600, 1800];
-const MAX_ACTIVE_REQUESTS = 4;
+const MAX_DESKTOP_REQUESTS = 16;
+const MAX_TOUCH_REQUESTS = 4;
 const REQUEST_TIMEOUT_MS = 15000;
 
 /** Bounds year-thumbnail loading and failed-image recovery with one request queue. */
@@ -16,6 +17,8 @@ export function createCardMediaRecovery(getRoot) {
   let requestId = 0;
 
   const canRun = () => running && document.visibilityState !== 'hidden' && navigator.onLine !== false;
+  const getRequestLimit = () => window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches
+    ? MAX_TOUCH_REQUESTS : MAX_DESKTOP_REQUESTS;
   const isNearViewport = image => {
     const rect = image.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0 && rect.bottom >= -160 && rect.top <= innerHeight + 160
@@ -55,7 +58,7 @@ export function createCardMediaRecovery(getRoot) {
     clearTimeout(timer);
     timer = 0;
     failures.forEach((state, image) => { if (!isCurrent(image, state)) forget(image); });
-    if (!canRun() || active >= MAX_ACTIVE_REQUESTS) return;
+    if (!canRun() || active >= getRequestLimit()) return;
     let next = Infinity;
     failures.forEach((state, image) => {
       if (!isCurrent(image, state)) { forget(image); return; }
@@ -125,9 +128,10 @@ export function createCardMediaRecovery(getRoot) {
   function pump() {
     timer = 0;
     if (!canRun()) return;
+    const requestLimit = getRequestLimit();
     for (const [image, state] of failures) {
       if (!isCurrent(image, state)) { forget(image); continue; }
-      if (active >= MAX_ACTIVE_REQUESTS) break;
+      if (active >= requestLimit) break;
       if (state.active || state.attempts >= maxAttempts(state) || state.retryAt > performance.now() || !isRequested(image)) continue;
       const url = new URL(state.originalSrc);
       const firstLoad = state.initial && state.attempts === 0;
