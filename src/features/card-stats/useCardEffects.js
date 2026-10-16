@@ -1,4 +1,4 @@
-import { onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { onMounted, onBeforeUnmount, onActivated, onDeactivated, nextTick, watch } from 'vue';
 
 /** Owns card effects behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -13,6 +13,7 @@ export function useCardEffects(inputs) {
   );
 
   onMounted(() => {
+    inputs.media.startMediaRecovery();
     inputs.cutoff.refreshSpoilerClock();
     inputs.cutoff.spoilerClockTimer = window.setInterval(inputs.cutoff.refreshSpoilerClock, inputs.cutoff.SPOILER_CLOCK_INTERVAL_MS);
     inputs.navigation.updateMobileNavState();
@@ -37,6 +38,7 @@ export function useCardEffects(inputs) {
   });
 
   onBeforeUnmount(() => {
+    inputs.media.disposeMediaRecovery();
     if (inputs.cutoff.spoilerClockTimer) {
       clearInterval(inputs.cutoff.spoilerClockTimer);
       inputs.cutoff.spoilerClockTimer = 0;
@@ -101,6 +103,9 @@ export function useCardEffects(inputs) {
       inputs.attributeMatrices.matrixSortAnchorTimer = 0;
     }
   });
+
+  onActivated(() => inputs.media.startMediaRecovery());
+  onDeactivated(() => inputs.media.stopMediaRecovery());
 
   watch(inputs.cutoff.displayEventId, () => {
     inputs.cutoff.updateDisplayEventIdDraft();

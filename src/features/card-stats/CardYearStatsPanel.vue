@@ -87,7 +87,7 @@
                     <div v-for="card in character.cards" :key="card.CardID" class="year-stats-card-entry" :data-card-id="card.CardID" :title="`${character.name} · ${card.CardName || card.CardID} · ${card.dateLabel}`">
                       <div class="year-stats-thumb">
                         <img :src="`/elements/card_frame_${card.Rarity}.png`" class="year-stats-thumb-frame" alt="" loading="lazy" decoding="async" />
-                        <img v-if="buildCardImageSrc(card.CardID, character.name, { card })" :src="buildCardImageSrc(card.CardID, character.name, { card })" :alt="`${character.name} ${card.CardName || ''}`" class="year-stats-thumb-image media-load-shimmer" loading="lazy" decoding="async" crossorigin="anonymous" @load="onMediaImageLoad" @error="onMediaImageError" />
+                        <img v-if="buildCardImageSrc(card.CardID, character.name, { card })" :data-card-src="buildCardImageSrc(card.CardID, character.name, { card })" :alt="`${character.name} ${card.CardName || ''}`" class="year-stats-thumb-image media-load-shimmer" loading="lazy" decoding="async" crossorigin="anonymous" @load="onMediaImageLoad" @error="onMediaImageError" />
                         <img v-if="ATTR_LABELS[card.Attribute]" :src="`/elements/${String(card.Attribute).toLowerCase()}.png`" class="year-stats-thumb-attr" :alt="ATTR_LABELS[card.Attribute]" loading="lazy" decoding="async" />
                         <span v-if="card.limitedLabel" class="year-stats-card-ribbon"><span>{{ card.limitedLabel }}</span></span>
                       </div>

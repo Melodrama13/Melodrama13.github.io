@@ -682,6 +682,7 @@ const yearStats = useCardYearStats({
 });
 
 const captureExport = useCardCaptureExport({
+  get media() { return media; },
   get captureRendering() { return captureRendering; },
   get captureModal() { return captureModal; },
   get captureClone() { return captureClone; },
@@ -729,6 +730,7 @@ const preview = useCardPreview({
 
 const media = useCardMedia({
   props,
+  cardStatsRootRef,
   get metadata() { return metadata; },
   get cutoff() { return cutoff; },
   get presentation() { return presentation; },
@@ -742,6 +744,7 @@ useCardEffects({
   navigation,
   cardStatsRootRef,
   responsiveLayout,
+  media,
   captureModal,
   attributeMatrices,
   preview,

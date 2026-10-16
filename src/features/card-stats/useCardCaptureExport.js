@@ -122,6 +122,7 @@ export function useCardCaptureExport(inputs) {
     let restoreFrozenCssVars = () => {};
     let restoreHiddenLiveControls = () => {};
     try {
+      await inputs.media.prepareMediaForCapture(targetEl, cancelContext);
       const sourceImages = Array.from(targetEl.querySelectorAll('img'));
       sourceImages.forEach((imgEl) => {
         if (!(imgEl instanceof HTMLImageElement)) return;
