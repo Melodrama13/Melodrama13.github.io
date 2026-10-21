@@ -20818,18 +20818,18 @@
     "Bundle": "res004_no058"
   },
   {
-    "CardID": "-",
+    "CardID": "1488",
     "Name": "望月穗波",
     "Affiliation": "ln",
-    "CardName": "-",
+    "CardName": "Happy Birthday！！2026",
     "Rarity": "birthday",
     "Type": "birthday",
-    "Attribute": "-",
+    "Attribute": "Mysterious",
     "Skill": "birthday",
     "EventID": "birth_hnm6",
     "GachaID": "birth_hnm6",
     "Date": "2026/10/23",
-    "Bundle": ""
+    "Bundle": "res003_no057"
   },
   {
     "CardID": "-",

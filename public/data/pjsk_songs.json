@@ -28083,6 +28083,22 @@
           "小豆泽心羽",
           "白石杏"
         ]
+      },
+      {
+        "vocal_id": 2099,
+        "type": "another_vocal",
+        "released_at": "2026/10/21",
+        "characters": [
+          "小豆泽心羽"
+        ]
+      },
+      {
+        "vocal_id": 2100,
+        "type": "another_vocal",
+        "released_at": "2026/10/21",
+        "characters": [
+          "白石杏"
+        ]
       }
     ]
   },
@@ -29100,7 +29116,8 @@
       "normal": 12,
       "hard": 17,
       "expert": 23,
-      "master": 27
+      "master": 27,
+      "append": 25
     },
     "vocals": [
       {
@@ -32396,6 +32413,22 @@
           "花里实乃里",
           "桐谷遥",
           "日野森雫"
+        ]
+      },
+      {
+        "vocal_id": 2101,
+        "type": "another_vocal",
+        "released_at": "2026/10/21",
+        "characters": [
+          "桃井爱莉"
+        ]
+      },
+      {
+        "vocal_id": 2102,
+        "type": "another_vocal",
+        "released_at": "2026/10/21",
+        "characters": [
+          "KAITO"
         ]
       }
     ]
