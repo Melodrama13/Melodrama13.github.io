@@ -55,28 +55,20 @@
                     <span>{{ isMobileNav ? '歌限' : '统计歌限' }}</span>
                   </label>
                   <label
-                    v-if="panel.id === 'reward'"
+                    v-if="['three', 'two'].includes(panel.id)"
+                    class="reward-collab-toggle stats-checkbox"
+                    title="勾选后，三星/二星总数按报酬统计；联动卡由“统计联动”控制。"
+                  >
+                    <input class="pjsk-ui-choice" v-model="useRewardCountForLowStars" type="checkbox" />
+                    报酬
+                  </label>
+                  <label
+                    v-if="panel.id === 'reward' || (['three', 'two'].includes(panel.id) && useRewardCountForLowStars)"
                     class="reward-collab-toggle stats-checkbox"
                     title="勾选后，报酬统计会额外计入联动的二/三星卡。"
                   >
                     <input class="pjsk-ui-choice" v-model="includeCollabRewardCards" type="checkbox" />
                     统计联动
-                  </label>
-                  <label
-                    v-if="panel.id === 'three'"
-                    class="reward-collab-toggle stats-checkbox"
-                    title="勾选后，三星总数按报酬三星统计（包括联动）。"
-                  >
-                    <input class="pjsk-ui-choice" v-model="useRewardCountForThreeStar" type="checkbox" />
-                    报酬
-                  </label>
-                  <label
-                    v-if="panel.id === 'two'"
-                    class="reward-collab-toggle stats-checkbox"
-                    title="勾选后，二星总数按报酬二星统计（包括联动）。"
-                  >
-                    <input class="pjsk-ui-choice" v-model="useRewardCountForTwoStar" type="checkbox" />
-                    报酬
                   </label>
                   <label
                     v-if="panel.id === 'pure-score'"
@@ -196,7 +188,6 @@ const hideDistCharNames = defineModel('hideDistCharNames');
 const limitedIncludeWl3 = defineModel('limitedIncludeWl3');
 const limitedIncludeSongLimited = defineModel('limitedIncludeSongLimited');
 const includeCollabRewardCards = defineModel('includeCollabRewardCards');
-const useRewardCountForThreeStar = defineModel('useRewardCountForThreeStar');
-const useRewardCountForTwoStar = defineModel('useRewardCountForTwoStar');
+const useRewardCountForLowStars = defineModel('useRewardCountForLowStars');
 const fesLimitedIncludeFes = defineModel('fesLimitedIncludeFes');
 </script>

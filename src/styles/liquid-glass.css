@@ -266,6 +266,12 @@ body {
   --ui-glass-surface-filter: var(--ui-glass-filter-frosted-prominent);
 }
 
+/* Dense query text stays readable when WebKit does not composite the backdrop
+   of an overlay inside a scrolling/sticky context. Keep its shared optical rim. */
+:root[data-ui-glass-mode='frosted'] .precedent-panel.ui-liquid-glass--prominent {
+  background-color: color-mix(in srgb, var(--ui-glass-fallback-bg) 88%, transparent);
+}
+
 :root[data-ui-glass-mode='frosted'] :is(.mobile-tab-glider, .mobile-source-trigger).ui-liquid-glass {
   --ui-glass-surface-filter: var(--ui-glass-mobile-lens-filter);
 }

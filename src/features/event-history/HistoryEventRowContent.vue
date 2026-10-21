@@ -7,6 +7,7 @@
           >
             ×
           </button>
+          <button v-if="isPrecedentEventAvailable(row.event, historyNow)" type="button" class="pjsk-ui-action event-precedent-entry" data-html2canvas-ignore="true" title="本期纪录" :aria-label="`查看活动 ${row.event.id} 的纪录`" @click.stop="$emit('open-precedents', $event)"><Info :size="18" :stroke-width="1.7" aria-hidden="true" /></button>
           <div class="event-basic">
             <span class="event-id">#{{ row.event.id }}</span>
             <span class="event-date">{{ formatEventDatePadded(row.event.start_date) }}</span>
@@ -251,6 +252,10 @@
 
 <script setup>
 import { isCompilationEvent } from '../../utils/compilationEvents.js';
+import { isPrecedentEventAvailable } from './precedentRecords.js';
+import { Info } from 'lucide-vue-next';
+
+defineEmits(['open-precedents']);
 
 const props = defineProps({
   formatting: { type: Object, required: true },
@@ -263,6 +268,7 @@ const props = defineProps({
   presentation: { type: Object, required: true },
   cardMedia: { type: Object, required: true },
   row: { type: Object, required: true },
+  historyNow: { type: Date, default: () => new Date() },
 });
 const { hasAttributeIcon, formatEventDatePadded } = props.formatting;
 const { getCardTooltipStyle, handleCardTooltipEnter, getSongTooltipStyle, handleSongTooltipEnter, clearTooltipRaisedEvent, toggleCardTooltip, isCardTooltipOpen, shouldRenderCardTooltipContent, toggleSongTooltip, isSongTooltipOpen, shouldRenderSongTooltipContent } = props.tooltips;
@@ -274,3 +280,30 @@ const { shouldRenderEventHeavy, getEventPlaceholderMemberCount, getEventPlacehol
 const { translateType, translateSkill, translateAttr, getCharAbbr, getUnitColor, getCharColor, isVirtualSinger, isSpecialFestival, getNormalCards, getFesCards, getFesType, getMemberRibbonLabel, getTypeTagStyle, formatSeries, formatSeriesCompact, getEditorSeriesStyle, parseVS } = props.presentation;
 const { getVisibleCardTooltipImageList, isCardTooltipImageFailed, onCardTooltipImageError } = props.cardMedia;
 </script>
+
+<style scoped>
+.event-precedent-entry {
+  /* Overlay the inner corner so the original row keeps its full width. */
+  position: absolute;
+  bottom: -2px;
+  right: 2px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ui-control-label-muted);
+  cursor: pointer;
+}
+.event-precedent-entry :deep(circle) { fill: var(--ui-glass-optical-control-bg); }
+.event-precedent-entry :deep(svg) { pointer-events: none; }
+@media (max-width: 900px) {
+  /* Bias the hit area outward while keeping the small glyph inside the card. */
+  .event-precedent-entry { bottom: -8px; right: -6px; }
+  .event-precedent-entry :deep(svg) { transform: translate(-3px, -3px); }
+}
+</style>

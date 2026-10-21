@@ -8,9 +8,11 @@ import { buildCardCharacterStats } from './cardCharacterStats.js';
 export function useCardDistribution(inputs) {
   const includeCollabRewardCards = ref(false);
 
-  const useRewardCountForThreeStar = ref(false);
+  const useRewardCountForLowStars = ref(true);
 
-  const useRewardCountForTwoStar = ref(false);
+  const useRewardCountForThreeStar = useRewardCountForLowStars;
+
+  const useRewardCountForTwoStar = useRewardCountForLowStars;
 
   const limitedIncludeWl3 = ref(false);
 
@@ -400,6 +402,8 @@ export function useCardDistribution(inputs) {
     'accuracyCount',
     'threeStarCount',
     'twoStarCount',
+    'rewardThreeCount',
+    'rewardTwoCount',
     'rewardThreeCountWithCollab',
     'rewardTwoCountWithCollab',
     'fesLimitedCount'
@@ -485,6 +489,8 @@ export function useCardDistribution(inputs) {
 
       if (isEventRewardCard(card)) {
         addDistVsSummaryCount(summaryMap, unit, 'rewardTotalCount', orderId);
+        if (rarity === '3') addDistVsSummaryCount(summaryMap, unit, 'rewardThreeCount', orderId);
+        if (rarity === '2') addDistVsSummaryCount(summaryMap, unit, 'rewardTwoCount', orderId);
       }
 
       if (isEventRewardCard(card, { includeCollab: true })) {
@@ -578,13 +584,13 @@ export function useCardDistribution(inputs) {
       title: '3星总数',
       cellClass: 'three-star',
       showRewardBreakdown: false
-    }, processedStats.value, useRewardCountForThreeStar.value ? 'rewardThreeCountWithCollab' : 'threeStarCount'),
+    }, processedStats.value, useRewardCountForLowStars.value ? 'rewardThreeCount' : 'threeStarCount'),
     createGroupPanel({
       id: 'two',
       title: '2星总数',
       cellClass: 'two-star',
       showRewardBreakdown: false
-    }, processedStats.value, useRewardCountForTwoStar.value ? 'rewardTwoCountWithCollab' : 'twoStarCount'),
+    }, processedStats.value, useRewardCountForLowStars.value ? 'rewardTwoCount' : 'twoStarCount'),
     createGroupPanel(
       { id: 'banner', title: 'Banner数', cellClass: 'banner', showRewardBreakdown: false },
       processedStats.value.filter((row) => !inputs.metadata.VS_NAMES.includes(String(row?.name || '').trim().split(/\s+/)[0])),
@@ -621,6 +627,7 @@ export function useCardDistribution(inputs) {
     limitedIncludeWl3,
     limitedIncludeSongLimited,
     includeCollabRewardCards,
+    useRewardCountForLowStars,
     useRewardCountForThreeStar,
     useRewardCountForTwoStar,
     onIncludeUnitScoreInPureScoreChange,

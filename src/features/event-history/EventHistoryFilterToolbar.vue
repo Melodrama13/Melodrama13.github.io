@@ -51,6 +51,17 @@
             <span v-if="!isCompact">底部</span>
           </button>
           <button class="pjsk-ui-action"
+            @click="$emit('toggle-precedents', $event)"
+            title="先例与纪录"
+            aria-controls="history-precedent-panel"
+            :aria-expanded="isPrecedentPanelVisible"
+            :class="['nav-btn', 'compact-tip', { 'is-icon-only': isCompact, 'active-highlight': isPrecedentPanelVisible }]"
+            data-tip="先例与纪录"
+          >
+            <History class="compact-btn-icon" aria-hidden="true" />
+            <span v-if="!isCompact">先例</span>
+          </button>
+          <button class="pjsk-ui-action"
             @click="$emit('toggle-filter-panel', $event)"
             :title="hasActiveFilters ? '已启用筛选' : '筛选面板'"
             :class="['nav-btn', 'compact-tip', { 'is-icon-only': isCompact && !hasActiveFilters, 'has-count': isCompact && hasActiveFilters, 'active-highlight': hasActiveFilters || isFilterPanelVisible }]"
@@ -64,6 +75,7 @@
 </template>
 
 <script setup>
+import { History } from 'lucide-vue-next';
 /** Display-only panel; state and capture/navigation actions belong to the page. */
 defineProps({
   isCompact: { type: Boolean, required: true },
@@ -74,12 +86,13 @@ defineProps({
   arePreviewRowsHidden: { type: Boolean, required: true },
   areCollabPoolsHidden: { type: Boolean, required: true },
   isFilterPanelVisible: { type: Boolean, required: true },
+  isPrecedentPanelVisible: { type: Boolean, default: false },
   hasActiveFilters: { type: Boolean, required: true },
   filterHitEventCount: { type: Number, required: true },
   registerFilterBarElement: { type: Function, required: true },
 });
 
-defineEmits(["toggle-sort-order","toggle-birthday-rows","toggle-preview-rows","toggle-collab-pools","navigate","toggle-filter-panel"]);
+defineEmits(["toggle-sort-order","toggle-birthday-rows","toggle-preview-rows","toggle-collab-pools","navigate","toggle-filter-panel","toggle-precedents"]);
 </script>
 
 <style scoped src="./styles/eventHistoryFilterToolbarFoundation.css"></style>

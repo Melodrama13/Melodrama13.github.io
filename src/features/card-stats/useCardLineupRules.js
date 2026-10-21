@@ -177,6 +177,7 @@ export function useCardLineupRules(inputs) {
   };
 
   return {
+    calcLineupUnitScore,
     getEventRefRecencyScore,
     evalLineupMembers,
     WL_OC_ALLOWED_SKILLS,

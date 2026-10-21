@@ -42,6 +42,7 @@
             :are-preview-rows-hidden="hidePreviewRows"
             :are-collab-pools-hidden="hideCollabPools"
             :is-filter-panel-visible="showFilter"
+            :is-precedent-panel-visible="precedents.isOpen.value"
             :has-active-filters="hasActiveFilters"
             :filter-hit-event-count="filterHitEventCount"
             :register-filter-bar-element="registerFilterBarElement"
@@ -50,7 +51,8 @@
             @toggle-preview-rows="togglePreviewRowsVisibility"
             @toggle-collab-pools="toggleCollabPoolsVisibility"
             @navigate="scrollTo"
-            @toggle-filter-panel="showFilter = !showFilter"
+            @toggle-filter-panel="precedents.close(false); showFilter = !showFilter"
+            @toggle-precedents="precedents.toggle"
           />
         <UiSurfaceTransition kind="popover">
           <HistoryFilterPanel v-if="showFilter"
@@ -60,6 +62,9 @@
   :filter-layout="filterLayout"
   :presentation="presentation"
 />
+        </UiSurfaceTransition>
+        <UiSurfaceTransition kind="popover">
+          <HistoryPrecedentPanel v-if="precedents.isOpen.value" :precedents="precedents" :presentation="presentation" :card-media="cardMedia" />
         </UiSurfaceTransition>
       </div>
       <div class="history-list" ref="listRef">
@@ -84,6 +89,8 @@
                 : (row.event.gacha_type === 'UE限定' ? { border: '3px solid #f59e0b' } : {})
               ]">
           <HistoryEventRowContent
+  :history-now="clock.spoilerNow.value"
+  @open-precedents="precedents.open($event, row.event.id)"
   :formatting="formatting"
   :tooltips="tooltips"
   :song-media="songMedia"
@@ -153,6 +160,8 @@ import UiSurfaceTransition from './ui/UiSurfaceTransition.vue';
 import HistoryPreviewConfig from '../features/event-history/HistoryPreviewConfig.vue';
 import HistoryPreviewPanel from '../features/event-history/HistoryPreviewPanel.vue';
 import HistoryFilterPanel from '../features/event-history/HistoryFilterPanel.vue';
+import HistoryPrecedentPanel from '../features/event-history/HistoryPrecedentPanel.vue';
+import { useHistoryPrecedents } from '../features/event-history/useHistoryPrecedents.js';
 import HistoryEventRowContent from '../features/event-history/HistoryEventRowContent.vue';
 import HistoryPreviewRowContent from '../features/event-history/HistoryPreviewRowContent.vue';
 import HistoryBirthdayRowContent from '../features/event-history/HistoryBirthdayRowContent.vue';
@@ -198,6 +207,7 @@ const props = defineProps({
   allSongs: { type: Array, default: () => [] },
   allCharacters: { type: Array, default: () => [] },
   allBaseCards: { type: Array, default: () => [] },
+  predictionScheduleOrder: { type: Object, default: null },
   statsPreviewData: { type: Object, default: null },
   jumpEventId: { type: [Number, String], default: null },
   jumpEventSeq: { type: Number, default: 0 }
@@ -207,6 +217,13 @@ const deletePredictEvent = inject('deletePredictEvent');
 
 const clock = useHistoryClock({
 
+});
+
+const precedents = useHistoryPrecedents({
+  props,
+  clock,
+  get filtering() { return filtering; },
+  get navigation() { return navigation; },
 });
 
 const formatting = useHistoryFormatting({

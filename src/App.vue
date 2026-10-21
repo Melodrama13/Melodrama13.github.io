@@ -119,6 +119,7 @@
           :all-characters="charactersData"
           :nuigurumi-data="nuigurumiData"
           :all-base-cards="baseCards"
+          :prediction-schedule-order="predictionScheduleOrder"
           :predict-sources="predictSources"
           :active-predict-source-id="activePredictSourceId"
           :predict-user-name="predictUserName"
@@ -280,7 +281,7 @@ const { isCompactTopNav, isStatsTopNavCompact, isSmallTabletViewport } = respons
 const { screenshotExportModalVisible, closeScreenshotExportModal } = historyCapture;
 const { scheduleStatsTopControlStateSync } = statsControls;
 const { showAppReleaseLogModal, showAppUpdatePromptDialog, dismissAppUpdateBanner, closeAppReleaseLogModal } = versionUpdates;
-const { historyData, baseCards, songsData, charactersData, nuigurumiData, isAppDataReady } = resourceLoading;
+const { historyData, baseCards, songsData, charactersData, nuigurumiData, isAppDataReady, predictionScheduleOrder } = resourceLoading;
 const { draftPredictiveEvent, totalEventData, totalCardsData } = predictionOverlay;
 const { getEventKey, resolvePredictEventIdForCurrentSchedule, sanitizeCanonicalPredictiveEvents } = predictionSchedule;
 const { buildPredictEventPatchFromPayload } = predictionPayload;

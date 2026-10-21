@@ -8,6 +8,8 @@ export function useCardSupport(inputs) {
 
   const supportEnableWlLineup = ref(false);
 
+  const supportUseCompilationRules = ref(false);
+
   const supportShowCardImages = ref(false);
 
   const isSupportAttrIcon = (attr) => inputs.constants.ATTRS.includes(String(attr || ''));
@@ -131,7 +133,58 @@ export function useCardSupport(inputs) {
     return best;
   };
 
+  const buildCompilationSupportPlan = (targetUnit, attr, supportPool) => {
+    const emptyPlan = () => ({ attr, total: 0, members: [], memberSlots: [null, null, null, null, null] });
+    const ocNames = Object.keys(inputs.metadata.CHAR_UNIT_MAP)
+      .filter((name) => inputs.metadata.CHAR_UNIT_MAP[name] === targetUnit && !inputs.metadata.isVirtualSinger(name));
+    if (ocNames.length !== 4) return emptyPlan();
+
+    const multicolor = attr === inputs.constants.SUPPORT_WL_ATTR;
+    const attrs = multicolor ? inputs.constants.ATTRS : [attr];
+    const unitScore = inputs.lineupRules.calcLineupUnitScore(targetUnit, { [targetUnit]: 5 });
+    const effectiveCard = (card) => ({ ...card, baseScore: card.isUnitScore ? unitScore : card.baseScore });
+
+    // All five members belong to the same unit, so each skill's value is fixed.
+    // A stronger card in the same role/color always improves the support total.
+    const roles = [...ocNames, null].map((name) => attrs.map((color) => {
+      const cardsByName = supportPool?.[targetUnit]?.[color] || {};
+      const candidates = name ? (cardsByName[name] || []) : Object.entries(cardsByName)
+        .filter(([singer]) => inputs.metadata.isVirtualSinger(singer))
+        .flatMap(([, cards]) => cards);
+      return candidates.reduce((best, card) => {
+        if (card.unit !== targetUnit) return best;
+        return !best || compareLineupCardForPick(effectiveCard(card), effectiveCard(best)) < 0 ? card : best;
+      }, null);
+    }).filter(Boolean));
+    if (roles.some((cards) => cards.length === 0)) return emptyPlan();
+
+    let best = null;
+    const selected = [];
+    const usedAttrs = new Set();
+    const visit = (index) => {
+      if (index === roles.length) {
+        const hit = evalSupportMembers(selected);
+        if (compareSupportSolvedHit(hit, best, targetUnit)) best = hit;
+        return;
+      }
+      for (const card of roles[index]) {
+        if (multicolor && usedAttrs.has(card.attr)) continue;
+        selected.push(card);
+        if (multicolor) usedAttrs.add(card.attr);
+        visit(index + 1);
+        if (multicolor) usedAttrs.delete(card.attr);
+        selected.pop();
+      }
+    };
+    // WL enumerates all feasible color assignments (at most 5! complete teams).
+    visit(0);
+    return best ? { attr, total: best.total, members: best.members, memberSlots: [...best.members] } : emptyPlan();
+  };
+
   const buildSupportLineupPlan = (targetUnit, attr, supportPool) => {
+    if (supportUseCompilationRules.value && targetUnit !== 'vs') {
+      return buildCompilationSupportPlan(targetUnit, attr, supportPool);
+    }
     const cardsByName = supportPool?.[targetUnit]?.[attr] || {};
     const solved = solveSupportLineup(cardsByName, targetUnit);
     if (!solved) {
@@ -155,6 +208,9 @@ export function useCardSupport(inputs) {
   };
 
   const buildSupportWlPlan = (targetUnit, supportPool) => {
+    if (supportUseCompilationRules.value && targetUnit !== 'vs') {
+      return buildCompilationSupportPlan(targetUnit, inputs.constants.SUPPORT_WL_ATTR, supportPool);
+    }
     const isVsTarget = targetUnit === 'vs';
     const isOcTarget = targetUnit !== 'vs';
 
@@ -391,12 +447,22 @@ export function useCardSupport(inputs) {
     }, anchorEl);
   };
 
+  const onSupportCompilationRulesChange = (event) => {
+    const checked = !!event?.target?.checked;
+    const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
+    void inputs.navigation.withInteractionPinnedPosition(() => {
+      supportUseCompilationRules.value = checked;
+    }, anchorEl);
+  };
+
   return {
     supportLineupRows,
     supportShowCardImages,
     onSupportShowCardImagesChange,
     supportEnableWlLineup,
     onSupportEnableWlLineupChange,
+    supportUseCompilationRules,
+    onSupportCompilationRulesChange,
     supportUseOriginalVsTeam,
     onSupportUseOriginalVsTeamChange,
     isSupportAttrIcon,

@@ -11,10 +11,15 @@
                 <input class="pjsk-ui-choice" :checked="supportEnableWlLineup" type="checkbox" @change="onSupportEnableWlLineupChange" />
                 <span>WL配队</span>
               </label>
+              <label class="support-wl-toggle stats-checkbox export-hide" title="OC团按四位OC加一位本团V配队；WL行仍由WL配队开关控制。">
+                <input class="pjsk-ui-choice" :checked="supportUseCompilationRules" type="checkbox" @change="onSupportCompilationRulesChange" />
+                <span>总集篇</span>
+              </label>
             </div>
             <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-support', '支援配队')">PNG</button>
           </div>
           <div class="lineup-tip">注意：仅从技能分值角度考虑最佳配队，不考虑其他影响（如综合力、歌曲、难度等）。配队不唯一，同分卡会优先取OC，再取VS，且新卡优先显示。</div>
+          <div v-if="supportUseCompilationRules" class="lineup-tip">总集篇：OC团固定四位OC加一位本团V，各花色分别计算；WL为五种花色各一张。</div>
           <div class="support-grid">
             <div
               v-for="unitRow in supportLineupRows"
@@ -101,5 +106,5 @@
 </template>
 
 <script setup>
-defineProps(["supportShowCardImages","onSupportShowCardImagesChange","supportEnableWlLineup","onSupportEnableWlLineupChange","isExportingPng","exportElementPng","supportLineupRows","getSupportCardId","getUnitAccentColor","hexToRgba","supportUnitTitleLogoMap","unitLogoMap","supportUseOriginalVsTeam","onSupportUseOriginalVsTeamChange","getLineupRowStyle","isSupportAttrIcon","ATTR_LABELS","getLineupMemberCellStyle","getLineupSlotCardImageSrc","onMediaImageLoad","onMediaImageError","SUPPORT_WL_ATTR","getSupportMemberIconKey","jumpToHistoryByEventRef","getJumpLinkLabel","formatSupportTotal"]);
+defineProps(["supportShowCardImages","onSupportShowCardImagesChange","supportEnableWlLineup","onSupportEnableWlLineupChange","supportUseCompilationRules","onSupportCompilationRulesChange","isExportingPng","exportElementPng","supportLineupRows","getSupportCardId","getUnitAccentColor","hexToRgba","supportUnitTitleLogoMap","unitLogoMap","supportUseOriginalVsTeam","onSupportUseOriginalVsTeamChange","getLineupRowStyle","isSupportAttrIcon","ATTR_LABELS","getLineupMemberCellStyle","getLineupSlotCardImageSrc","onMediaImageLoad","onMediaImageError","SUPPORT_WL_ATTR","getSupportMemberIconKey","jumpToHistoryByEventRef","getJumpLinkLabel","formatSupportTotal"]);
 </script>

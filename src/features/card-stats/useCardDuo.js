@@ -1,4 +1,5 @@
 import { ref, computed, reactive } from 'vue';
+import { isDuoCollaborationEvent } from './cardDuoRules.js';
 
 /** Owns card duo behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -36,7 +37,7 @@ export function useCardDuo(inputs) {
     return lower === 'wl' || lower === 'world link' || eventType === 'World Link终章';
   };
 
-  const isDuoCollabEvent = (event) => /^c[1-5]$/i.test(inputs.eventCatalog.normalizeSourceKey(event?.id));
+  const isDuoCollabEvent = isDuoCollaborationEvent;
 
   const isDuoFesCard = (card) => {
     const cardType = String(card?.Type || '').trim().toLowerCase();

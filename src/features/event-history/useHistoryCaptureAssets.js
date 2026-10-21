@@ -212,7 +212,7 @@ const prewarmHistoryExportSourceRows = async (rows, deviceTier) => {
 
 const sanitizeHistoryExportClone = (cloneRoot) => {
   if (!(cloneRoot instanceof HTMLElement)) return;
-  cloneRoot.querySelectorAll('.predict-delete-btn, .card-detail-tooltip, .tooltip-content, .birthday-info-popover').forEach((node) => {
+  cloneRoot.querySelectorAll('.predict-delete-btn, .event-precedent-entry, .card-detail-tooltip, .tooltip-content, .birthday-info-popover').forEach((node) => {
     node.remove();
   });
   cloneRoot.querySelectorAll('.is-active, .is-open, .is-tooltip-raised').forEach((node) => {
