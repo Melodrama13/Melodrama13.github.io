@@ -1,7 +1,7 @@
 <template>
   <ul class="precedent-song-gallery" aria-label="书下依据">
     <li v-for="item in items" :key="item.event.id">
-      <div class="precedent-song-art"><Music :size="22" aria-hidden="true" /><img class="precedent-song-cover" :src="buildLocalSongJacketUrl(item.event.song_id)" :alt="item.song?.title || item.event.song_alias || `歌曲 #${item.event.song_id}`" loading="lazy" @error="$event.currentTarget.style.opacity = 0" /><img class="precedent-song-vs" :src="`/chars/${presentation.getCharAbbr(item.vs)}.png`" :alt="item.vs" /></div>
+      <div class="precedent-song-art"><Music :size="22" aria-hidden="true" /><img class="precedent-song-cover" crossorigin="anonymous" :src="buildLocalSongJacketUrl(item.event.song_id)" :alt="item.song?.title || item.event.song_alias || `歌曲 #${item.event.song_id}`" loading="lazy" decoding="async" /><img class="precedent-song-vs" :src="`/chars/${presentation.getCharAbbr(item.vs)}.png`" :alt="item.vs" /></div>
       <button class="pjsk-ui-action precedent-song-jump precedent-surface ui-liquid-glass ui-liquid-glass--chip" type="button" :title="`#${item.event.id} · ${item.event.event_title || ''}`" @click="jumpToEvent(item.event.id)">{{ presentation.formatSeriesCompact(item.event) || `#${item.event.id}` }}<ArrowUpRight :size="10" aria-hidden="true" /></button>
       <time>{{ item.event.start_date }}</time>
     </li>

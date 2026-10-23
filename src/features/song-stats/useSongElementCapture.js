@@ -9,6 +9,7 @@ import { runCaptureRenderAttempts } from '../../services/capture/captureRenderAt
 import { renderCaptureToCanvas as toCanvas, renderHtmlCapture } from '../../services/capture/captureEngineLoader.js';
 import { CAPTURE_IMAGE_PLACEHOLDER } from './songCaptureClone.js';
 import { formatExportTimestamp, sanitizeExportFileName, triggerDownloadPng } from './songCaptureFiles.js';
+import { getSiteMediaRecovery } from '../../utils/mediaImageRecovery.js';
 
 /** Per-instance state owned by SongElementCapture. */
 export function createSongElementCaptureState() {
@@ -129,10 +130,13 @@ const exportElementPng = async (targetEl, title, options = {}) => {
   let cloneEl = null;
   let restoreFrozenCssVars = () => {};
   let restoreHiddenLiveControls = () => {};
+  const sourceImageHints = new Map();
   try {
+    await getSiteMediaRecovery().prepareForCapture(targetEl, cancelContext);
     const sourceImages = Array.from(targetEl.querySelectorAll('img'));
     sourceImages.forEach((imgEl) => {
       if (!(imgEl instanceof HTMLImageElement)) return;
+      sourceImageHints.set(imgEl, ['loading', 'decoding', 'fetchpriority'].map(name => [name, imgEl.getAttribute(name)]));
       imgEl.setAttribute('loading', 'eager');
       imgEl.setAttribute('decoding', 'sync');
       if ('fetchPriority' in imgEl) {
@@ -324,6 +328,9 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       cancelTask: null
     });
   } finally {
+    for (const [image, hints] of sourceImageHints) for (const [name, value] of hints) {
+      if (value === null) image.removeAttribute(name); else image.setAttribute(name, value);
+    }
     restoreFrozenCssVars();
     restoreHiddenLiveControls();
     if (screenshotModalCancelTask.value === cancelContext.cancel) {

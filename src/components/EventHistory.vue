@@ -473,7 +473,7 @@ const cardMedia = useHistoryCardMedia({
   get tooltips() { return tooltips; },
   get songMedia() { return songMedia; },
 });
-const { getBirthdayCardImageSrc, isBirthdayCardImageFailed, onBirthdayCardImageError, onBirthdayCardImageLoad, getVisibleCardTooltipImageList, isCardTooltipImageFailed, onCardTooltipImageError } = cardMedia;
+const { getBirthdayCardImageSrc, onBirthdayCardImageError, onBirthdayCardImageLoad, getVisibleCardTooltipImageList, onCardTooltipImageError } = cardMedia;
 
 // Register watchers and lifecycle in source order after all feature state exists.
 previewLayout.connectSyncPreviewCharSelectExpandedState();

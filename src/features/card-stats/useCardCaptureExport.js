@@ -121,11 +121,13 @@ export function useCardCaptureExport(inputs) {
     let cloneEl = null;
     let restoreFrozenCssVars = () => {};
     let restoreHiddenLiveControls = () => {};
+    const sourceImageHints = new Map();
     try {
       await inputs.media.prepareMediaForCapture(targetEl, cancelContext);
       const sourceImages = Array.from(targetEl.querySelectorAll('img'));
       sourceImages.forEach((imgEl) => {
         if (!(imgEl instanceof HTMLImageElement)) return;
+        sourceImageHints.set(imgEl, ['loading', 'decoding', 'fetchpriority'].map(name => [name, imgEl.getAttribute(name)]));
         imgEl.setAttribute('loading', 'eager');
         imgEl.setAttribute('decoding', 'sync');
         if ('fetchPriority' in imgEl) {
@@ -303,6 +305,9 @@ export function useCardCaptureExport(inputs) {
         cancelTask: null
       });
     } finally {
+      for (const [image, hints] of sourceImageHints) for (const [name, value] of hints) {
+        if (value === null) image.removeAttribute(name); else image.setAttribute(name, value);
+      }
       restoreFrozenCssVars();
       restoreHiddenLiveControls();
       if (inputs.captureModal.screenshotModalCancelTask.value === cancelContext.cancel) {

@@ -167,6 +167,7 @@ const waitForHistoryExportAssets = async (rootEl, options = {}) => {
     ? document.fonts.ready.catch(() => undefined)
     : Promise.resolve();
   const images = Array.from(rootEl.querySelectorAll('img')).slice(0, maxImages);
+  const previousHints = new Map(images.map(image => [image, ['loading', 'decoding', 'fetchpriority'].map(name => [name, image.getAttribute(name)])]));
   images.forEach((imgEl) => {
     if (!(imgEl instanceof HTMLImageElement)) return;
     const currentSrc = String(imgEl.currentSrc || imgEl.getAttribute('src') || '').trim();
@@ -180,13 +181,17 @@ const waitForHistoryExportAssets = async (rootEl, options = {}) => {
     }
   });
 
-  await Promise.race([
+  try { await Promise.race([
     Promise.allSettled([
       fontReady,
       Promise.allSettled(images.map((imgEl) => waitHistoryImageReady(imgEl, Math.min(2400, maxWaitMs))))
     ]),
     new Promise((resolve) => window.setTimeout(resolve, maxWaitMs))
-  ]);
+  ]); } finally {
+    for (const [image, hints] of previousHints) for (const [name, value] of hints) {
+      if (value === null) image.removeAttribute(name); else image.setAttribute(name, value);
+    }
+  }
 };
 
 const prewarmHistoryExportSourceRows = async (rows, deviceTier) => {

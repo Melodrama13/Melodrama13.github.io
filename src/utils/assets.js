@@ -1,6 +1,6 @@
 const rawAssetBaseUrl = String(import.meta.env.VITE_ASSET_BASE_URL || '').trim();
 const assetBaseUrl = rawAssetBaseUrl.replace(/\/+$/, '');
-const ASSET_CORS_CACHE_VERSION = '2';
+const ASSET_CORS_CACHE_VERSION = '3';
 
 const ABSOLUTE_URL_RE = /^(?:[a-z][a-z\d+\-.]*:)?\/\//i;
 const SMALL_STATIC_IMAGE_PATH_RE = /^\/(?:chibi_s|chars|elements|data\/icon|specialized)\//;
@@ -99,9 +99,9 @@ export const buildAssetUrl = (assetPath) => {
   const normalizedPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
   if (!assetBaseUrl) return normalizedPath;
 
-  // R2 media used to be loaded without CORS. Keep one stable URL variant for
-  // canvas-safe responses so old opaque browser-cache entries cannot poison
-  // html-to-image, while normal page loads and later exports still share cache.
+  // Event details previously cached these images without CORS. Use a fresh,
+  // stable URL so those opaque entries cannot break tooltips or canvas export,
+  // while all current consumers continue sharing the same cache.
   const url = new URL(`${assetBaseUrl}${normalizedPath}`);
   url.searchParams.set('_cors', ASSET_CORS_CACHE_VERSION);
   return url.toString();

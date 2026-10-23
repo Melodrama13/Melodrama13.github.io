@@ -15,7 +15,7 @@
           <div v-if="isBirthdayInfoOpen(row)" class="birthday-info-popover">
             <img
               crossorigin="anonymous"
-              v-if="getBirthdayCardImageSrc(row) && !isBirthdayCardImageFailed(row)"
+              v-if="getBirthdayCardImageSrc(row)"
               :src="getBirthdayCardImageSrc(row)"
               class="birthday-info-card media-load-shimmer"
               :alt="`${row.name} 生日卡面`"
@@ -43,5 +43,5 @@ const props = defineProps({
 const { hasAttributeIcon } = props.formatting;
 const { isBirthdayInfoOpen } = props.tooltips;
 const { translateAttr } = props.presentation;
-const { getBirthdayCardImageSrc, isBirthdayCardImageFailed, onBirthdayCardImageError, onBirthdayCardImageLoad } = props.cardMedia;
+const { getBirthdayCardImageSrc, onBirthdayCardImageError, onBirthdayCardImageLoad } = props.cardMedia;
 </script>

@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { isCardImageReleased } from '../../utils/spoilerGuard.js';
 import { buildAssetUrl } from '../../utils/assets.js';
 import { getCardImageVariants } from '../../utils/cardImageVariants.js';
@@ -8,8 +8,6 @@ import { getCardImageVariants } from '../../utils/cardImageVariants.js';
  * Dependencies: props, Clock, Formatting, Tooltips, SongMedia.
  */
 export function useHistoryCardMedia(ports) {
-const birthdayCardImageErrorMap = ref({});
-
 const getBirthdayCardImageSrc = (row) => {
   if (!isCardImageReleased({ Date: row?.cardDate || row?.date, Type: 'birthday' }, ports.clock.spoilerNow.value)) return '';
   const cardId = ports.formatting.parseCardIdNumber(row?.cardId);
@@ -19,28 +17,12 @@ const getBirthdayCardImageSrc = (row) => {
   return buildAssetUrl(`/cards/${folder}/card${cardId}.webp`);
 };
 
-const isBirthdayCardImageFailed = (row) => {
-  const key = ports.tooltips.makeBirthdayInfoKey(row);
-  return !!birthdayCardImageErrorMap.value[key];
+const onBirthdayCardImageError = event => {
+  ports.songMedia.markMediaImageSettled(event);
 };
 
-const onBirthdayCardImageError = (event, row) => {
+const onBirthdayCardImageLoad = event => {
   ports.songMedia.markMediaImageSettled(event);
-  const key = ports.tooltips.makeBirthdayInfoKey(row);
-  if (!key) return;
-  birthdayCardImageErrorMap.value = {
-    ...birthdayCardImageErrorMap.value,
-    [key]: true
-  };
-};
-
-const onBirthdayCardImageLoad = (event, row) => {
-  ports.songMedia.markMediaImageSettled(event);
-  const key = ports.tooltips.makeBirthdayInfoKey(row);
-  if (!key || !birthdayCardImageErrorMap.value[key]) return;
-  const next = { ...birthdayCardImageErrorMap.value };
-  delete next[key];
-  birthdayCardImageErrorMap.value = next;
 };
 
 const CHAR_CARD_FOLDER_MAP = computed(() => {
@@ -58,8 +40,6 @@ const CHAR_CARD_FOLDER_MAP = computed(() => {
 const getCardTooltipBaseName = (nameRaw) => String(nameRaw || '').trim().split(/\s+/)[0] || '';
 
 const CARD_TOOLTIP_RESERVED_TYPE_RE = /(pred|reserve|placeholder)/i;
-
-const cardTooltipImageErrorMap = ref({});
 
 const isCardTooltipImageEligible = (card) => {
   const cardIdRaw = ports.formatting.normalizeCardIdText(card?.CardID);
@@ -92,39 +72,21 @@ const getCardTooltipImageList = (card) => {
   ));
 };
 
-const getVisibleCardTooltipImageList = (card) => {
-  return getCardTooltipImageList(card).filter((src) => !isCardTooltipImageFailed(card, src));
-};
-
-const makeCardTooltipImageErrorKey = (card, src) => `${ports.formatting.normalizeCardIdText(card?.CardID)}::${String(src || '').trim()}`;
-
-const isCardTooltipImageFailed = (card, src) => {
-  const key = makeCardTooltipImageErrorKey(card, src);
-  return !!cardTooltipImageErrorMap.value[key];
-};
-
-const onCardTooltipImageError = (event, card, src) => {
+// Failed nodes stay mounted so the shared recovery queue can restore them.
+const getVisibleCardTooltipImageList = getCardTooltipImageList;
+const onCardTooltipImageError = event => {
   const img = ports.songMedia.markMediaImageSettled(event);
   if (!img) return;
-
-  const key = makeCardTooltipImageErrorKey(card, src || img.getAttribute('src') || '');
-  if (!key.endsWith('::')) {
-    cardTooltipImageErrorMap.value = {
-      ...cardTooltipImageErrorMap.value,
-      [key]: true
-    };
-  }
+  img.closest('.card-tooltip-jacket-item')?.classList.add('is-failed');
 };
 
 
 return {
   getBirthdayCardImageSrc,
-  isBirthdayCardImageFailed,
   onBirthdayCardImageError,
   onBirthdayCardImageLoad,
   getCardTooltipImageList,
   getVisibleCardTooltipImageList,
-  isCardTooltipImageFailed,
   onCardTooltipImageError,
 };
 }

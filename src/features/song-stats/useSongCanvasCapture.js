@@ -1,5 +1,6 @@
 import { createCaptureCancelContext, isCaptureCancelledError } from '../../services/capture/captureTaskControl.js';
 import { formatExportTimestamp, sanitizeExportFileName, triggerDownloadPng } from './songCaptureFiles.js';
+import { getMediaImageSource, getSiteMediaRecovery, isMediaImageUrl } from '../../utils/mediaImageRecovery.js';
 
 /** Per-instance state owned by SongCanvasCapture. */
 export function createSongCanvasCaptureState() {
@@ -18,12 +19,16 @@ export function useSongCanvasCapture({
   getCaptureErrorText,
   screenshotModalCancelTask
 }) {
-const loadImageForCanvasExport = (src, timeoutMs = 8000) => {
+const loadImageForCanvasExport = (src, timeoutMs = 8000, cancelContext = null) => {
   const url = String(src || '').trim();
   if (!url) return Promise.resolve(null);
+  const displayed = getDisplayedCanvasExportImages().get(url);
+  if (displayed) return Promise.resolve(displayed);
   if (canvasExportImageCache.has(url)) return canvasExportImageCache.get(url);
 
-  const task = new Promise((resolve) => {
+  const task = isMediaImageUrl(url)
+    ? getSiteMediaRecovery().loadForCanvas(url, cancelContext).catch(error => { if (isCaptureCancelledError(error)) throw error; return null; })
+    : new Promise((resolve) => {
     const img = new Image();
     let timer = 0;
     let done = false;
@@ -59,7 +64,7 @@ const loadImageForCanvasExport = (src, timeoutMs = 8000) => {
     if (!image && canvasExportImageCache.get(url) === task) {
       canvasExportImageCache.delete(url);
     }
-  });
+  }, () => { if (canvasExportImageCache.get(url) === task) canvasExportImageCache.delete(url); });
   return task;
 };
 
@@ -79,7 +84,14 @@ const getDisplayedCanvasExportImages = () => {
     } catch (_) {
       isSameOrigin = true;
     }
-    if (isSameOrigin || img.crossOrigin === 'anonymous') images.set(url, img);
+    if (isSameOrigin || img.crossOrigin === 'anonymous') {
+      images.set(url, img);
+      const source = getMediaImageSource(img);
+      images.set(source, img);
+      const canonical = new URL(source, window.location.href);
+      images.set(canonical.href, img);
+      if (canonical.origin === window.location.origin) images.set(`${canonical.pathname}${canonical.search}${canonical.hash}`, img);
+    }
   });
   return images;
 };
@@ -181,6 +193,8 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
   });
 
   try {
+    const panel = document.getElementById('panel-another-vocal');
+    if (panel) await getSiteMediaRecovery().prepareForCapture(panel, cancelContext);
     const imageUrls = new Set();
     cards.forEach((card) => {
       if (card?.avatar) imageUrls.add(card.avatar);
@@ -203,7 +217,7 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
         cursor += 1;
         if (cancelContext.isCancelled()) throw new Error('export-cancelled');
         const src = missingEntries[index];
-        const img = await loadImageForCanvasExport(src, 10000);
+        const img = await loadImageForCanvasExport(src, 10000, cancelContext);
         imageMap.set(src, img);
         loadedCount += 1;
         if (loadedCount % 60 === 0) {

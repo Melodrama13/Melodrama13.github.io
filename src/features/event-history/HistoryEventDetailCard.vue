@@ -2,8 +2,8 @@
   <article class="event-detail-card event-detail-surface ui-liquid-glass ui-liquid-glass--chip" :data-card-id="card.CardID">
     <div class="event-detail-card-faces" :class="{ 'is-single': faces.length === 1 && !song }">
       <figure v-if="song" class="event-detail-card-song" :data-song-id="song.id">
-        <img v-if="!songImageFailed" :src="songMedia.getSongTooltipImageSrc({ song_id: song.id })" :alt="song.title" loading="lazy" decoding="async" @error="songImageFailed = true" />
-        <span v-else class="event-detail-card-song-fallback event-detail-surface ui-liquid-glass ui-liquid-glass--chip"><Music2 :size="24" aria-hidden="true" /></span>
+        <img crossorigin="anonymous" :src="songMedia.getSongTooltipImageSrc({ song_id: song.id })" :alt="song.title" loading="lazy" decoding="async" />
+        <span class="event-detail-card-song-fallback event-detail-surface ui-liquid-glass ui-liquid-glass--chip"><Music2 :size="24" aria-hidden="true" /></span>
       </figure>
       <figure v-for="face in faces" :key="face.variant">
         <HistoryCardArtwork :card="card" :src="face.src" :label="`${card.Name} · ${card.CardName} · ${face.label}`"
@@ -22,14 +22,13 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { Music2 } from 'lucide-vue-next';
 import HistoryCardArtwork from './HistoryCardArtwork.vue';
 import { getCardImageVariants } from '../../utils/cardImageVariants.js';
 const props = defineProps({ card: { type: Object, required: true }, presentation: { type: Object, required: true },
   cardMedia: { type: Object, required: true }, songMedia: { type: Object, required: true }, attributeLabels: { type: Object, required: true } });
 const song = computed(() => props.songMedia.getCardSong(props.card));
-const songImageFailed = ref(false);
 const faces = computed(() => {
   const images = props.cardMedia.getCardTooltipImageList(props.card);
   return getCardImageVariants(props.card.CardID, props.card.Rarity, props.card.Type).map((variant, index) => ({
@@ -46,7 +45,9 @@ const faces = computed(() => {
 .event-detail-card-faces.is-single > figure { width: calc((100% - 6px) / 2); }
 .event-detail-card-song > img, .event-detail-card-song-fallback { display: block; width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: cover; }
 .event-detail-card-song > img { box-shadow: var(--ui-glass-shadow-chip); }
-.event-detail-card-song-fallback { display: grid; place-items: center; color: var(--precedent-muted); background: var(--ui-glass-optical-group-bg); }
+.event-detail-card-song { position: relative; }
+.event-detail-card-song-fallback { position: absolute; inset: 0; display: none; place-items: center; color: var(--precedent-muted); background: var(--ui-glass-optical-group-bg); }
+.event-detail-card-song > img[data-failed='1'] + .event-detail-card-song-fallback { display: grid; }
 .event-detail-card-copy { display: grid; align-content: start; gap: 7px; min-width: 0; }
 .event-detail-card-person { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 7px; min-width: 0; }
 .event-detail-card-person h4 { display: inline-flex; align-items: center; gap: 4px; margin: 0; font-size: 0.8125rem; line-height: 1.5; font-weight: 750; white-space: nowrap; }

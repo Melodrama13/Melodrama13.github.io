@@ -2,8 +2,10 @@
   <section v-if="song" class="event-detail-section event-song-details" aria-label="书下曲">
     <div class="event-detail-section-heading"><h3><Music2 :size="16" aria-hidden="true" />书下曲</h3><span>#{{ song.id }}</span></div>
     <div class="event-song-intro">
-      <img v-if="!imageFailed" class="event-song-cover" :src="songMedia.getSongTooltipImageSrc(event)" :alt="song.title" loading="lazy" decoding="async" @error="imageFailed = true" />
-      <span v-else class="event-song-cover event-song-cover-fallback event-detail-surface ui-liquid-glass ui-liquid-glass--chip"><Music2 :size="26" aria-hidden="true" /></span>
+      <div class="event-song-cover-wrap">
+        <img class="event-song-cover" crossorigin="anonymous" :src="songMedia.getSongTooltipImageSrc(event)" :alt="song.title" loading="lazy" decoding="async" />
+        <span class="event-song-cover-fallback event-detail-surface ui-liquid-glass ui-liquid-glass--chip"><Music2 :size="26" aria-hidden="true" /></span>
+      </div>
       <div class="event-song-copy"><div class="event-song-title-row"><h4>{{ song.title }}</h4><div v-if="mvTags.length" class="event-song-tags"><span v-for="tag in mvTags" :key="tag.label" class="event-detail-surface ui-liquid-glass ui-liquid-glass--chip" :class="tag.tone">{{ tag.label }} MV</span></div></div><p v-if="event.song_alias" class="event-song-alias">{{ event.song_alias }}</p>
         <dl class="event-song-credits"><div><dt>作曲</dt><dd>{{ song.composer || '—' }}</dd></div><div><dt>作词</dt><dd>{{ song.lyricist || '—' }}</dd></div><div><dt>编曲</dt><dd>{{ song.arranger || '—' }}</dd></div></dl>
         <p v-if="song.releaseDate" class="event-song-release">实装 <time>{{ releaseDate }}</time><small>UTC+8</small></p>
@@ -17,13 +19,12 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { Music2 } from 'lucide-vue-next';
 import { SONG_DIFFICULTY_ORDER, MV_TAG_MAP } from '../song-stats/songDisplayConstants.js';
 import { formatHistorySongReleaseDate } from './useHistoryFormatting.js';
 const props = defineProps({ event: { type: Object, required: true }, presentation: { type: Object, required: true }, songMedia: { type: Object, required: true } });
 const song = computed(() => props.songMedia.getSongByEvent(props.event));
-const imageFailed = ref(false);
 const releaseDate = computed(() => formatHistorySongReleaseDate(song.value?.releaseDate));
 const mvTags = computed(() => (song.value?.categories || []).map(key => MV_TAG_MAP[String(key).toLowerCase()]).filter(Boolean));
 const difficulties = computed(() => SONG_DIFFICULTY_ORDER.filter(difficulty => song.value?.difficulties?.[difficulty.key] != null).map(difficulty => ({ ...difficulty, level: song.value.difficulties[difficulty.key] })));
@@ -38,8 +39,10 @@ const vocalLabel = type => ({ sekai: 'SEKAI ver.', original_song: '原曲 ver.',
 .event-detail-section-heading h3 svg { color: var(--precedent-accent); }
 .event-detail-section-heading > span { font-size: 0.6875rem; color: var(--precedent-muted); font-variant-numeric: tabular-nums; }
 .event-song-intro { display: flex; align-items: center; gap: 14px; }
+.event-song-cover-wrap { position: relative; flex: 0 0 112px; width: 112px; height: 112px; }
 .event-song-cover { flex: 0 0 auto; width: 112px; height: 112px; border-radius: 10px; object-fit: cover; box-shadow: var(--ui-glass-shadow-chip); }
-.event-song-cover-fallback { display: grid; place-items: center; background: var(--ui-glass-optical-group-bg); color: var(--precedent-muted); }
+.event-song-cover-fallback { position: absolute; inset: 0; display: none; place-items: center; border-radius: 10px; background: var(--ui-glass-optical-group-bg); color: var(--precedent-muted); }
+.event-song-cover[data-failed='1'] + .event-song-cover-fallback { display: grid; }
 .event-song-copy { min-width: 0; }
 .event-song-title-row { display: flex; align-items: center; gap: 8px; min-width: 0; margin-bottom: 5px; }
 .event-song-copy h4 { flex: 0 1 auto; min-width: 0; margin: 0; font-size: 1rem; line-height: 1.45; overflow-wrap: anywhere; }
@@ -77,6 +80,7 @@ const vocalLabel = type => ({ sekai: 'SEKAI ver.', original_song: '原曲 ver.',
 @container history-precedent (max-width: 520px) {
   .event-song-intro { gap: 10px; }
   .event-song-cover { width: 76px; height: 76px; }
+  .event-song-cover-wrap { flex-basis: 76px; width: 76px; height: 76px; }
   .event-song-copy h4 { font-size: 0.875rem; }
   .event-song-difficulties { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .event-song-difficulties > span { min-width: 0; gap: 4px; padding: 5px 7px; }

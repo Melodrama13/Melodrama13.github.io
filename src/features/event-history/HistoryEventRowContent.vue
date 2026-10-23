@@ -79,7 +79,6 @@
                           v-for="src in getVisibleCardTooltipImageList(card)"
                           :key="`card-tip-${row.key}-${card.CardID}-${normalIndex}-${src}`"
                           class="card-tooltip-jacket-item"
-                          :class="{ 'is-failed': isCardTooltipImageFailed(card, src) }"
                         >
                           <img
                             crossorigin="anonymous"
@@ -143,7 +142,6 @@
                           v-for="src in getVisibleCardTooltipImageList(card)"
                           :key="`card-tip-${row.key}-${card.CardID}-${fesIndex}-${src}`"
                           class="card-tooltip-jacket-item"
-                          :class="{ 'is-failed': isCardTooltipImageFailed(card, src) }"
                         >
                           <img
                             crossorigin="anonymous"
@@ -278,7 +276,7 @@ const { removePredict } = props.predictionEditor;
 const { getBoxTurnInRound } = props.eventOrdering;
 const { shouldRenderEventHeavy, getEventPlaceholderMemberCount, getEventPlaceholderVsCount } = props.progressiveRender;
 const { translateType, translateSkill, translateAttr, getCharAbbr, getUnitColor, getCharColor, isVirtualSinger, isSpecialFestival, getNormalCards, getFesCards, getFesType, getMemberRibbonLabel, getTypeTagStyle, formatSeries, formatSeriesCompact, getEditorSeriesStyle, parseVS } = props.presentation;
-const { getVisibleCardTooltipImageList, isCardTooltipImageFailed, onCardTooltipImageError } = props.cardMedia;
+const { getVisibleCardTooltipImageList, onCardTooltipImageError } = props.cardMedia;
 </script>
 
 <style scoped>

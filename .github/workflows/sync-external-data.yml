@@ -242,8 +242,9 @@ jobs:
           AWS_DEFAULT_REGION: auto
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
         run: |
-          aws s3 sync .media-cache/songs "s3://$R2_BUCKET/songs" --endpoint-url "$R2_ENDPOINT" --size-only --exclude "manifest.json" --only-show-errors
-          aws s3 sync .media-cache/cards "s3://$R2_BUCKET/cards" --endpoint-url "$R2_ENDPOINT" --size-only --exclude "manifest.json" --only-show-errors
+          # Match public/_headers for new and changed media uploaded to R2.
+          aws s3 sync .media-cache/songs "s3://$R2_BUCKET/songs" --endpoint-url "$R2_ENDPOINT" --cache-control "public, max-age=604800, stale-while-revalidate=86400" --size-only --exclude "manifest.json" --only-show-errors
+          aws s3 sync .media-cache/cards "s3://$R2_BUCKET/cards" --endpoint-url "$R2_ENDPOINT" --cache-control "public, max-age=604800, stale-while-revalidate=86400" --size-only --exclude "manifest.json" --only-show-errors
 
       - name: Detect data changes
         id: changes

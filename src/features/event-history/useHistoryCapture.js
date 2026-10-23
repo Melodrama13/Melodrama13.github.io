@@ -1,5 +1,6 @@
 import { nextTick } from 'vue';
 import { renderCaptureToCanvas as toCanvas } from '../../services/capture/captureEngineLoader.js';
+import { getSiteMediaRecovery } from '../../utils/mediaImageRecovery.js';
 
 /** Capture owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
@@ -49,6 +50,7 @@ const exportPredictedRangePng = async (options = {}) => {
       stage: 'capturing',
       message: '正在预热截图资源...'
     });
+    for (const row of rows) await getSiteMediaRecovery().prepareForCapture(row, { isCancelled });
     await ports.captureAssets.prewarmHistoryExportSourceRows(rows, deviceTier);
     await ports.captureAssets.waitHistoryNextPaint();
     exportClone = await ports.captureAssets.prepareHistoryExportClone(listEl, rows);

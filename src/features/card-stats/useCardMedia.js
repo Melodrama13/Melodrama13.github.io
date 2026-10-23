@@ -2,13 +2,13 @@ import { computed } from 'vue';
 import { isCardImageReleased } from '../../utils/spoilerGuard.js';
 import { getCardImageVariantForMode } from '../../utils/cardImageVariants.js';
 import { buildAssetUrl } from '../../utils/assets.js';
-import { createCardMediaRecovery } from './cardMediaRecovery.js';
+import { getSiteMediaRecovery } from '../../utils/mediaImageRecovery.js';
 
 /** Owns card media behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
  */
 export function useCardMedia(inputs) {
-  const recovery = createCardMediaRecovery(() => inputs.cardStatsRootRef?.value);
+  const recovery = getSiteMediaRecovery(() => inputs.cardStatsRootRef?.value);
   const cardByIdMap = computed(() => {
     const result = {};
     (inputs.props.allCards || []).forEach((card) => {
@@ -86,9 +86,9 @@ export function useCardMedia(inputs) {
     onMediaImageLoad,
     onMediaImageError,
     getLineupSlotCardImageSrc,
-    startMediaRecovery: recovery.start,
-    stopMediaRecovery: recovery.stop,
-    disposeMediaRecovery: recovery.dispose,
+    startMediaRecovery: () => recovery.resumeRoot(inputs.cardStatsRootRef?.value),
+    stopMediaRecovery: () => recovery.pauseRoot(inputs.cardStatsRootRef?.value),
+    disposeMediaRecovery: () => recovery.disposeRoot(inputs.cardStatsRootRef?.value),
     prepareMediaForCapture: recovery.prepareForCapture,
   };
 }

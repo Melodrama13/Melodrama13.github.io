@@ -22,7 +22,7 @@ const onSongJacketError = (event) => {
   if (img.dataset.failed === '1') return;
   img.dataset.loaded = '1';
   img.dataset.failed = '1';
-  img.style.display = 'none';
+  img.style.visibility = 'hidden';
   const holder = img.closest('.song-jacket-media');
   if (holder instanceof HTMLElement) {
     holder.classList.add('is-failed');
@@ -33,6 +33,8 @@ const onSongJacketLoad = (event) => {
   const img = event?.target;
   if (!(img instanceof HTMLImageElement)) return;
   img.dataset.loaded = '1';
+  delete img.dataset.failed;
+  img.style.visibility = '';
   img.style.display = '';
   const holder = img.closest('.song-jacket-media');
   if (holder instanceof HTMLElement) {
