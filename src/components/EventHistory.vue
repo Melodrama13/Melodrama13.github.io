@@ -64,7 +64,7 @@
 />
         </UiSurfaceTransition>
         <UiSurfaceTransition kind="popover">
-          <HistoryPrecedentPanel v-if="precedents.isOpen.value" :precedents="precedents" :presentation="presentation" :card-media="cardMedia" />
+          <HistoryPrecedentPanel v-if="precedents.isOpen.value" :precedents="precedents" :presentation="presentation" :card-media="cardMedia" :song-media="songMedia" />
         </UiSurfaceTransition>
       </div>
       <div class="history-list" ref="listRef">

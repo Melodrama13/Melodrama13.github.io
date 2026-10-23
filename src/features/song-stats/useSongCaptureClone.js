@@ -44,8 +44,45 @@ const prepareSongExportClone = async (targetEl) => {
   copyCaptureCssVariablesFromAncestors(targetEl, clone, rootEl);
   syncCloneImagesWithSource(targetEl, clone);
   syncCaptureCloneFormControls(targetEl, clone);
+  if (targetEl.id === 'panel-cover-album-stats') {
+    // Keep the selected controls readable in the PNG while the live UI is locked.
+    // WebKit's native disabled controls may use colors html2canvas cannot parse.
+    clone.querySelectorAll('.song-cover-album-prediction-toggle input, .song-cover-album-mode-select').forEach((control) => {
+      control.disabled = false;
+    });
+  }
   syncCloneBackgroundStylesWithSource(targetEl, clone);
   sanitizeSongCloneForExport(clone);
+
+  if (targetEl.id === 'panel-cover-album-stats') {
+    const sourceMode = targetEl.querySelector('.song-cover-album-mode-select');
+    const cloneMode = clone.querySelector('.song-cover-album-mode-select');
+    if (sourceMode instanceof HTMLSelectElement && cloneMode instanceof HTMLSelectElement) {
+      // The canvas renderer positions native select text from font metrics.
+      // Freeze its selected label in the same box so the PNG matches the UI.
+      const modeStyle = window.getComputedStyle(sourceMode);
+      const modeRect = sourceMode.getBoundingClientRect();
+      const label = document.createElement('span');
+      label.className = `${cloneMode.className} song-cover-album-export-mode`;
+      for (const attribute of cloneMode.attributes) {
+        if (attribute.name.startsWith('data-v-')) label.setAttribute(attribute.name, attribute.value);
+      }
+      label.dataset.value = sourceMode.value;
+      label.textContent = sourceMode.selectedOptions[0]?.textContent || '';
+      label.style.cssText = cloneMode.style.cssText;
+      Object.assign(label.style, {
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        boxSizing: 'border-box', width: `${modeRect.width}px`, height: `${modeRect.height}px`,
+        minHeight: '0', padding: '0', whiteSpace: 'nowrap',
+        fontFamily: modeStyle.fontFamily, fontSize: modeStyle.fontSize,
+        fontWeight: modeStyle.fontWeight, letterSpacing: modeStyle.letterSpacing,
+        lineHeight: '1', textAlign: 'center', verticalAlign: 'middle',
+        color: modeStyle.color, border: modeStyle.border, borderRadius: modeStyle.borderRadius,
+        backgroundColor: modeStyle.backgroundColor, backgroundImage: 'none'
+      });
+      cloneMode.replaceWith(label);
+    }
+  }
 
   if (sourceRadiusVar) {
     clone.style.setProperty('--stats-radius-btn', sourceRadiusVar);
@@ -101,6 +138,12 @@ const prepareSongExportClone = async (targetEl) => {
       border: solid #ffffff;
       border-width: 0 2px 2px 0;
       transform: rotate(45deg);
+    }
+    /* html2canvas draws the native check itself. Edge returns empty computed
+       styles for its synthetic pseudo-element inside the void input node. */
+    .song-export-clone-root#panel-cover-album-stats input[type="checkbox"]::before,
+    .song-export-clone-root#panel-cover-album-stats input[type="checkbox"]::after {
+      content: none !important;
     }
     .song-export-clone-root .song-export-no-pseudo-label {
       font-size: 0.7rem !important;

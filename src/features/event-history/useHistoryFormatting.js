@@ -1,5 +1,35 @@
 import { GAME_ATTRIBUTE_NAME_BY_LOWERCASE_KEY } from '../../domain/gameAttributes.js';
 
+// Verified against external events.startAt / aggregateAt, converted to UTC+8.
+// Source JSON keeps dates only; test activities follow their own 20:00 rule.
+const EVENT_OPENING_TIME_EXCEPTIONS = { 120: '19:00', 145: '17:00', 172: '16:00' };
+
+export function getHistoryEventPeriod(event = {}) {
+  const isActivity = /^\d+$/.test(String(event.id)) && Number(event.id) > 0;
+  const isWorldLink = /world\s*link|^wl(?:终章)?$/i.test(String(event.event_type || ''));
+  const isTest = /^(测试|test)$/i.test(String(event.event_type || '').trim());
+  const startTime = isActivity ? EVENT_OPENING_TIME_EXCEPTIONS[event.id] || (isTest ? '20:00' : isWorldLink ? '19:00' : '14:00') : '';
+  const endTime = isActivity ? (isWorldLink ? '18:59' : '19:59') : '';
+  const endpoint = (raw, time) => {
+    const date = String(raw || '').trim();
+    const match = date.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+    if (!match) return { date, time: '', dateTime: undefined };
+    const isoDate = `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
+    return { date, time, dateTime: time ? `${isoDate}T${time}:00+08:00` : isoDate };
+  };
+  return { start: endpoint(event.start_date, startTime), end: endpoint(event.end_date, endTime) };
+}
+
+/** Song releaseDate is stored in JST; display an explicit Beijing time. */
+export function formatHistorySongReleaseDate(raw) {
+  const text = String(raw || '').trim();
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return text;
+  const date = new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6] || '00'}+09:00`);
+  if (!Number.isFinite(date.getTime())) return text;
+  return new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date);
+}
+
 /** Formatting owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
  * Dependencies: Presentation.

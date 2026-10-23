@@ -201,24 +201,27 @@ const formatSeriesCompact = (ev) => {
   return sid;
 };
 
-const getEditorSeriesStyle = (ev) => {
+const getEditorSeriesStyle = (ev, { glass = false } = {}) => {
   if (!ev) return {};
+  const softFill = color => `color-mix(in srgb, ${color} 22%, var(--event-detail-surface-fill))`;
+  const softBorder = color => `color-mix(in srgb, ${color} 28%, var(--ui-control-border))`;
   const eventType = String(ev.event_type || '').trim();
   if (eventType === '混活' || isWl3Event(ev)) {
+    const colors = ['#FD7CC1', '#87C0FF', '#F8FF87'];
     return {
-      background: 'linear-gradient(45deg, #FD7CC1 0%, #87C0FF 50%, #F8FF87 100%)',
-      borderColor: 'transparent',
-      color: '#ffffff',
+      background: `linear-gradient(45deg, ${colors.map((color, index) => `${glass ? softFill(color) : color} ${index * 50}%`).join(', ')})`,
+      borderColor: glass ? softBorder(colors[1]) : 'transparent',
+      color: glass ? 'var(--precedent-ink)' : '#ffffff',
       fontWeight: '700'
     };
   }
 
-  if (eventType === '箱活' || (eventType === 'World Link' && !isWl3Event(ev))) {
+  if (eventType === '箱活' || (eventType === 'World Link' && !isWl3Event(ev)) || (glass && eventType === '总集篇')) {
     const base = getUnitColor(ev.unit);
     return {
-      backgroundColor: base,
-      borderColor: base,
-      color: '#ffffff',
+      backgroundColor: glass ? softFill(base) : base,
+      borderColor: glass ? softBorder(base) : base,
+      color: glass ? `color-mix(in srgb, ${base} 24%, var(--precedent-ink))` : '#ffffff',
       fontWeight: '700'
     };
   }

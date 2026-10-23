@@ -75,6 +75,8 @@ const exportSongPanelPng = async (panelId, title) => {
       await exportElementPng(targetEl, title, {
         taskLabel: title,
         exportToken,
+        // Keep both display modes consistent, including WebKit's large overviews.
+        useHtmlCanvas: panelId === 'panel-cover-album-stats',
         retryTask: () => exportSongPanelPng(panelId, title)
       });
     }

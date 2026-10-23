@@ -17,7 +17,7 @@
                 <HistoryPrecedentCardGallery v-if="endpoint.cards.length" :cards="endpoint.cards" :presentation="presentation" :card-media="cardMedia" :attribute-labels="attributeLabels" :event-for-card="eventForCard" :jump-to-event="jumpToEvent" :date-label="new Date(endpoint.timestamp).toLocaleDateString('zh-CN')" />
                 <template v-else>
                   <div class="precedent-endpoint-fallback"><img :src="`/chars/${presentation.getCharAbbr(range.name)}.png`" :alt="range.name" /></div>
-                  <button type="button" class="pjsk-ui-action precedent-endpoint-jump" :title="`#${endpoint.event.id} · ${endpoint.event.event_title || endpoint.event.event_type || ''}`" :aria-label="`定位活动 ${endpoint.event.id}`" @click="jumpToEvent(endpoint.event.id)">{{ eventShortLabel(endpoint.event) }}<ArrowUpRight :size="10" aria-hidden="true" /></button>
+                  <button type="button" class="pjsk-ui-action precedent-endpoint-jump precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="`#${endpoint.event.id} · ${endpoint.event.event_title || endpoint.event.event_type || ''}`" :aria-label="`定位活动 ${endpoint.event.id}`" @click="jumpToEvent(endpoint.event.id)">{{ eventShortLabel(endpoint.event) }}<ArrowUpRight :size="10" aria-hidden="true" /></button>
                   <time>{{ new Date(endpoint.timestamp).toLocaleDateString('zh-CN') }}</time>
                 </template>
               </div>
@@ -28,15 +28,15 @@
       </template>
     </div>
     <template v-else>
-      <div v-if="record.breakdown" class="precedent-reward-breakdown" aria-label="报酬组成"><span>三星<strong>{{ record.breakdown.three }}</strong></span><span>二星<strong>{{ record.breakdown.two }}</strong></span></div>
+      <div v-if="record.breakdown" class="precedent-reward-breakdown" aria-label="报酬组成"><span class="precedent-surface ui-liquid-glass ui-liquid-glass--chip">三星<strong>{{ record.breakdown.three }}</strong></span><span class="precedent-surface ui-liquid-glass ui-liquid-glass--chip">二星<strong>{{ record.breakdown.two }}</strong></span></div>
       <div v-if="record.ceilingFirsts?.length || record.scopeFirsts?.some(scope => scope !== 'all')" class="precedent-evidence-scopes">
-        <template v-if="record.ceilingFirsts?.length"><span v-for="first in record.ceilingFirsts" :key="first.attribute">{{ record.cohort.toUpperCase() }} · {{ first.attribute === 'any' ? '任意花色' : attributeLabels[first.attribute] }}新上限</span></template>
-        <template v-else><span v-for="scope in record.scopeFirsts.filter(scope => scope !== 'all')" :key="scope">{{ scopeLabel(scope) }}首次</span></template>
+        <template v-if="record.ceilingFirsts?.length"><span v-for="first in record.ceilingFirsts" :key="first.attribute" class="precedent-surface ui-liquid-glass ui-liquid-glass--chip">{{ record.cohort.toUpperCase() }} · {{ first.attribute === 'any' ? '任意花色' : attributeLabels[first.attribute] }}新上限</span></template>
+        <template v-else><span v-for="scope in record.scopeFirsts.filter(scope => scope !== 'all')" :key="scope" class="precedent-surface ui-liquid-glass ui-liquid-glass--chip">{{ scopeLabel(scope) }}首次</span></template>
       </div>
       <p v-for="first in alternateCeilings" :key="first.attribute" class="precedent-detail-note">{{ attributeLabels[first.attribute] }}首次 {{ first.advancement.fromThreshold }} → {{ first.advancement.toThreshold }} 四星 · 用时 {{ first.advancement.days }} 天</p>
       <p v-for="advance in alternateAdvancements" :key="advance.scope" class="precedent-detail-note">{{ scopeLabel(advance.scope) }} · 上一阶 {{ new Date(advance.previous.timestamp).toLocaleDateString('zh-CN') }} · {{ [...new Set(advance.previous.holders.map(holder => holder.name))].join('、') }} · 用时 {{ advance.days }} 天</p>
       <p v-if="record.type === 'pairFirst'" class="precedent-detail-note">{{ record.rules.poolIncludeFes ? '计入 FES' : '不计入 FES' }} · {{ record.rules.poolOwnVsOnly ? '仅计入本团V' : '不限VS归属' }}；限定同池计入 WL 和联动，FES依上方选项。</p>
-      <p v-if="record.attainment && record.attainment.timestamp !== record.timestamp" class="precedent-detail-note">首次达到 {{ record.attainment.count }} 次 · {{ new Date(record.attainment.timestamp).toLocaleDateString('zh-CN') }} <button type="button" class="pjsk-ui-action precedent-endpoint-jump" @click="jumpToEvent(record.attainment.event.id)">{{ presentation.formatSeriesCompact(record.attainment.event) || `#${record.attainment.event.id}` }}<ArrowUpRight :size="10" aria-hidden="true" /></button></p>
+      <p v-if="record.attainment && record.attainment.timestamp !== record.timestamp" class="precedent-detail-note">首次达到 {{ record.attainment.count }} 次 · {{ new Date(record.attainment.timestamp).toLocaleDateString('zh-CN') }} <button type="button" class="pjsk-ui-action precedent-endpoint-jump precedent-surface ui-liquid-glass ui-liquid-glass--chip" @click="jumpToEvent(record.attainment.event.id)">{{ presentation.formatSeriesCompact(record.attainment.event) || `#${record.attainment.event.id}` }}<ArrowUpRight :size="10" aria-hidden="true" /></button></p>
       <HistoryPrecedentSongGallery v-if="record.songEvidence" :items="record.songEvidence" :presentation="presentation" :jump-to-event="jumpToEvent" />
       <HistoryPrecedentEventGallery v-else-if="record.eventEvidence" :items="record.eventEvidence" :presentation="presentation" :card-media="cardMedia" :attribute-labels="attributeLabels" :jump-to-event="jumpToEvent" />
       <p v-else-if="record.type === 'period' && !record.evidence.length" class="precedent-detail-note">{{ record.value === 0 ? '本期间没有符合条件的记录。' : '活动依据见上方时间线。' }}</p>
@@ -86,15 +86,15 @@ const eventShortLabel = event => props.presentation.formatSeriesCompact(event).t
 .precedent-evidence-endpoint { display: grid; justify-items: center; min-width: 0; }
 .precedent-evidence-endpoint .precedent-evidence-gallery { width: var(--precedent-card-size); max-width: 100%; margin: 0; }
 .precedent-evidence-connector { position: relative; height: 1px; margin-top: calc(var(--precedent-card-size) / 2); background: color-mix(in srgb, var(--precedent-accent) 42%, var(--ui-control-border)); }
-.precedent-evidence-connector::before, .precedent-evidence-connector::after { content: ''; position: absolute; top: -3px; box-sizing: border-box; width: 7px; height: 7px; border: 1px solid var(--precedent-accent); border-radius: 50%; background: var(--ui-glass-optical-control-bg); }
+.precedent-evidence-connector::before, .precedent-evidence-connector::after { content: ''; position: absolute; top: -3px; box-sizing: border-box; width: 7px; height: 7px; border: 1px solid var(--precedent-accent); border-radius: 50%; background: var(--precedent-surface-fill); }
 .precedent-evidence-connector::before { left: -1px; }
 .precedent-evidence-connector::after { right: -1px; background: var(--precedent-accent); }
 .precedent-endpoint-fallback { display: grid; place-items: center; width: var(--precedent-card-size); max-width: 100%; aspect-ratio: 1; }
 .precedent-endpoint-fallback img { width: 42px; height: 42px; object-fit: contain; }
-.precedent-endpoint-jump { display: inline-flex; align-items: center; justify-content: center; gap: 3px; max-width: 100%; min-height: 24px; padding: 1px 6px; border: 1px solid var(--ui-control-border); border-radius: 999px; color: var(--precedent-accent); background: var(--ui-glass-optical-group-bg); font-family: inherit; font-size: 0.75rem; cursor: pointer; }
+.precedent-endpoint-jump { display: inline-flex; align-items: center; justify-content: center; gap: 3px; max-width: 100%; min-height: 24px; padding: 1px 6px; border: 1px solid var(--ui-control-border); border-radius: 999px; color: var(--precedent-accent); background: var(--precedent-surface-fill); font-family: inherit; font-size: 0.75rem; cursor: pointer; }
 .precedent-evidence-endpoint > time { margin-top: 2px; font-size: 0.6875rem; line-height: 1.25; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .precedent-reward-breakdown, .precedent-evidence-scopes { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
-.precedent-reward-breakdown > span, .precedent-evidence-scopes > span { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 7px; border-radius: 999px; background: var(--ui-glass-optical-group-bg); font-size: 0.66rem; }
+.precedent-reward-breakdown > span, .precedent-evidence-scopes > span { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 7px; border-radius: 999px; background: var(--precedent-surface-fill); font-size: 0.66rem; }
 .precedent-reward-breakdown strong { color: var(--precedent-ink); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
 .precedent-detail-note { margin: 7px 0; font-size: 0.69rem; line-height: 1.5; color: var(--precedent-muted); }
 @container precedent-evidence (min-width: 458px) {

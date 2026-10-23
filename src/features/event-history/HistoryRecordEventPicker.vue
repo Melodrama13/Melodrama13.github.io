@@ -1,9 +1,9 @@
 <template>
   <div ref="pickerElement" class="history-record-picker" data-history-record-picker
     :class="{ 'is-open': isOpen }" @focusout="onFocusOut" @keydown="onKeyDown">
-    <div class="history-record-picker-control">
+    <div class="history-record-picker-control precedent-surface ui-liquid-glass ui-liquid-glass--chip">
       <input ref="inputElement" class="pjsk-ui-field history-record-picker-input" type="text"
-        role="combobox" aria-label="查看活动纪录" aria-autocomplete="list" aria-haspopup="listbox"
+        role="combobox" :aria-label="label" aria-autocomplete="list" aria-haspopup="listbox"
         :aria-expanded="isOpen" :aria-controls="listId" :aria-activedescendant="activeOptionId"
         :aria-describedby="hintId" :value="draftText" :title="committedLabel"
         placeholder="输入 #ID 或活动简称" autocomplete="off" :spellcheck="false"
@@ -15,7 +15,7 @@
         <ChevronDown :size="16" aria-hidden="true" />
       </button>
     </div>
-    <div v-if="isOpen" class="history-record-picker-menu">
+    <div v-if="isOpen" class="history-record-picker-menu precedent-surface ui-liquid-glass ui-liquid-glass--chip">
       <ul :id="listId" ref="listElement" class="history-record-picker-list" role="listbox" aria-label="活动列表"
         @mousedown.prevent>
         <li v-for="(option, index) in matchingOptions" :id="optionId(index)" :key="option.value"
@@ -38,6 +38,7 @@ import { Check, ChevronDown } from 'lucide-vue-next';
 import { filterPrecedentEventOptions, resolvePrecedentEventOption } from './precedentEventOptions.js';
 
 const props = defineProps({
+  label: { type: String, default: '查看活动纪录' },
   modelValue: { type: String, default: '' },
   options: { type: Array, default: () => [] },
 });
@@ -171,7 +172,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutsidePoint
 <style scoped>
 .history-record-picker { position: relative; min-width: 0; width: 100%; }
 .history-record-picker.is-open { z-index: 8; }
-.history-record-picker-control { position: relative; min-width: 0; height: 36px; border-radius: 999px; }
+.history-record-picker-control { background: var(--precedent-surface-fill); position: relative; min-width: 0; height: 36px; border-radius: 999px; }
 [data-history-record-picker] input.history-record-picker-input {
   display: block;
   box-sizing: border-box;
@@ -182,7 +183,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutsidePoint
   padding: 0 38px 0 11px;
   border: 1px solid var(--ui-control-border);
   border-radius: 999px;
-  background: var(--ui-glass-optical-control-bg);
+  background: transparent;
   color: var(--ui-control-label);
   font-family: inherit;
   font-size: 0.8rem;
@@ -218,7 +219,6 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutsidePoint
   border-radius: 15px;
   background: var(--ui-glass-fallback-bg);
   color: var(--ui-control-label);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
 }
 .history-record-picker-list {
   position: relative;

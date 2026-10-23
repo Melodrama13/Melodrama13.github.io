@@ -12,7 +12,8 @@ const publicDataFiles = [
   'public/data/pjsk_cards.json',
   'public/data/pjsk_songs.json',
   'public/data/pjsk_characters.json',
-  'public/data/pjsk_nuigurumi.json'
+  'public/data/pjsk_nuigurumi.json',
+  'public/data/pjsk_wl_chapters.json'
 ]
 const codeReleaseNotes = [
   '修复了部分bug。',

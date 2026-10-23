@@ -112,6 +112,9 @@ jobs:
       - name: Sync event data
         run: npm run sync:events-other
 
+      - name: Sync WL chapter schedules
+        run: npm run sync:wl-other
+
       - name: Sync card data
         run: npm run sync:cards-other
 

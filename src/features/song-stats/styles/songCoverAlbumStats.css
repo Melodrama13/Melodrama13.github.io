@@ -1,0 +1,26 @@
+.song-cover-album-panel { min-width: 0; }
+.song-cover-album-mode-select { min-height: 30px; padding: 4px 10px; font-family: inherit; font-size: 0.74rem; color: #475569; text-align: center; text-align-last: center; }
+.song-cover-album-groups { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 12px; }
+.song-cover-album-groups.is-prediction-only { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+.song-cover-album-group { min-width: 0; padding: 8px; border: 1px solid var(--cover-album-group-border); border-radius: 10px; background: var(--cover-album-tint); }
+.song-cover-album-summary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 0 0 8px; }
+.song-cover-album-group-title { display: flex; align-items: center; justify-content: center; flex: 0 0 150px; width: 150px; height: 46px; margin: 0; color: #334155; font-size: 0.9rem; font-weight: 700; }
+.song-cover-album-group-logo { display: block; width: auto; height: auto; max-width: 150px; max-height: 46px; }
+.song-cover-album-summary-counts { display: flex; gap: 6px 14px; color: #64748b; font-size: 0.76rem; white-space: nowrap; }
+.song-cover-album-summary-counts strong { color: #334155; font-variant-numeric: tabular-nums; }
+.song-cover-album-note { margin: 8px 0 12px; color: #64748b; font-size: 0.74rem; line-height: 1.6; overflow-wrap: anywhere; }
+.song-cover-album-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); align-items: start; gap: 12px; }
+.song-cover-album-card, .song-cover-album-extra { min-width: 0; overflow: hidden; border: 1px solid rgba(148, 163, 184, 0.35); border-radius: 14px; background: var(--cover-album-card-fill); }
+.song-cover-album-card.is-predicted { border-color: var(--cover-album-accent); }
+.song-cover-album-extra { margin-top: 12px; }
+.song-cover-album-extra > .song-cover-album-note { padding: 0 12px; }
+.song-cover-album-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(255, 255, 255, 0.45); border-bottom: 1px solid #e2e8f0; }
+.is-predicted .song-cover-album-head { background: var(--cover-album-accent-soft); }
+.song-cover-album-head h3 { display: flex; align-items: center; flex: 1; gap: 8px; min-width: 0; margin: 0; color: #0f172a; font-size: 0.9rem; font-weight: 800; }
+.song-cover-album-status { border: 1px solid #cbd5e1; border-radius: 999px; padding: 2px 7px; font-size: 0.64rem; font-weight: 700; color: #475569; background: #fff; }
+.song-cover-album-status.is-predicted, .song-cover-album-status.is-candidate { border-color: var(--cover-album-accent); }
+.song-cover-album-count { margin-left: auto; color: #64748b; font-size: 0.72rem; font-variant-numeric: tabular-nums; }
+.song-cover-album-foot { padding: 8px 12px; color: #64748b; font-size: 0.68rem; border-top: 1px solid #e2e8f0; line-height: 1.5; }
+@media (max-width: 900px) {
+  .song-cover-album-mode-select { min-height: 44px; }
+}

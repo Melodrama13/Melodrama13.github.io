@@ -6,7 +6,7 @@ import { preloadImageUrlsForCapture } from './songCapturePreload.js';
 import { freezeCaptureCssVariables, hideUnreadyCaptureImages } from '../../services/capture/captureElementState.js';
 import { waitNextPaint } from './songFormatters.js';
 import { runCaptureRenderAttempts } from '../../services/capture/captureRenderAttempts.js';
-import { renderCaptureToCanvas as toCanvas } from '../../services/capture/captureEngineLoader.js';
+import { renderCaptureToCanvas as toCanvas, renderHtmlCapture } from '../../services/capture/captureEngineLoader.js';
 import { CAPTURE_IMAGE_PLACEHOLDER } from './songCaptureClone.js';
 import { formatExportTimestamp, sanitizeExportFileName, triggerDownloadPng } from './songCaptureFiles.js';
 
@@ -224,7 +224,17 @@ const exportElementPng = async (targetEl, title, options = {}) => {
         return { canvasWidth, canvasHeight, renderTimeoutMs };
       },
       renderAttempt: async ({ canvasWidth, canvasHeight, renderTimeoutMs }) => {
-        const renderTask = startSongCaptureRenderTask(() => toCanvas(renderEl, {
+        const renderTask = startSongCaptureRenderTask(() => options?.useHtmlCanvas
+          ? renderHtmlCapture(renderEl, {
+            backgroundColor: '#ffffff',
+            width,
+            height,
+            scale: canvasWidth / width,
+            useCORS: true,
+            allowTaint: false,
+            logging: false
+          })
+          : toCanvas(renderEl, {
           backgroundColor: '#ffffff',
           width,
           height,

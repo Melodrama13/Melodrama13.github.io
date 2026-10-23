@@ -52,11 +52,11 @@
           </button>
           <button class="pjsk-ui-action"
             @click="$emit('toggle-precedents', $event)"
-            title="先例与纪录"
+            title="活动详情、查先例与本期纪录"
             aria-controls="history-precedent-panel"
             :aria-expanded="isPrecedentPanelVisible"
             :class="['nav-btn', 'compact-tip', { 'is-icon-only': isCompact, 'active-highlight': isPrecedentPanelVisible }]"
-            data-tip="先例与纪录"
+            data-tip="活动详情与先例"
           >
             <History class="compact-btn-icon" aria-hidden="true" />
             <span v-if="!isCompact">先例</span>

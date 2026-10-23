@@ -77,7 +77,11 @@ const pickActiveNavTargetIdByViewport = () => {
       if (b.top !== a.top) return b.top - a.top;
       return a.height - b.height;
     });
-    return containing[0].id;
+    // Several unit cards can share one grid row. Keep the selected card while
+    // that row is being read, rather than switching to its shortest neighbour.
+    const current = containing.find((item) => item.id === activeNavId.value
+      && Math.abs(item.top - containing[0].top) < 1);
+    return current?.id || containing[0].id;
   }
 
   if (upcoming.length > 0) {

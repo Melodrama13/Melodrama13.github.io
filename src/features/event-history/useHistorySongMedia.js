@@ -1,6 +1,7 @@
 import { computed } from 'vue';
 import { isSongReleased } from '../../utils/spoilerGuard.js';
 import { buildAssetUrl } from '../../utils/assets.js';
+import { SONG_LIMITED_GACHA_IDS } from '../../utils/cardLimitedRules.js';
 
 /** Song Media owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
@@ -27,11 +28,27 @@ const songsById = computed(() => {
   });
   return map;
 });
+const knownSingerNames = computed(() => new Set((ports.props.allCharacters || []).map(character => character.zh_name)));
+const isKnownSongSinger = name => knownSingerNames.value.has(String(name || '').trim().split(/\s+/)[0]);
 
 const getSongByEvent = (event) => {
   const id = toFiniteSongId(event?.song_id);
   if (id === null) return null;
   return songsById.value.get(id) || null;
+};
+
+const songsByTitle = computed(() => {
+  const map = new Map();
+  for (const song of songsById.value.values()) {
+    const title = String(song.title || '').trim();
+    if (title) map.set(title, map.has(title) ? null : song);
+  }
+  return map;
+});
+
+const getCardSong = card => {
+  if (![card?.EventID, card?.GachaID].some(id => SONG_LIMITED_GACHA_IDS.has(String(id || '').trim().toLowerCase()))) return null;
+  return songsByTitle.value.get(String(card?.CardName || '').trim()) || null;
 };
 
 const getSongCategories = (song) => {
@@ -123,8 +140,21 @@ const hasSongTooltip = (event) => {
   return !!getSongByEvent(event);
 };
 
+const getReleasedSongVocals = (event) => {
+  const now = ports.clock.spoilerNow.value.getTime();
+  return (getSongByEvent(event)?.vocals || []).filter(vocal => {
+    const match = String(vocal.released_at || '').match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+    if (!match) return true;
+    const gate = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) - 8 * 60 * 60 * 1000;
+    return gate <= now;
+  });
+};
 
 return {
+  getCardSong,
+  getSongByEvent,
+  getReleasedSongVocals,
+  isKnownSongSinger,
   hasSong3DMV,
   hasSong2DMV,
   getSongIdText,

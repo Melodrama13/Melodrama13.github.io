@@ -1,5 +1,6 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { normalizeSearchText, normalizeSearchHiragana, normalizeSearchRomaji, isSongDifficultyMissing, normalizeSongId } from './songFormatters.js';
+import { SONG_PAGE_SIZE_OPTIONS } from './songDisplayConstants.js';
 
 /** Per-instance state owned by SongSearch. */
 export function createSongSearchState() {
@@ -185,6 +186,15 @@ const changeSongPage = (delta, event = null) => {
   }, anchorEl);
 };
 
+const onSongPageSizeChange = (event) => {
+  const size = Number(event?.target?.value);
+  if (!SONG_PAGE_SIZE_OPTIONS.includes(size)) return;
+  const anchorEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  void withInteractionPinnedPosition(() => {
+    songPageSize.value = size;
+  }, anchorEl);
+};
+
 const connectSongSearchEffects = () => {
 watch([keyword, mvFilter, groupFilter, difficultySortKey, difficultySortMode], () => {
   currentSongPage.value = 1;
@@ -212,5 +222,5 @@ watch(totalSongPages, (nextTotal) => {
 });
 };
 
-return { difficultySortModeIconSrc, difficultySortModeTitle, cycleDifficultySortMode, backToSongHome, recalcSongTableOverflow, filteredSongs, totalSongPages, pagedSongs, emptyPagedRowCount, changeSongPage, connectSongSearchEffects };
+return { difficultySortModeIconSrc, difficultySortModeTitle, cycleDifficultySortMode, backToSongHome, recalcSongTableOverflow, filteredSongs, totalSongPages, pagedSongs, emptyPagedRowCount, changeSongPage, onSongPageSizeChange, connectSongSearchEffects };
 }

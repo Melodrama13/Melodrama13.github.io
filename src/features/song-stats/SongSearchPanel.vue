@@ -177,8 +177,8 @@
             </button>
             <label class="song-page-size-field">
               <span>每页</span>
-              <select v-model.number="songPageSize" class="pjsk-ui-field song-page-size-select">
-                <option v-for="size in SONG_PAGE_SIZE_OPTIONS" :key="`song-page-size-${size}`" :value="size">{{ size }}</option>
+              <select :value="songPageSize" class="pjsk-ui-field song-page-size-select" @change="onSongPageSizeChange($event)">
+                <option v-for="size in SONG_PAGE_SIZE_OPTIONS" :key="`song-page-size-${size}`" :value="size" :selected="size === songPageSize">{{ size }}</option>
               </select>
             </label>
             <span class="song-page-count">共 {{ filteredSongs.length }} 首</span>
@@ -191,10 +191,9 @@ import { getSongSectionTitle, GROUP_FILTER_OPTIONS, DIFFICULTY_SORT_OPTIONS, SON
 import { isSongDifficultyMissing, getSongDifficultyText } from './songFormatters.js';
 
 /** Feature view: native markup and callbacks are preserved; state remains in its controller. */
-defineProps(["registerSongListWrap","isSongTableOverflowing","difficultySortMode","difficultySortModeTitle","cycleDifficultySortMode","difficultySortModeIconSrc","pagedSongs","showSongImageTitle","clearSongImageTitleToast","onSongJacketLoad","onSongJacketError","filteredSongs","emptyPagedRowCount","currentSongPage","changeSongPage","totalSongPages","backToSongHome"]);
+defineProps(["registerSongListWrap","isSongTableOverflowing","difficultySortMode","difficultySortModeTitle","cycleDifficultySortMode","difficultySortModeIconSrc","pagedSongs","showSongImageTitle","clearSongImageTitleToast","onSongJacketLoad","onSongJacketError","filteredSongs","emptyPagedRowCount","currentSongPage","changeSongPage","totalSongPages","backToSongHome","songPageSize","onSongPageSizeChange"]);
 const keyword = defineModel('keyword', { required: true });
 const groupFilter = defineModel('groupFilter', { required: true });
 const mvFilter = defineModel('mvFilter', { required: true });
 const difficultySortKey = defineModel('difficultySortKey', { required: true });
-const songPageSize = defineModel('songPageSize', { required: true });
 </script>

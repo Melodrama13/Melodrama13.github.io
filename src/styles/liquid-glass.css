@@ -168,6 +168,17 @@ body {
   opacity: 0.18;
 }
 
+/* A selector inside a glass panel shares its parent's backdrop. Applying a
+   second SVG refraction here composites transparent pixels as a gray track. */
+.ui-glass-tabs[data-ui-glass-contained='true'] .ui-liquid-glass {
+  --ui-glass-surface-filter: none;
+}
+
+:root[data-ui-glass-mode='refractive'] .ui-glass-tabs[data-ui-glass-contained='true']
+  .mobile-tab-glider[data-ui-glass-active='true']::before {
+  opacity: 0.65;
+}
+
 :is(.mobile-tab-glider, .top-nav-glass-capsule)[data-ui-glass-profile='lens'] {
   --ui-glass-refraction-blur-radius: 0.65;
   --ui-glass-surface-bg: var(--ui-glass-optical-lens-bg);

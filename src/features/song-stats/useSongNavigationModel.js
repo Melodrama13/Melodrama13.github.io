@@ -9,6 +9,7 @@ export function useSongNavigationModel({
   ocBookStatsByUnit,
   threeDmvStatsByUnit,
   twoDmvStatsByUnit,
+  coverAlbumStats,
   anotherVocalCards,
   sameUnitPairUnitCards,
   activeNavId,
@@ -43,6 +44,17 @@ const makeTwoDmvUnitNavAnchorId = (unitKey) => {
   if (!key) return '';
   return `panel-2dmv-unit-${key}`;
 };
+
+const getCoverAlbumUnitNavAnchorId = (unitKey) => {
+  const key = String(unitKey || '').trim().toLowerCase();
+  return key ? `panel-cover-album-unit-${key}` : '';
+};
+
+const coverAlbumUnitNavChildren = computed(() => coverAlbumStats.value.map((group) => ({
+  id: getCoverAlbumUnitNavAnchorId(group.unit),
+  title: `${UNIT_NAV_LABEL_MAP[group.unit] || String(group.unit || '').toUpperCase()} 翻唱专辑`,
+  anchorKind: 'cover-album-unit'
+})));
 
 const vsSingerNavChildren = computed(() => {
   return virtualSingerSongStats.value
@@ -195,6 +207,11 @@ const navGroups = computed(() => {
       children: [...twoDmvUnitNavChildren.value]
     },
     {
+      id: 'panel-cover-album-stats',
+      title: getSongSectionTitle('panel-cover-album-stats'),
+      children: [...coverAlbumUnitNavChildren.value]
+    },
+    {
       id: 'panel-april-fool-stats',
       title: getSongSectionTitle('panel-april-fool-stats'),
       children: []
@@ -306,9 +323,13 @@ const isTwoDmvNavScopeActive = computed(() => {
   return twoDmvUnitNavIds.value.has(activeNavId.value);
 });
 
+const coverAlbumUnitNavIds = computed(() => new Set(coverAlbumUnitNavChildren.value.map((item) => item.id)));
+const isCoverAlbumNavScopeActive = computed(() => activeNavId.value === 'panel-cover-album-stats'
+  || coverAlbumUnitNavIds.value.has(activeNavId.value));
+
 const isNestedNavChild = (item) => {
   const kind = String(item?.anchorKind || '').trim();
-  return ['duo-unit', 'vs-singer', 'oc-unit', 'anvo-unit', '3dmv-unit', '2dmv-unit'].includes(kind);
+  return ['duo-unit', 'vs-singer', 'oc-unit', 'anvo-unit', '3dmv-unit', '2dmv-unit', 'cover-album-unit'].includes(kind);
 };
 
 const shouldShowNavChild = (item) => {
@@ -320,8 +341,9 @@ const shouldShowNavChild = (item) => {
   if (kind === 'anvo-unit') return isMobileNav.value || isAnvoNavScopeActive.value;
   if (kind === '3dmv-unit') return isMobileNav.value || isThreeDmvNavScopeActive.value;
   if (kind === '2dmv-unit') return isMobileNav.value || isTwoDmvNavScopeActive.value;
+  if (kind === 'cover-album-unit') return isMobileNav.value || isCoverAlbumNavScopeActive.value;
   return true;
 };
 
-return { makeVsSingerNavAnchorId, makeOcBookUnitNavAnchorId, makeAnvoUnitNavAnchorId, makeThreeDmvUnitNavAnchorId, makeTwoDmvUnitNavAnchorId, vsSingerNavChildren, vsSingerAnchorIdByName, getVsSingerNavAnchorId, ocBookUnitNavChildren, getOcBookUnitNavAnchorId, threeDmvUnitNavChildren, twoDmvUnitNavChildren, anvoUnitAnchorIdByName, anvoUnitNavChildren, getAnvoNavAnchorId, navGroups, navTargetIds, duoUnitNavIds, vsSingerNavIds, ocUnitNavIds, anvoUnitNavIds, threeDmvUnitNavIds, twoDmvUnitNavIds, isDuoNavScopeActive, isVsNavScopeActive, isOcBookNavScopeActive, isAnvoNavScopeActive, isThreeDmvNavScopeActive, isTwoDmvNavScopeActive, isNestedNavChild, shouldShowNavChild };
+return { makeVsSingerNavAnchorId, makeOcBookUnitNavAnchorId, makeAnvoUnitNavAnchorId, makeThreeDmvUnitNavAnchorId, makeTwoDmvUnitNavAnchorId, getCoverAlbumUnitNavAnchorId, coverAlbumUnitNavChildren, coverAlbumUnitNavIds, isCoverAlbumNavScopeActive, vsSingerNavChildren, vsSingerAnchorIdByName, getVsSingerNavAnchorId, ocBookUnitNavChildren, getOcBookUnitNavAnchorId, threeDmvUnitNavChildren, twoDmvUnitNavChildren, anvoUnitAnchorIdByName, anvoUnitNavChildren, getAnvoNavAnchorId, navGroups, navTargetIds, duoUnitNavIds, vsSingerNavIds, ocUnitNavIds, anvoUnitNavIds, threeDmvUnitNavIds, twoDmvUnitNavIds, isDuoNavScopeActive, isVsNavScopeActive, isOcBookNavScopeActive, isAnvoNavScopeActive, isThreeDmvNavScopeActive, isTwoDmvNavScopeActive, isNestedNavChild, shouldShowNavChild };
 }

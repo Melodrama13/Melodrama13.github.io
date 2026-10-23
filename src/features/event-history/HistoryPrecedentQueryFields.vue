@@ -2,19 +2,23 @@
   <div class="precedent-filter-grid" :class="{ 'is-secondary': secondary }" :style="columns" role="group" :aria-label="label">
     <label v-for="field in fields" :key="field.key" :data-query-field="field.key">
       <span>{{ field.label }}</span>
-      <input v-if="field.kind === 'number'" v-model.number="draft[field.key]" type="number" min="1" step="1" class="pjsk-ui-field" :aria-label="field.ariaLabel" />
-      <select v-else :value="field.key === 'project' ? project : draft[field.key]" class="pjsk-ui-field" :aria-label="field.ariaLabel" @change="change(field, $event.target.value)">
-        <template v-for="(group, index) in field.groups || [{ options: field.options }]" :key="index">
-          <optgroup v-if="group.label" :label="group.label"><option v-for="option in group.options" :key="option.value" :value="option.value">{{ option.label }}</option></optgroup>
-          <template v-else><option v-for="option in group.options" :key="option.value" :value="option.value">{{ option.label }}</option></template>
-        </template>
-      </select>
+      <span class="precedent-field-surface precedent-surface ui-liquid-glass ui-liquid-glass--chip">
+        <input v-if="field.kind === 'number'" v-model.number="draft[field.key]" type="number" min="1" step="1" class="pjsk-ui-field" :aria-label="field.ariaLabel" />
+        <select v-else :value="field.key === 'project' ? project : draft[field.key]" class="pjsk-ui-field" :aria-label="field.ariaLabel" @change="change(field, $event.target.value)">
+          <template v-for="(group, index) in field.groups || [{ options: field.options }]" :key="index">
+            <optgroup v-if="group.label" :label="group.label"><option v-for="option in group.options" :key="option.value" :value="option.value">{{ option.label }}</option></optgroup>
+            <template v-else><option v-for="option in group.options" :key="option.value" :value="option.value">{{ option.label }}</option></template>
+          </template>
+        </select>
+        <ChevronDown v-if="field.kind !== 'number'" class="precedent-field-chevron" :size="12" aria-hidden="true" />
+      </span>
     </label>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import { ChevronDown } from 'lucide-vue-next';
 const props = defineProps({ fields: { type: Array, required: true }, draft: { type: Object, required: true }, project: { type: String, default: '' }, label: { type: String, required: true }, secondary: Boolean });
 const emit = defineEmits(['project']);
 const columns = computed(() => {
@@ -33,8 +37,8 @@ function change(field, raw) {
 .precedent-filter-grid { display: grid; grid-template-columns: repeat(var(--query-narrow-columns), minmax(0, 1fr)); gap: 10px; }
 .precedent-filter-grid.is-secondary { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--precedent-divider); }
 label { display: flex; flex-direction: column; gap: 6px; min-width: 0; color: var(--precedent-muted); font-size: 0.72rem; }
-select, input { box-sizing: border-box; min-width: 0; width: 100%; height: 36px; padding: 0 11px; font-family: inherit; font-size: 0.8rem; color: var(--precedent-ink); border: 1px solid var(--ui-control-border); background: var(--ui-glass-optical-control-bg); }
-select { padding-right: 20px; text-overflow: ellipsis; }
+select, input { box-sizing: border-box; min-width: 0; width: 100%; height: 36px; padding: 0 11px; font-family: inherit; font-size: 0.8rem; color: var(--precedent-ink); border: 1px solid var(--ui-control-border); background: transparent; }
+select { padding-right: 28px; text-overflow: ellipsis; }
 @media (max-width: 520px) {
   .precedent-filter-grid { gap: 7px 6px; }
   .precedent-filter-grid.is-secondary { margin-top: 9px; padding-top: 9px; }

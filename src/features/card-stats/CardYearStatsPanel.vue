@@ -89,7 +89,7 @@
                         <img :src="`/elements/card_frame_${card.Rarity}.png`" class="year-stats-thumb-frame" alt="" loading="lazy" decoding="async" />
                         <img v-if="buildCardImageSrc(card.CardID, character.name, { card })" :data-card-src="buildCardImageSrc(card.CardID, character.name, { card })" :alt="`${character.name} ${card.CardName || ''}`" class="year-stats-thumb-image media-load-shimmer" loading="lazy" decoding="async" crossorigin="anonymous" @load="onMediaImageLoad" @error="onMediaImageError" />
                         <img v-if="ATTR_LABELS[card.Attribute]" :src="`/elements/${String(card.Attribute).toLowerCase()}.png`" class="year-stats-thumb-attr" :alt="ATTR_LABELS[card.Attribute]" loading="lazy" decoding="async" />
-                        <span v-if="card.limitedLabel" class="year-stats-card-ribbon"><span>{{ card.limitedLabel }}</span></span>
+                        <CardLimitedRibbon v-if="card.limitedLabel" class="year-stats-card-ribbon" :label="card.limitedLabel" />
                       </div>
                       <span v-if="yearShowCardDates" class="year-stats-date">{{ card.dateLabel.split('/').slice(1).join('/') }}</span>
                     </div>
@@ -113,6 +113,7 @@
 </template>
 
 <script setup>
+import CardLimitedRibbon from '../../components/ui/CardLimitedRibbon.vue';
 defineProps([
   'yearPanels', 'yearRarityOptions', 'yearCardTypeOptions', 'showDesktopNameControls', 'isExportingPng', 'exportElementPng',
   'getCharAbbr', 'getStepFestivalAvatarStyle', 'getDistNameLabel', 'getCharTint',

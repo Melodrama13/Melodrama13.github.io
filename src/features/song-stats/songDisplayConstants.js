@@ -119,6 +119,7 @@ export const SONG_SECTION_TITLE_MAP = Object.freeze({
   'panel-duo-stats': '双人歌曲统计',
   'panel-3dmv-stats': '3DMV统计',
   'panel-2dmv-stats': '2DMV统计',
+  'panel-cover-album-stats': '翻唱专辑统计',
   'panel-april-fool-stats': '愚人节歌曲统计',
   'panel-song-search': '乐曲检索'
 });

@@ -127,7 +127,7 @@ const showSongImageTitle = (event, rawTitle, options = {}) => {
     difficulties: song ? buildSongDifficultyToastItems(song) : [],
     mvTags: Array.isArray(song?.mvTags) ? song.mvTags : [],
     groupTags: Array.isArray(song?.groupTags) ? song.groupTags : [],
-    releaseDate: formatSongToastDate(song?.releaseDate),
+    releaseDate: formatSongToastDate(options?.releaseDate ?? song?.releaseDate),
     composer: String(song?.composer || '').trim(),
     lyricist: String(song?.lyricist || '').trim(),
     arranger: String(song?.arranger || '').trim(),

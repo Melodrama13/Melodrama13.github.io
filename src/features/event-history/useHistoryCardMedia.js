@@ -122,6 +122,7 @@ return {
   isBirthdayCardImageFailed,
   onBirthdayCardImageError,
   onBirthdayCardImageLoad,
+  getCardTooltipImageList,
   getVisibleCardTooltipImageList,
   isCardTooltipImageFailed,
   onCardTooltipImageError,

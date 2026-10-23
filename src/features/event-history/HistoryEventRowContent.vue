@@ -7,7 +7,7 @@
           >
             ×
           </button>
-          <button v-if="isPrecedentEventAvailable(row.event, historyNow)" type="button" class="pjsk-ui-action event-precedent-entry" data-html2canvas-ignore="true" title="本期纪录" :aria-label="`查看活动 ${row.event.id} 的纪录`" @click.stop="$emit('open-precedents', $event)"><Info :size="18" :stroke-width="1.7" aria-hidden="true" /></button>
+          <button v-if="isPrecedentEventAvailable(row.event, historyNow)" type="button" class="pjsk-ui-action event-precedent-entry" data-html2canvas-ignore="true" title="活动详情" :aria-label="`查看活动 ${row.event.id} 的详情`" @click.stop="$emit('open-precedents', $event)"><Info :size="18" :stroke-width="1.7" aria-hidden="true" /></button>
           <div class="event-basic">
             <span class="event-id">#{{ row.event.id }}</span>
             <span class="event-date">{{ formatEventDatePadded(row.event.start_date) }}</span>

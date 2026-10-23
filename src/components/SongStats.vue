@@ -205,6 +205,23 @@
 
 />
 
+            <SongCoverAlbumStatsPanel
+              :stats-by-unit="coverAlbumStats"
+              :get-unit-nav-anchor-id="getCoverAlbumUnitNavAnchorId"
+              :only-predicted="coverAlbumOnlyPredicted"
+              :display-mode="coverAlbumDisplayMode"
+              :unit-color-by-key="unitColorMap"
+              :is-exporting-png="isExportingPng"
+              :export-song-panel-png="exportSongPanelPng"
+              :get-character-avatar-src="getCharacterAvatarSrc"
+              :show-song-image-title="showSongImageTitle"
+              :clear-song-image-title-toast="clearSongImageTitleToast"
+              :on-song-jacket-load="onSongJacketLoad"
+              :on-song-jacket-error="onSongJacketError"
+              @only-predicted-change="onCoverAlbumOnlyPredictedChange"
+              @display-mode-change="onCoverAlbumDisplayModeChange"
+            />
+
             <SongAprilFoolStatsPanel
   :isExportingPng="isExportingPng"
   :exportSongPanelPng="exportSongPanelPng"
@@ -236,11 +253,12 @@
   :changeSongPage="changeSongPage"
   :totalSongPages="totalSongPages"
   :backToSongHome="backToSongHome"
+  :onSongPageSizeChange="onSongPageSizeChange"
   v-model:keyword="keyword"
   v-model:groupFilter="groupFilter"
   v-model:mvFilter="mvFilter"
   v-model:difficultySortKey="difficultySortKey"
-  v-model:songPageSize="songPageSize"
+  :songPageSize="songPageSize"
 />
 
         <SongTitleToast
@@ -275,9 +293,11 @@ import SongPairStatsPanel from '../features/song-stats/SongPairStatsPanel.vue';
 import SongThreeDmvStatsPanel from '../features/song-stats/SongThreeDmvStatsPanel.vue';
 import SongTwoDmvStatsPanel from '../features/song-stats/SongTwoDmvStatsPanel.vue';
 import SongAprilFoolStatsPanel from '../features/song-stats/SongAprilFoolStatsPanel.vue';
+import SongCoverAlbumStatsPanel from '../features/song-stats/SongCoverAlbumStatsPanel.vue';
+import { buildCoverAlbumStats } from '../features/song-stats/coverAlbumStats.js';
 import SongSearchPanel from '../features/song-stats/SongSearchPanel.vue';
 import SongTitleToast from '../features/song-stats/SongTitleToast.vue';
-import SongCaptureModal from '../features/song-stats/SongCaptureModal.vue';import { ref } from "vue";
+import SongCaptureModal from '../features/song-stats/SongCaptureModal.vue';import { ref, computed } from "vue";
 import { useSongCatalog, createSongCatalogState } from '../features/song-stats/useSongCatalog.js';
 import { useSongSearch, createSongSearchState } from '../features/song-stats/useSongSearch.js';
 import { useSongCaptureModal, createSongCaptureModalState } from '../features/song-stats/useSongCaptureModal.js';
@@ -382,7 +402,7 @@ const { prepareSongExportClone } = useSongCaptureClone({
   songStatsRootRef
 });
 
-const { difficultySortModeIconSrc, difficultySortModeTitle, cycleDifficultySortMode, backToSongHome, recalcSongTableOverflow, filteredSongs, totalSongPages, pagedSongs, emptyPagedRowCount, changeSongPage, connectSongSearchEffects } = useSongSearch({
+const { difficultySortModeIconSrc, difficultySortModeTitle, cycleDifficultySortMode, backToSongHome, recalcSongTableOverflow, filteredSongs, totalSongPages, pagedSongs, emptyPagedRowCount, changeSongPage, onSongPageSizeChange, connectSongSearchEffects } = useSongSearch({
   keyword,
   mvFilter,
   groupFilter,
@@ -483,6 +503,25 @@ const { parseAprilFoolYear, aprilFoolSongStatsByYear } = useSongAprilFoolStats({
   getAprilFoolCharacterIcon: (...args) => getAprilFoolCharacterIcon(...args)
 });
 
+const coverAlbumStats = computed(() => buildCoverAlbumStats({ songs: songs.value, characters: props.allCharacters }));
+const coverAlbumOnlyPredicted = ref(false);
+const coverAlbumDisplayMode = ref('text');
+const onCoverAlbumOnlyPredictedChange = (event) => {
+  const checked = Boolean(event?.target?.checked);
+  void withInteractionPinnedPosition(() => {
+    clearSongImageTitleToast();
+    coverAlbumOnlyPredicted.value = checked;
+  }, event?.currentTarget);
+};
+const onCoverAlbumDisplayModeChange = (event) => {
+  const mode = event?.target?.value;
+  if (!['text', 'image', 'image-text'].includes(mode)) return;
+  void withInteractionPinnedPosition(() => {
+    clearSongImageTitleToast();
+    coverAlbumDisplayMode.value = mode;
+  }, event?.currentTarget);
+};
+
 const { onVsSongImageModeChange, onOcBookImageModeChange, getVsSongCardMode, isOcBookUnitExpanded, isVsSongCardCollapsed, vsSongGlobalToggleLabel, ocBookGlobalToggleLabel, toggleAllVsSongExpandCollapse, toggleAllOcBookExpandCollapse, toggleOcBookUnitExpandCollapse, toggleVsSongCardExpandCollapse, setVsSongCardRef, setOcBookUnitCardRef, snapshotVsSongCardModes, snapshotOcBookExpandedMap, expandVsSongCardsForExport, expandOcBookUnitsForExport, connectSongCommissionedDisplayEffects } = useSongCommissionedDisplay({
   vsSongCardModeMap,
   vsSongImageMode,
@@ -495,13 +534,14 @@ const { onVsSongImageModeChange, onOcBookImageModeChange, getVsSongCardMode, isO
   ocBookStatsByUnit
 });
 
-const { makeVsSingerNavAnchorId, makeOcBookUnitNavAnchorId, makeAnvoUnitNavAnchorId, makeThreeDmvUnitNavAnchorId, makeTwoDmvUnitNavAnchorId, vsSingerNavChildren, vsSingerAnchorIdByName, getVsSingerNavAnchorId, ocBookUnitNavChildren, getOcBookUnitNavAnchorId, threeDmvUnitNavChildren, twoDmvUnitNavChildren, anvoUnitAnchorIdByName, anvoUnitNavChildren, getAnvoNavAnchorId, navGroups, navTargetIds, duoUnitNavIds, vsSingerNavIds, ocUnitNavIds, anvoUnitNavIds, threeDmvUnitNavIds, twoDmvUnitNavIds, isDuoNavScopeActive, isVsNavScopeActive, isOcBookNavScopeActive, isAnvoNavScopeActive, isThreeDmvNavScopeActive, isTwoDmvNavScopeActive, isNestedNavChild, shouldShowNavChild } = useSongNavigationModel({
+const { makeVsSingerNavAnchorId, makeOcBookUnitNavAnchorId, makeAnvoUnitNavAnchorId, makeThreeDmvUnitNavAnchorId, makeTwoDmvUnitNavAnchorId, getCoverAlbumUnitNavAnchorId, vsSingerNavChildren, vsSingerAnchorIdByName, getVsSingerNavAnchorId, ocBookUnitNavChildren, getOcBookUnitNavAnchorId, threeDmvUnitNavChildren, twoDmvUnitNavChildren, anvoUnitAnchorIdByName, anvoUnitNavChildren, getAnvoNavAnchorId, navGroups, navTargetIds, duoUnitNavIds, vsSingerNavIds, ocUnitNavIds, anvoUnitNavIds, threeDmvUnitNavIds, twoDmvUnitNavIds, isDuoNavScopeActive, isVsNavScopeActive, isOcBookNavScopeActive, isAnvoNavScopeActive, isThreeDmvNavScopeActive, isTwoDmvNavScopeActive, isNestedNavChild, shouldShowNavChild } = useSongNavigationModel({
   getNavAbbrFromName: (...args) => getNavAbbrFromName(...args),
   virtualSingerSongStats,
   getVsSingerBookSubtitle: (...args) => getVsSingerBookSubtitle(...args),
   ocBookStatsByUnit,
   threeDmvStatsByUnit,
   twoDmvStatsByUnit,
+  coverAlbumStats,
   anotherVocalCards,
   sameUnitPairUnitCards,
   activeNavId,

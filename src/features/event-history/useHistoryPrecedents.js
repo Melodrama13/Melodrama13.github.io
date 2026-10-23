@@ -3,7 +3,7 @@ import { buildPrecedentCatalog, PRECEDENT_ATTRIBUTE_LABELS, PRECEDENT_SKILL_LABE
 import { queryHistoryPrecedents, getHistoryQueryBounds } from './precedentSearch.js';
 import { buildMilestoneIndex } from './precedentMilestones.js';
 import { isNumericEventId } from '../../utils/spoilerGuard.js';
-import { normalizeMilestoneRules, metricLabel } from './milestoneRules.js';
+import { normalizeMilestoneRules, metricLabel, isPoolFesCard, isRewardCard } from './milestoneRules.js';
 import { POOL_CONTEXT_LABELS } from './milestonePools.js';
 import { INTERVAL_METRIC_LABELS } from './milestoneLabels.js';
 import { queryFamily, achievementProject, setAchievementProject, sequenceOptions, SEQUENCE_METRICS, SEQUENCE_LABELS } from './precedentQueryDefinitions.js';
@@ -65,6 +65,24 @@ export function useHistoryPrecedents(ports) {
     get: () => selectedEventOverride.value !== null && eventOptions.value.some(event => String(event.id) === selectedEventOverride.value)
       ? selectedEventOverride.value : defaultEventId.value,
     set: value => { selectedEventOverride.value = String(value); },
+  });
+  const selectedEventDetails = computed(() => {
+    const source = catalog.value.events.find(source => String(source.event.id) === selectedEventId.value);
+    if (!source) return null;
+    const memberCards = source.allCards.map(entry => entry.card);
+    const groups = [
+      { key: 'cfes', label: 'CFES', icon: 'cfes', cards: [] },
+      { key: 'bfes', label: 'BFES', icon: 'bfes', cards: [] },
+      { key: 'pool', label: '当期卡池', cards: [] },
+      { key: 'rewards', label: '活动报酬', cards: [] },
+      { key: 'other', label: '其他卡片', cards: [] },
+    ];
+    for (const card of memberCards) {
+      const key = isPoolFesCard(card) ? (String(card.Type).toLowerCase() === 'bfes' || String(card.Skill).toLowerCase() === 'bfes_up' ? 'bfes' : 'cfes')
+        : String(card.Rarity) === '4' ? 'pool' : isRewardCard(card, true) ? 'rewards' : 'other';
+      groups.find(group => group.key === key).cards.push(card);
+    }
+    return { event: { ...source.event, memberCards }, groups: groups.filter(group => group.cards.length) };
   });
   const characterOptions = computed(() => ports.props.allCharacters.filter(character =>
     draft.scope === 'all' || (draft.scope === 'oc' ? character.unit !== 'vs' : character.unit === draft.scope)));
@@ -178,11 +196,11 @@ export function useHistoryPrecedents(ports) {
     if (restoreFocus && triggerElement?.isConnected) nextTick(() => triggerElement?.focus({ preventScroll: true }));
   };
   const open = (event, id) => {
-    if (event?.currentTarget instanceof HTMLElement) triggerElement = event.currentTarget;
+    if (event?.currentTarget && event.currentTarget instanceof HTMLElement) triggerElement = event.currentTarget;
     ports.filtering.showFilter.value = false;
     if (id !== undefined) {
       selectedEventId.value = String(id);
-      mode.value = 'event';
+      mode.value = 'details';
       milestoneFilter.value = 'all';
     } else if (!eventOptions.value.some(item => String(item.id) === selectedEventId.value)) {
       selectedEventId.value = defaultEventId.value;
@@ -336,7 +354,7 @@ export function useHistoryPrecedents(ports) {
   watch(selectedEventId, () => { milestoneFilter.value = 'all'; visibleCount.value = 8; });
   watch(milestoneFilter, () => { visibleCount.value = 8; });
   return {
-    isOpen, mode, draft, appliedQuery, hasSearched, visibleCount, selectedEventId, catalog, eventOptions, characterOptions,
+    isOpen, mode, draft, appliedQuery, hasSearched, visibleCount, selectedEventId, selectedEventDetails, catalog, eventOptions, characterOptions,
     isValid, hasPendingChanges, result, draftColorBounds, quantityOptions, records, filteredRecords, visibleRecords, recordSections, question, extraConditionCount, milestoneFilter, milestoneCategories, milestoneRules,
     search, selectType, applyPreset, applyFamily, family, project, sequences, periodOptions, open, close, toggle, jumpToRecord, recordTitle, recordTitleName, recordDescription, advancementLabel, advancementOrigin, recordCheckpoints, evidenceEvent,
     attributeLabels: PRECEDENT_ATTRIBUTE_LABELS,
