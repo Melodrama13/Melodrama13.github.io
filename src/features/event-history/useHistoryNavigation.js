@@ -134,6 +134,7 @@ const cancelScrollCorrections = () => {
 };
 
 const handleHistoryManualScrollIntent = () => {
+  ports.tooltips?.closeInlineTooltips();
   ports.viewport.cancelActivationRestore();
   cancelScrollCorrections();
   clearActiveEventItem();

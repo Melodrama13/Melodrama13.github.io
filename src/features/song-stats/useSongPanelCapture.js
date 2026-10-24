@@ -1,6 +1,7 @@
 import { nextTick } from 'vue';
 import { waitNextPaint } from './songFormatters.js';
 import { isViewportAtMost, UI_BREAKPOINTS } from '../../ui/breakpoints.js';
+import { dismissTransientOverlays } from '../../ui/transientOverlays.js';
 
 /** Explicit dependencies keep this feature instance isolated. Effects connect after page composition. */
 export function useSongPanelCapture({
@@ -29,6 +30,7 @@ const exportSongPanelPng = async (panelId, title) => {
   if (isExportingPng.value) return;
   const exportToken = songExportLifecycle.begin();
   if (exportToken === null) return;
+  dismissTransientOverlays();
   activeSongExportToken.value = exportToken;
   isExportingPng.value = true;
 

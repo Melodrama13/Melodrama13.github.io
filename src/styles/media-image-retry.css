@@ -1,0 +1,46 @@
+.media-image-retry-host {
+  position: relative;
+  cursor: pointer;
+}
+
+.media-image-retry-host .media-image-retry-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  box-sizing: border-box;
+  padding: 1px;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--ui-glass-optical-group-bg, rgba(255, 255, 255, 0.9));
+  color: var(--ui-control-label, #334155);
+  font: 600 10px/1.2 system-ui, sans-serif;
+  text-align: center;
+  pointer-events: auto;
+}
+
+.media-image-retry-overlay .media-image-retry-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.media-image-retry-host:focus-visible {
+  outline: var(--ui-control-focus-width, 2px) solid var(--ui-control-focus-color, #0f766e);
+  outline-offset: var(--ui-control-focus-offset, 2px);
+}
+
+.media-image-retry-host:active .media-image-retry-overlay {
+  filter: brightness(var(--ui-control-press-brightness, 0.92));
+}
+
+.media-image-retry-host[data-media-retry='loading'] {
+  cursor: progress;
+}
+
+.media-image-retry-host[data-media-retry='loading'] .media-image-retry-overlay {
+  font-size: 9px;
+}

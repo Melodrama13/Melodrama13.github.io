@@ -51,7 +51,7 @@
             @toggle-preview-rows="togglePreviewRowsVisibility"
             @toggle-collab-pools="toggleCollabPoolsVisibility"
             @navigate="scrollTo"
-            @toggle-filter-panel="precedents.close(false); showFilter = !showFilter"
+            @toggle-filter-panel="toggleHistoryFilters"
             @toggle-precedents="precedents.toggle"
           />
         <UiSurfaceTransition kind="popover">
@@ -156,6 +156,7 @@
 </template>
 
 <script setup>
+import { dismissTransientOverlays } from '../ui/transientOverlays.js';
 import UiSurfaceTransition from './ui/UiSurfaceTransition.vue';
 import HistoryPreviewConfig from '../features/event-history/HistoryPreviewConfig.vue';
 import HistoryPreviewPanel from '../features/event-history/HistoryPreviewPanel.vue';
@@ -240,6 +241,11 @@ const filtering = useHistoryFiltering({
   get previewSelections() { return previewSelections; },
 });
 const { hideCollabPools, hideBirthdayRows, hidePreviewRows, sortDesc, showFilter, filterMode, EVENT_TYPE_FILTER_OPTIONS, EVENT_SPECIAL_RULE_OPTIONS, EVENT_GACHA_FILTER_OPTIONS, filterCriteria, eventFilterCriteria, canUseEventBanFilter, canUseMultiPersonRule, canUseFourNoVsRule, hasActiveFilters, isEventUnitFilterDisabledByMix, eventFestivalOptions, toggleChar, toggleEventFilterCharacter, setEventMultiPersonRule, toggleDetailFilterArray, setEventBanFilter, toggleEventFilterArray, toggleEventSpecialRule, switchFilterMode, resetFilters } = filtering;
+const toggleHistoryFilters = () => {
+  const next = !showFilter.value;
+  if (next) dismissTransientOverlays();
+  showFilter.value = next;
+};
 
 const rows = useHistoryRows({
   props,
@@ -253,6 +259,7 @@ const { filterHitEventCount, activeFilteredEventCount, displayRows } = rows;
 
 const tooltips = useHistoryTooltips({
   get navigation() { return navigation; },
+  isOverlayOpen: () => precedents.isOpen.value || showFilter.value,
 });
 const { tooltipRaisedEventKey, getCardTooltipStyle, handleCardTooltipEnter, getSongTooltipStyle, handleSongTooltipEnter, toggleBirthdayInfo, isBirthdayInfoOpen, clearTooltipRaisedEvent, toggleCardTooltip, isCardTooltipOpen, toggleSongTooltip, isSongTooltipOpen } = tooltips;
 
@@ -291,6 +298,7 @@ const predictionEditor = useHistoryPredictionEditor({
 const { cancelPendingEditorOpen, retryPredictEditor, isEditorOpen, currentEditingEvent, predictEditorRef, predictSwitchSaveBtnRef, predictSwitchDialog, resolvePredictSwitchDialog, handleEventRowClick, handleCloseEditor, removePredict } = predictionEditor;
 
 const navigation = useHistoryNavigation({
+  get tooltips() { return tooltips; },
   props,
   get formatting() { return formatting; },
   get viewport() { return viewport; },
@@ -425,6 +433,8 @@ const { isCompactFilterBar, isBottomPredictEditorMode, isEditorFilterTight, isEd
 
 const lifecycle = useHistoryLifecycle({
   emit,
+  get precedents() { return precedents; },
+  get filtering() { return filtering; },
   get progressiveRender() { return progressiveRender; },
   get clock() { return clock; },
   get rows() { return rows; },

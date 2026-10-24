@@ -132,15 +132,15 @@
 /* 活跃状态基础样式 */
 .event-item.is-active, :global([data-feature-page="history"] :is(.event-item.is-active)), :global(:is(.event-item.is-active)[data-feature-page="history"]) {
   position: relative;
-  z-index: 950;
+  z-index: 3;
   box-shadow: 0 4px 20px rgba(51, 204, 187, 0.3);
 }
 
 .event-item.is-tooltip-raised, :global([data-feature-page="history"] :is(.event-item.is-tooltip-raised)), :global(:is(.event-item.is-tooltip-raised)[data-feature-page="history"]) {
-  z-index: 1700;
+  z-index: 4;
 }
 
-/* 仅在角色详情悬浮框触发时抬高该活动卡，使 tooltip 可压过筛选栏。 */
+/* Previews only rise over neighboring rows; sticky controls own a higher layer. */
 .event-item:has(.avatar-container:hover),
 .event-item:has(.avatar-container:focus-within),
 .event-item:has(.avatar-container.is-open),
@@ -159,7 +159,7 @@
 :global(:is(.event-item:has(.song-tooltip:focus-within))[data-feature-page="history"]),
 :global([data-feature-page="history"] :is(.event-item:has(.song-tooltip.is-open))),
 :global(:is(.event-item:has(.song-tooltip.is-open))[data-feature-page="history"]) {
-  z-index: 1700;
+  z-index: 4;
 }
 
 /* 专门负责流光的伪元素 */
@@ -1036,7 +1036,7 @@
   font-size: 0.8rem;
   opacity: 0;
   transform: translate(var(--song-tooltip-shift-x, 0px), calc(6px + var(--song-tooltip-shift-y, 0px)));
-  transition: opacity var(--ui-motion-popover), transform var(--ui-motion-popover);
+  transition: opacity var(--ui-motion-popover);
   pointer-events: auto;
   white-space: normal;
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.26);

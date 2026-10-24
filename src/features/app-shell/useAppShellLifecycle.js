@@ -1,10 +1,28 @@
 import { onMounted, onBeforeUnmount, nextTick } from "vue";
+import { registerTransientOverlayDismissal } from "../../ui/transientOverlays.js";
 
 /** Owns application shell lifecycle with per-instance state and explicit peer interfaces. */
 export function useAppShellLifecycle(ports = {}) {
+let unregisterSourceMenuDismissal = null;
+
+const handleGlobalKeyDown = (event) => {
+  if (event.defaultPrevented || event.key !== 'Escape') return;
+  if (ports.historyCapture.screenshotExportModalVisible.value) {
+    // Escape never cancels a running export; its explicit Cancel button owns that action.
+    ports.historyCapture.closeScreenshotExportModal();
+    event.preventDefault();
+  } else if (ports.versionUpdates.showAppUpdatePromptDialog.value) {
+    ports.versionUpdates.dismissAppUpdateBanner();
+    event.preventDefault();
+  } else if (ports.versionUpdates.showAppReleaseLogModal.value) {
+    ports.versionUpdates.closeAppReleaseLogModal();
+    event.preventDefault();
+  } else ports.sourceMenu.handleGlobalKeyDown(event);
+};
 
 const connectAppShellMount = () => {
 onMounted(() => {
+  unregisterSourceMenuDismissal = registerTransientOverlayDismissal(ports.sourceMenu.closeSourceMenu);
   ports.responsiveNavigation.updateCompactTopNav();
   void nextTick(() => {
     ports.tabGestures.updateDesktopTabGlider();
@@ -23,6 +41,7 @@ onMounted(() => {
     }, ports.versionUpdates.APP_VERSION_CHECK_INTERVAL_MS);
   }
   document.addEventListener('pointerdown', ports.sourceMenu.handleGlobalPointerDown);
+  document.addEventListener('keydown', handleGlobalKeyDown);
   window.addEventListener('resize', ports.responsiveNavigation.updateCompactTopNav);
   window.addEventListener('resize', ports.sourceMenu.updateSourceMenuPosition);
   window.addEventListener('scroll', ports.sourceMenu.updateSourceMenuPosition, true);
@@ -30,6 +49,9 @@ onMounted(() => {
 };
 const connectAppShellUnmount = () => {
 onBeforeUnmount(() => {
+  unregisterSourceMenuDismissal?.();
+  unregisterSourceMenuDismissal = null;
+  ports.historyCapture.cancelScreenshotExport();
   ports.tabNavigation.contentNavigator.cancel();
   ports.tabGestures.desktopTabResizeObserver?.disconnect();
   ports.tabGestures.desktopTabResizeObserver = null;
@@ -38,6 +60,7 @@ onBeforeUnmount(() => {
     ports.statsControls.statsTopControlSyncRaf = 0;
   }
   document.removeEventListener('pointerdown', ports.sourceMenu.handleGlobalPointerDown);
+  document.removeEventListener('keydown', handleGlobalKeyDown);
   window.removeEventListener('resize', ports.responsiveNavigation.updateCompactTopNav);
   window.removeEventListener('resize', ports.sourceMenu.updateSourceMenuPosition);
   window.removeEventListener('scroll', ports.sourceMenu.updateSourceMenuPosition, true);
@@ -85,6 +108,7 @@ onBeforeUnmount(() => {
 });
 };
 return {
+handleGlobalKeyDown,
 connectAppShellMount,
 connectAppShellUnmount
 };

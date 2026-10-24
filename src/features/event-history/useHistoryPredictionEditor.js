@@ -1,4 +1,5 @@
 import { ref, nextTick } from 'vue';
+import { dismissTransientOverlays } from '../../ui/transientOverlays.js';
 
 /** Prediction Editor owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
@@ -36,6 +37,7 @@ const predictSwitchDialog = ref({
 let pendingPredictSwitchResolve = null;
 
 const setPredictEditorEvent = (event) => {
+  dismissTransientOverlays();
   const wasOpen = isEditorOpen.value;
   ports.tooltips.closeInlineTooltips();
   ports.progressiveRender.forceRenderEventRow(event.id);
@@ -130,7 +132,7 @@ const openPredictEditorAfterTooltipClose = async (event) => {
 
 const handleEventRowClick = (event, domEvent = null) => {
   const target = domEvent?.target;
-  if (target instanceof HTMLElement && target.closest('.avatar-container, .song-tooltip, .predict-delete-btn')) {
+  if (target && typeof Element !== 'undefined' && target instanceof Element && target.closest('.avatar-container, .song-tooltip, .predict-delete-btn')) {
     return;
   }
   if (!ports.predictionEligibility.canOpenPredictEditor(event)) {

@@ -1,5 +1,6 @@
 import { ref, computed, watch } from "vue";
 import { UI_BREAKPOINTS, toMaxWidthMediaQuery } from "../../ui/breakpoints.js";
+import { dismissTransientOverlays } from "../../ui/transientOverlays.js";
 
 /** Owns application version updates with per-instance state and explicit peer interfaces. */
 export function useAppVersionUpdates(ports = {}) {
@@ -42,6 +43,29 @@ let appVersionCheckDelayTimer = null;
 let releaseLogImageDelayTimer = null;
 
 let cancelInitialAppVersionCheck = null;
+
+let pendingShellModal = '';
+
+const isShellModalBlocked = computed(() => !!(
+  ports.historyCapture?.isScreenshotExporting.value || ports.historyCapture?.screenshotExportModalVisible.value
+  || ports.tabNavigation?.tabComponentRef.value?.isCaptureSurfaceActive
+));
+
+const showPendingShellModal = () => {
+  if (!pendingShellModal || isShellModalBlocked.value) return;
+  const kind = pendingShellModal;
+  pendingShellModal = '';
+  dismissTransientOverlays();
+  showAppUpdatePromptModal.value = kind === 'update';
+  showAppReleaseLogModal.value = kind === 'release-log';
+};
+
+const requestShellModal = (kind) => {
+  pendingShellModal = kind;
+  showAppUpdatePromptModal.value = false;
+  showAppReleaseLogModal.value = false;
+  showPendingShellModal();
+};
 
 const APP_VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -148,23 +172,25 @@ const persistReleaseLogSkipChoice = () => {
 };
 
 const dismissAppUpdateBanner = () => {
+  if (pendingShellModal === 'update') pendingShellModal = '';
   appUpdateDismissed.value = true;
   showAppUpdatePromptModal.value = false;
 };
 
 const openAppUpdatePromptModal = () => {
   if (!showAppUpdateBanner.value) return;
-  showAppUpdatePromptModal.value = true;
+  requestShellModal('update');
 };
 
 const closeAppReleaseLogModal = () => {
+  if (pendingShellModal === 'release-log') pendingShellModal = '';
   persistReleaseLogSkipChoice();
   showAppReleaseLogModal.value = false;
 };
 
 const openCurrentReleaseLogModal = () => {
   syncReleaseLogSkipChecked();
-  showAppReleaseLogModal.value = true;
+  requestShellModal('release-log');
 };
 
 const reloadForAppUpdate = () => {
@@ -215,12 +241,13 @@ const checkForAppUpdate = async () => {
   if (remoteBuildId !== currentAppBuildId) {
     hasAppUpdate.value = true;
     appUpdateDismissed.value = false;
-    showAppUpdatePromptModal.value = true;
+    requestShellModal('update');
     return;
   }
 
   hasAppUpdate.value = false;
   showAppUpdatePromptModal.value = false;
+  if (pendingShellModal === 'update') pendingShellModal = '';
 
   if (!hasAutoShownReleaseLogThisVisit.value && !isCurrentReleaseLogSkipped.value) {
     hasAutoShownReleaseLogThisVisit.value = true;
@@ -263,6 +290,19 @@ watch(showAppReleaseLogModal, (open) => {
   clearReleaseLogImageDelay();
   showReleaseLogImage.value = false;
 });
+};
+
+const connectAppShellModalPolicy = () => {
+watch(isShellModalBlocked, (blocked) => {
+  if (blocked) {
+    if (showAppUpdatePromptDialog.value) pendingShellModal = 'update';
+    else if (showAppReleaseLogModal.value) pendingShellModal = 'release-log';
+    showAppUpdatePromptModal.value = false;
+    showAppReleaseLogModal.value = false;
+    return;
+  }
+  showPendingShellModal();
+}, { flush: 'sync' });
 };
 return {
 currentAppBuildId,
@@ -314,6 +354,7 @@ fetchRemoteVersionMeta,
 checkForAppUpdate,
 isMobileLikeViewport,
 scheduleInitialAppVersionCheck,
-connectAppReleaseLogImage
+connectAppReleaseLogImage,
+connectAppShellModalPolicy
 };
 }

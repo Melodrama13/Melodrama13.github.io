@@ -1,4 +1,5 @@
-import { onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { onMounted, onDeactivated, onBeforeUnmount, nextTick } from 'vue';
+import { registerTransientOverlayDismissal } from '../../ui/transientOverlays.js';
 
 /** Coordinates mount/unmount ownership after all song features are connected. */
 export function useSongLifecycle({
@@ -8,6 +9,8 @@ export function useSongLifecycle({
   updateMobileNavState,
   handleWindowResize,
   handleDocumentPointerDownForSongToast,
+  handleDocumentKeydownForSongToast,
+  closeSongImageTitleToast,
   bindViewportScrollTracking,
   songStatsRootRef,
   statsMainInteractionHost,
@@ -32,12 +35,15 @@ export function useSongLifecycle({
   duoPairGridRaf,
   sectionObserver
 }) {
+let unregisterTransientDismissal;
 onMounted(() => {
+  unregisterTransientDismissal = registerTransientOverlayDismissal(closeSongImageTitleToast);
   refreshSpoilerClock();
   spoilerClockTimer.value = window.setInterval(refreshSpoilerClock, SPOILER_CLOCK_INTERVAL_MS);
   updateMobileNavState();
   window.addEventListener('resize', handleWindowResize);
   document.addEventListener('pointerdown', handleDocumentPointerDownForSongToast, true);
+  document.addEventListener('keydown', handleDocumentKeydownForSongToast);
   bindViewportScrollTracking();
   const localRoot = songStatsRootRef.value;
   const statsMain = localRoot instanceof HTMLElement ? localRoot.querySelector('.stats-main') : null;
@@ -68,13 +74,18 @@ onMounted(() => {
   bindSectionObserver();
 });
 
+onDeactivated(closeSongImageTitleToast);
+
 onBeforeUnmount(() => {
+  unregisterTransientDismissal?.();
+  closeSongImageTitleToast();
   if (spoilerClockTimer.value) {
     clearInterval(spoilerClockTimer.value);
     spoilerClockTimer.value = 0;
   }
   window.removeEventListener('resize', handleWindowResize);
   document.removeEventListener('pointerdown', handleDocumentPointerDownForSongToast, true);
+  document.removeEventListener('keydown', handleDocumentKeydownForSongToast);
   if (statsMainInteractionHost.value instanceof HTMLElement) {
     statsMainInteractionHost.value.removeEventListener('pointerdown', rememberInteractiveAnchorFromEvent, true);
     statsMainInteractionHost.value.removeEventListener('keydown', rememberInteractiveAnchorFromEvent, true);

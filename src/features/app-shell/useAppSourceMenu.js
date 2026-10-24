@@ -1,5 +1,6 @@
 import { ref, watch, nextTick } from "vue";
 import { UI_BREAKPOINTS, isViewportAtMost } from "../../ui/breakpoints.js";
+import { dismissTransientOverlays } from "../../ui/transientOverlays.js";
 
 /** Owns application source menu with per-instance state and explicit peer interfaces. */
 export function useAppSourceMenu(ports = {}) {
@@ -36,7 +37,7 @@ const openCreateSourceConfirm = () => {
   }
   renameSourceTargetId.value = '';
   renameSourceDraftName.value = '';
-  ports.historyCapture.showScreenshotConfirmPanel.value = false;
+  ports.historyCapture.cancelScreenshotExport();
   ports.historyCapture.screenshotStatusText.value = '';
   createSourceCloneCurrent.value = ports.predictionSources.canCloneActivePredictSource.value;
   showCreateSourceConfirmPanel.value = !showCreateSourceConfirmPanel.value;
@@ -93,19 +94,29 @@ const deleteActivePredictSource = () => {
   ports.predictionSources.persistPredictSources();
 };
 
+const closeSourceMenu = () => {
+  sourceMenuOpen.value = false;
+  ports.historyCapture.cancelScreenshotExport();
+  ports.historyCapture.showScreenshotConfirmPanel.value = false;
+  showCreateSourceConfirmPanel.value = false;
+  renameSourceTargetId.value = '';
+  renameSourceDraftName.value = '';
+};
+
 const toggleSourceMenu = () => {
   if (ports.tabNavigation.isHistoryPredictEditorOpen.value) return;
-  sourceMenuOpen.value = !sourceMenuOpen.value;
-  if (!sourceMenuOpen.value) {
-    renameSourceTargetId.value = '';
-    renameSourceDraftName.value = '';
+  if (sourceMenuOpen.value) {
+    closeSourceMenu();
+    return;
   }
+  dismissTransientOverlays();
+  sourceMenuOpen.value = true;
 };
 
 const startRenamePredictSource = (sourceId) => {
   const target = (ports.predictionSources.predictSources.value || []).find((s) => s.id === sourceId);
   if (!target) return;
-  ports.historyCapture.showScreenshotConfirmPanel.value = false;
+  ports.historyCapture.cancelScreenshotExport();
   showCreateSourceConfirmPanel.value = false;
   renameSourceTargetId.value = target.id;
   renameSourceDraftName.value = String(target.name || '').trim() || '未命名数据源';
@@ -265,26 +276,35 @@ const handleGlobalPointerDown = (event) => {
   if (triggerWrap && triggerWrap.contains(target)) return;
   if (mobileTrigger && mobileTrigger.contains(target)) return;
   if (menuPanel && menuPanel.contains(target)) return;
-  sourceMenuOpen.value = false;
+  closeSourceMenu();
 };
+
+const handleGlobalKeyDown = (event) => {
+  if (event.defaultPrevented || event.key !== 'Escape' || !sourceMenuOpen.value) return;
+  if (renameSourceTargetId.value) cancelRenamePredictSourceAction();
+  else if (showCreateSourceConfirmPanel.value) cancelCreateSourceAction();
+  else if (ports.historyCapture.showScreenshotConfirmPanel.value || ports.historyCapture.isPreparingScreenshotExport.value) {
+    ports.historyCapture.cancelScreenshotExport();
+  } else closeSourceMenu();
+  event.preventDefault();
+};
+
 const connectAppSourceMenu = () => {
 watch(sourceMenuOpen, async (open) => {
   if (!open) {
-    ports.historyCapture.showScreenshotConfirmPanel.value = false;
-    showCreateSourceConfirmPanel.value = false;
-    renameSourceTargetId.value = '';
-    renameSourceDraftName.value = '';
+    closeSourceMenu();
     return;
   }
   await nextTick();
+  if (!sourceMenuOpen.value) return;
   updateSourceMenuPosition();
   ports.statsControls.scheduleStatsTopControlStateSync();
-});
+}, { flush: 'sync' });
 };
 const connectAppPredictionEditorSourceGuard = () => {
 watch(ports.tabNavigation.isHistoryPredictEditorOpen, (open) => {
   if (open) {
-    sourceMenuOpen.value = false;
+    closeSourceMenu();
   }
 });
 };
@@ -307,6 +327,7 @@ cancelCreateSourceAction,
 confirmCreateSourceAction,
 deleteActivePredictSource,
 toggleSourceMenu,
+closeSourceMenu,
 startRenamePredictSource,
 cancelRenamePredictSourceAction,
 confirmRenamePredictSourceAction,
@@ -320,6 +341,7 @@ updateSourceMenuPosition,
 onPredictUserFocus,
 onPredictUserBlur,
 handleGlobalPointerDown,
+handleGlobalKeyDown,
 connectAppSourceMenu,
 connectAppPredictionEditorSourceGuard
 };

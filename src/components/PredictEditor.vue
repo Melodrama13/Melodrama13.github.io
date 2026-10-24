@@ -180,6 +180,7 @@ const { setDrawerPageVisibility } = usePredictionEditorLifecycle({
   get updateMobileViewport() { return updateMobileViewport; },
   get drawerRef() { return drawerRef; },
   get clearDisableReasonTimers() { return clearDisableReasonTimers; },
+  get disableReasonPopoverName() { return disableReasonPopoverName; },
   get hideDisableReasonPopover() { return hideDisableReasonPopover; },
   get endSheetDrag() { return endSheetDrag; },
   get detachSheetPointerListeners() { return detachSheetPointerListeners; }

@@ -58,8 +58,14 @@ const clearSongImageTitleToast = (event = null) => {
 const handleDocumentPointerDownForSongToast = (event) => {
   if (!songImageTitleToast.value) return;
   const target = event?.target;
-  if (target instanceof HTMLElement && target.closest('.song-jacket-media')) return;
+  if (target instanceof Element && target.closest('.song-jacket-media, .song-image-jacket-tile')) return;
   closeSongImageTitleToast();
+};
+
+const handleDocumentKeydownForSongToast = (event) => {
+  if (event.defaultPrevented || event.key !== 'Escape' || !songImageTitleToast.value) return;
+  closeSongImageTitleToast();
+  event.preventDefault();
 };
 
 const showSongImageTitle = (event, rawTitle, options = {}) => {
@@ -148,5 +154,5 @@ const showSongImageTitle = (event, rawTitle, options = {}) => {
   }
 };
 
-return { onSongJacketError, onSongJacketLoad, closeSongImageTitleToast, clearSongImageTitleToast, handleDocumentPointerDownForSongToast, showSongImageTitle };
+return { onSongJacketError, onSongJacketLoad, closeSongImageTitleToast, clearSongImageTitleToast, handleDocumentPointerDownForSongToast, handleDocumentKeydownForSongToast, showSongImageTitle };
 }

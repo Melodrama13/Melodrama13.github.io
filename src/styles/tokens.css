@@ -103,6 +103,10 @@
   --ui-motion-loader-core-duration: 5.2s;
   --ui-motion-loader-orbit-duration: 3.8s;
   --ui-motion-shimmer-duration: 1.05s;
+  --ui-motion-image-shimmer-duration: 1.8s;
+  --ui-motion-duration-image-reveal: 180ms;
+  --ui-image-placeholder: rgba(148, 163, 184, 0.14);
+  --ui-image-sheen: rgba(255, 255, 255, 0.62);
 
   --ui-glass-ambient-image:
     radial-gradient(circle at 14% 8%, rgba(255, 255, 255, 0.82), transparent 28%),

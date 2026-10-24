@@ -56,7 +56,7 @@ const hasOpenTooltipForEventKey = (eventKey) => {
   return openedCardTooltipKey.value.startsWith(`${key}::`);
 };
 
-const closeInlineTooltips = () => {
+const closeCardAndSongTooltips = () => {
   cancelPendingTooltipOpen();
   openedCardTooltipKey.value = '';
   openedSongTooltipEventKey.value = '';
@@ -66,6 +66,10 @@ const closeInlineTooltips = () => {
   cardTooltipOffsetMap.value = {};
   songTooltipOffsetMap.value = {};
 };
+const closeInlineTooltips = () => {
+  closeCardAndSongTooltips();
+  openedBirthdayInfoKey.value = '';
+};
 
 const hasAnyInlineTooltipOpen = () => (
   !!openedCardTooltipKey.value
@@ -73,6 +77,7 @@ const hasAnyInlineTooltipOpen = () => (
   || !!pinnedCardTooltipKey.value
   || !!pinnedSongTooltipEventKey.value
   || tooltipRaisedEventKey.value !== null
+  || !!openedBirthdayInfoKey.value
 );
 
 const setCardTooltipOffset = (tooltipKey, offsetX = 0, offsetY = 0) => {
@@ -101,10 +106,11 @@ const getCardTooltipStyle = (eventKey, card, slotKey = '') => {
 const getTooltipViewportEdges = () => {
   const container = ports.navigation.historyContainer.value;
   const containerRect = container instanceof HTMLElement ? container.getBoundingClientRect() : null;
+  const stickyRect = ports.navigation.filterStickyRef?.value?.getBoundingClientRect();
   return {
     left: 8,
     right: window.innerWidth - 8,
-    top: Math.max(58, containerRect ? containerRect.top + 8 : 8),
+    top: Math.max(58, containerRect ? containerRect.top + 8 : 8, stickyRect ? stickyRect.bottom + 8 : 8),
     bottom: Math.min(window.innerHeight - 8, containerRect ? containerRect.bottom - 8 : window.innerHeight - 8)
   };
 };
@@ -117,11 +123,12 @@ const adjustCardTooltipViewport = (eventKey, card, slotKey = '', hostEl = null) 
   const tooltipEl = host.querySelector('.card-detail-tooltip');
   if (!(tooltipEl instanceof HTMLElement)) return;
 
-  clearCardTooltipOffset(tooltipKey);
   const rect = tooltipEl.getBoundingClientRect();
   const edges = getTooltipViewportEdges();
-  let shiftX = 0;
-  let shiftY = 0;
+  // Focus and click can schedule two passes in one frame. Measure and extend
+  // the applied DOM offset rather than clearing reactive state before it paints.
+  let shiftX = parseFloat(tooltipEl.style.getPropertyValue('--card-tooltip-shift-x')) || 0;
+  let shiftY = parseFloat(tooltipEl.style.getPropertyValue('--card-tooltip-shift-y')) || 0;
 
   if (rect.left < edges.left) {
     shiftX += edges.left - rect.left;
@@ -149,11 +156,14 @@ const adjustCardTooltipViewportAfterOpen = async (eventKey, card, slotKey = '', 
 
 const handleCardTooltipEnter = (eventKey, card, slotKey = '', event) => {
   cancelPendingTooltipOpen();
+  if (ports.isOverlayOpen?.()) return;
   if (pinnedCardTooltipKey.value || pinnedSongTooltipEventKey.value) return;
   const key = makeCardTooltipKey(eventKey, card, slotKey);
   const host = event?.currentTarget;
   if (!(host instanceof HTMLElement)) return;
   const openTooltip = () => {
+    if (ports.isOverlayOpen?.()) return;
+    closeBirthdayInfo();
     setTooltipRaisedEvent(eventKey);
     openedCardTooltipKey.value = key;
     openedSongTooltipEventKey.value = '';
@@ -203,11 +213,10 @@ const adjustSongTooltipViewport = (eventKey, hostEl = null) => {
   const tooltipEl = host.querySelector('.tooltip-content');
   if (!(tooltipEl instanceof HTMLElement)) return;
 
-  clearSongTooltipOffset(key);
   const rect = tooltipEl.getBoundingClientRect();
   const edges = getTooltipViewportEdges();
-  let shiftX = 0;
-  let shiftY = 0;
+  let shiftX = parseFloat(tooltipEl.style.getPropertyValue('--song-tooltip-shift-x')) || 0;
+  let shiftY = parseFloat(tooltipEl.style.getPropertyValue('--song-tooltip-shift-y')) || 0;
 
   if (rect.left < edges.left) {
     shiftX += edges.left - rect.left;
@@ -235,12 +244,15 @@ const adjustSongTooltipViewportAfterOpen = async (eventKey, hostEl = null) => {
 
 const handleSongTooltipEnter = (eventKey, event) => {
   cancelPendingTooltipOpen();
+  if (ports.isOverlayOpen?.()) return;
   if (pinnedCardTooltipKey.value || pinnedSongTooltipEventKey.value) return;
   const key = String(eventKey || '').trim();
   if (!key) return;
   const host = event?.currentTarget;
   if (!(host instanceof HTMLElement)) return;
   const openTooltip = () => {
+    if (ports.isOverlayOpen?.()) return;
+    closeBirthdayInfo();
     setTooltipRaisedEvent(eventKey);
     openedSongTooltipEventKey.value = key;
     openedCardTooltipKey.value = '';
@@ -264,26 +276,28 @@ const closeBirthdayInfo = () => {
 };
 
 const toggleBirthdayInfo = (row) => {
+  if (ports.isOverlayOpen?.()) return;
   const key = makeBirthdayInfoKey(row);
   if (!key) return;
-  openedBirthdayInfoKey.value = openedBirthdayInfoKey.value === key ? '' : key;
+  const next = openedBirthdayInfoKey.value === key ? '' : key;
+  closeInlineTooltips();
+  openedBirthdayInfoKey.value = next;
 };
 
 const isBirthdayInfoOpen = (row) => openedBirthdayInfoKey.value === makeBirthdayInfoKey(row);
 
 const handleTooltipGlobalPointerDown = (event) => {
   const target = event?.target;
-  if (!(target instanceof HTMLElement)) {
+  if (!(target instanceof Element)) {
     closeInlineTooltips();
     closeBirthdayInfo();
     return;
   }
   if (target.closest('.birthday-row')) {
-    closeInlineTooltips();
+    closeCardAndSongTooltips();
     return;
   }
   closeBirthdayInfo();
-  if (target.closest('.event-item')) return;
   if (target.closest('.avatar-container, .song-tooltip')) return;
   closeInlineTooltips();
 };
@@ -311,6 +325,8 @@ const clearTooltipRaisedEvent = (eventKey) => {
 
 const toggleCardTooltip = (eventKey, card, slotKey = '', event = null) => {
   cancelPendingTooltipOpen();
+  if (ports.isOverlayOpen?.()) return;
+  closeBirthdayInfo();
   const key = makeCardTooltipKey(eventKey, card, slotKey);
   const host = event?.currentTarget;
 
@@ -345,6 +361,8 @@ const shouldRenderCardTooltipContent = (eventKey, card, slotKey = '') => rendere
 
 const toggleSongTooltip = (eventKey, event = null) => {
   cancelPendingTooltipOpen();
+  if (ports.isOverlayOpen?.()) return;
+  closeBirthdayInfo();
   const key = String(eventKey || '').trim();
   if (!key) return;
   if (pinnedSongTooltipEventKey.value === key) {

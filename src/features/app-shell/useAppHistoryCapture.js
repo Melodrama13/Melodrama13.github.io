@@ -1,4 +1,5 @@
 import { ref, computed, nextTick } from "vue";
+import { dismissTransientOverlays } from "../../ui/transientOverlays.js";
 
 /** Owns application history capture with per-instance state and explicit peer interfaces. */
 export function useAppHistoryCapture(ports = {}) {
@@ -22,6 +23,8 @@ const screenshotExportModalCancelTask = ref(null);
 
 const showScreenshotConfirmPanel = ref(false);
 
+const isPreparingScreenshotExport = ref(false);
+
 const screenshotExportFileName = ref('');
 
 const screenshotConfirmRange = ref({ firstId: '', lastId: '' });
@@ -32,6 +35,7 @@ const screenshotRangeEndId = ref('');
 
 let screenshotExportModalAutoCloseTimer = null;
 let activeScreenshotExportContext = null;
+let screenshotPreparationId = 0;
 
 const screenshotConfirmRangeText = computed(() => {
   const firstId = String(screenshotRangeStartId.value || screenshotConfirmRange.value.firstId || '').trim();
@@ -50,6 +54,7 @@ const clearScreenshotExportModalAutoClose = () => {
 
 const setScreenshotExportModalState = ({ state = 'capturing', title = '', message = '', retryTask = null, cancelTask = null, autoCloseMs = 0 } = {}) => {
   clearScreenshotExportModalAutoClose();
+  if (!screenshotExportModalVisible.value) dismissTransientOverlays();
   screenshotExportModalVisible.value = true;
   screenshotExportModalState.value = state;
   screenshotExportModalTitle.value = title;
@@ -188,13 +193,18 @@ const prepareScreenshotExport = async () => {
 };
 
 const openScreenshotExportConfirm = async () => {
-  if (isScreenshotExporting.value) return;
+  if (isScreenshotExporting.value || !ports.sourceMenu.sourceMenuOpen.value) return;
+  const preparationId = ++screenshotPreparationId;
+  const isCurrentPreparation = () => preparationId === screenshotPreparationId && ports.sourceMenu.sourceMenuOpen.value;
   ports.sourceMenu.renameSourceTargetId.value = '';
   ports.sourceMenu.renameSourceDraftName.value = '';
   ports.sourceMenu.showCreateSourceConfirmPanel.value = false;
+  showScreenshotConfirmPanel.value = false;
+  isPreparingScreenshotExport.value = true;
   screenshotStatusText.value = '正在准备截图范围...';
   try {
     const prepared = await prepareScreenshotExport();
+    if (!isCurrentPreparation()) return;
     if (!prepared.ok) {
       alert(prepared.message || '导出失败，请稍后重试。');
       showScreenshotConfirmPanel.value = false;
@@ -208,14 +218,20 @@ const openScreenshotExportConfirm = async () => {
     showScreenshotConfirmPanel.value = true;
     screenshotStatusText.value = '';
   } catch (error) {
+    if (!isCurrentPreparation()) return;
     console.error('准备截图导出失败', error);
     alert('导出失败，请稍后重试。');
     showScreenshotConfirmPanel.value = false;
     screenshotStatusText.value = '';
+  } finally {
+    if (preparationId === screenshotPreparationId) isPreparingScreenshotExport.value = false;
   }
 };
 
 const cancelScreenshotExport = () => {
+  screenshotPreparationId += 1;
+  if (isPreparingScreenshotExport.value) screenshotStatusText.value = '';
+  isPreparingScreenshotExport.value = false;
   if (isScreenshotExporting.value) return;
   showScreenshotConfirmPanel.value = false;
   screenshotRangeStartId.value = '';
@@ -385,6 +401,7 @@ screenshotExportModalMessage,
 screenshotExportModalRetryTask,
 screenshotExportModalCancelTask,
 showScreenshotConfirmPanel,
+isPreparingScreenshotExport,
 screenshotExportFileName,
 screenshotConfirmRange,
 screenshotRangeStartId,

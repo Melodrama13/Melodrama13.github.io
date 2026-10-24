@@ -1,0 +1,56 @@
+/* Draw inside the image's existing box: frames, badges and hit targets stay put. */
+img:is([data-ui-image-state='pending'], [data-ui-image-state='loading']),
+[data-media-retry='loading'] > .media-image-retry-overlay {
+  /* Feature scopes and inline artwork backgrounds may use the shorthand.
+     Own only these temporary loading longhands, then release them on settle. */
+  background-color: var(--ui-image-placeholder) !important;
+  background-image: linear-gradient(112deg, transparent 24%, var(--ui-image-sheen) 43%, var(--ui-image-sheen) 48%, transparent 68%) !important;
+  background-size: 250% 100% !important;
+}
+
+img:is([data-ui-image-state='pending'], [data-ui-image-state='loading']) { color: transparent; }
+img[data-ui-image-state='pending'] { background-position: 100% 0 !important; }
+
+img[data-ui-image-state='loading'],
+[data-media-retry='loading'] > .media-image-retry-overlay {
+  animation: ui-image-shimmer var(--ui-motion-image-shimmer-duration) var(--ui-motion-ease-state) infinite;
+  animation-play-state: paused;
+}
+
+img[data-ui-image-state='loading'][data-ui-image-active],
+[data-media-retry='loading']:has(> img[data-ui-image-active]) > .media-image-retry-overlay { animation-play-state: running; }
+img[data-failed='1'][data-ui-image-state='loading'] { animation-play-state: paused; }
+:root[data-ui-image-paused] img[data-ui-image-state],
+:root[data-ui-image-paused] [data-media-retry='loading'] > .media-image-retry-overlay { animation-play-state: paused; }
+
+/* A short, restrained reveal; capture engines freeze this at its solid state. */
+img[data-ui-image-state='loaded'][data-ui-image-reveal] {
+  animation: ui-image-reveal var(--ui-motion-duration-image-reveal) var(--ui-motion-ease-release);
+}
+
+@keyframes ui-image-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -65% 0; }
+}
+
+@keyframes ui-image-reveal {
+  from { opacity: 0.88; }
+  to { opacity: 1; }
+}
+
+/* Capture clones may inherit presentation attributes from a still-live source. */
+:is(.export-clone-root, .export-clone-host, .song-export-clone-root, .song-export-clone-host, .history-export-clone-host, [data-media-capture], [data-ui-image-capture]) img[data-ui-image-state] {
+  animation: none !important;
+}
+
+:is(.export-clone-root, .export-clone-host, .song-export-clone-root, .song-export-clone-host, .history-export-clone-host, [data-media-capture], [data-ui-image-capture]) img:is([data-ui-image-state='pending'], [data-ui-image-state='loading']) {
+  background-image: none !important;
+  background-color: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  img[data-ui-image-state],
+  [data-media-retry='loading'] > .media-image-retry-overlay { animation: none !important; }
+  img:is([data-ui-image-state='pending'], [data-ui-image-state='loading']),
+  [data-media-retry='loading'] > .media-image-retry-overlay { background-image: none !important; }
+}

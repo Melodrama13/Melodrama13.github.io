@@ -470,7 +470,7 @@ const { onThreeDmvImageModeChange, onTwoDmvImageModeChange, onThreeDmvCoverOnlyC
   makeTwoDmvUnitNavAnchorId: (...args) => makeTwoDmvUnitNavAnchorId(...args)
 });
 
-const { onSongJacketError, onSongJacketLoad, closeSongImageTitleToast, clearSongImageTitleToast, handleDocumentPointerDownForSongToast, showSongImageTitle } = useSongMedia({
+const { onSongJacketError, onSongJacketLoad, closeSongImageTitleToast, clearSongImageTitleToast, handleDocumentPointerDownForSongToast, handleDocumentKeydownForSongToast, showSongImageTitle } = useSongMedia({
   songImageTitleToast,
   songImageTitleToastTimer,
   songsById,
@@ -610,6 +610,8 @@ useSongLifecycle({
   updateMobileNavState,
   handleWindowResize,
   handleDocumentPointerDownForSongToast,
+  handleDocumentKeydownForSongToast,
+  closeSongImageTitleToast,
   bindViewportScrollTracking,
   songStatsRootRef,
   statsMainInteractionHost,
@@ -642,6 +644,12 @@ connectSongAnotherVocalEffects();
 connectSongPairStatsEffects();
 connectSongCommissionedDisplayEffects();
 connectSongViewportNavigationEffects();
+
+defineExpose({
+  get isCaptureSurfaceActive() {
+    return isExportingPng.value || screenshotModalVisible.value;
+  }
+});
 </script>
 
 <style scoped src="../features/song-stats/styles/songStatsFoundation.css"></style>

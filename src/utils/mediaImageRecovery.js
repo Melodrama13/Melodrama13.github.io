@@ -1,3 +1,6 @@
+import { createMediaImageRetryControls } from './mediaImageRetryControls.js';
+import { setImageLoadingState } from './imageLoadingPresentation.js';
+
 const RETRY_DELAYS = [600, 1800];
 const REQUEST_TIMEOUT_MS = 15000;
 const MAX_ATTEMPTS = 3;
@@ -17,6 +20,7 @@ export const isMediaImageUrl = source => {
 export function createMediaImageRecovery(getRoot) {
   const images = new Map(), resources = new Map(), recovered = new Map(), objectUrls = new Map();
   const captureTargets = new Set(), pausedRoots = new Set();
+  const retryControls = createMediaImageRetryControls(retryImage);
   let running = false, active = 0, timer = 0, observer, mutations;
   const canRun = () => running && document.visibilityState !== 'hidden' && navigator.onLine !== false;
   const limit = () => window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches ? 4 : 16;
@@ -32,13 +36,16 @@ export function createMediaImageRecovery(getRoot) {
   const requested = state => current(state) && (nearViewport(state.image) || [...captureTargets].some(root => root.contains(state.image)));
   const holder = image => image.closest('.song-jacket-media, .song-tooltip-jacket-wrap, .card-tooltip-jacket-item');
   const markFailed = image => {
+    setImageLoadingState(image, 'error');
     image.dataset.loaded = '1'; image.dataset.failed = '1'; image.style.visibility = 'hidden';
     holder(image)?.classList.add('is-failed');
+    if (running && getRoot()?.contains(image) && !paused(image)) retryControls.show(image, getMediaImageSource(image));
   };
   const markLoaded = image => {
     image.dataset.loaded = '1'; delete image.dataset.failed;
     image.style.visibility = ''; image.style.display = '';
     holder(image)?.classList.remove('is-failed');
+    retryControls.clear(image);
   };
   const releaseImage = (image, restoreSource = false) => {
     const asset = recovered.get(image);
@@ -53,7 +60,10 @@ export function createMediaImageRecovery(getRoot) {
     if (refs > 0) objectUrls.set(asset.url, refs);
     else { objectUrls.delete(asset.url); URL.revokeObjectURL(asset.url); }
   };
-  const releaseRequest = resource => {
+  const releaseRequest = (resource, completed = false) => {
+    for (const state of resource.images) if (!completed && resource.active && !(state.image.complete && state.image.naturalWidth > 0)) {
+      setImageLoadingState(state.image, state.image.dataset.failed === '1' ? 'error' : 'pending');
+    }
     clearTimeout(resource.timeout); resource.timeout = 0;
     resource.controller?.abort(); resource.controller = null;
     if (resource.active) active--;
@@ -62,6 +72,7 @@ export function createMediaImageRecovery(getRoot) {
   const forget = image => {
     const state = images.get(image);
     if (!state) return;
+    if (!(image.complete && image.naturalWidth > 0)) setImageLoadingState(image, image.dataset.failed === '1' ? 'error' : 'pending');
     images.delete(image); observer?.unobserve(image);
     state.resource.images.delete(state);
     if (!state.resource.images.size) {
@@ -74,6 +85,7 @@ export function createMediaImageRecovery(getRoot) {
     for (const [image, asset] of recovered) {
       if (!getRoot()?.contains(image) || image.getAttribute('src') !== asset.url) releaseImage(image, true);
     }
+    retryControls.collect((image, source) => getRoot()?.contains(image) && getMediaImageSource(image) === source);
   };
   const schedule = () => {
     clearTimeout(timer); timer = 0; collect();
@@ -103,6 +115,7 @@ export function createMediaImageRecovery(getRoot) {
       resource.attempts = 1; resource.retryAt = performance.now() + RETRY_DELAYS[0];
     }
     const state = { image, source, resource, requestedSrc: image.getAttribute('src') };
+    setImageLoadingState(image, resource.active ? 'loading' : failed ? 'error' : 'pending');
     resource.images.add(state); images.set(image, state); observer?.observe(image);
     schedule();
   };
@@ -136,16 +149,31 @@ export function createMediaImageRecovery(getRoot) {
     resource.retryAt = performance.now() + RETRY_DELAYS[Math.min(1, resource.attempts - 1)];
     schedule();
   };
+  function retryImage(image) {
+    if (!canRun() || paused(image) || image.dataset.failed !== '1' || !getRoot()?.contains(image)) return;
+    const source = getMediaImageSource(image);
+    if (!isMediaImageUrl(source)) return;
+    register(image, source, true);
+    const resource = images.get(image)?.resource;
+    if (!resource || resource.active) return;
+    resource.attempts = 0; resource.forceReload = true; resource.retryAt = performance.now();
+    for (const state of resource.images) if (current(state)) retryControls.setLoading(state.image);
+    schedule();
+  }
   function pump() {
     timer = 0; collect();
     if (!canRun()) return;
     for (const resource of resources.values()) {
       if (active >= limit()) break;
       if (resource.active || resource.attempts >= MAX_ATTEMPTS || resource.retryAt > performance.now() || ![...resource.images].some(requested)) continue;
-      const firstLoad = resource.attempts === 0;
+      const firstLoad = resource.attempts === 0 && !resource.forceReload;
       resource.attempts++;
       const controller = new AbortController();
       resource.controller = controller; resource.active = true; active++;
+      for (const state of resource.images) if (current(state)) {
+        retryControls.setLoading(state.image);
+        setImageLoadingState(state.image, 'loading');
+      }
       resource.timeout = window.setTimeout(() => failedRequest(resource, controller), REQUEST_TIMEOUT_MS);
       let objectUrl;
       // Repair the original HTTP cache entry, rather than caching a random retry URL.
@@ -160,7 +188,7 @@ export function createMediaImageRecovery(getRoot) {
           await probe.decode();
           if (resource.controller !== controller) { URL.revokeObjectURL(objectUrl); return; }
           const targets = [...resource.images].filter(current);
-          releaseRequest(resource); resources.delete(resource.source);
+          releaseRequest(resource, true); resources.delete(resource.source);
           if (!targets.length) URL.revokeObjectURL(objectUrl);
           else {
             objectUrls.set(objectUrl, targets.length);
@@ -218,6 +246,8 @@ export function createMediaImageRecovery(getRoot) {
       mutations.observe(getRoot(), { subtree: true, childList: true, attributes: true, attributeFilter: ['src', 'data-card-src', 'data-media-src'] });
     }
     getRoot()?.addEventListener('error', onError, true); getRoot()?.addEventListener('load', onLoad, true);
+    getRoot()?.addEventListener('click', retryControls.handleActivation, true);
+    getRoot()?.addEventListener('keydown', retryControls.handleActivation, true);
     window.addEventListener('online', resume); window.addEventListener('offline', resume); window.addEventListener('pageshow', resume);
     document.addEventListener('visibilitychange', resume);
     registerNode(getRoot());
@@ -279,6 +309,9 @@ export function createMediaImageRecovery(getRoot) {
     for (const image of [...images.keys()]) forget(image);
     observer?.disconnect(); mutations?.disconnect(); observer = mutations = null;
     getRoot()?.removeEventListener('error', onError, true); getRoot()?.removeEventListener('load', onLoad, true);
+    getRoot()?.removeEventListener('click', retryControls.handleActivation, true);
+    getRoot()?.removeEventListener('keydown', retryControls.handleActivation, true);
+    retryControls.dispose();
     window.removeEventListener('online', resume); window.removeEventListener('offline', resume); window.removeEventListener('pageshow', resume);
     document.removeEventListener('visibilitychange', resume);
   };

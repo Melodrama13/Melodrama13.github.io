@@ -1,7 +1,22 @@
 import { watch, onMounted, onActivated, onDeactivated, onBeforeUnmount } from "vue";
+import { registerTransientOverlayDismissal } from '../../ui/transientOverlays.js';
 
 /** Owns prediction editor lifecycle; state is per editor instance. */
 export const usePredictionEditorLifecycle = (dependencies = {}) => {
+  let unregisterTransientDismissal;
+  const dismissReasonPopover = () => dependencies.hideDisableReasonPopover(true);
+  const handleReasonPointerDown = (event) => {
+    if (!dependencies.props.isOpen) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest('.pool-item') && dependencies.drawerRef.value?.contains(target)) return;
+    dismissReasonPopover();
+  };
+  const handleReasonKeydown = (event) => {
+    if (event.defaultPrevented || event.key !== 'Escape' || !dependencies.disableReasonPopoverName.value) return;
+    dismissReasonPopover();
+    event.preventDefault();
+  };
+  watch(() => dependencies.props.event?.id, dismissReasonPopover);
   watch(() => dependencies.props.isOpen, (open) => {
     if (!open) {
       dependencies.hideDisableReasonPopover(true);
@@ -14,8 +29,11 @@ export const usePredictionEditorLifecycle = (dependencies = {}) => {
   });
 
   onMounted(() => {
+    unregisterTransientDismissal = registerTransientOverlayDismissal(dismissReasonPopover);
     dependencies.updateMobileViewport();
     window.addEventListener('resize', dependencies.updateMobileViewport);
+    document.addEventListener('pointerdown', handleReasonPointerDown, true);
+    document.addEventListener('keydown', handleReasonKeydown);
   });
 
   const setDrawerPageVisibility = (visible) => {
@@ -35,9 +53,12 @@ export const usePredictionEditorLifecycle = (dependencies = {}) => {
   });
 
   onBeforeUnmount(() => {
+    unregisterTransientDismissal?.();
     dependencies.clearDisableReasonTimers();
     dependencies.detachSheetPointerListeners();
     window.removeEventListener('resize', dependencies.updateMobileViewport);
+    document.removeEventListener('pointerdown', handleReasonPointerDown, true);
+    document.removeEventListener('keydown', handleReasonKeydown);
   });
   return {
     get setDrawerPageVisibility() { return setDrawerPageVisibility; }

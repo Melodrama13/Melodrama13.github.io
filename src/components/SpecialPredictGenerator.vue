@@ -323,6 +323,9 @@ const { isUnlocked } = unlockFeature;
 const { isMultiCaseMode } = sourceSelectionFeature;
 const { canvasWrapRef } = previewFeature;
 const { exportStatus } = captureFeature;
+defineExpose({
+  get isCaptureSurfaceActive() { return captureFeature.isExporting.value; }
+});
 
 
 

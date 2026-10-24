@@ -1,4 +1,5 @@
 import { computed, nextTick, reactive, ref, shallowRef, watch } from 'vue';
+import { dismissTransientOverlays } from '../../ui/transientOverlays.js';
 import { buildPrecedentCatalog, PRECEDENT_ATTRIBUTE_LABELS, PRECEDENT_SKILL_LABELS } from './precedentRecords.js';
 import { queryHistoryPrecedents, getHistoryQueryBounds } from './precedentSearch.js';
 import { buildMilestoneIndex } from './precedentMilestones.js';
@@ -196,6 +197,7 @@ export function useHistoryPrecedents(ports) {
     if (restoreFocus && triggerElement?.isConnected) nextTick(() => triggerElement?.focus({ preventScroll: true }));
   };
   const open = (event, id) => {
+    dismissTransientOverlays();
     if (event?.currentTarget && event.currentTarget instanceof HTMLElement) triggerElement = event.currentTarget;
     ports.filtering.showFilter.value = false;
     if (id !== undefined) {

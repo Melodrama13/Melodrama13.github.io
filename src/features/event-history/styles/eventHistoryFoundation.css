@@ -1163,7 +1163,7 @@ button:not(:disabled):active, :global([data-feature-page="history"] :is(button:n
   /* Keep offscreen row heights real. Progressive loading handles heavy content;
      estimated outer heights make navigation and upward scrolling jump. */
 }
-.event-item:hover, :global([data-feature-page="history"] :is(.event-item:hover)), :global(:is(.event-item:hover)[data-feature-page="history"]) { z-index: 900; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.event-item:hover, :global([data-feature-page="history"] :is(.event-item:hover)), :global(:is(.event-item:hover)[data-feature-page="history"]) { z-index: 2; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .event-item.is-tooltip-raised, :global([data-feature-page="history"] :is(.event-item.is-tooltip-raised)), :global(:is(.event-item.is-tooltip-raised)[data-feature-page="history"]) {
   content-visibility: visible;
   contain-intrinsic-size: none;

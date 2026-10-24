@@ -1,4 +1,5 @@
 import { onMounted, nextTick, onDeactivated, onActivated, onBeforeUnmount } from 'vue';
+import { registerTransientOverlayDismissal } from '../../ui/transientOverlays.js';
 
 /** Lifecycle owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
@@ -6,9 +7,25 @@ import { onMounted, nextTick, onDeactivated, onActivated, onBeforeUnmount } from
  */
 export function useHistoryLifecycle(ports) {
 let isHistoryPageActive = true;
+let unregisterTransientDismissal;
+const dismissHistoryOverlays = () => {
+  ports.tooltips.closeInlineTooltips();
+  ports.precedents.close(false);
+  ports.filtering.showFilter.value = false;
+};
+const handleHistoryOverlayKeydown = event => {
+  if (event.key !== 'Escape' || event.defaultPrevented || !isHistoryPageActive) return;
+  if (ports.tooltips.hasAnyInlineTooltipOpen()) ports.tooltips.closeInlineTooltips();
+  else if (ports.precedents.isOpen.value) ports.precedents.close();
+  else if (ports.filtering.showFilter.value) ports.filtering.showFilter.value = false;
+  else return;
+  event.preventDefault(); event.stopPropagation();
+};
 
 function registerMounted() {
 onMounted(() => {
+  unregisterTransientDismissal = registerTransientOverlayDismissal(dismissHistoryOverlays);
+  document.addEventListener('keydown', handleHistoryOverlayKeydown);
   if (typeof window !== 'undefined') {
     window.pjskSetEventHistoryFullRender = (enabled = true) => ports.progressiveRender.setFullEventRenderMode(enabled);
     window.pjskIsEventHistoryFullRender = () => ports.progressiveRender.isFullEventRenderMode.value;
@@ -65,6 +82,8 @@ onMounted(() => {
 function registerDeactivated() {
 onDeactivated(() => {
   isHistoryPageActive = false;
+  dismissHistoryOverlays();
+  document.removeEventListener('keydown', handleHistoryOverlayKeydown);
   ports.predictionEditor.cancelPendingEditorOpen();
   ports.predictionEditor.resolvePredictSwitchDialog('cancel');
   ports.viewport.cancelActivationRestore();
@@ -108,6 +127,7 @@ onDeactivated(() => {
 function registerActivated() {
 onActivated(() => {
   isHistoryPageActive = true;
+  document.addEventListener('keydown', handleHistoryOverlayKeydown);
   ports.tooltips.closeInlineTooltips();
   ports.navigation.queueJumpFromProps();
   if (ports.navigation.pendingJumpEventId.value || ports.navigation.hasUnhandledJumpFromProps()) {
@@ -154,6 +174,9 @@ onActivated(() => {
 
 function registerBeforeUnmount() {
 onBeforeUnmount(() => {
+  unregisterTransientDismissal?.();
+  document.removeEventListener('keydown', handleHistoryOverlayKeydown);
+  dismissHistoryOverlays();
   ports.predictionEditor.cancelPendingEditorOpen();
   ports.predictionEditor.resolvePredictSwitchDialog('cancel');
   if (typeof window !== 'undefined') {

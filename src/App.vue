@@ -75,7 +75,7 @@
 />
 
     <UiSurfaceTransition kind="dialog">
-    <div v-if="showAppUpdatePromptDialog" class="app-update-modal-mask" @click.self="dismissAppUpdateBanner">
+    <div v-if="showAppUpdatePromptDialog" class="app-update-modal-mask" @click.self="dismissAppUpdateBanner" @keydown.esc.stop="shellLifecycle.handleGlobalKeyDown">
       <AppUpdatePromptContent
   :version-updates="versionUpdates"
 />
@@ -83,7 +83,7 @@
 
     </UiSurfaceTransition>
     <UiSurfaceTransition kind="dialog">
-    <div v-if="showAppReleaseLogModal" class="app-update-modal-mask" @click.self="closeAppReleaseLogModal">
+    <div v-if="showAppReleaseLogModal" class="app-update-modal-mask" @click.self="closeAppReleaseLogModal" @keydown.esc.stop="shellLifecycle.handleGlobalKeyDown">
       <AppReleaseLogContent
   :version-updates="versionUpdates"
 />
@@ -95,6 +95,7 @@
       v-if="screenshotExportModalVisible"
       class="app-screenshot-modal-mask"
       @click.self="closeScreenshotExportModal"
+      @keydown.esc.stop="shellLifecycle.handleGlobalKeyDown"
     >
       <AppCaptureStatusContent
   :history-capture="historyCapture"
@@ -232,7 +233,8 @@ const statsControls = useAppStatsControls({
 });
 
 const versionUpdates = useAppVersionUpdates({
-
+  get historyCapture() { return historyCapture; },
+  get tabNavigation() { return tabNavigation; }
 });
 
 const resourceLoading = useAppResourceLoading({
@@ -329,6 +331,7 @@ shellLifecycle.connectAppShellUnmount();
 predictionSources.connectAppPredictionPersistence();
 predictionSources.connectAppPredictionUserName();
 versionUpdates.connectAppReleaseLogImage();
+versionUpdates.connectAppShellModalPolicy();
 sourceMenu.connectAppSourceMenu();
 sourceMenu.connectAppPredictionEditorSourceGuard();
 </script>

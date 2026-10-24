@@ -1,4 +1,5 @@
 import { createRetryableModuleImporter } from '../lazyModuleRecovery.js';
+import { freezeImageLoadingPresentation } from '../../utils/imageLoadingPresentation.js';
 
 /** Lazily load capture libraries; failed imports can be retried by a new task. */
 export const createCaptureEngineLoader = ({
@@ -27,8 +28,23 @@ export const createCaptureEngineLoader = ({
   };
 
   return {
-    renderCaptureToCanvas: async (element, options) => (await getToCanvas())(element, options),
-    renderHtmlCapture: async (element, options) => (await getHtmlCapture())(element, options)
+    renderCaptureToCanvas: async (element, options) => {
+      const render = await getToCanvas();
+      const restore = freezeImageLoadingPresentation(element);
+      try {
+        if (!element.querySelector?.('.media-image-retry-overlay')) return await render(element, options);
+        return await render(element, {
+          ...options,
+          filter: node => !node.classList?.contains('media-image-retry-overlay') && (!options?.filter || options.filter(node))
+        });
+      } finally { restore(); }
+    },
+    renderHtmlCapture: async (element, options) => {
+      const render = await getHtmlCapture();
+      const restore = freezeImageLoadingPresentation(element);
+      try { return await render(element, options); }
+      finally { restore(); }
+    }
   };
 };
 

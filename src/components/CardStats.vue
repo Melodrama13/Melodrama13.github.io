@@ -781,6 +781,7 @@ const { specialPanelShowCardImagesAll, specialPanelShowCardImagesIndeterminate, 
 const { onMediaImageLoad, onMediaImageError, getLineupSlotCardImageSrc, buildCardImageSrc } = media;
 
 defineExpose({
+  get isCaptureSurfaceActive() { return isExportingPng.value || screenshotModalVisible.value; },
   getTopBarState,
   setTopBarDisplayEventIdDraft,
   applyTopBarDisplayEventId,
