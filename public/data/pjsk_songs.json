@@ -571,6 +571,16 @@
         "characters": [
           "白石杏"
         ]
+      },
+      {
+        "vocal_id": 2106,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "镜音铃",
+          "花里实乃里",
+          "小豆泽心羽"
+        ]
       }
     ]
   },
@@ -5407,6 +5417,15 @@
         "characters": [
           "初音未来"
         ]
+      },
+      {
+        "vocal_id": 2110,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "初音未来",
+          "花里实乃里"
+        ]
       }
     ]
   },
@@ -6599,6 +6618,15 @@
         "characters": [
           "KAITO"
         ]
+      },
+      {
+        "vocal_id": 2104,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "凤笑梦",
+          "晓山瑞希"
+        ]
       }
     ]
   },
@@ -7655,6 +7683,15 @@
         "released_at": "2020/9/30",
         "characters": [
           "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2103,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "初音未来",
+          "天马司"
         ]
       }
     ]
@@ -16610,6 +16647,22 @@
         "characters": [
           "「All Music MIKUdemy」一同"
         ]
+      },
+      {
+        "vocal_id": 2109,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "初音未来",
+          "镜音铃",
+          "天马咲希",
+          "花里实乃里",
+          "桃井爱莉",
+          "小豆泽心羽",
+          "天马司",
+          "凤笑梦",
+          "晓山瑞希"
+        ]
       }
     ]
   },
@@ -17809,6 +17862,18 @@
           "凤笑梦",
           "草薙宁宁",
           "神代类"
+        ]
+      },
+      {
+        "vocal_id": 2108,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "镜音铃",
+          "天马咲希",
+          "小豆泽心羽",
+          "天马司",
+          "凤笑梦"
         ]
       }
     ]
@@ -20203,6 +20268,16 @@
         "released_at": "2025/9/5",
         "characters": [
           "巡音流歌"
+        ]
+      },
+      {
+        "vocal_id": 2112,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "镜音铃",
+          "小豆泽心羽",
+          "凤笑梦"
         ]
       },
       {
@@ -24103,6 +24178,18 @@
         "characters": [
           "凤笑梦"
         ]
+      },
+      {
+        "vocal_id": 2115,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "镜音铃",
+          "天马咲希",
+          "天马司",
+          "凤笑梦",
+          "晓山瑞希"
+        ]
       }
     ]
   },
@@ -24149,6 +24236,17 @@
           "桐谷遥",
           "桃井爱莉",
           "日野森雫"
+        ]
+      },
+      {
+        "vocal_id": 2114,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "初音未来",
+          "花里实乃里",
+          "桃井爱莉",
+          "小豆泽心羽"
         ]
       }
     ]
@@ -25464,6 +25562,17 @@
         "released_at": "2026/3/13",
         "characters": [
           "桃井爱莉"
+        ]
+      },
+      {
+        "vocal_id": 2107,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "初音未来",
+          "花里实乃里",
+          "桃井爱莉",
+          "晓山瑞希"
         ]
       }
     ]
@@ -27201,6 +27310,15 @@
           "天马咲希",
           "望月穗波",
           "日野森志步"
+        ]
+      },
+      {
+        "vocal_id": 2111,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "天马咲希",
+          "天马司"
         ]
       }
     ]
@@ -33282,6 +33400,15 @@
           "望月穗波",
           "日野森志步"
         ]
+      },
+      {
+        "vocal_id": 2105,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "天马咲希",
+          "桃井爱莉"
+        ]
       }
     ]
   },
@@ -33983,6 +34110,15 @@
           "宵崎奏",
           "朝比奈真冬",
           "东云绘名",
+          "晓山瑞希"
+        ]
+      },
+      {
+        "vocal_id": 2113,
+        "type": "streaming_live",
+        "released_at": "",
+        "characters": [
+          "桃井爱莉",
           "晓山瑞希"
         ]
       }
@@ -36610,6 +36746,41 @@
         "released_at": "2026/10/16",
         "characters": [
           "巡音流歌"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 825,
+    "title": "ディスコティックブルー",
+    "pronunciation": "でぃすこてぃっくぶるー",
+    "composer": "Rulmry.",
+    "lyricist": "Rulmry.",
+    "arranger": "Rulmry.",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-10-26 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 12,
+      "hard": 17,
+      "expert": 24,
+      "master": 28
+    },
+    "vocals": [
+      {
+        "vocal_id": 1869,
+        "type": "original_song",
+        "released_at": "2026/10/26",
+        "characters": [
+          "初音未来"
         ]
       }
     ]
