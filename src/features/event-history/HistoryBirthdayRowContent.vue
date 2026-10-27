@@ -2,26 +2,29 @@
 <div class="birthday-date">{{ row.date }}</div>
           <div class="birthday-name">{{ row.name }}</div>
           <div class="birthday-main-icon">
-            <img src="/elements/birthday.png" class="birthday-row-icon" title="生日限定" />
+            <img src="/elements/rarity_birthday.png" class="birthday-row-icon" title="生日限定" />
           </div>
           <div class="birthday-attr-end">
             <img
               v-if="hasAttributeIcon(row.attribute)"
-              :src="`/elements/${row.attribute.toLowerCase()}.png`"
+              :src="`/elements/attr_${row.attribute.toLowerCase()}_v1.png`"
               class="birthday-row-icon"
               :title="translateAttr(row.attribute)"
             />
           </div>
           <div v-if="isBirthdayInfoOpen(row)" class="birthday-info-popover">
             <div class="birthday-info-card-media">
-            <img
-              crossorigin="anonymous"
+            <CardArtwork
               v-if="getBirthdayCardImageSrc(row)"
               :src="getBirthdayCardImageSrc(row)"
-              class="birthday-info-card media-load-shimmer"
+              class="birthday-info-card"
+              :size="60"
+              :show-frame="false"
+              :show-attribute="false"
+              :show-unit="false"
+              :show-stars="false"
+              :show-ribbon="false"
               :alt="`${row.name} 生日卡面`"
-              loading="lazy"
-              decoding="async"
               @load="onBirthdayCardImageLoad($event, row)"
               @error="onBirthdayCardImageError($event, row)"
             />
@@ -35,6 +38,7 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 const props = defineProps({
   formatting: { type: Object, required: true },
   tooltips: { type: Object, required: true },

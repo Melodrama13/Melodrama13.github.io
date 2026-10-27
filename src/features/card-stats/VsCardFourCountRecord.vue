@@ -60,25 +60,13 @@
                             class="fes-card-thumb"
                             :title="`${row.label} #${card.cardId || '-'}`"
                           >
-                            <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img crossorigin="anonymous"
-                              v-if="card.imageSrc"
+                            <CardArtwork
                               :src="card.imageSrc"
                               :alt="`${row.label} 卡面`"
-                              class="fes-card-thumb-img media-load-shimmer"
-                              loading="lazy"
-                              decoding="async"
+                              :attribute="card.attr"
+                              :show-attribute="ATTRS.includes(card.attr)"
                               @load="onMediaImageLoad"
                               @error="onMediaImageError"
-                            />
-                            <img
-                              v-if="ATTRS.includes(card.attr)"
-                              :src="`/elements/${String(card.attr).toLowerCase()}.png`"
-                              class="fes-card-thumb-attr"
-                              :alt="ATTR_LABELS[card.attr]"
-                              :title="ATTR_LABELS[card.attr]"
-                              loading="lazy"
-                              decoding="async"
                             />
                           </div>
                         </div>
@@ -89,7 +77,7 @@
                           <img
                             v-for="(attr, idx) in row.attrs"
                             :key="`vs-four-attr-${row.key}-${idx}`"
-                            :src="`/elements/${String(attr).toLowerCase()}.png`"
+                            :src="`/elements/attr_${String(attr).toLowerCase()}_v1.png`"
                             :title="ATTR_LABELS[attr] || attr"
                             :alt="ATTR_LABELS[attr] || attr"
                             class="score-attr-icon"
@@ -132,5 +120,6 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","vsUnitFourCountCompact","onVsUnitFourCountCompactChange","vsUnitFourCountShowCardImages","onVsUnitFourCountShowCardImagesChange","vsUnitFourCountSort","onToggleVsUnitFourCountSort","vsUnitFourCountSortLabel","isExportingPng","exportElementPng","vsUnitFourCountDisplayRecords","getRecordTint","getVsUnitVariantAvatarSrc","getCharColor","onVsUnitVariantAvatarError","getVsUnitLogoByKey","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","VS_NAMES","getVsScoreVsHeadStyle","getCharAbbr","vsUnitFourCountRows","getVsScoreUnitHeadStyle","unitLogoMap","getVsFourCountMiniCellClass","getVsScoreCellStyle"]);
 </script>

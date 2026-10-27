@@ -15,7 +15,7 @@
                   <tr>
                     <th class="fes-row-head" aria-label="团体"></th>
                     <th v-if="!fesRecordShowCardImages" v-for="attr in ATTRS" :key="`cfes-head-${attr}`" :style="getFesMatrixAttrHeadStyle(attr)">
-                      <img :src="`/elements/${String(attr).toLowerCase()}.png`" class="fes-attr-icon" :alt="ATTR_LABELS[attr]" :title="ATTR_LABELS[attr]" />
+                      <img :src="`/elements/attr_${String(attr).toLowerCase()}_v1.png`" class="fes-attr-icon" :alt="ATTR_LABELS[attr]" :title="ATTR_LABELS[attr]" />
                     </th>
                     <th v-else class="fes-cards-head">卡面</th>
                   </tr>
@@ -52,25 +52,13 @@
                           class="fes-card-thumb"
                           :title="`${card.name} #${card.cardId || '-'}`"
                         >
-                          <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                          <img crossorigin="anonymous"
-                            v-if="card.imageSrc"
+                          <CardArtwork
                             :src="card.imageSrc"
                             :alt="`${card.name} 卡面`"
-                            class="fes-card-thumb-img media-load-shimmer"
-                            loading="lazy"
-                            decoding="async"
+                            :attribute="card.attr"
+                            :show-attribute="ATTRS.includes(card.attr)"
                             @load="onMediaImageLoad"
                             @error="onMediaImageError"
-                          />
-                          <img
-                            v-if="ATTRS.includes(card.attr)"
-                            :src="`/elements/${String(card.attr).toLowerCase()}.png`"
-                            class="fes-card-thumb-attr"
-                            :alt="ATTR_LABELS[card.attr]"
-                            :title="ATTR_LABELS[card.attr]"
-                            loading="lazy"
-                            decoding="async"
                           />
                         </div>
                         <span v-if="!cfesRecordMatrix.cardsByUnit[unit]?.length" class="score-empty">-</span>
@@ -85,7 +73,7 @@
                     <td v-else class="fes-total-attr-wrap-cell">
                       <div class="fes-total-attr-wrap">
                         <span v-for="attr in ATTRS" :key="`cfes-total-card-${attr}`" class="fes-total-attr-item" :style="getFesMatrixTotalChipStyle(attr)">
-                          <img :src="`/elements/${String(attr).toLowerCase()}.png`" class="fes-total-attr-icon" :alt="ATTR_LABELS[attr]" :title="ATTR_LABELS[attr]" />
+                          <img :src="`/elements/attr_${String(attr).toLowerCase()}_v1.png`" class="fes-total-attr-icon" :alt="ATTR_LABELS[attr]" :title="ATTR_LABELS[attr]" />
                           <span class="fes-total-attr-num">{{ cfesRecordMatrix.totals[attr] }}</span>
                         </span>
                       </div>
@@ -97,5 +85,6 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","fesRecordShowCardImages","onFesRecordShowCardImagesChange","isExportingPng","exportElementPng","ATTRS","getFesMatrixAttrHeadStyle","ATTR_LABELS","RELATED_FES_UNITS","getFesMatrixUnitHeadStyle","unitLogoMap","getFesMatrixCellStyle","cfesRecordMatrix","getCharColor","getFesMatrixUnitStripCellStyle","onMediaImageLoad","onMediaImageError","getFesMatrixTotalCellStyle","getFesMatrixTotalChipStyle"]);
 </script>

@@ -111,8 +111,8 @@ const getCaseMemberSlots = (caseItem, isSingleCase) => (
 const buildFesGroups = (cards, bannerBase) => {
   const groups = [];
   const definitions = [
-    { key: 'bfes', label: 'BFES', logo: '/elements/bfes.webp' },
-    { key: 'cfes', label: 'CFES', logo: '/elements/cfes.webp' }
+    { key: 'bfes', label: 'BFES', logo: '/elements/fes_bloom.webp' },
+    { key: 'cfes', label: 'CFES', logo: '/elements/fes_colorful.webp' }
   ];
   definitions.forEach((definition) => {
     const matched = annotateCards((Array.isArray(cards) ? cards : []).filter((card) => (

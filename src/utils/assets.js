@@ -1,3 +1,5 @@
+import { DEFAULT_CARD_ARTWORK_VERSION } from '../config/cardArtwork.js';
+
 const rawAssetBaseUrl = String(import.meta.env.VITE_ASSET_BASE_URL || '').trim();
 const assetBaseUrl = rawAssetBaseUrl.replace(/\/+$/, '');
 const ASSET_CORS_CACHE_VERSION = '3';
@@ -30,31 +32,28 @@ const COMMON_STATIC_IMAGE_PATHS = Object.freeze([
   '/data/icon/circle_arrow_left_right.png',
   '/data/icon/collaboration.png',
   '/data/icon/live.png',
-  '/elements/ln.png',
-  '/elements/mmj.png',
-  '/elements/vbs.png',
-  '/elements/ws.png',
-  '/elements/nc.png',
-  '/elements/vs.png',
-  '/elements/pure.png',
-  '/elements/cool.png',
-  '/elements/cute.png',
-  '/elements/happy.png',
-  '/elements/mysterious.png',
-  '/elements/rstar.png',
-  '/elements/ystar.png',
-  '/elements/birthday.png',
-  '/elements/card_frame_1.png',
-  '/elements/card_frame_2.png',
-  '/elements/card_frame_3.png',
-  '/elements/card_frame_4.png',
-  '/elements/card_frame_birth.png',
-  '/elements/cfes.webp',
-  '/elements/bfes.webp',
-  '/elements/Leo_need.png',
-  '/elements/MORE_MORE_JUMP!.png',
-  '/elements/Vivid_BAD_SQUAD.png',
-  '/elements/virtual_singer.png'
+  '/elements/unit_mini_ln.png',
+  '/elements/unit_mini_mmj.png',
+  '/elements/unit_mini_vbs.png',
+  '/elements/unit_mini_ws.png',
+  '/elements/unit_mini_nc.png',
+  '/elements/unit_mini_vs.png',
+  '/elements/attr_pure_v1.png',
+  '/elements/attr_cool_v1.png',
+  '/elements/attr_cute_v1.png',
+  '/elements/attr_happy_v1.png',
+  '/elements/attr_mysterious_v1.png',
+  ...['pure', 'cool', 'cute', 'happy', 'mysterious'].map(attribute => `/elements/attr_${attribute}_${DEFAULT_CARD_ARTWORK_VERSION}.png`),
+  '/elements/rarity_rstar.png',
+  '/elements/rarity_ystar.png',
+  '/elements/rarity_birthday.png',
+  ...['1', '2', '3', '4', 'birth'].map(rarity => `/elements/card_frame_${rarity}_${DEFAULT_CARD_ARTWORK_VERSION}.png`),
+  '/elements/fes_colorful.webp',
+  '/elements/fes_bloom.webp',
+  '/elements/unit_logo_ln.png',
+  '/elements/unit_logo_mmj.png',
+  '/elements/unit_logo_vbs.png',
+  '/elements/unit_logo_vs.png'
 ]);
 
 const VS_VARIANT_UNITS = Object.freeze(['ln', 'mmj', 'vbs', 'ws', 'nc']);

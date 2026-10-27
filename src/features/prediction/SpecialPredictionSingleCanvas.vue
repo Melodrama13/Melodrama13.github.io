@@ -92,7 +92,7 @@
 
               <div v-if="row.bfesCards.length > 0" class="special-bfes-grid">
                 <div class="special-bfes-logo-cell">
-                  <img src="/elements/bfes.webp" class="special-bfes-logo" alt="BFES" />
+                  <img src="/elements/fes_bloom.webp" class="special-bfes-logo" alt="BFES" />
                 </div>
                 <SpecialPredictionCardCell
                   v-for="(card, idx) in row.bfesCards"

@@ -51,7 +51,7 @@
                 <tbody>
                   <tr v-for="row in card.rows" :key="`attr-summary-${card.name}-${row.attr}`" class="attr-summary-data-row" :style="getAttrSummaryAttrRowStyle(row.attr)">
                     <td class="attr-summary-attr-cell">
-                      <img :src="`/elements/${String(row.attr).toLowerCase()}.png`" class="attr-summary-attr-icon" :alt="ATTR_LABELS[row.attr]" :title="ATTR_LABELS[row.attr]" />
+                      <img :src="`/elements/attr_${String(row.attr).toLowerCase()}_v1.png`" class="attr-summary-attr-icon" :alt="ATTR_LABELS[row.attr]" :title="ATTR_LABELS[row.attr]" />
                     </td>
                     <td class="attr-summary-num">{{ row.mainScoreCount }}</td>
                     <td class="attr-summary-num">{{ row.scoreUpCount }}</td>

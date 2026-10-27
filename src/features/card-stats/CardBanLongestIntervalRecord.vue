@@ -53,22 +53,13 @@
                         <div class="interval-card-column">
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.longestStartCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
-                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img crossorigin="anonymous"
+                              <CardArtwork
                                 :src="row.longestStartCardImageSrc"
                                 :alt="`${row.name} 卡面`"
-                                class="lineup-slot-card-img media-load-shimmer"
-                                loading="lazy"
-                                decoding="async"
+                                :attribute="row.longestStartCardAttr"
+                                :show-attribute="ATTRS.includes(row.longestStartCardAttr)"
                                 @load="onMediaImageLoad"
                                 @error="onMediaImageError"
-                              />
-                              <img
-                                v-if="ATTRS.includes(row.longestStartCardAttr)"
-                                :src="`/elements/${String(row.longestStartCardAttr).toLowerCase()}.png`"
-                                :alt="ATTR_LABELS[row.longestStartCardAttr]"
-                                :title="ATTR_LABELS[row.longestStartCardAttr]"
-                                class="related-last-card-attr"
                               />
                             </div>
                             <span v-else class="score-empty">-</span>
@@ -76,22 +67,13 @@
                           <span class="interval-stack-arrow">↓</span>
                           <div class="interval-card-item is-stack-item">
                             <div v-if="row.longestEndCardImageSrc" class="lineup-slot-card related-last-card-thumb interval-card-thumb">
-                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img crossorigin="anonymous"
+                              <CardArtwork
                                 :src="row.longestEndCardImageSrc"
                                 :alt="`${row.name} 卡面`"
-                                class="lineup-slot-card-img media-load-shimmer"
-                                loading="lazy"
-                                decoding="async"
+                                :attribute="row.longestEndCardAttr"
+                                :show-attribute="ATTRS.includes(row.longestEndCardAttr)"
                                 @load="onMediaImageLoad"
                                 @error="onMediaImageError"
-                              />
-                              <img
-                                v-if="ATTRS.includes(row.longestEndCardAttr)"
-                                :src="`/elements/${String(row.longestEndCardAttr).toLowerCase()}.png`"
-                                :alt="ATTR_LABELS[row.longestEndCardAttr]"
-                                :title="ATTR_LABELS[row.longestEndCardAttr]"
-                                class="related-last-card-attr"
                               />
                             </div>
                             <span v-else class="score-empty">-</span>
@@ -121,5 +103,6 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","intervalBanShowCardImages","onIntervalBanShowCardImagesChange","banEventTypeFilter","setBanEventTypeFilter","isExportingPng","exportElementPng","banLongestDisplayRecords","getRecordTint","getCharAbbr","getCharColor","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","jumpToHistoryByEventRef","getJumpLinkLabel","formatGapValue"]);
 </script>

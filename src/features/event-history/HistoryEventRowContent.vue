@@ -21,7 +21,7 @@
           <div class="banner-section">
             <div class="avatar-wrapper">
               <template v-if="['World Link', '总集篇'].includes(row.event.event_type) && row.event.unit">
-                <img :src="`/elements/${row.event.unit.toLowerCase()}.png`" class="unit-logo-banner" :title="row.event.unit" />
+                <img :src="`/elements/unit_mini_${row.event.unit.toLowerCase()}.png`" class="unit-logo-banner" :title="row.event.unit" />
               </template>
               <template v-else-if="row.event.banner">
                 <img :src="`/chibi_s/${getCharAbbr(row.event.banner)}.webp`" class="banner-avatar" :title="'Ban主: ' + row.event.banner" />
@@ -66,11 +66,11 @@
                   tabindex="0"
                 >
                   <img :src="`/chars/${getCharAbbr(card.Name)}.png`" class="member-avatar" />
-                  <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/${card.Attribute.toLowerCase()}.png`" class="card-attr-icon" />
-                  <img v-if="isVirtualSinger(card.Name)" :src="`/elements/${card.Affiliation.toLowerCase()}.png`" class="sub-unit-logo" />
+                  <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/attr_${card.Attribute.toLowerCase()}_v1.png`" class="card-attr-icon" />
+                  <img v-if="isVirtualSinger(card.Name)" :src="`/elements/unit_mini_${card.Affiliation.toLowerCase()}.png`" class="sub-unit-logo" />
                   <div v-if="getMemberRibbonLabel(card)" class="lim-tag"><span class="lim-tag-text">{{ getMemberRibbonLabel(card) }}</span></div>
                   <div class="stars-overlay">
-                    <img v-for="n in parseInt(card.Rarity)" :key="n" :src="card.Rarity == 4 ? '/elements/rstar.png' : '/elements/ystar.png'" class="star-icon" />
+                    <img v-for="n in parseInt(card.Rarity)" :key="n" :src="card.Rarity == 4 ? '/elements/rarity_rstar.png' : '/elements/rarity_ystar.png'" class="star-icon" />
                   </div>
                   <div class="card-detail-tooltip" :style="getCardTooltipStyle(row.key, card, `n-${normalIndex}`)">
                     <div v-if="shouldRenderCardTooltipContent(row.key, card, `n-${normalIndex}`)" class="card-tooltip-hero" :class="{ 'is-text-only': getVisibleCardTooltipImageList(card).length === 0 }">
@@ -80,13 +80,15 @@
                           :key="`card-tip-${row.key}-${card.CardID}-${normalIndex}-${src}`"
                           class="card-tooltip-jacket-item"
                         >
-                          <img
-                            crossorigin="anonymous"
+                          <CardArtwork
                             :src="src"
-                            class="card-tooltip-jacket media-load-shimmer"
+                            class="card-tooltip-jacket"
+                            :show-frame="false"
+                            :show-attribute="false"
+                            :show-unit="false"
+                            :show-stars="false"
+                            :show-ribbon="false"
                             :alt="`${card.Name || '角色'} 卡面`"
-                            loading="lazy"
-                            decoding="async"
                             @load="onCardTooltipImageLoad"
                             @error="onCardTooltipImageError($event, card, src)"
                           />
@@ -115,7 +117,7 @@
             </template>
 
             <div v-if="shouldRenderEventHeavy(row) && getFesCards(row.event.memberCards).length > 0" class="member-row fes-row">
-              <img :src="`/elements/${getFesType(row.event.memberCards)}.webp`" class="fes-type-icon" />
+              <img :src="`/elements/fes_${getFesType(row.event.memberCards) === 'bfes' ? 'bloom' : 'colorful'}.webp`" class="fes-type-icon" />
               <div v-for="(card, fesIndex) in getFesCards(row.event.memberCards)" :key="`${card.CardID}-${fesIndex}`" class="member-card-box">
                 <div
                   class="avatar-container"
@@ -129,11 +131,11 @@
                   tabindex="0"
                 >
                   <img :src="`/chars/${getCharAbbr(card.Name)}.png`" class="member-avatar" />
-                  <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/${card.Attribute.toLowerCase()}.png`" class="card-attr-icon" />
-                  <img v-if="isVirtualSinger(card.Name)" :src="`/elements/${card.Affiliation.toLowerCase()}.png`" class="sub-unit-logo" />
+                  <img v-if="hasAttributeIcon(card.Attribute)" :src="`/elements/attr_${card.Attribute.toLowerCase()}_v1.png`" class="card-attr-icon" />
+                  <img v-if="isVirtualSinger(card.Name)" :src="`/elements/unit_mini_${card.Affiliation.toLowerCase()}.png`" class="sub-unit-logo" />
                   <div v-if="getMemberRibbonLabel(card)" class="lim-tag"><span class="lim-tag-text">{{ getMemberRibbonLabel(card) }}</span></div>
                   <div class="stars-overlay">
-                    <img v-for="n in parseInt(card.Rarity)" :key="n" :src="'/elements/rstar.png'" class="star-icon" />
+                    <img v-for="n in parseInt(card.Rarity)" :key="n" :src="'/elements/rarity_rstar.png'" class="star-icon" />
                   </div>
                   <div class="card-detail-tooltip" :style="getCardTooltipStyle(row.key, card, `f-${fesIndex}`)">
                     <div v-if="shouldRenderCardTooltipContent(row.key, card, `f-${fesIndex}`)" class="card-tooltip-hero" :class="{ 'is-text-only': getVisibleCardTooltipImageList(card).length === 0 }">
@@ -143,13 +145,15 @@
                           :key="`card-tip-${row.key}-${card.CardID}-${fesIndex}-${src}`"
                           class="card-tooltip-jacket-item"
                         >
-                          <img
-                            crossorigin="anonymous"
+                          <CardArtwork
                             :src="src"
-                            class="card-tooltip-jacket media-load-shimmer"
+                            class="card-tooltip-jacket"
+                            :show-frame="false"
+                            :show-attribute="false"
+                            :show-unit="false"
+                            :show-stars="false"
+                            :show-ribbon="false"
                             :alt="`${card.Name || '角色'} 卡面`"
-                            loading="lazy"
-                            decoding="async"
                             @load="onCardTooltipImageLoad"
                             @error="onCardTooltipImageError($event, card, src)"
                           />
@@ -222,7 +226,7 @@
               </div>
               <img
                 v-if="hasAttributeIcon(row.event.event_attribute)"
-                :src="`/elements/${row.event.event_attribute.toLowerCase()}.png`"
+                :src="`/elements/attr_${row.event.event_attribute.toLowerCase()}_v1.png`"
                 class="attr-icon attr-icon-inline"
                 :title="translateAttr(row.event.event_attribute)"
               />
@@ -252,6 +256,7 @@
 import { isCompilationEvent } from '../../utils/compilationEvents.js';
 import { isPrecedentEventAvailable } from './precedentRecords.js';
 import { Info } from 'lucide-vue-next';
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 
 defineEmits(['open-precedents']);
 

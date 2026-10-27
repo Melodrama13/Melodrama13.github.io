@@ -66,26 +66,14 @@
                               :key="`special-limited-card-${row.key}-${char.name}-${card.cardId || card.orderId}`"
                               class="fes-card-thumb special-limited-card-thumb"
                             >
-                              <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                              <img crossorigin="anonymous"
-                                v-if="card.imageSrc"
+                              <CardArtwork
                                 :src="card.imageSrc"
                                 :alt="`${char.name} ${row.label} 卡面`"
-                                class="fes-card-thumb-img media-load-shimmer"
-                                loading="lazy"
-                                decoding="async"
+                                :attribute="card.attr"
+                                :show-attribute="ATTRS.includes(card.attr)"
+                                :fallback-text="getCharSingleMark(char.name)"
                                 @load="onMediaImageLoad"
                                 @error="onMediaImageError"
-                              />
-                              <span v-if="!card.imageSrc" class="special-limited-card-fallback">{{ getCharSingleMark(char.name) }}</span>
-                              <img
-                                v-if="ATTRS.includes(card.attr)"
-                                :src="`/elements/${String(card.attr).toLowerCase()}.png`"
-                                class="fes-card-thumb-attr"
-                                :alt="ATTR_LABELS[card.attr]"
-                                :title="ATTR_LABELS[card.attr]"
-                                loading="lazy"
-                                decoding="async"
                               />
                             </div>
                           </div>
@@ -96,7 +84,7 @@
                             <template v-for="card in specialLimitedMatrix[row.key][char.name].cards" :key="`special-limited-attr-${row.key}-${char.name}-${card.cardId || card.orderId}`">
                               <img
                                 v-if="ATTRS.includes(card.attr)"
-                                :src="`/elements/${String(card.attr).toLowerCase()}.png`"
+                                :src="`/elements/attr_${String(card.attr).toLowerCase()}_v1.png`"
                                 class="special-limited-attr-icon"
                                 :alt="ATTR_LABELS[card.attr]"
                                 :title="ATTR_LABELS[card.attr]"
@@ -115,5 +103,6 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","specialLimitedShowCardImages","onSpecialLimitedShowCardImagesChange","isExportingPng","exportElementPng","specialLimitedHasDoubleCfes","specialLimitedUnitGroups","hasSpecialLimitedDoubleCfes","unitLogoMap","getCharAbbr","specialLimitedRows","specialLimitedMatrix","onMediaImageLoad","onMediaImageError","getCharSingleMark","ATTRS","ATTR_LABELS"]);
 </script>

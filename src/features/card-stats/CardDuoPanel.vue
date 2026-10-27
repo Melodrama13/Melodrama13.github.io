@@ -166,22 +166,13 @@
                                 class="duo-last-card-item"
                               >
                                 <div v-if="card.imageSrc" class="lineup-slot-card related-last-card-thumb duo-last-card-thumb">
-                                  <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                                  <img crossorigin="anonymous"
+                                  <CardArtwork
                                     :src="card.imageSrc"
-                                    class="lineup-slot-card-img media-load-shimmer"
                                     :alt="`${card.name} 卡面`"
-                                    loading="lazy"
-                                    decoding="async"
+                                    :attribute="card.attr"
+                                    :show-attribute="ATTRS.includes(card.attr)"
                                     @load="onMediaImageLoad"
                                     @error="onMediaImageError"
-                                  />
-                                  <img
-                                    v-if="ATTRS.includes(card.attr)"
-                                    :src="`/elements/${String(card.attr).toLowerCase()}.png`"
-                                    :alt="ATTR_LABELS[card.attr]"
-                                    :title="ATTR_LABELS[card.attr]"
-                                    class="related-last-card-attr"
                                   />
                                 </div>
                                 <span v-else class="score-empty">-</span>
@@ -342,5 +333,6 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["isExportingPng","exportElementPng","getRelatedRecordTitle","DUO_FILTER_OPTIONS","isDuoUnitGlobalFilterChecked","isDuoUnitGlobalFilterIndeterminate","onDuoFilterChange","duoLastPoolShowCardImagesAll","duoLastPoolShowCardImagesIndeterminate","onDuoLastPoolShowCardImagesChange","duoUnitRows","getUnitAccentColor","unitLogoMap","onDuoUnitFilterChange","getDuoHeadCellStyle","getDuoMatrixCellClass","getDuoMatrixCellStyle","formatDuoCount","onDuoUnitLastPoolShowCardImagesChange","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","jumpToHistoryByEventRef","getJumpLinkLabel","duoPoolFilters","duoPoolMatrix","duoEventFilters","duoEventMatrix"]);
 </script>

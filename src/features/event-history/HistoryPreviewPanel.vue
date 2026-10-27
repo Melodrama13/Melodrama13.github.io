@@ -105,11 +105,11 @@
             <template v-if="panel.id === 'attr-five'">
               <div class="preview-attr-head">
                 <span>角色</span>
-                <img src="/elements/pure.png" class="preview-attr-head-icon" title="Pure" />
-                <img src="/elements/cool.png" class="preview-attr-head-icon" title="Cool" />
-                <img src="/elements/cute.png" class="preview-attr-head-icon" title="Cute" />
-                <img src="/elements/happy.png" class="preview-attr-head-icon" title="Happy" />
-                <img src="/elements/mysterious.png" class="preview-attr-head-icon" title="Mysterious" />
+                <img src="/elements/attr_pure_v1.png" class="preview-attr-head-icon" title="Pure" />
+                <img src="/elements/attr_cool_v1.png" class="preview-attr-head-icon" title="Cool" />
+                <img src="/elements/attr_cute_v1.png" class="preview-attr-head-icon" title="Cute" />
+                <img src="/elements/attr_happy_v1.png" class="preview-attr-head-icon" title="Happy" />
+                <img src="/elements/attr_mysterious_v1.png" class="preview-attr-head-icon" title="Mysterious" />
               </div>
               <div
                 v-for="row in previewAttrFiveSummaryRows"
@@ -182,7 +182,7 @@
                 <tbody>
                   <tr v-for="row in previewVsLastFourUnitRows" :key="`pv-vs-row-${row.unit}`">
                     <th>
-                      <img :src="`/elements/${row.unit}.png`" class="preview-vs-mini-unit-logo" :title="row.unit.toUpperCase()" />
+                      <img :src="`/elements/unit_mini_${row.unit}.png`" class="preview-vs-mini-unit-logo" :title="row.unit.toUpperCase()" />
                     </th>
                     <td v-for="name in PREVIEW_VS_NAMES" :key="`pv-vs-cell-${row.unit}-${name}`" :style="getPreviewVsMiniDataCellStyle(row.daysByVs[name])">
                       {{ row.daysByVs[name] }}
@@ -204,7 +204,7 @@
                 <tbody>
                   <tr v-for="row in previewVsUnitFourCountUnitRows" :key="`pv-vs-four-row-${row.unit}`">
                     <th>
-                      <img :src="`/elements/${row.unit}.png`" class="preview-vs-mini-unit-logo" :title="row.unit.toUpperCase()" />
+                      <img :src="`/elements/unit_mini_${row.unit}.png`" class="preview-vs-mini-unit-logo" :title="row.unit.toUpperCase()" />
                     </th>
                     <td v-for="name in PREVIEW_VS_NAMES" :key="`pv-vs-four-cell-${row.unit}-${name}`" :style="getPreviewVsFourCountCellStyle(row.countByVs[name])">
                       {{ Number(row.countByVs[name] || 0) > 0 ? row.countByVs[name] : '-' }}
@@ -226,14 +226,14 @@
                 <tbody>
                   <tr v-for="row in previewVsUnitScoreUnitRows" :key="`pv-score-row-${row.unit}`">
                     <th>
-                      <img :src="`/elements/${row.unit}.png`" class="preview-vs-mini-unit-logo" :title="row.unit.toUpperCase()" />
+                      <img :src="`/elements/unit_mini_${row.unit}.png`" class="preview-vs-mini-unit-logo" :title="row.unit.toUpperCase()" />
                     </th>
                     <td v-for="name in PREVIEW_VS_NAMES" :key="`pv-score-cell-${row.unit}-${name}`">
                       <div v-if="row.attrsByVs[name]?.length" class="preview-vs-score-icons">
                         <img
                           v-for="(attr, idx) in row.attrsByVs[name]"
                           :key="`pv-score-attr-${row.unit}-${name}-${idx}`"
-                          :src="`/elements/${String(attr).toLowerCase()}.png`"
+                          :src="`/elements/attr_${String(attr).toLowerCase()}_v1.png`"
                           class="preview-vs-score-attr"
                           :title="attr"
                         />
@@ -262,7 +262,7 @@
                         <img
                           v-for="(attr, idx) in row.attrsByVs[name]"
                           :key="`pv-original-attr-${row.type}-${name}-${idx}`"
-                          :src="`/elements/${String(attr).toLowerCase()}.png`"
+                          :src="`/elements/attr_${String(attr).toLowerCase()}_v1.png`"
                           class="preview-vs-score-attr"
                           :title="attr"
                         />
@@ -288,7 +288,7 @@
                       :style="getPreviewDailyPlanStyle(plan.attr)"
                     >
                       <td class="preview-daily-attr-cell">
-                        <img :src="`/elements/${String(plan.attr).toLowerCase()}.png`" class="preview-daily-attr" :title="translateAttr(plan.attr)" />
+                        <img :src="`/elements/attr_${String(plan.attr).toLowerCase()}_v1.png`" class="preview-daily-attr" :title="translateAttr(plan.attr)" />
                       </td>
                       <td
                         v-for="(score, idx) in plan.memberScores"
@@ -333,7 +333,7 @@
                       :style="getPreviewCharAttrRowStyle(row.attr)"
                     >
                       <td class="preview-char-attr-attr-cell">
-                        <img :src="`/elements/${String(row.attr).toLowerCase()}.png`" class="preview-char-attr-attr-icon" :title="translateAttr(row.attr)" />
+                        <img :src="`/elements/attr_${String(row.attr).toLowerCase()}_v1.png`" class="preview-char-attr-attr-icon" :title="translateAttr(row.attr)" />
                       </td>
                       <td>{{ row.mainScoreCount }}</td>
                       <td>{{ row.scoreUpCount }}</td>

@@ -18,7 +18,7 @@
             :title="areBirthdayRowsHidden ? '已隐藏生日行' : '显示生日行'"
             :data-tip="isCompact ? '生日行' : null"
           >
-            <img src="/elements/birthday.png" class="compact-btn-icon birthday-toggle-icon" alt="生日" />
+            <img src="/elements/rarity_birthday.png" class="compact-btn-icon birthday-toggle-icon" alt="生日" />
             <span v-if="!isCompact">生日行：{{ areBirthdayRowsHidden ? '隐藏' : '显示' }}</span>
           </button>
           <button class="pjsk-ui-action"

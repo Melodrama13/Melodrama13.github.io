@@ -81,12 +81,12 @@ export function useCardConstants(inputs) {
   const DUO_VS_TOTAL_KEY = '__duo_vs_total__';
 
   const supportUnitTitleLogoMap = Object.freeze({
-    ln: '/elements/Leo_need.png',
-    mmj: '/elements/MORE_MORE_JUMP!.png',
-    vbs: '/elements/Vivid_BAD_SQUAD.png',
-    ws: '/elements/ワンダーランズ×ショウタイム.png',
-    nc: '/elements/25時、ナイトコードで.png',
-    vs: '/elements/virtual_singer.png'
+    ln: '/elements/unit_logo_ln.png',
+    mmj: '/elements/unit_logo_mmj.png',
+    vbs: '/elements/unit_logo_vbs.png',
+    ws: '/elements/unit_logo_ws.png',
+    nc: '/elements/unit_logo_nc.png',
+    vs: '/elements/unit_logo_vs.png'
   });
 
   return {

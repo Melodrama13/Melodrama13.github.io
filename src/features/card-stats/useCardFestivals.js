@@ -171,7 +171,7 @@ export function useCardFestivals(inputs) {
     return 0;
   };
 
-  const getFestivalTierIcon = (tierKey) => (tierKey === 'four' ? '/elements/rstar.png' : '/elements/ystar.png');
+  const getFestivalTierIcon = (tierKey) => (tierKey === 'four' ? '/elements/rarity_rstar.png' : '/elements/rarity_ystar.png');
 
   const festivalCharStats = computed(() => {
     const maxEid = inputs.eventCatalog.safeMaxEventId.value;
@@ -249,7 +249,7 @@ export function useCardFestivals(inputs) {
         attr,
         unit,
         unitLogo: getFestivalUnitLogoByName(charName),
-        fesLogo: `/elements/${String(type || 'cfes').toLowerCase()}.webp`,
+        fesLogo: `/elements/fes_${String(type || 'cfes').toLowerCase() === 'bfes' ? 'bloom' : 'colorful'}.webp`,
         frameRarity,
         isPermOnly,
         isFes: inputs.presentation.isFesCardType(type),
@@ -366,7 +366,7 @@ export function useCardFestivals(inputs) {
 
     const getFestivalFesLogo = (items) => {
       const first = (items || [])[0];
-      return first?.fesLogo || '/elements/cfes.webp';
+      return first?.fesLogo || '/elements/fes_colorful.webp';
     };
 
     const buildFestivalYearRows = (festival, festBucket) => {

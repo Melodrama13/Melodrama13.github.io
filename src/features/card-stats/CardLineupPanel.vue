@@ -49,7 +49,7 @@
 
               <div class="lineup-plan-row lineup-plan-main" :style="getLineupRowStyle(row.bestPlan.attr)">
                 <div class="lineup-attr-cell">
-                  <img :src="`/elements/${String(row.bestPlan.attr).toLowerCase()}.png`" class="lineup-attr-icon" :title="ATTR_LABELS[row.bestPlan.attr]" />
+                  <img :src="`/elements/attr_${String(row.bestPlan.attr).toLowerCase()}_v1.png`" class="lineup-attr-icon" :title="ATTR_LABELS[row.bestPlan.attr]" />
                 </div>
                 <div
                   v-for="(slot, idx) in row.bestPlan.memberSlots"
@@ -61,14 +61,10 @@
                   <template v-if="slot">
                     <template v-if="lineupShowCardImages">
                       <div class="lineup-slot-card">
-                        <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                        <img crossorigin="anonymous"
-                          v-if="getLineupSlotCardImageSrc(slot)"
+                        <CardArtwork
                           :src="getLineupSlotCardImageSrc(slot)"
                           :alt="`${slot.name} 卡面`"
-                          class="lineup-slot-card-img media-load-shimmer"
-                          loading="lazy"
-                          decoding="async"
+                          :show-attribute="false"
                           @load="onMediaImageLoad"
                           @error="onMediaImageError"
                         />
@@ -93,7 +89,7 @@
                   :style="getLineupRowStyle(plan.attr)"
                 >
                   <div class="lineup-attr-cell">
-                    <img :src="`/elements/${String(plan.attr).toLowerCase()}.png`" class="lineup-attr-icon" :title="ATTR_LABELS[plan.attr]" />
+                    <img :src="`/elements/attr_${String(plan.attr).toLowerCase()}_v1.png`" class="lineup-attr-icon" :title="ATTR_LABELS[plan.attr]" />
                   </div>
                   <div
                     v-for="(slot, idx) in plan.memberSlots"
@@ -105,14 +101,10 @@
                     <template v-if="slot">
                       <template v-if="lineupShowCardImages">
                         <div class="lineup-slot-card">
-                          <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                          <img crossorigin="anonymous"
-                            v-if="getLineupSlotCardImageSrc(slot)"
+                          <CardArtwork
                             :src="getLineupSlotCardImageSrc(slot)"
                             :alt="`${slot.name} 卡面`"
-                            class="lineup-slot-card-img media-load-shimmer"
-                            loading="lazy"
-                            decoding="async"
+                            :show-attribute="false"
                             @load="onMediaImageLoad"
                             @error="onMediaImageError"
                           />
@@ -135,5 +127,6 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["lineupShowCardImages","onLineupShowCardImagesChange","toggleLineupExpandedAll","getLineupGlobalToggleLabel","isExportingPng","exportElementPng","characterLineupRows","getLineupCardId","getCharColor","getMatrixUnitColor","getRecordTint","getCharAbbr","ATTR_LABELS","toggleLineupExpanded","getLineupToggleLabel","getLineupRowStyle","getLineupMemberCellStyle","getLineupSlotCardImageSrc","onMediaImageLoad","onMediaImageError","jumpToHistoryByEventRef","getJumpLinkLabel","isLineupExpanded"]);
 </script>

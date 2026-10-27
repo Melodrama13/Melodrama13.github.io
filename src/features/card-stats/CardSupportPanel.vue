@@ -47,7 +47,7 @@
                 :style="getLineupRowStyle(plan.attr)"
               >
                 <div class="lineup-attr-cell">
-                  <img v-if="isSupportAttrIcon(plan.attr)" :src="`/elements/${String(plan.attr).toLowerCase()}.png`" class="lineup-attr-icon" :title="ATTR_LABELS[plan.attr]" />
+                  <img v-if="isSupportAttrIcon(plan.attr)" :src="`/elements/attr_${String(plan.attr).toLowerCase()}_v1.png`" class="lineup-attr-icon" :title="ATTR_LABELS[plan.attr]" />
                   <span v-else class="lineup-attr-text">WL</span>
                 </div>
                 <div
@@ -60,25 +60,13 @@
                   <template v-if="slot">
                     <template v-if="supportShowCardImages">
                       <div class="lineup-slot-card">
-                        <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                        <img crossorigin="anonymous"
-                          v-if="getLineupSlotCardImageSrc(slot)"
+                        <CardArtwork
                           :src="getLineupSlotCardImageSrc(slot)"
                           :alt="`${slot.name} 卡面`"
-                          class="lineup-slot-card-img media-load-shimmer"
-                          loading="lazy"
-                          decoding="async"
+                          :attribute="slot.attr"
+                          :show-attribute="plan.attr === SUPPORT_WL_ATTR && isSupportAttrIcon(slot.attr)"
                           @load="onMediaImageLoad"
                           @error="onMediaImageError"
-                        />
-                        <img
-                          v-if="plan.attr === SUPPORT_WL_ATTR && isSupportAttrIcon(slot.attr)"
-                          :src="`/elements/${String(slot.attr).toLowerCase()}.png`"
-                          class="fes-card-thumb-attr"
-                          :alt="ATTR_LABELS[slot.attr]"
-                          :title="ATTR_LABELS[slot.attr]"
-                          loading="lazy"
-                          decoding="async"
                         />
                       </div>
                       <div class="lineup-member-score">{{ slot.score }}</div>
@@ -87,7 +75,7 @@
                       <img :src="`/chibi_s/${getSupportMemberIconKey(slot)}.webp`" class="support-member-avatar" :title="slot.name" :alt="slot.name" />
                       <img
                         v-if="plan.attr === SUPPORT_WL_ATTR && isSupportAttrIcon(slot.attr)"
-                        :src="`/elements/${String(slot.attr).toLowerCase()}.png`"
+                        :src="`/elements/attr_${String(slot.attr).toLowerCase()}_v1.png`"
                         class="support-member-attr-icon"
                         :title="ATTR_LABELS[slot.attr]"
                         :alt="ATTR_LABELS[slot.attr]"
@@ -106,5 +94,6 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["supportShowCardImages","onSupportShowCardImagesChange","supportEnableWlLineup","onSupportEnableWlLineupChange","supportUseCompilationRules","onSupportCompilationRulesChange","isExportingPng","exportElementPng","supportLineupRows","getSupportCardId","getUnitAccentColor","hexToRgba","supportUnitTitleLogoMap","unitLogoMap","supportUseOriginalVsTeam","onSupportUseOriginalVsTeamChange","getLineupRowStyle","isSupportAttrIcon","ATTR_LABELS","getLineupMemberCellStyle","getLineupSlotCardImageSrc","onMediaImageLoad","onMediaImageError","SUPPORT_WL_ATTR","getSupportMemberIconKey","jumpToHistoryByEventRef","getJumpLinkLabel","formatSupportTotal"]);
 </script>

@@ -3,12 +3,12 @@ import { normalizeUnit } from './specialPredictionFormatters.js';
 /** Owns special prediction note tokens with explicit instance dependencies. */
 export function useSpecialNoteTokens(ports = {}) {
 const UNIT_LOGOS = {
-  ln: '/elements/Leo_need.webp',
-  mmj: '/elements/MORE_MORE_JUMP!.webp',
-  vbs: '/elements/Vivid_BAD_SQUAD.webp',
-  ws: '/elements/ワンダーランズ×ショウタイム.webp',
-  nc: '/elements/25時、ナイトコードで.webp',
-  vs: '/elements/virtual_singer.webp'
+  ln: '/elements/unit_logo_ln.webp',
+  mmj: '/elements/unit_logo_mmj.webp',
+  vbs: '/elements/unit_logo_vbs.webp',
+  ws: '/elements/unit_logo_ws.webp',
+  nc: '/elements/unit_logo_nc.webp',
+  vs: '/elements/unit_logo_vs.webp'
 };
 
 const NOTE_ICON_TOKEN_PATTERN = /\[\[sp-icon:(attr|char|unit):([^\]]+)\]\]/g;
@@ -39,10 +39,10 @@ const findNoteCommandAlias = (definitions, command) => (
 const getNoteIconDescriptor = (kind, rawKey) => {
   const key = String(rawKey || '').trim();
   if (kind === 'attr' && Object.prototype.hasOwnProperty.call(NOTE_ATTRIBUTE_COMMANDS, key)) {
-    return { kind, key, src: `/elements/${key}.png`, alt: key, className: 'is-attribute' };
+    return { kind, key, src: `/elements/attr_${key}_v1.png`, alt: key, className: 'is-attribute' };
   }
   if (kind === 'unit' && Object.prototype.hasOwnProperty.call(NOTE_UNIT_COMMANDS, key)) {
-    return { kind, key, src: `/elements/${key}.png`, alt: key.toUpperCase(), className: 'is-unit' };
+    return { kind, key, src: `/elements/unit_mini_${key}.png`, alt: key.toUpperCase(), className: 'is-unit' };
   }
   if (kind !== 'char') return null;
   const separator = key.lastIndexOf('_');

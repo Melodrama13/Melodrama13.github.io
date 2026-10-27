@@ -126,7 +126,7 @@
                   class="pjsk-ui-action pjsk-ui-action--image"
                   v-for="attr in ['Happy', 'Mysterious', 'Cute', 'Cool', 'Pure']"
                   :key="`event-attr-${attr}`"
-                  :src="`/elements/${attr.toLowerCase()}.png`"
+                  :src="`/elements/attr_${attr.toLowerCase()}_v1.png`"
                   :class="{ 'icon-active': eventFilterCriteria.attributes.includes(attr) }"
                   @click="toggleEventFilterArray('attributes', attr)"
                 />
@@ -140,7 +140,7 @@
                   class="pjsk-ui-action pjsk-ui-action--image"
                   v-for="unit in ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs']"
                   :key="`event-unit-${unit}`"
-                  :src="`/elements/${unit}.png`"
+                  :src="`/elements/unit_mini_${unit}.png`"
                   :class="{ 'icon-active': eventFilterCriteria.units.includes(unit), 'icon-disabled': isEventUnitFilterDisabledByMix }"
                   :aria-disabled="isEventUnitFilterDisabledByMix"
                   @click="toggleEventFilterArray('units', unit)"
@@ -155,7 +155,7 @@
               <span class="row-label">组合</span>
               <div class="icon-group units">
                 <img class="pjsk-ui-action pjsk-ui-action--image" v-for="(color, unit) in UNIT_COLORS" :key="unit"
-                    :src="`/elements/${unit}.png`"
+                    :src="`/elements/unit_mini_${unit}.png`"
                     :class="{ 'icon-active': filterCriteria.units.includes(unit) }"
                     @click="toggleDetailFilterArray('units', unit)"
                     :title="unit.toUpperCase()" />
@@ -166,7 +166,7 @@
               <span class="row-label">属性</span>
               <div class="icon-group attributes">
                 <img class="pjsk-ui-action pjsk-ui-action--image" v-for="attr in ['Happy', 'Mysterious', 'Cute', 'Cool', 'Pure']"
-                    :key="attr" :src="`/elements/${attr.toLowerCase()}.png`"
+                    :key="attr" :src="`/elements/attr_${attr.toLowerCase()}_v1.png`"
                     :class="{ 'icon-active': filterCriteria.attributes.includes(attr) }"
                     @click="toggleDetailFilterArray('attributes', attr)" />
               </div>
@@ -189,11 +189,11 @@
                 <div v-for="r in [1,2,3,4]" :key="r"
                     :class="['pjsk-ui-action', 'rarity-item', { 'active': filterCriteria.rarities.includes(r) }]"
                     @click="toggleDetailFilterArray('rarities', r)">
-                  <img v-for="n in r" :key="n" :src="`/elements/${r === 4 ? 'rstar' : 'ystar'}.png`" class="star-img" />
+                  <img v-for="n in r" :key="n" :src="`/elements/rarity_${r === 4 ? 'rstar' : 'ystar'}.png`" class="star-img" />
                 </div>
                 <div :class="['pjsk-ui-action', 'rarity-item', { 'active': filterCriteria.rarities.includes('birthday') }]"
                     @click="toggleDetailFilterArray('rarities', 'birthday')">
-                  <img src="/elements/birthday.png" class="birthday-img" />
+                  <img src="/elements/rarity_birthday.png" class="birthday-img" />
                 </div>
               </div>
             </div>

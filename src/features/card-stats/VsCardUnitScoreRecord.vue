@@ -32,25 +32,13 @@
                           class="fes-card-thumb"
                           :title="`${name} #${card.cardId || '-'}`"
                         >
-                          <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                          <img crossorigin="anonymous"
-                            v-if="card.imageSrc"
+                          <CardArtwork
                             :src="card.imageSrc"
                             :alt="`${name} 卡面`"
-                            class="fes-card-thumb-img media-load-shimmer"
-                            loading="lazy"
-                            decoding="async"
+                            :attribute="card.attr"
+                            :show-attribute="ATTRS.includes(card.attr)"
                             @load="onMediaImageLoad"
                             @error="onMediaImageError"
-                          />
-                          <img
-                            v-if="ATTRS.includes(card.attr)"
-                            :src="`/elements/${String(card.attr).toLowerCase()}.png`"
-                            class="fes-card-thumb-attr"
-                            :alt="ATTR_LABELS[card.attr]"
-                            :title="ATTR_LABELS[card.attr]"
-                            loading="lazy"
-                            decoding="async"
                           />
                         </div>
                       </div>
@@ -58,7 +46,7 @@
                         <img
                           v-for="(attr, idx) in row.attrsByVs[name]"
                           :key="`score-attr-${row.unit}-${name}-${idx}`"
-                          :src="`/elements/${String(attr).toLowerCase()}.png`"
+                          :src="`/elements/attr_${String(attr).toLowerCase()}_v1.png`"
                           :title="attr"
                           class="score-attr-icon"
                         />
@@ -72,5 +60,6 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","vsUnitScoreShowCardImages","onVsUnitScoreShowCardImagesChange","isExportingPng","exportElementPng","VS_NAMES","getVsScoreVsHeadStyle","getCharAbbr","getCharColor","vsUnitScoreAttrByUnitRows","getVsScoreUnitHeadStyle","unitLogoMap","getVsScoreCellStyle","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS"]);
 </script>

@@ -1257,7 +1257,5 @@ button:not(:disabled):active, :global([data-feature-page="history"] :is(button:n
   border-radius: 8px;
   border: 1px solid rgba(148, 163, 184, 0.5);
   background: rgba(241, 245, 249, 0.9);
-  object-fit: contain;
-  object-position: center;
   flex: 0 0 auto;
 }

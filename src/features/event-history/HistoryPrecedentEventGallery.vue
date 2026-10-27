@@ -3,7 +3,7 @@
     <li v-for="item in items" :key="item.event.id">
       <HistoryPrecedentCardGallery v-if="item.card" :cards="[item.card]" :presentation="presentation" :card-media="cardMedia" :attribute-labels="attributeLabels" :event-for-card="() => item.event" :jump-to-event="jumpToEvent" :date-label="item.event.start_date" />
       <template v-else>
-        <div class="precedent-event-unit precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="item.event.event_title || item.event.event_type" :aria-label="item.units?.length ? item.units.map(unit => unit.toUpperCase()).join('、') : item.event.event_type" role="img"><img v-for="unit in item.units" :key="unit" :src="`/elements/${unit}.png`" :alt="unit.toUpperCase()" /><Layers v-if="!item.units?.length" :size="28" aria-hidden="true" /></div>
+        <div class="precedent-event-unit precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="item.event.event_title || item.event.event_type" :aria-label="item.units?.length ? item.units.map(unit => unit.toUpperCase()).join('、') : item.event.event_type" role="img"><img v-for="unit in item.units" :key="unit" :src="`/elements/unit_mini_${unit}.png`" :alt="unit.toUpperCase()" /><Layers v-if="!item.units?.length" :size="28" aria-hidden="true" /></div>
         <button type="button" class="pjsk-ui-action precedent-event-jump precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="`#${item.event.id} · ${item.event.event_title || ''}`" :aria-label="`定位活动 ${item.event.id}`" @click="jumpToEvent(item.event.id)"><span>{{ presentation.formatSeriesCompact(item.event) || item.event.event_type || `#${item.event.id}` }}</span><ArrowUpRight :size="10" aria-hidden="true" /></button>
         <time>{{ item.event.start_date }}</time>
       </template>

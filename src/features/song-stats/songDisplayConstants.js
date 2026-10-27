@@ -33,12 +33,12 @@ export const MV_TAG_MAP = Object.freeze({
 });
 
 export const UNIT_TAG_ICON_MAP = Object.freeze({
-  ln: '/elements/ln.png',
-  mmj: '/elements/mmj.png',
-  vbs: '/elements/vbs.png',
-  ws: '/elements/ws.png',
-  nc: '/elements/nc.png',
-  vs: '/elements/vs.png'
+  ln: '/elements/unit_mini_ln.png',
+  mmj: '/elements/unit_mini_mmj.png',
+  vbs: '/elements/unit_mini_vbs.png',
+  ws: '/elements/unit_mini_ws.png',
+  nc: '/elements/unit_mini_nc.png',
+  vs: '/elements/unit_mini_vs.png'
 });
 
 export const LOCAL_SONG_JACKET_BASE_PATH = '/songs';
@@ -46,12 +46,12 @@ export const LOCAL_SONG_JACKET_BASE_PATH = '/songs';
 export const PROJECT_GITHUB_ISSUES_URL = 'https://github.com/Melodrama13/Melodrama13.github.io/issues';
 
 export const UNIT_TITLE_LOGO_MAP = Object.freeze({
-  ln: '/elements/Leo_need.png',
-  mmj: '/elements/MORE_MORE_JUMP!.png',
-  vbs: '/elements/Vivid_BAD_SQUAD.png',
-  ws: '/elements/ワンダーランズ×ショウタイム.png',
-  nc: '/elements/25時、ナイトコードで.png',
-  vs: '/elements/virtual_singer.png'
+  ln: '/elements/unit_logo_ln.png',
+  mmj: '/elements/unit_logo_mmj.png',
+  vbs: '/elements/unit_logo_vbs.png',
+  ws: '/elements/unit_logo_ws.png',
+  nc: '/elements/unit_logo_nc.png',
+  vs: '/elements/unit_logo_vs.png'
 });
 
 export const BASE_UNIT_COLOR_MAP = Object.freeze({

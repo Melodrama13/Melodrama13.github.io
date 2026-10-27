@@ -72,18 +72,14 @@
                         class="fes-card-thumb nuigurumi-card-thumb"
                         :title="member.cardId ? `${member.name} #${member.cardId}` : member.name"
                       >
-                        <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                        <img crossorigin="anonymous"
-                          v-if="member.cardImageSrc"
+                        <CardArtwork
                           :src="member.cardImageSrc"
                           :alt="`${member.name} 卡面`"
-                          class="fes-card-thumb-img media-load-shimmer"
-                          loading="lazy"
-                          decoding="async"
+                          :show-attribute="false"
+                          :fallback-text="member.abbr.toUpperCase()"
                           @load="$emit('media-load', $event)"
                           @error="$emit('media-error', $event)"
                         />
-                        <span v-if="!member.cardImageSrc" class="nuigurumi-card-missing">{{ member.abbr.toUpperCase() }}</span>
                       </div>
                     </div>
                   </td>
@@ -95,6 +91,7 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 /** Preserve v-model's live checked property without adding a checked attribute. */
 function updateControlledCheckboxState(element, { value, oldValue }) {
   if (value !== oldValue) element.checked = Boolean(value);

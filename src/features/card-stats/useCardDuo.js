@@ -357,7 +357,7 @@ export function useCardDuo(inputs) {
         isVs: true,
         isVsTotal: true,
         shortName: 'VS',
-        avatarSrc: '/elements/vs.png',
+        avatarSrc: '/elements/unit_mini_vs.png',
         color: inputs.metadata.UNIT_COLORS.vs || '#111827',
         unit: 'vs',
         tint: inputs.presentation.hexToRgba(inputs.metadata.UNIT_COLORS.vs || '#111827', 0.1),

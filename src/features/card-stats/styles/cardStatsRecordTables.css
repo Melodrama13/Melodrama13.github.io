@@ -24,7 +24,6 @@
   --rel-avatar-size-card: 34px;
   --rel-last-card-frame-size: 70px;
   --rel-interval-card-frame-size: 70px;
-  --rel-card-image-scale: 0.9;
   --rel-card-logo-scale: 0.24;
   --rel-jump-chip-min: 60px;
 
@@ -202,11 +201,6 @@
   height: var(--rel-avatar-size-card);
   flex: 0 0 var(--rel-avatar-size-card);
   min-width: var(--rel-avatar-size-card);
-}
-
-.related-panel .related-table .lineup-slot-card-img, :global([data-feature-page="cards"] :is(.related-panel .related-table .lineup-slot-card-img)), :global(:is(.related-panel .related-table .lineup-slot-card-img)[data-feature-page="cards"]) {
-  width: calc(100% * var(--rel-card-image-scale));
-  height: calc(100% * var(--rel-card-image-scale));
 }
 
 .related-panel .related-table-last:not(.last-record-table-card-mode) th:first-child,

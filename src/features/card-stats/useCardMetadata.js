@@ -36,12 +36,12 @@ export function useCardMetadata(inputs) {
   };
 
   const unitLogoMap = {
-    ln: '/elements/ln.png',
-    mmj: '/elements/mmj.png',
-    vbs: '/elements/vbs.png',
-    ws: '/elements/ws.png',
-    nc: '/elements/nc.png',
-    vs: '/elements/vs.png'
+    ln: '/elements/unit_mini_ln.png',
+    mmj: '/elements/unit_mini_mmj.png',
+    vbs: '/elements/unit_mini_vbs.png',
+    ws: '/elements/unit_mini_ws.png',
+    nc: '/elements/unit_mini_nc.png',
+    vs: '/elements/unit_mini_vs.png'
   };
 
   const CHAR_MAP = reactive({});

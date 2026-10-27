@@ -242,7 +242,7 @@ const getFestivalPreviewUnitLogo = (name) => {
   if (!isVirtualSinger(baseName)) return '';
   const unit = String(parts[1] || '').trim().toLowerCase();
   if (!unit || unit === 'vs') return '';
-  return `/elements/${unit}.png`;
+  return `/elements/unit_mini_${unit}.png`;
 };
 
 

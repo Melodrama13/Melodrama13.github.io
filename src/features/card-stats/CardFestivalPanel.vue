@@ -150,37 +150,20 @@
                           :title="slot.card?.title || ''"
                         >
                           <div v-if="slot.type === 'card'" class="festival-card-image-thumb">
-                            <img :src="`/elements/card_frame_${slot.card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img crossorigin="anonymous"
-                              v-if="slot.card.imageSrc"
+                            <CardArtwork
                               :src="slot.card.imageSrc"
                               :alt="`${slot.card.label} 卡面`"
-                              class="fes-card-thumb-img media-load-shimmer"
-                              loading="lazy"
-                              decoding="async"
+                              :rarity="slot.card.frameRarity"
+                              :attribute="slot.card.attr"
+                              :show-attribute="ATTRS.includes(slot.card.attr)"
+                              :fallback-src="`/chibi_s/${getCharAbbr(slot.card.name)}.webp`"
+                              :unit="slot.card.unit"
+                              :show-unit="Boolean(slot.card.unitLogo)"
+                              :is-permanent="Boolean(slot.card.isPermOnly)"
+                              show-permanent-ribbon
                               @load="onMediaImageLoad"
                               @error="onMediaImageError"
                             />
-                            <img
-                              v-else
-                              :src="`/chibi_s/${getCharAbbr(slot.card.name)}.webp`"
-                              :alt="slot.card.label"
-                              class="festival-card-image-fallback"
-                            />
-                            <img
-                              v-if="ATTRS.includes(slot.card.attr)"
-                              :src="`/elements/${String(slot.card.attr).toLowerCase()}.png`"
-                              :alt="ATTR_LABELS[slot.card.attr]"
-                              :title="ATTR_LABELS[slot.card.attr]"
-                              class="fes-card-thumb-attr"
-                            />
-                            <img
-                              v-if="slot.card.unitLogo"
-                              :src="slot.card.unitLogo"
-                              class="festival-card-unit-logo"
-                              :alt="slot.card.unit"
-                            />
-                            <span v-if="slot.card.isPermOnly" class="festival-card-perm-mark">普</span>
                           </div>
                         </div>
                         <span v-if="!yearRow.four.length" class="festival-empty">-</span>
@@ -195,35 +178,19 @@
                           :title="card.title"
                         >
                           <div class="festival-card-image-thumb">
-                            <img :src="`/elements/card_frame_${card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img crossorigin="anonymous"
-                              v-if="card.imageSrc"
+                            <CardArtwork
                               :src="card.imageSrc"
                               :alt="`${card.label} 卡面`"
-                              class="fes-card-thumb-img media-load-shimmer"
-                              loading="lazy"
-                              decoding="async"
+                              :rarity="card.frameRarity"
+                              :attribute="card.attr"
+                              :show-attribute="ATTRS.includes(card.attr)"
+                              :fallback-src="`/chibi_s/${getCharAbbr(card.name)}.webp`"
+                              :unit="card.unit"
+                              :show-unit="Boolean(card.unitLogo)"
+                              :is-permanent="Boolean(card.isPermOnly)"
+                              show-permanent-ribbon
                               @load="onMediaImageLoad"
                               @error="onMediaImageError"
-                            />
-                            <img
-                              v-else
-                              :src="`/chibi_s/${getCharAbbr(card.name)}.webp`"
-                              :alt="card.label"
-                              class="festival-card-image-fallback"
-                            />
-                            <img
-                              v-if="ATTRS.includes(card.attr)"
-                              :src="`/elements/${String(card.attr).toLowerCase()}.png`"
-                              :alt="ATTR_LABELS[card.attr]"
-                              :title="ATTR_LABELS[card.attr]"
-                              class="fes-card-thumb-attr"
-                            />
-                            <img
-                              v-if="card.unitLogo"
-                              :src="card.unitLogo"
-                              class="festival-card-unit-logo"
-                              :alt="card.unit"
                             />
                           </div>
                         </div>
@@ -239,35 +206,19 @@
                           :title="card.title"
                         >
                           <div class="festival-card-image-thumb">
-                            <img :src="`/elements/card_frame_${card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img crossorigin="anonymous"
-                              v-if="card.imageSrc"
+                            <CardArtwork
                               :src="card.imageSrc"
                               :alt="`${card.label} 卡面`"
-                              class="fes-card-thumb-img media-load-shimmer"
-                              loading="lazy"
-                              decoding="async"
+                              :rarity="card.frameRarity"
+                              :attribute="card.attr"
+                              :show-attribute="ATTRS.includes(card.attr)"
+                              :fallback-src="`/chibi_s/${getCharAbbr(card.name)}.webp`"
+                              :unit="card.unit"
+                              :show-unit="Boolean(card.unitLogo)"
+                              :is-permanent="Boolean(card.isPermOnly)"
+                              show-permanent-ribbon
                               @load="onMediaImageLoad"
                               @error="onMediaImageError"
-                            />
-                            <img
-                              v-else
-                              :src="`/chibi_s/${getCharAbbr(card.name)}.webp`"
-                              :alt="card.label"
-                              class="festival-card-image-fallback"
-                            />
-                            <img
-                              v-if="ATTRS.includes(card.attr)"
-                              :src="`/elements/${String(card.attr).toLowerCase()}.png`"
-                              :alt="ATTR_LABELS[card.attr]"
-                              :title="ATTR_LABELS[card.attr]"
-                              class="fes-card-thumb-attr"
-                            />
-                            <img
-                              v-if="card.unitLogo"
-                              :src="card.unitLogo"
-                              class="festival-card-unit-logo"
-                              :alt="card.unit"
                             />
                           </div>
                         </div>
@@ -289,35 +240,19 @@
                             <img :src="slot.logo" class="festival-card-fes-logo" :alt="slot.label" />
                           </div>
                           <div v-else-if="slot.type === 'card'" class="festival-card-image-thumb">
-                            <img :src="`/elements/card_frame_${slot.card.frameRarity}.png`" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                            <img crossorigin="anonymous"
-                              v-if="slot.card.imageSrc"
+                            <CardArtwork
                               :src="slot.card.imageSrc"
                               :alt="`${slot.card.label} 卡面`"
-                              class="fes-card-thumb-img media-load-shimmer"
-                              loading="lazy"
-                              decoding="async"
+                              :rarity="slot.card.frameRarity"
+                              :attribute="slot.card.attr"
+                              :show-attribute="ATTRS.includes(slot.card.attr)"
+                              :fallback-src="`/chibi_s/${getCharAbbr(slot.card.name)}.webp`"
+                              :unit="slot.card.unit"
+                              :show-unit="Boolean(slot.card.unitLogo)"
+                              :is-permanent="Boolean(slot.card.isPermOnly)"
+                              show-permanent-ribbon
                               @load="onMediaImageLoad"
                               @error="onMediaImageError"
-                            />
-                            <img
-                              v-else
-                              :src="`/chibi_s/${getCharAbbr(slot.card.name)}.webp`"
-                              :alt="slot.card.label"
-                              class="festival-card-image-fallback"
-                            />
-                            <img
-                              v-if="ATTRS.includes(slot.card.attr)"
-                              :src="`/elements/${String(slot.card.attr).toLowerCase()}.png`"
-                              :alt="ATTR_LABELS[slot.card.attr]"
-                              :title="ATTR_LABELS[slot.card.attr]"
-                              class="fes-card-thumb-attr"
-                            />
-                            <img
-                              v-if="slot.card.unitLogo"
-                              :src="slot.card.unitLogo"
-                              class="festival-card-unit-logo"
-                              :alt="slot.card.unit"
                             />
                           </div>
                         </div>
@@ -357,6 +292,7 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["showDesktopNameControls","festivalMergeHigherRanks","festivalMergeHigherRanksIndeterminate","onFestivalMergeHigherRanksChange","isExportingPng","exportElementPng","festivalCharStats","festivalMergeToggles","canToggleFestivalFes","festivalFesEnabled","festivalFesEnabledIndeterminate","onFestivalFesEnabledChange","getFestivalTierCount","getFestivalTierIcon","getCharAbbr","getStepFestivalAvatarStyle","getFestivalUnitLogoByName","getFestivalDisplayNameLabel","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS"]);
 const festivalShowCardImages = defineModel('festivalShowCardImages');
 const hideFestivalCharNames = defineModel('hideFestivalCharNames');

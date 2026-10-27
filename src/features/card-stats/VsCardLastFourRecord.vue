@@ -53,22 +53,13 @@
                     </td>
                     <td v-if="vsUnitLastFourShowCardImages" class="related-last-card-cell">
                       <div v-if="row.cardImageSrc" class="lineup-slot-card related-last-card-thumb">
-                        <img src="/elements/card_frame_4.png" class="fes-card-thumb-frame" alt="卡框" loading="lazy" decoding="async" />
-                        <img crossorigin="anonymous"
+                        <CardArtwork
                           :src="row.cardImageSrc"
                           :alt="`${row.label} 卡面`"
-                          class="lineup-slot-card-img media-load-shimmer"
-                          loading="lazy"
-                          decoding="async"
+                          :attribute="row.cardAttr"
+                          :show-attribute="ATTRS.includes(row.cardAttr)"
                           @load="onMediaImageLoad"
                           @error="onMediaImageError"
-                        />
-                        <img
-                          v-if="ATTRS.includes(row.cardAttr)"
-                          :src="`/elements/${String(row.cardAttr).toLowerCase()}.png`"
-                          :alt="ATTR_LABELS[row.cardAttr]"
-                          :title="ATTR_LABELS[row.cardAttr]"
-                          class="related-last-card-attr"
                         />
                       </div>
                       <span v-else class="score-empty">-</span>
@@ -104,5 +95,6 @@
 </template>
 
 <script setup>
+import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","vsUnitLastFourCompact","onVsUnitLastFourCompactChange","vsUnitLastFourShowCardImages","onVsUnitLastFourShowCardImagesChange","vsUnitLastFourSort","onToggleVsUnitLastFourSort","vsUnitLastFourSortLabel","isExportingPng","exportElementPng","vsUnitLastFourDisplayRecords","getRecordTint","getCharAbbr","getCharColor","getVsUnitLogoByKey","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","jumpToHistoryByEventRef","getJumpLinkLabel","VS_NAMES","getVsMiniVsHeadStyle","vsUnitLastFourCompactUnitRows","getVsMiniUnitHeadStyle","unitLogoMap","getVsMiniDataCellStyle"]);
 </script>
