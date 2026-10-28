@@ -1,15 +1,17 @@
 import { computed } from 'vue';
 import { isCardImageReleased } from '../../utils/spoilerGuard.js';
 import { buildAssetUrl } from '../../utils/assets.js';
-import { getCardImageVariants } from '../../utils/cardImageVariants.js';
+import { getCardImageVariants, getCardImageVariantForMode } from '../../utils/cardImageVariants.js';
+import { useAppSettings } from '../../services/appSettings.js';
 
 /** Card Media owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
  * Dependencies: props, Clock, Formatting, Tooltips, SongMedia.
  */
 export function useHistoryCardMedia(ports) {
+const settings = ports.settings ?? useAppSettings();
 const getBirthdayCardImageSrc = (row) => {
-  if (!isCardImageReleased({ Date: row?.cardDate || row?.date, Type: 'birthday' }, ports.clock.spoilerNow.value)) return '';
+  if (!isCardImageReleased({ Date: row?.cardDate || row?.date, Type: 'birthday' }, ports.clock.spoilerNow.value, settings?.allowSpoilers?.value === true)) return '';
   const cardId = ports.formatting.parseCardIdNumber(row?.cardId);
   if (cardId === null) return '';
   const folder = CHAR_CARD_FOLDER_MAP.value[String(row?.name || '').trim()];
@@ -57,7 +59,7 @@ const isCardTooltipImageEligible = (card) => {
 
 const getCardTooltipImageList = (card) => {
   if (!isCardTooltipImageEligible(card)) return [];
-  if (!isCardImageReleased(card, ports.clock.spoilerNow.value)) return [];
+  if (!isCardImageReleased(card, ports.clock.spoilerNow.value, settings?.allowSpoilers?.value === true)) return [];
 
   const cardId = ports.formatting.parseCardIdNumber(card?.CardID);
   if (cardId === null) return [];
@@ -74,6 +76,11 @@ const getCardTooltipImageList = (card) => {
 
 // Failed nodes stay mounted so the shared recovery queue can restore them.
 const getVisibleCardTooltipImageList = getCardTooltipImageList;
+const getSingleCardImageSrc = (card) => {
+  const variants = getCardImageVariants(card?.CardID, card?.Rarity, card?.Type);
+  const preferred = getCardImageVariantForMode(card?.CardID, settings?.singleCardFace?.value || 'after', card?.Rarity, card?.Type);
+  return getCardTooltipImageList(card)[variants.indexOf(preferred)] || '';
+};
 const onCardTooltipImageError = event => {
   const img = ports.songMedia.markMediaImageSettled(event);
   if (!img) return;
@@ -87,6 +94,7 @@ return {
   onBirthdayCardImageLoad,
   getCardTooltipImageList,
   getVisibleCardTooltipImageList,
+  getSingleCardImageSrc,
   onCardTooltipImageError,
 };
 }

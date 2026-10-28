@@ -4,6 +4,7 @@ import { freezeCaptureCssVariables, hideUnreadyCaptureImages } from '../../servi
 import { runCaptureRenderAttempts } from '../../services/capture/captureRenderAttempts.js';
 import { renderCaptureToCanvas as toCanvas } from '../../services/capture/captureEngineLoader.js';
 import { renderCardYearCaptureToCanvas } from './cardYearCaptureRendering.js';
+import { getCaptureBackgroundColor } from '../../services/capture/captureStyleContext.js';
 
 /** Owns card capture export behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -227,7 +228,7 @@ export function useCardCaptureExport(inputs) {
         renderAttempt: async ({ canvasWidth, canvasHeight, renderTimeoutMs }) => {
           let attemptFinished = false;
           const renderTask = inputs.captureRendering.trackCardCaptureRenderTask(renderCardYearCaptureToCanvas(renderEl, {
-            backgroundColor: '#ffffff',
+            backgroundColor: getCaptureBackgroundColor(renderEl),
             width,
             height,
             canvasWidth,

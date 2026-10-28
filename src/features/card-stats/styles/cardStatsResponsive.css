@@ -65,25 +65,9 @@
     height: 14px;
   }
 
-  .nav-name-format, :global([data-feature-page="cards"] :is(.nav-name-format)), :global(:is(.nav-name-format)[data-feature-page="cards"]) {
-    gap: 4px;
-    padding: 7px;
-    justify-content: space-between;
-  }
 
-  .nav-name-format-title, :global([data-feature-page="cards"] :is(.nav-name-format-title)), :global(:is(.nav-name-format-title)[data-feature-page="cards"]) {
-    font-size: 0.72rem;
-  }
 
-  .nav-name-format-options, :global([data-feature-page="cards"] :is(.nav-name-format-options)), :global(:is(.nav-name-format-options)[data-feature-page="cards"]) {
-    gap: 6px;
-  }
 
-  .nav-name-format-option, :global([data-feature-page="cards"] :is(.nav-name-format-option)), :global(:is(.nav-name-format-option)[data-feature-page="cards"]) {
-    gap: 3px;
-    font-size: 0.68rem;
-    white-space: nowrap;
-  }
 }
 
 @media (max-width: 900px) {
@@ -104,17 +88,8 @@
     padding: 7px;
   }
 
-  .nav-name-format, :global([data-feature-page="cards"] :is(.nav-name-format)), :global(:is(.nav-name-format)[data-feature-page="cards"]) {
-    padding: 7px;
-  }
 
-  .nav-name-format-title, :global([data-feature-page="cards"] :is(.nav-name-format-title)), :global(:is(.nav-name-format-title)[data-feature-page="cards"]) {
-    font-size: 0.72rem;
-  }
 
-  .nav-name-format-option, :global([data-feature-page="cards"] :is(.nav-name-format-option)), :global(:is(.nav-name-format-option)[data-feature-page="cards"]) {
-    font-size: 0.7rem;
-  }
 
   .nav-cutoff-title, :global([data-feature-page="cards"] :is(.nav-cutoff-title)), :global(:is(.nav-cutoff-title)[data-feature-page="cards"]) {
     font-size: 0.72rem;

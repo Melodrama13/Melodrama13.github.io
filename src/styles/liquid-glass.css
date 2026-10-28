@@ -283,6 +283,11 @@ body {
   background-color: color-mix(in srgb, var(--ui-glass-fallback-bg) 88%, transparent);
 }
 
+/* Settings also places dense form text over arbitrary scrolling content. */
+:root[data-ui-glass-mode='frosted'] .app-settings-panel.ui-liquid-glass--prominent {
+  background-color: color-mix(in srgb, var(--ui-glass-fallback-bg) 88%, transparent);
+}
+
 :root[data-ui-glass-mode='frosted'] :is(.mobile-tab-glider, .mobile-source-trigger).ui-liquid-glass {
   --ui-glass-surface-filter: var(--ui-glass-mobile-lens-filter);
 }

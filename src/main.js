@@ -6,6 +6,7 @@ import './styles/primitives.css';
 import './styles/motion.css';
 import './styles/media-image-retry.css';
 import './styles/image-loading.css';
+import './styles/appearance.css';
 import { liquidGlassPlugin } from './ui/liquidGlass.js';
 import { mediaImagePlugin } from './utils/mediaImageRecovery.js';
 import { imageLoadingPresentationPlugin } from './utils/imageLoadingPresentation.js';

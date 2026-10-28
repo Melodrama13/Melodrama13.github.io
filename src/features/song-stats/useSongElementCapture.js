@@ -10,6 +10,7 @@ import { renderCaptureToCanvas as toCanvas, renderHtmlCapture } from '../../serv
 import { CAPTURE_IMAGE_PLACEHOLDER } from './songCaptureClone.js';
 import { formatExportTimestamp, sanitizeExportFileName, triggerDownloadPng } from './songCaptureFiles.js';
 import { getSiteMediaRecovery } from '../../utils/mediaImageRecovery.js';
+import { getCaptureBackgroundColor } from '../../services/capture/captureStyleContext.js';
 
 /** Per-instance state owned by SongElementCapture. */
 export function createSongElementCaptureState() {
@@ -230,7 +231,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       renderAttempt: async ({ canvasWidth, canvasHeight, renderTimeoutMs }) => {
         const renderTask = startSongCaptureRenderTask(() => options?.useHtmlCanvas
           ? renderHtmlCapture(renderEl, {
-            backgroundColor: '#ffffff',
+            backgroundColor: getCaptureBackgroundColor(renderEl),
             width,
             height,
             scale: canvasWidth / width,
@@ -239,7 +240,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
             logging: false
           })
           : toCanvas(renderEl, {
-          backgroundColor: '#ffffff',
+          backgroundColor: getCaptureBackgroundColor(renderEl),
           width,
           height,
           canvasWidth,

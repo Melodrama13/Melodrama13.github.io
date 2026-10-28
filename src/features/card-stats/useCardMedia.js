@@ -3,11 +3,13 @@ import { isCardImageReleased } from '../../utils/spoilerGuard.js';
 import { getCardImageVariantForMode } from '../../utils/cardImageVariants.js';
 import { buildAssetUrl } from '../../utils/assets.js';
 import { getSiteMediaRecovery } from '../../utils/mediaImageRecovery.js';
+import { useAppSettings } from '../../services/appSettings.js';
 
 /** Owns card media behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
  */
 export function useCardMedia(inputs) {
+  const settings = inputs.settings ?? useAppSettings();
   const recovery = getSiteMediaRecovery(() => inputs.cardStatsRootRef?.value);
   const cardByIdMap = computed(() => {
     const result = {};
@@ -29,7 +31,7 @@ export function useCardMedia(inputs) {
     const idNum = Number(cardId);
     if (!Number.isFinite(idNum) || idNum <= 0) return '';
     const sourceCard = options?.card || cardByIdMap.value[Math.trunc(idNum)] || null;
-    if (sourceCard && !isCardImageReleased(sourceCard, inputs.cutoff.spoilerNow.value)) return '';
+    if (sourceCard && !isCardImageReleased(sourceCard, inputs.cutoff.spoilerNow.value, settings?.allowSpoilers?.value === true)) return '';
 
     const folder = getCardFolderByName(baseName);
     if (!folder) return '';

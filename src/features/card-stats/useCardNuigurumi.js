@@ -1,10 +1,11 @@
 import { ref, computed } from 'vue';
-import { isLocalSpoilerPreview } from '../../utils/spoilerGuard.js';
+import { useAppSettings } from '../../services/appSettings.js';
 
 /** Owns card nuigurumi behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
  */
 export function useCardNuigurumi(inputs) {
+  const settings = inputs.settings ?? useAppSettings();
   const nuigurumiShowCardImages = ref(false);
 
   const nuigurumiHideCharNames = ref(true);
@@ -56,7 +57,7 @@ export function useCardNuigurumi(inputs) {
   const nuigurumiCardPools = computed(() => {
     const pools = {};
     const now = new Date();
-    const showUnreleased = isLocalSpoilerPreview();
+    const showUnreleased = settings?.allowSpoilers?.value === true;
     const sourceCards = Array.isArray(inputs.props.allBaseCards) && inputs.props.allBaseCards.length
       ? inputs.props.allBaseCards
       : [];
@@ -129,13 +130,13 @@ export function useCardNuigurumi(inputs) {
 
   const getNuigurumiMobileDateLabel = (row) => {
     const label = getNuigurumiCandidateLabel(row, 'mobile');
-    if (label) return label;
+    if (label) return `${getNuigurumiCompactDate(row?.date)}\n${label}`;
     return getNuigurumiCompactDate(row?.date);
   };
 
   const getNuigurumiDateCellLabel = (row) => {
     const label = getNuigurumiCandidateLabel(row, 'desktop');
-    if (label) return label;
+    if (label) return `${row?.date || '-'}\n${label}`;
     return row?.date || '-';
   };
 

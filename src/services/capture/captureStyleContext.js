@@ -47,3 +47,9 @@ export const copyCaptureFeatureBoundary = (sourceEl, cloneEl) => {
   const page = owner?.getAttribute('data-feature-page');
   if (page) cloneEl.setAttribute('data-feature-page', page);
 };
+
+/** Preserve light export backgrounds while dark captures share the page surface. */
+export function getCaptureBackgroundColor(element, fallback = '#ffffff') {
+  const style = element?.ownerDocument?.defaultView?.getComputedStyle(element);
+  return style?.getPropertyValue('--ui-appearance-surface').trim() || fallback;
+}

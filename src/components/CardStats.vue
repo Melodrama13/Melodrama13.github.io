@@ -22,9 +22,6 @@
           :onDisplayEventIdInput="onDisplayEventIdInput"
           :onDisplayEventIdBlur="onDisplayEventIdBlur"
           :resetTopBarDisplayEventId="resetTopBarDisplayEventId"
-          :isMobileNav="isMobileNav"
-          v-model:navNameFormat="navNameFormat"
-          v-model:navCardImageMode="navCardImageMode"
           :navGroups="navGroups"
           :isGroupActive="isGroupActive"
           :handleParentNavClick="handleParentNavClick"
@@ -762,7 +759,7 @@ const { vsUnitLastFourCompact, onVsUnitLastFourCompactChange, vsUnitLastFourShow
 const { nuigurumiRows, nuigurumiHideCharNames, nuigurumiShowCardImages, showNuigurumiCharNames, getNuigurumiMobileDateLabel, getNuigurumiMobileTypeLabel, getNuigurumiDateCellLabel, getNuigurumiTypeLabel, getNuigurumiMemberLabel } = nuigurumi;
 const { hideDistCharNames, includeVsInDistUnitSummary, includeVsInDistUnitSummaryIndeterminate, onIncludeVsInDistUnitSummaryChange, groupPanels, distVsUnitSummaryToggles, limitedIncludeWl3, limitedIncludeSongLimited, includeCollabRewardCards, useRewardCountForLowStars, includeUnitScoreInPureScore, onIncludeUnitScoreInPureScoreChange, fesLimitedIncludeFes, limitedBanEventTypeFilter, setLimitedBanEventTypeFilter, bannerEventTypeFilter, setBannerEventTypeFilter, fesLimitedBanEventTypeFilter, setFesLimitedBanEventTypeFilter, banEventTypeFilter, setBanEventTypeFilter } = distribution;
 const { getStepFestivalAvatarStyle, festivalShowCardImages, hideFestivalCharNames, festivalMergeHigherRanks, festivalMergeHigherRanksIndeterminate, onFestivalMergeHigherRanksChange, festivalCharStats, festivalMergeToggles, canToggleFestivalFes, festivalFesEnabled, festivalFesEnabledIndeterminate, onFestivalFesEnabledChange, getFestivalTierCount, getFestivalTierIcon, getFestivalUnitLogoByName, getFestivalDisplayNameLabel } = festivals;
-const { navNameFormat, navCardImageMode, getDistNameLabel, getDistUnitSummaryChipStyle, getRecordTint, formatGapValue, getUnitAccentColor, getCharSingleMark, getLineupCardId, getMatrixUnitColor, getSupportCardId, hexToRgba, getSupportMemberIconKey, getCharTint, getUnitMatrixTint } = presentation;
+const { getDistNameLabel, getDistUnitSummaryChipStyle, getRecordTint, formatGapValue, getUnitAccentColor, getCharSingleMark, getLineupCardId, getMatrixUnitColor, getSupportCardId, hexToRgba, getSupportMemberIconKey, getCharTint, getUnitMatrixTint } = presentation;
 const { supportShowCardImages, onSupportShowCardImagesChange, supportEnableWlLineup, onSupportEnableWlLineupChange, supportUseCompilationRules, onSupportCompilationRulesChange, supportLineupRows, supportUseOriginalVsTeam, onSupportUseOriginalVsTeamChange, isSupportAttrIcon, formatSupportTotal } = support;
 const { lineupShowCardImages, onLineupShowCardImagesChange, toggleLineupExpandedAll, getLineupGlobalToggleLabel, characterLineupRows, toggleLineupExpanded, getLineupToggleLabel, isLineupExpanded } = lineup;
 const { intervalPanelShowCardImagesAll, intervalPanelShowCardImagesIndeterminate, onIntervalPanelShowAllCardImagesChange, relatedLastRecordShowCardImages, onRelatedLastRecordShowCardImagesChange, lastFourStarDisplayRecords, lastLimitedDisplayRecords, intervalFourShowCardImages, onIntervalFourShowCardImagesChange, fourStarLongestDisplayRecords, fourStarShortestDisplayRecords, intervalLimitedShowCardImages, onIntervalLimitedShowCardImagesChange, limitedLongestDisplayRecords, limitedShortestDisplayRecords, intervalBanShowCardImages, onIntervalBanShowCardImagesChange, banLongestDisplayRecords, banShortestDisplayRecords, vsUnitLastFourDisplayRecords } = relatedRecords;

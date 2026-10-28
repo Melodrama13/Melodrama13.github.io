@@ -38,17 +38,23 @@
           v-if="sourceMenuOpen && showSourceDropdownInNav"
           ref="sourceMenuPanelRef"
           v-liquid-glass
-          class="source-menu source-menu-floating ui-liquid-glass ui-liquid-glass--prominent"
+          id="app-settings-panel"
+          role="dialog"
+          aria-label="设置"
+          tabindex="-1"
+          class="source-menu source-menu-floating app-settings-panel ui-liquid-glass ui-liquid-glass--prominent"
           :style="sourceMenuStyle"
           @pointerdown.stop
         >
-          <AppSourceMenuContents
+          <AppSettingsContents
   :prediction-sources="predictionSources"
   :source-menu="sourceMenu"
   :tab-navigation="tabNavigation"
   :responsive-navigation="responsiveNavigation"
   :prediction-files="predictionFiles"
   :history-capture="historyCapture"
+  :all-cards="baseCards"
+  :all-characters="charactersData"
 />
         </div>
       </UiSurfaceTransition>
@@ -151,7 +157,7 @@ import UiSurfaceTransition from './components/ui/UiSurfaceTransition.vue';
 import AppDesktopTabSwitcher from './features/app-shell/AppDesktopTabSwitcher.vue';
 import AppStatsTopControls from './features/app-shell/AppStatsTopControls.vue';
 import AppDesktopSourceTrigger from './features/app-shell/AppDesktopSourceTrigger.vue';
-import AppSourceMenuContents from './features/app-shell/AppSourceMenuContents.vue';
+import AppSettingsContents from './features/app-shell/AppSettingsContents.vue';
 import AppMobileNavigationDock from './features/app-shell/AppMobileNavigationDock.vue';
 import AppUpdateBanner from './features/app-shell/AppUpdateBanner.vue';
 import AppUpdatePromptContent from './features/app-shell/AppUpdatePromptContent.vue';
@@ -159,7 +165,7 @@ import AppReleaseLogContent from './features/app-shell/AppReleaseLogContent.vue'
 import AppCaptureStatusContent from './features/app-shell/AppCaptureStatusContent.vue';
 import AppDataLoadingIndicator from './features/app-shell/AppDataLoadingIndicator.vue';
 import AppBackToTopButton from './features/app-shell/AppBackToTopButton.vue';
-import { provide } from "vue";
+import { onBeforeUnmount, provide } from "vue";
 import LiquidGlassFilters from "./components/ui/LiquidGlassFilters.vue";
 import { useAppTabCatalog } from './features/app-shell/useAppTabCatalog.js';
 import { useAppTabNavigation } from './features/app-shell/useAppTabNavigation.js';
@@ -176,6 +182,12 @@ import { useAppPredictionOverlay } from './features/app-shell/useAppPredictionOv
 import { useAppPredictionSchedule } from './features/app-shell/useAppPredictionSchedule.js';
 import { useAppPredictionPayload } from './features/app-shell/useAppPredictionPayload.js';
 import { useAppShellLifecycle } from './features/app-shell/useAppShellLifecycle.js';
+import { APP_SETTINGS_KEY, APP_SETTINGS_OPEN_KEY, createAppSettings } from './services/appSettings.js';
+import { connectAppAppearance } from './ui/appAppearance.js';
+
+const appSettings = createAppSettings();
+provide(APP_SETTINGS_KEY, appSettings);
+onBeforeUnmount(connectAppAppearance(appSettings));
 
 const tabCatalog = useAppTabCatalog({
 
@@ -199,6 +211,11 @@ const sourceMenu = useAppSourceMenu({
   get tabNavigation() { return tabNavigation; },
   get responsiveNavigation() { return responsiveNavigation; },
   get statsControls() { return statsControls; }
+});
+
+provide(APP_SETTINGS_OPEN_KEY, event => {
+  sourceMenu.selectSettingsPage('global');
+  sourceMenu.toggleSourceMenu(event);
 });
 
 const predictionSources = useAppPredictionSources({

@@ -8,6 +8,7 @@
       data-ui-glass-profile="lens" aria-hidden="true"></span>
     <button v-for="(item, index) in items" :key="item.value" type="button" class="pjsk-ui-action primary-tab-button"
       :class="{ active: modelValue === item.value }"
+      :disabled="item.disabled"
       :data-ui-control-pressed="isDesktopTabPressed && primaryTabPressedIndex === index ? 'true' : undefined"
       :aria-current="currentPage && modelValue === item.value ? 'page' : undefined"
       :aria-pressed="currentPage ? undefined : modelValue === item.value"

@@ -18,7 +18,7 @@ const props = defineProps({ cards: { type: Array, required: true }, presentation
   cardMedia: { type: Object, required: true }, attributeLabels: { type: Object, required: true },
   eventForCard: { type: Function, required: true }, jumpToEvent: { type: Function, required: true }, dateLabel: { type: String, default: '' }, matchedCards: { type: Array, default: () => [] } });
 const matchedIds = computed(() => new Set(props.matchedCards.map(card => String(card.CardID))));
-const cardImage = card => props.cardMedia.getVisibleCardTooltipImageList(card).at(-1) || '';
+const cardImage = card => props.cardMedia.getSingleCardImageSrc(card);
 const cardLabel = card => `${card.Name} · ${props.attributeLabels[card.Attribute] || card.Attribute} · ${card.CardName || `卡片 #${card.CardID}`}`;
 </script>
 

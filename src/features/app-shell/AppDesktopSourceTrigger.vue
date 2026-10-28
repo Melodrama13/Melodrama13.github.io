@@ -3,28 +3,35 @@
         <button
           ref="sourceTriggerRef"
           v-liquid-glass
-          class="pjsk-ui-action io-btn source-trigger top-nav-glass-capsule ui-liquid-glass ui-liquid-glass--refractive"
+          class="pjsk-ui-action io-btn source-trigger settings-icon-trigger top-nav-glass-capsule ui-liquid-glass ui-liquid-glass--refractive"
           data-ui-glass-profile="lens"
-          :class="{ active: sourceMenuOpen, 'is-disabled': isHistoryPredictEditorOpen }"
-          :disabled="isHistoryPredictEditorOpen"
+          :class="{ active: sourceMenuOpen }"
+          type="button"
+          aria-label="设置"
+          aria-haspopup="dialog"
+          aria-controls="app-settings-panel"
+          :aria-expanded="sourceMenuOpen"
           @pointerdown.stop
           @click.stop="toggleSourceMenu"
-          :title="isHistoryPredictEditorOpen ? '预测面板打开时不可操作数据源' : `当前数据源：${activePredictSourceName}`"
+          title="设置"
         >
-          {{ isCompactTopNav ? '数据源' : `数据源：${activePredictSourceName}` }}
+          <Settings :size="18" aria-hidden="true" />
         </button>
       </div>
 </template>
 
 <script setup>
+import { Settings } from 'lucide-vue-next';
 const props = defineProps({
   tabNavigation: { type: Object, required: true },
   sourceMenu: { type: Object, required: true },
   predictionSources: { type: Object, required: true },
   responsiveNavigation: { type: Object, required: true },
 });
-const { showSourceDropdownInNav, isHistoryPredictEditorOpen } = props.tabNavigation;
+const { showSourceDropdownInNav } = props.tabNavigation;
 const { sourceMenuOpen, toggleSourceMenu, sourceDropdownRef, sourceTriggerRef } = props.sourceMenu;
-const { activePredictSourceName } = props.predictionSources;
-const { isCompactTopNav } = props.responsiveNavigation;
 </script>
+
+<style scoped>
+.source-dropdown > button.source-trigger.settings-icon-trigger { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; min-height: 36px; padding: 0; border-radius: 50%; }
+</style>

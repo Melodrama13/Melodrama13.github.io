@@ -15,7 +15,7 @@
 `src/main.js` 的全局样式顺序固定为：
 
 ```text
-src/styles/tokens.css → src/style.css → src/styles/liquid-glass.css → src/styles/primitives.css → src/styles/motion.css
+src/styles/tokens.css → src/style.css → src/styles/liquid-glass.css → src/styles/primitives.css → src/styles/motion.css → src/styles/appearance.css
 ```
 
 `tokens.css` 只提供 `:root` 下的 `--ui-*` 值，必须先加载，供基础样式、全局 primitive 和 SFC 样式解析。`style.css` 保留应用级基础规则。`primitives.css` 必须继续由 `src/main.js` 以全局 import 加载，并位于基础规则之后，以维持现有的 base-before-primitive cascade 顺序：通用 checkbox、pill、table 和 circle 规则在相同 selector 下继续拥有原来的后置优先级。禁止把 primitives 改成局部或 SFC import，也不要用新的 Vue wrapper 改变 DOM 或 specificity。
@@ -48,6 +48,18 @@ src/styles/tokens.css → src/style.css → src/styles/liquid-glass.css → src/
 ```
 
 这样既保留现有 consumer 名称，也保留组件继承边界和 Teleport/fallback 行为；新增 token 不等于删除这些 alias。
+
+## 3.1 浅色与深色外观
+
+本轮经单独授权加入浅色、深色与跟随系统三种外观选项，默认跟随系统，保留已保存的手动选择。外观状态由应用设置持有，样式只消费 `html[data-theme="light"|"dark"]` 的最终结果；`appearance.css` 不再自行用系统媒体查询决定主题。浅色沿用原有规则，深色覆盖集中放在加载链末尾，不改变现有几何、断点、字体、按压与折射行为。
+
+后续 UI 设计与修改必须同时考虑深、浅两种外观，并分别查看实际页面验收；不得只修正其中一侧。检查范围包括嵌套面板／渐变背景、文字与图标对比、浮层玻璃透明度和导出结果。活动页卡面详情悬浮层两种外观共用 145°、48%／38% 的渐变透明度，保留各自明暗色彩；不额外叠加不透明底色或改变现有滤镜。
+
+深色的 `--ui-appearance-*` 变量负责正文、次要文字、表面、填充、边界与可读的中性强调；已有 `--ui-control-*`、`--ui-glass-*`、shell 和统计导航变量按同一入口切换。历史 feature 样式的硬编码中性色使用显式 selector 覆盖，不能用整页反色或图片滤镜代替主题。特定黑色 UI 图标允许单独调整明度；卡面、曲绘、头像和属性图标保持原样。团体 Logo 保留透明背景和品牌色，细字标用浅灰边缘光晕增加辨识，单色 VS 字标使用浅色墨迹，不添加矩形白色衬底；这些处理不作用于用户预测画布内的 Logo。
+
+角色、团体、属性和统计分类继续使用现有色相。原有半透明代表色自然叠加在深色表面上；原有实色浅填充的矩阵、配队与乐曲统计卡使用局部深色遮色层，保留数据色，正文保持足够对比。预测编辑器的 `--pe-*` 和数据源 `--source-*` 兼容 alias 仍限定在各自 consumer，不能提升到全局。
+
+外观入口覆盖整个 document，包含 Teleport 面板及附加到 `body` 的导出克隆。`.export-clone-root` 和 `.song-export-clone-root` 在深色使用与正文一致的深色底，覆盖透明内容导出时的旧白色回退；不得只更换文字颜色而留下浅色画布。Special Predict 画布的用户配色与真实图片不跟随界面主题。修改深色规则时同时核对原生表单、表格、设置／数据源、预测编辑器、Chromium 折射、WebKit frost 与实际 PNG 输出。
 
 ## 4. 全局与局部边界
 
@@ -363,7 +375,6 @@ git status --short
 - 合并相似但不完全相同的颜色、间距、圆角、阴影或字体值；
 - 因无障碍目标而改变既有控件尺寸；
 - 页面布局重设计或新的响应式换行方案；
-- dark mode 或全局主题切换；
 - 新字体、新图标或新的组件库；
 - feature-specific dynamic styles 与 export-only styles 的迁移/统一。
 

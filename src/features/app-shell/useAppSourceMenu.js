@@ -5,6 +5,8 @@ import { dismissTransientOverlays } from "../../ui/transientOverlays.js";
 /** Owns application source menu with per-instance state and explicit peer interfaces. */
 export function useAppSourceMenu(ports = {}) {
 const sourceMenuOpen = ref(false);
+const settingsPage = ref('global');
+let settingsOpener = null;
 
 const sourceDropdownRef = ref(null);
 
@@ -94,22 +96,41 @@ const deleteActivePredictSource = () => {
   ports.predictionSources.persistPredictSources();
 };
 
-const closeSourceMenu = () => {
-  sourceMenuOpen.value = false;
+const clearSourceDrafts = () => {
   ports.historyCapture.cancelScreenshotExport();
   ports.historyCapture.showScreenshotConfirmPanel.value = false;
   showCreateSourceConfirmPanel.value = false;
   renameSourceTargetId.value = '';
   renameSourceDraftName.value = '';
+  isEditingPredictUserName.value = false;
+  draggedSourceId.value = '';
+  dragOverSourceId.value = '';
 };
 
-const toggleSourceMenu = () => {
-  if (ports.tabNavigation.isHistoryPredictEditorOpen.value) return;
+const selectSettingsPage = (page) => {
+  if (!['global', 'sources'].includes(page)) return;
+  if (page === 'sources' && !ports.tabNavigation.canUsePredictionSources.value) return;
+  if (page !== settingsPage.value) clearSourceDrafts();
+  settingsPage.value = page;
+};
+
+const closeSourceMenu = (options = {}) => {
+  sourceMenuOpen.value = false;
+  clearSourceDrafts();
+  if (options?.restoreFocus) {
+    const trigger = settingsOpener?.isConnected ? settingsOpener : ports.responsiveNavigation.isSmallTabletViewport.value ? mobileSourceTriggerRef.value : sourceTriggerRef.value;
+    trigger?.focus({ preventScroll: true });
+  }
+};
+
+const toggleSourceMenu = (event) => {
   if (sourceMenuOpen.value) {
     closeSourceMenu();
     return;
   }
   dismissTransientOverlays();
+  settingsOpener = event?.currentTarget || null;
+  if (!ports.tabNavigation.canUsePredictionSources.value) selectSettingsPage('global');
   sourceMenuOpen.value = true;
 };
 
@@ -223,7 +244,7 @@ const updateSourceMenuPosition = () => {
   if (typeof window === 'undefined') return;
   if (!sourceMenuOpen.value) return;
   const mobile = ports.responsiveNavigation.isSmallTabletViewport.value;
-  const trigger = mobile ? mobileSourceTriggerRef.value : sourceTriggerRef.value;
+  const trigger = settingsOpener?.isConnected ? settingsOpener : mobile ? mobileSourceTriggerRef.value : sourceTriggerRef.value;
   if (!trigger) return;
   const rect = trigger.getBoundingClientRect();
   const vw = window.innerWidth;
@@ -233,15 +254,16 @@ const updateSourceMenuPosition = () => {
   const maxWidth = compact ? 360 : 420;
   const width = Math.max(Math.min(maxWidth, vw - 12), Math.min(minWidth, vw - 12));
   const left = Math.max(6, Math.min(vw - width - 6, rect.right - width));
-  const maxHeight = mobile
+  const openAbove = mobile && rect.top > vh - rect.bottom;
+  const maxHeight = openAbove
     ? Math.max(0, rect.top - 16)
-    : Math.max(180, vh - rect.bottom - 14);
+    : Math.max(0, vh - rect.bottom - 14);
 
   sourceMenuStyle.value = {
     position: 'fixed',
     left: `${Math.round(left)}px`,
-    top: mobile ? 'auto' : `${Math.round(Math.max(6, rect.bottom + 6))}px`,
-    bottom: mobile ? `${Math.round(vh - rect.top + 8)}px` : 'auto',
+    top: openAbove ? 'auto' : `${Math.round(Math.max(6, rect.bottom + 6))}px`,
+    bottom: openAbove ? `${Math.round(vh - rect.top + 8)}px` : 'auto',
     width: `${Math.round(width)}px`,
     maxHeight: `${Math.round(maxHeight)}px`,
     overflowY: 'auto',
@@ -273,6 +295,7 @@ const handleGlobalPointerDown = (event) => {
   const mobileTrigger = mobileSourceTriggerRef.value;
   const menuPanel = sourceMenuPanelRef.value;
   const target = event.target;
+  if (settingsOpener?.contains?.(target)) return;
   if (triggerWrap && triggerWrap.contains(target)) return;
   if (mobileTrigger && mobileTrigger.contains(target)) return;
   if (menuPanel && menuPanel.contains(target)) return;
@@ -285,7 +308,7 @@ const handleGlobalKeyDown = (event) => {
   else if (showCreateSourceConfirmPanel.value) cancelCreateSourceAction();
   else if (ports.historyCapture.showScreenshotConfirmPanel.value || ports.historyCapture.isPreparingScreenshotExport.value) {
     ports.historyCapture.cancelScreenshotExport();
-  } else closeSourceMenu();
+  } else closeSourceMenu({ restoreFocus: true });
   event.preventDefault();
 };
 
@@ -298,18 +321,21 @@ watch(sourceMenuOpen, async (open) => {
   await nextTick();
   if (!sourceMenuOpen.value) return;
   updateSourceMenuPosition();
+  sourceMenuPanelRef.value?.querySelector('.settings-tabs button')?.focus({ preventScroll: true });
   ports.statsControls.scheduleStatsTopControlStateSync();
 }, { flush: 'sync' });
 };
 const connectAppPredictionEditorSourceGuard = () => {
-watch(ports.tabNavigation.isHistoryPredictEditorOpen, (open) => {
-  if (open) {
-    closeSourceMenu();
+watch(ports.tabNavigation.canUsePredictionSources, (available) => {
+  if (!available) {
+    selectSettingsPage('global');
   }
 });
 };
 return {
 sourceMenuOpen,
+settingsPage,
+selectSettingsPage,
 sourceDropdownRef,
 sourceTriggerRef,
 mobileSourceTriggerRef,

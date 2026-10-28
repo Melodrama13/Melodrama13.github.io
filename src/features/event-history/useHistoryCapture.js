@@ -1,6 +1,7 @@
 import { nextTick } from 'vue';
 import { renderCaptureToCanvas as toCanvas } from '../../services/capture/captureEngineLoader.js';
 import { getSiteMediaRecovery } from '../../utils/mediaImageRecovery.js';
+import { getCaptureBackgroundColor } from '../../services/capture/captureStyleContext.js';
 
 /** Capture owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
@@ -126,7 +127,7 @@ const exportPredictedRangePng = async (options = {}) => {
           const canvasWidth = Math.max(1, Math.round(bounds.width * scale));
           const canvasHeight = Math.max(1, Math.round(bounds.height * scale));
           return await ports.capturePolicy.withCaptureTimeout(toCanvas(renderTarget, {
-            backgroundColor: '#f4f7f6',
+            backgroundColor: getCaptureBackgroundColor(renderTarget, '#f4f7f6'),
             width: bounds.width,
             height: bounds.height,
             canvasWidth,

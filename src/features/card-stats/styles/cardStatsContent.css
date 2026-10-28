@@ -8,39 +8,9 @@
   padding: 8px;
 }
 
-.nav-name-format, :global([data-feature-page="cards"] :is(.nav-name-format)), :global(:is(.nav-name-format)[data-feature-page="cards"]) {
-  border: 1px solid var(--stats-nav-glass-line);
-  border-radius: var(--stats-nav-inner-radius);
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: var(--ui-glass-micro-group-shadow, inset 0 1px 0 rgba(255, 255, 255, 0.44), inset 0 -1px 0 rgba(15, 23, 42, 0.03));
-  padding: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: nowrap;
-}
 
-.nav-name-format-title, :global([data-feature-page="cards"] :is(.nav-name-format-title)), :global(:is(.nav-name-format-title)[data-feature-page="cards"]) {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #374151;
-  margin: 0;
-  white-space: nowrap;
-}
 
-.nav-name-format-options, :global([data-feature-page="cards"] :is(.nav-name-format-options)), :global(:is(.nav-name-format-options)[data-feature-page="cards"]) {
-  display: inline-flex;
-  gap: 10px;
-  flex-wrap: nowrap;
-}
 
-.nav-name-format-option, :global([data-feature-page="cards"] :is(.nav-name-format-option)), :global(:is(.nav-name-format-option)[data-feature-page="cards"]) {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.74rem;
-  color: #374151;
-}
 
 .nav-cutoff-title, :global([data-feature-page="cards"] :is(.nav-cutoff-title)), :global(:is(.nav-cutoff-title)[data-feature-page="cards"]) {
   font-size: 0.76rem;

@@ -2,12 +2,14 @@ import { computed } from 'vue';
 import { isSongReleased } from '../../utils/spoilerGuard.js';
 import { buildAssetUrl } from '../../utils/assets.js';
 import { SONG_LIMITED_GACHA_IDS } from '../../utils/cardLimitedRules.js';
+import { useAppSettings } from '../../services/appSettings.js';
 
 /** Song Media owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
  * Dependencies: props, Clock.
  */
 export function useHistorySongMedia(ports) {
+const settings = ports.settings ?? useAppSettings();
 const toFiniteSongId = (value) => {
   if (value === null || value === undefined) return null;
   const raw = String(value).trim();
@@ -21,7 +23,7 @@ const songsById = computed(() => {
   const now = ports.clock.spoilerNow.value;
   const map = new Map();
   (ports.props.allSongs || []).forEach((song) => {
-    if (!isSongReleased(song, now)) return;
+    if (!isSongReleased(song, now, settings?.allowSpoilers?.value === true)) return;
     const id = toFiniteSongId(song?.id);
     if (id === null) return;
     map.set(id, song);
@@ -141,8 +143,10 @@ const hasSongTooltip = (event) => {
 };
 
 const getReleasedSongVocals = (event) => {
+  const vocals = getSongByEvent(event)?.vocals || [];
+  if (settings?.allowSpoilers?.value === true) return vocals;
   const now = ports.clock.spoilerNow.value.getTime();
-  return (getSongByEvent(event)?.vocals || []).filter(vocal => {
+  return vocals.filter(vocal => {
     const match = String(vocal.released_at || '').match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
     if (!match) return true;
     const gate = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) - 8 * 60 * 60 * 1000;

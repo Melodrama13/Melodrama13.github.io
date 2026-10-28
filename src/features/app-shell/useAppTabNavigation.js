@@ -22,14 +22,15 @@ const songsScrollTop = ref(0);
 const showBackToTopBtn = ref(false);
 
 const isHistoryPredictEditorOpen = computed(() => {
-  if (ports.tabCatalog.currentTab.value !== 'history') return false;
   const id = Number(previewSyncEventId.value);
   return Number.isFinite(id) && id > 0;
 });
 
+const canUsePredictionSources = computed(() => ports.tabCatalog.currentTab.value === 'history' && !isHistoryPredictEditorOpen.value);
+
 const showStatsTopControlInNav = computed(() => ports.tabCatalog.currentTab.value === 'stats');
 
-const showSourceDropdownInNav = computed(() => ports.tabCatalog.currentTab.value === 'history');
+const showSourceDropdownInNav = computed(() => ['history', 'stats', 'songs'].includes(ports.tabCatalog.currentTab.value));
 
 const showPredictInfoInNav = computed(() => ports.predictionSources.predictiveEvents.value.length > 0 && ports.tabCatalog.currentTab.value === 'history');
 
@@ -100,8 +101,8 @@ const handleStatsJumpToEvent = (eventId) => {
 const connectAppTabNavigation = () => {
 watch(ports.tabCatalog.currentTab, async (nextTab, prevTab) => {
   contentNavigator.cancel();
-  if (nextTab !== 'history') {
-    ports.sourceMenu.sourceMenuOpen.value = false;
+  if (nextTab === 'specialPredict') {
+    ports.sourceMenu.closeSourceMenu();
   }
   if (nextTab === 'stats') {
     await nextTick();
@@ -134,6 +135,7 @@ statsScrollTop,
 songsScrollTop,
 showBackToTopBtn,
 isHistoryPredictEditorOpen,
+canUsePredictionSources,
 showStatsTopControlInNav,
 showSourceDropdownInNav,
 showPredictInfoInNav,

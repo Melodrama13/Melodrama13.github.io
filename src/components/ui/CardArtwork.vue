@@ -20,9 +20,12 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import CardLimitedRibbon from './CardLimitedRibbon.vue';
 import { DEFAULT_CARD_ARTWORK_VERSION } from '../../config/cardArtwork.js';
+import { APP_SETTINGS_KEY } from '../../services/appSettings.js';
+
+const settings = inject(APP_SETTINGS_KEY, null);
 
 const props = defineProps({
   src: { type: String, default: '' },
@@ -37,7 +40,7 @@ const props = defineProps({
   fallbackSrc: { type: String, default: '' },
   fallbackText: { type: String, default: '' },
   size: { type: [String, Number], default: '100%' },
-  version: { type: String, default: DEFAULT_CARD_ARTWORK_VERSION, validator: value => ['v1', 'v2'].includes(value) },
+  version: { type: String, default: '', validator: value => ['', 'v1', 'v2'].includes(value) },
   showFrame: { type: Boolean, default: true },
   showAttribute: { type: Boolean, default: true },
   showUnit: { type: Boolean, default: false },
@@ -55,7 +58,7 @@ const visibleRibbon = computed(() => {
   return props.showPermanentRibbon && props.isPermanent ? { label: '常驻', tone: 'permanent' } : null;
 });
 const artworkSize = computed(() => typeof props.size === 'number' ? `${props.size}px` : props.size);
-const artworkVersion = computed(() => ['v1', 'v2'].includes(props.version) ? props.version : DEFAULT_CARD_ARTWORK_VERSION);
+const artworkVersion = computed(() => ['v1', 'v2'].includes(props.version) ? props.version : settings?.cardArtworkVersion.value || DEFAULT_CARD_ARTWORK_VERSION);
 const frameKey = computed(() => {
   const rarity = String(props.rarity).trim().toLowerCase().replace(/^rarity_/, '');
   if (rarity === 'birth' || rarity === 'birthday') return 'birth';

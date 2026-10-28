@@ -1,12 +1,14 @@
-import { ref, computed } from 'vue';
+import { ref, computed, inject, hasInjectionContext } from 'vue';
+import { APP_SETTINGS_KEY } from '../../services/appSettings.js';
 
 /** Owns card presentation behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
  */
 export function useCardPresentation(inputs) {
-  const navNameFormat = ref('single');
+  const settings = hasInjectionContext() ? inject(APP_SETTINGS_KEY, null) : null;
+  const navNameFormat = settings?.nameFormat || ref('single');
 
-  const navCardImageMode = ref('after');
+  const navCardImageMode = settings?.singleCardFace || ref('after');
 
   const isFesCardType = (typeValue) => inputs.constants.FES_CARD_TYPES.has(String(typeValue || '').trim().toLowerCase());
 
@@ -200,7 +202,7 @@ export function useCardPresentation(inputs) {
     return inputs.metadata.CHAR_SINGLE_MAP[key] || key;
   };
 
-  const useSingleNameMark = computed(() => inputs.navigation.isMobileNav.value || navNameFormat.value === 'single');
+  const useSingleNameMark = computed(() => navNameFormat.value === 'single');
 
   const getDistNameLabel = (name) => {
     if (useSingleNameMark.value) return getCharSingleMark(name);

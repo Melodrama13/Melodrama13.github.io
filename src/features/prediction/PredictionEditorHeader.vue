@@ -8,7 +8,10 @@
         ></div>
         <div class="header-main">
           <h3>预测编辑器 <span class="ev-id">#{{ event.id }}</span></h3>
-          <button class="pjsk-ui-action close-btn" @click="$emit('close')">×</button>
+          <div class="editor-header-actions">
+            <button v-if="openAppSettings" type="button" class="pjsk-ui-action close-btn editor-settings-button" aria-label="设置" title="全局设置" aria-haspopup="dialog" aria-controls="app-settings-panel" @pointerdown.stop @click.stop="openAppSettings"><Settings :size="18" aria-hidden="true" /></button>
+            <button class="pjsk-ui-action close-btn" @click="$emit('close')">×</button>
+          </div>
         </div>
 
         <div class="global-config-bar" :class="{ 'has-banner': !isFixedRosterMode }">
@@ -50,7 +53,16 @@
 </template>
 
 <script setup>
+import { inject } from 'vue';
+import { Settings } from 'lucide-vue-next';
+import { APP_SETTINGS_OPEN_KEY } from '../../services/appSettings.js';
+const openAppSettings = inject(APP_SETTINGS_OPEN_KEY, null);
 /** Native controls share the editor's per-instance form and explicit actions. */
 defineProps(["isMobileViewport","startSheetDragMouse","startSheetDrag","event","isFixedRosterMode","form","applyGlobalAttr","ATTRS","getAttrLabel","bannerCandidates"]);
 defineEmits(['close']);
 </script>
+
+<style scoped>
+.editor-header-actions { display: flex; align-items: center; gap: 6px; }
+.editor-settings-button { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; padding: 0; }
+</style>

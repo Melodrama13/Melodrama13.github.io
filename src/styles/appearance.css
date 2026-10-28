@@ -1,0 +1,1104 @@
+/* Appearance changes colors only. Keep dimensions, image assets, member/unit
+   colors, motion and refraction ownership in their existing feature styles. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ui-appearance-label: #edf2fa;
+  --ui-appearance-secondary: #bdc9dc;
+  --ui-appearance-tertiary: #97a5bc;
+  --ui-appearance-surface: #1c2432;
+  --ui-appearance-surface-soft: #252f40;
+  --ui-appearance-fill: rgba(57, 70, 90, 0.60);
+  --ui-appearance-group: rgba(41, 53, 72, 0.34);
+  --ui-appearance-border: rgba(170, 189, 220, 0.24);
+  --ui-appearance-accent: #6ee7d4;
+  --ui-appearance-blue: #93c5fd;
+  --color-background: var(--ui-appearance-surface);
+  --color-background-soft: var(--ui-appearance-surface-soft);
+
+  --ui-control-bg: #283347;
+  --ui-control-bg-hover: #344159;
+  --ui-control-border: #526079;
+  --ui-control-border-hover: #7b8da9;
+  --ui-control-label: var(--ui-appearance-label);
+  --ui-control-label-muted: var(--ui-appearance-secondary);
+  --ui-control-focus-color: var(--ui-appearance-accent);
+  --ui-control-selected-border: var(--ui-appearance-accent);
+  --ui-control-error-border: #fda4af;
+  --ui-control-error-label: #fecdd3;
+  --ui-control-feedback-overlay: rgba(224, 237, 255, 0.10);
+  --ui-control-glass-feedback-overlay: rgba(224, 237, 255, 0.12);
+  --ui-control-hover-glass-fill: rgba(224, 237, 255, 0.08);
+  --ui-image-placeholder: rgba(148, 163, 184, 0.16);
+  --ui-image-sheen: rgba(226, 232, 240, 0.14);
+
+  --ui-glass-ambient-image:
+    radial-gradient(circle at 12% 8%, rgba(77, 91, 145, 0.24), transparent 34%),
+    radial-gradient(circle at 88% 12%, rgba(32, 121, 153, 0.16), transparent 34%),
+    radial-gradient(circle at 78% 84%, rgba(121, 74, 149, 0.16), transparent 38%),
+    radial-gradient(circle at 10% 78%, rgba(32, 119, 111, 0.13), transparent 36%),
+    radial-gradient(circle at 52% 18%, rgba(175, 73, 108, 0.09), transparent 30%),
+    linear-gradient(180deg, #101624 0%, #111c27 48%, #1a1729 100%);
+  --ui-glass-refractive-bg: linear-gradient(145deg, rgba(70, 82, 105, 0.34), rgba(29, 39, 57, 0.26) 46%, rgba(22, 31, 48, 0.22));
+  --ui-glass-editor-refractive-bg: linear-gradient(145deg, rgba(53, 66, 89, 0.40), rgba(24, 34, 52, 0.28) 48%, rgba(21, 29, 45, 0.24));
+  --ui-glass-regular-bg: linear-gradient(145deg, rgba(59, 72, 96, 0.62), rgba(31, 42, 61, 0.55) 52%, rgba(25, 35, 51, 0.48));
+  --ui-glass-prominent-bg: linear-gradient(145deg, rgba(48, 62, 85, 0.82), rgba(29, 41, 61, 0.78) 52%, rgba(22, 33, 49, 0.74));
+  --ui-glass-modal-bg: linear-gradient(145deg, rgba(44, 57, 79, 0.96), rgba(27, 39, 58, 0.94) 54%, rgba(23, 33, 49, 0.92));
+  --ui-glass-fallback-bg: #202b3d;
+  --ui-glass-chip-bg: rgba(65, 81, 108, 0.30);
+  --ui-glass-chip-bg-hover: rgba(82, 100, 130, 0.42);
+  --ui-glass-rim-light: rgba(218, 232, 255, 0.30);
+  --ui-glass-rim-dark: rgba(3, 8, 20, 0.64);
+  --ui-glass-rim-cyan: rgba(103, 232, 249, 0.20);
+  --ui-glass-rim-rose: rgba(251, 113, 133, 0.14);
+  --ui-glass-specular-highlight: radial-gradient(ellipse 54% 44% at var(--ui-glass-pointer-x) var(--ui-glass-pointer-y), rgba(225, 238, 255, 0.16), rgba(225, 238, 255, 0.025) 46%, transparent 72%);
+  --ui-glass-shadow-refractive: 0 18px 50px rgba(0, 0, 0, 0.24), inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark), inset 1px 0 0 var(--ui-glass-rim-cyan), inset -1px 0 0 var(--ui-glass-rim-rose);
+  --ui-glass-shadow-regular: var(--ui-glass-shadow-refractive);
+  --ui-glass-shadow-modal: 0 26px 72px rgba(0, 0, 0, 0.40), inset 0 1px 0 var(--ui-glass-rim-light), inset 0 -1px 0 var(--ui-glass-rim-dark);
+  --ui-glass-shadow-prominent: 0 20px 54px rgba(0, 0, 0, 0.30), 0 6px 18px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(225, 238, 255, 0.36), inset 0 0 0 1px rgba(186, 208, 239, 0.12), inset 1px 0 0 rgba(103, 232, 249, 0.20), inset -1px 0 0 rgba(251, 113, 133, 0.12), inset 0 -1px 0 rgba(3, 8, 20, 0.62);
+  --ui-glass-optical-prominent-shadow: var(--ui-glass-shadow-prominent);
+  --ui-glass-optical-rim-prominent: conic-gradient(from 210deg at 50% 50%, rgba(231, 240, 255, 0.44), rgba(165, 243, 252, 0.22) 70deg, rgba(166, 143, 248, 0.22) 106deg, rgba(6, 12, 26, 0.32) 150deg, rgba(251, 113, 133, 0.16) 230deg, rgba(231, 240, 255, 0.34) 320deg, rgba(231, 240, 255, 0.44));
+  --ui-glass-optical-prominent-rim: var(--ui-glass-optical-rim-prominent);
+  --ui-glass-optical-micro-border: rgba(180, 202, 234, 0.24);
+  --ui-glass-optical-micro-shadow: 0 3px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(223, 236, 255, 0.18), inset 0 -1px 0 rgba(3, 8, 20, 0.42);
+  --ui-glass-optical-micro-group-shadow: 0 8px 22px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(223, 236, 255, 0.16), inset 0 -1px 0 rgba(3, 8, 20, 0.42);
+  --ui-glass-optical-control-bg: linear-gradient(145deg, rgba(82, 99, 128, 0.48), rgba(44, 60, 85, 0.38));
+  --ui-glass-optical-control-bg-hover: linear-gradient(145deg, rgba(101, 119, 149, 0.56), rgba(59, 76, 102, 0.46));
+  --ui-glass-optical-group-bg: linear-gradient(145deg, rgba(64, 81, 108, 0.28), rgba(35, 49, 72, 0.18));
+  --ui-glass-editor-micro-control-fill: rgba(50, 67, 93, 0.64);
+  --ui-glass-editor-micro-tag-fill: linear-gradient(145deg, rgba(59, 76, 102, 0.54), rgba(38, 53, 77, 0.42));
+  --ui-glass-mobile-lens-bg: linear-gradient(145deg, rgba(113, 132, 161, 0.24), rgba(38, 54, 78, 0.16) 48%, rgba(36, 53, 78, 0.12));
+  --ui-glass-optical-lens-bg: linear-gradient(155deg, rgba(180, 201, 230, 0.12), rgba(88, 111, 145, 0.035) 48%, rgba(4, 11, 27, 0.12));
+  --ui-glass-mobile-track-bg: linear-gradient(145deg, rgba(96, 117, 149, 0.18), rgba(25, 37, 56, 0.16));
+  --ui-glass-mobile-track-border: rgba(188, 209, 240, 0.24);
+  --ui-glass-mobile-track-shadow: inset 0 0.5px 0 rgba(225, 238, 255, 0.22), inset 0 -0.5px 0 rgba(3, 8, 20, 0.35), 0 6px 18px rgba(0, 0, 0, 0.20);
+  --ui-glass-mobile-lens-shadow: 0 9px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(225, 238, 255, 0.40), inset 0 -1px 0 rgba(3, 8, 20, 0.56), inset 1px 0 0 rgba(34, 211, 238, 0.26), inset -1px 0 0 rgba(251, 113, 133, 0.18);
+  --ui-glass-selector-idle-shadow: 0 2px 7px rgba(0, 0, 0, 0.36), 0 0.5px 1.5px rgba(0, 0, 0, 0.24), inset 0 0.5px 0 rgba(225, 238, 255, 0.16);
+  --ui-glass-lens-bevel-shadow: inset 0 0.5px 0 rgba(225, 238, 255, 0.30), inset 0 -0.5px 0 rgba(225, 238, 255, 0.18), inset 0.5px 0 0.75px rgba(3, 8, 20, 0.35), inset -0.5px 0 0.75px rgba(3, 8, 20, 0.30), 0 3px 9px rgba(0, 0, 0, 0.24);
+  --ui-glass-lens-reflection: linear-gradient(180deg, rgba(225, 238, 255, 0.35), rgba(225, 238, 255, 0.05) 24%, rgba(3, 8, 20, 0.30) 49%, rgba(225, 238, 255, 0.035) 70%, rgba(225, 238, 255, 0.26));
+  --ui-glass-lens-scatter-highlight: radial-gradient(ellipse at 50% -12%, rgba(225, 238, 255, 0.22), transparent 48%), radial-gradient(ellipse at 50% 112%, rgba(225, 238, 255, 0.14), transparent 44%);
+  --ui-glass-group-bg: rgba(51, 68, 93, 0.24);
+  --ui-glass-control-bg: rgba(63, 80, 108, 0.42);
+  --ui-glass-input-bg: rgba(30, 43, 64, 0.78);
+  --ui-glass-option-bg: linear-gradient(145deg, rgba(70, 87, 115, 0.70), rgba(39, 54, 78, 0.60));
+  --ui-glass-option-border: rgba(180, 202, 234, 0.28);
+
+  --ui-shell-glass-bg: var(--ui-glass-refractive-bg);
+  --ui-shell-glass-bg-hover: var(--ui-glass-optical-control-bg-hover);
+  --ui-shell-glass-border: var(--ui-glass-rim-light);
+  --ui-shell-glass-shadow: var(--ui-glass-shadow-refractive);
+  --ui-shell-glass-shadow-soft: var(--ui-glass-optical-micro-shadow);
+  --ui-stats-nav-glass-bg: var(--ui-glass-prominent-bg);
+  --ui-stats-nav-glass-border: var(--ui-glass-rim-light);
+  --ui-stats-nav-glass-line: var(--ui-appearance-border);
+  --ui-stats-nav-glass-shadow: var(--ui-glass-shadow-prominent);
+  --ui-stats-nav-control-bg: var(--ui-glass-optical-control-bg);
+  --ui-stats-nav-control-bg-hover: var(--ui-glass-optical-control-bg-hover);
+  --ui-stats-nav-active-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(56, 189, 248, 0.12));
+  --ui-stats-nav-active-border: rgba(147, 197, 253, 0.50);
+}
+
+:root[data-theme='dark'],
+:root[data-theme='dark'] body,
+:root[data-theme='dark'] #app {
+  color: var(--ui-appearance-label);
+  background: var(--ui-glass-ambient-image);
+  background-attachment: fixed;
+}
+
+/* Native popups inherit the browser's dark color scheme, with an opaque option
+   surface for engines that draw options inside their own window. */
+:root[data-theme='dark'] :is(.pjsk-ui-field, .pjsk-ui-textarea) {
+  color: var(--ui-appearance-label);
+  background-color: var(--ui-glass-input-bg);
+  border-color: var(--ui-control-border);
+  caret-color: var(--ui-appearance-accent);
+}
+:root[data-theme='dark'] :is(input, textarea)::placeholder {
+  color: var(--ui-appearance-tertiary);
+  opacity: 1;
+}
+:root[data-theme='dark'] :is(select option, select optgroup) {
+  color: var(--ui-appearance-label);
+  background: var(--ui-appearance-surface);
+}
+:root[data-theme='dark'] :is(input[type='checkbox'], input[type='radio'], input[type='range']) {
+  accent-color: var(--ui-appearance-accent);
+}
+
+/* Neutral declarations from the existing feature styles. These selectors are
+   intentionally explicit: arbitrary inline data colors and images are excluded. */
+
+
+:root[data-theme='dark'] .desktop-tab-switcher > .primary-tab-button,
+:root[data-theme='dark'] .app-update-text,
+:root[data-theme='dark'] .app-update-modal-title,
+:root[data-theme='dark'] .app-update-log-list,
+:root[data-theme='dark'] .stats-top-id-input,
+:root[data-theme='dark'] .username-input,
+:root[data-theme='dark'] .nav-tabs > button,
+:root[data-theme='dark'] .nav-tabs > .io-btn,
+:root[data-theme='dark'] .nav-tabs > .source-dropdown > .source-trigger,
+:root[data-theme='dark'] .source-menu-username-input,
+:root[data-theme='dark'] .app-screenshot-modal-title,
+:root[data-theme='dark'] .source-export-confirm-title,
+:root[data-theme='dark'] .nav-cutoff-title,
+:root[data-theme='dark'] .screenshot-export-modal-title,
+:root[data-theme='dark'] .count-cell,
+:root[data-theme='dark'] .dist-unit-summary-num,
+:root[data-theme='dark'] .mini-cutoff-line,
+:root[data-theme='dark'] .lineup-char-name,
+:root[data-theme='dark'] .lineup-more summary,
+:root[data-theme='dark'] .festival-card h3,
+:root[data-theme='dark'] .matrix-table td.matrix-num,
+:root[data-theme='dark'] .matrix-table td.matrix-num.matrix-vs-zero,
+:root[data-theme='dark'] .duo-unit-title,
+:root[data-theme='dark'] .attr-summary-name,
+:root[data-theme='dark'] .attr-summary-table thead th,
+:root[data-theme='dark'] .attr-summary-total-row,
+:root[data-theme='dark'] .attr-summary-attr-cell,
+:root[data-theme='dark'] .attr-summary-num,
+:root[data-theme='dark'] .matrix-total-row .matrix-num,
+:root[data-theme='dark'] .matrix-total-row .matrix-total-label,
+:root[data-theme='dark'] .matrix-vs-unit-total-row .matrix-num,
+:root[data-theme='dark'] .record-block h3,
+:root[data-theme='dark'] .vs-four-count-value,
+:root[data-theme='dark'] .fes-total-num,
+:root[data-theme='dark'] .special-limited-row-label,
+:root[data-theme='dark'] .nuigurumi-date-cell,
+:root[data-theme='dark'] .nuigurumi-type-chip,
+:root[data-theme='dark'] .nuigurumi-mobile-date,
+:root[data-theme='dark'] .fes-total-attr-num,
+:root[data-theme='dark'] .pjsk-stats,
+:root[data-theme='dark'] .jump-link,
+:root[data-theme='dark'] .birthday-info-title,
+:root[data-theme='dark'] .preview-label,
+:root[data-theme='dark'] .event-title,
+:root[data-theme='dark'] .card-detail-tooltip,
+:root[data-theme='dark'] .card-tooltip-value,
+:root[data-theme='dark'] .tooltip-content,
+:root[data-theme='dark'] .song-tooltip-value,
+:root[data-theme='dark'] .preview-festival-chip.is-active,
+:root[data-theme='dark'] .preview-panel-head,
+:root[data-theme='dark'] .preview-daily-name,
+:root[data-theme='dark'] .preview-daily-score-cell,
+:root[data-theme='dark'] .preview-daily-total-cell,
+:root[data-theme='dark'] .preview-char-attr-name,
+:root[data-theme='dark'] .preview-char-attr-table th,
+:root[data-theme='dark'] .preview-char-attr-table td,
+:root[data-theme='dark'] .preview-vs-mini-table th,
+:root[data-theme='dark'] .preview-vs-mini-table td,
+:root[data-theme='dark'] .preview-vs-mini-table thead th,
+:root[data-theme='dark'] .preview-vs-score-table th,
+:root[data-theme='dark'] .preview-vs-score-table td,
+:root[data-theme='dark'] .birthday-name,
+:root[data-theme='dark'] .predict-switch-dialog-card,
+:root[data-theme='dark'] .predict-drawer,
+:root[data-theme='dark'] .close-btn:hover,
+:root[data-theme='dark'] .cfg-group select,
+:root[data-theme='dark'] .char-name,
+:root[data-theme='dark'] .mini-select,
+:root[data-theme='dark'] .special-predict-page,
+:root[data-theme='dark'] .special-page-picker select,
+:root[data-theme='dark'] .special-source-picker select,
+:root[data-theme='dark'] .special-range-field input,
+:root[data-theme='dark'] .special-editor-select-field select,
+:root[data-theme='dark'] .special-text-select,
+:root[data-theme='dark'] .special-mini-field input,
+:root[data-theme='dark'] .song-image-count-circle,
+:root[data-theme='dark'] .section-head h2,
+:root[data-theme='dark'] .stats-section h2,
+:root[data-theme='dark'] .song-vs-pill,
+:root[data-theme='dark'] .song-oc-event-song-title,
+:root[data-theme='dark'] .song-role-song-title,
+:root[data-theme='dark'] .song-cover-album-head h3,
+:root[data-theme='dark'] .song-cover-album-track-title,
+:root[data-theme='dark'] .stats-main-head h1,
+:root[data-theme='dark'] .song-screenshot-modal-title,
+:root[data-theme='dark'] .song-vs-event-unit-count,
+:root[data-theme='dark'] .song-vs-event-image-name,
+:root[data-theme='dark'] .song-vs-event-title,
+:root[data-theme='dark'] .song-role-name,
+:root[data-theme='dark'] .song-image-name,
+:root[data-theme='dark'] .song-vs-event-image-tag-pill,
+:root[data-theme='dark'] .song-april-year-title,
+:root[data-theme='dark'] .pjsk-song-stats,
+:root[data-theme='dark'] .song-title-text,
+:root[data-theme='dark'] .song-credit-cell,
+:root[data-theme='dark'] .song-image-title-toast,
+:root[data-theme='dark'] .song-toast-title,
+:root[data-theme='dark'] .song-toast-compact-title,
+:root[data-theme='dark'] .song-toast-meta b {
+  color: var(--ui-appearance-label);
+}
+
+:root[data-theme='dark'] .app-update-btn.app-update-btn-muted,
+:root[data-theme='dark'] .source-item-count,
+:root[data-theme='dark'] .card-export-btn,
+:root[data-theme='dark'] .card-export-btn:hover:not(:disabled),
+:root[data-theme='dark'] .count-cell,
+:root[data-theme='dark'] .dist-unit-summary,
+:root[data-theme='dark'] .id-step-btn,
+:root[data-theme='dark'] .reset-mini-btn,
+:root[data-theme='dark'] .lineup-toggle-btn:hover,
+:root[data-theme='dark'] .festival-card-year-head,
+:root[data-theme='dark'] .festival-card-year-cell,
+:root[data-theme='dark'] .festival-card-fes-empty-cell,
+:root[data-theme='dark'] .festival-card-none-cell,
+:root[data-theme='dark'] .matrix-table thead th,
+:root[data-theme='dark'] .matrix-table th:first-child,
+:root[data-theme='dark'] .record-sort-btn,
+:root[data-theme='dark'] .special-limited-unit-spacer,
+:root[data-theme='dark'] .special-limited-head-spacer,
+:root[data-theme='dark'] .special-limited-row-label,
+:root[data-theme='dark'] .nuigurumi-table tbody tr.nuigurumi-candidate-row > td,
+:root[data-theme='dark'] .nuigurumi-round-badge,
+:root[data-theme='dark'] .nuigurumi-type-chip,
+:root[data-theme='dark'] .record-table th,
+:root[data-theme='dark'] .editor-series-chip,
+:root[data-theme='dark'] .event-detail-type,
+:root[data-theme='dark'] .event-detail-gacha-type,
+:root[data-theme='dark'] .anvo-mode-btn:hover,
+:root[data-theme='dark'] .song-insight-table thead th,
+:root[data-theme='dark'] .song-book-round-table thead th,
+:root[data-theme='dark'] .song-book-round-index-cell,
+:root[data-theme='dark'] .song-book-round-oc-cell,
+:root[data-theme='dark'] .song-book-round-vs-cell.is-empty,
+:root[data-theme='dark'] .song-disclaimer,
+:root[data-theme='dark'] .song-table thead th,
+:root[data-theme='dark'] .song-group-pill {
+  background: var(--ui-appearance-surface-soft);
+}
+
+:root[data-theme='dark'] .app-update-btn.app-update-btn-muted,
+:root[data-theme='dark'] .app-update-modal-subtitle,
+:root[data-theme='dark'] .app-release-log-skip-option,
+:root[data-theme='dark'] .stats-top-label,
+:root[data-theme='dark'] .stats-top-mini-btn,
+:root[data-theme='dark'] .stats-top-menu-btn,
+:root[data-theme='dark'] .username-label,
+:root[data-theme='dark'] .app-data-loading,
+:root[data-theme='dark'] .source-menu-title,
+:root[data-theme='dark'] .source-menu-mobile-summary,
+:root[data-theme='dark'] .source-menu-username-label,
+:root[data-theme='dark'] .source-drag-handle,
+:root[data-theme='dark'] .source-item-count,
+:root[data-theme='dark'] .source-export-option,
+:root[data-theme='dark'] .app-screenshot-modal-message,
+:root[data-theme='dark'] .source-export-confirm-row > span,
+:root[data-theme='dark'] .source-export-range-sep,
+:root[data-theme='dark'] .io-drop-hint,
+:root[data-theme='dark'] .mobile-tab-switcher > .primary-tab-button,
+:root[data-theme='dark'] .card-export-btn,
+:root[data-theme='dark'] .screenshot-export-modal-message,
+:root[data-theme='dark'] .head-filter-toggle,
+:root[data-theme='dark'] .dist-hide-name-toggle,
+:root[data-theme='dark'] .sub-stat,
+:root[data-theme='dark'] .id-step-btn,
+:root[data-theme='dark'] .lineup-tip,
+:root[data-theme='dark'] .support-vs-toggle,
+:root[data-theme='dark'] .support-wl-toggle,
+:root[data-theme='dark'] .lineup-toggle-btn,
+:root[data-theme='dark'] .lineup-char-sub,
+:root[data-theme='dark'] .festival-merge-toggle,
+:root[data-theme='dark'] .festival-hide-name-toggle,
+:root[data-theme='dark'] .festival-fes-toggle,
+:root[data-theme='dark'] .festival-card-year-head,
+:root[data-theme='dark'] .festival-card-year-cell,
+:root[data-theme='dark'] .festival-card-tier-head,
+:root[data-theme='dark'] .festival-card-none-label,
+:root[data-theme='dark'] .festival-none-text,
+:root[data-theme='dark'] .festival-tier-none,
+:root[data-theme='dark'] .matrix-zero,
+:root[data-theme='dark'] .matrix-pure-toggle,
+:root[data-theme='dark'] .record-compact-toggle,
+:root[data-theme='dark'] .record-sort-btn,
+:root[data-theme='dark'] .reward-collab-toggle,
+:root[data-theme='dark'] .vs-original-stat-table .vs-original-type-cell,
+:root[data-theme='dark'] .fes-card-mode-toggle,
+:root[data-theme='dark'] .stats-checkbox,
+:root[data-theme='dark'] .nuigurumi-round-badge,
+:root[data-theme='dark'] .nuigurumi-mobile-round,
+:root[data-theme='dark'] .nuigurumi-avatar-label,
+:root[data-theme='dark'] .interval-stack-arrow,
+:root[data-theme='dark'] .year-stats-total,
+:root[data-theme='dark'] .year-stats-date,
+:root[data-theme='dark'] .year-stats-empty,
+:root[data-theme='dark'] .birthday-info-meta,
+:root[data-theme='dark'] .preview-date,
+:root[data-theme='dark'] .row-label,
+:root[data-theme='dark'] .panel-reset-btn,
+:root[data-theme='dark'] .event-id,
+:root[data-theme='dark'] .card-tooltip-label,
+:root[data-theme='dark'] .song-tooltip-label,
+:root[data-theme='dark'] .preview-config-head,
+:root[data-theme='dark'] .preview-config-reset,
+:root[data-theme='dark'] .preview-config-btn,
+:root[data-theme='dark'] .preview-char-select-title,
+:root[data-theme='dark'] .preview-char-select-toggle,
+:root[data-theme='dark'] .preview-festival-chip,
+:root[data-theme='dark'] .preview-head-toggle,
+:root[data-theme='dark'] .preview-head-filter-toggle,
+:root[data-theme='dark'] .preview-head-filter-btn,
+:root[data-theme='dark'] .preview-collapse-btn,
+:root[data-theme='dark'] .preview-drag-hint,
+:root[data-theme='dark'] .preview-attr-head,
+:root[data-theme='dark'] .preview-attr-summary-row,
+:root[data-theme='dark'] .preview-festival-head,
+:root[data-theme='dark'] .preview-reward-sub,
+:root[data-theme='dark'] .birthday-date,
+:root[data-theme='dark'] .event-detail-type,
+:root[data-theme='dark'] .event-detail-gacha-type,
+:root[data-theme='dark'] .predict-switch-dialog-copy p,
+:root[data-theme='dark'] .predict-switch-dialog-btn,
+:root[data-theme='dark'] .close-btn,
+:root[data-theme='dark'] .cfg-group label,
+:root[data-theme='dark'] .tip,
+:root[data-theme='dark'] .unit-tag,
+:root[data-theme='dark'] .empty-hint,
+:root[data-theme='dark'] .wl-lock-note,
+:root[data-theme='dark'] .special-lock-inner p,
+:root[data-theme='dark'] .special-lock-note,
+:root[data-theme='dark'] .special-predict-mode-toggle button,
+:root[data-theme='dark'] .special-multi-source-trigger,
+:root[data-theme='dark'] .special-multi-source-option,
+:root[data-theme='dark'] .special-multi-source-empty,
+:root[data-theme='dark'] .special-page-picker,
+:root[data-theme='dark'] .special-page-scope-note,
+:root[data-theme='dark'] .special-toolbar-label,
+:root[data-theme='dark'] .special-source-picker,
+:root[data-theme='dark'] .special-source-count,
+:root[data-theme='dark'] .special-range-field,
+:root[data-theme='dark'] .special-toggle-field,
+:root[data-theme='dark'] .special-action-btn:not(:disabled):hover,
+:root[data-theme='dark'] .special-secondary-btn:not(:disabled):hover,
+:root[data-theme='dark'] .special-upload-btn:hover,
+:root[data-theme='dark'] .special-align-control button:hover,
+:root[data-theme='dark'] .special-style-control button:hover,
+:root[data-theme='dark'] .special-secondary-btn,
+:root[data-theme='dark'] .special-editor-select-field,
+:root[data-theme='dark'] .special-color-field,
+:root[data-theme='dark'] .special-font-status,
+:root[data-theme='dark'] .special-style-control button,
+:root[data-theme='dark'] .special-align-control button,
+:root[data-theme='dark'] .special-mini-field,
+:root[data-theme='dark'] .special-multi-empty-canvas,
+:root[data-theme='dark'] .song-duo-image-toggle,
+:root[data-theme='dark'] .anvo-mode-btn,
+:root[data-theme='dark'] .song-mini-icon-btn,
+:root[data-theme='dark'] .song-image-count,
+:root[data-theme='dark'] .song-mv-chip.is-other,
+:root[data-theme='dark'] .song-empty,
+:root[data-theme='dark'] .song-cover-album-mode-select,
+:root[data-theme='dark'] .song-cover-album-group-title,
+:root[data-theme='dark'] .song-cover-album-summary-counts,
+:root[data-theme='dark'] .song-cover-album-summary-counts strong,
+:root[data-theme='dark'] .song-cover-album-note,
+:root[data-theme='dark'] .song-cover-album-status,
+:root[data-theme='dark'] .song-cover-album-count,
+:root[data-theme='dark'] .song-cover-album-foot,
+:root[data-theme='dark'] .song-cover-album-track-date,
+:root[data-theme='dark'] .nav-link-sub.is-duo-subanchor,
+:root[data-theme='dark'] .song-screenshot-modal-message,
+:root[data-theme='dark'] .song-deleted-toggle,
+:root[data-theme='dark'] .song-insight-table thead th,
+:root[data-theme='dark'] .song-book-round-title,
+:root[data-theme='dark'] .song-book-round-legend-pill,
+:root[data-theme='dark'] .song-book-round-table thead th,
+:root[data-theme='dark'] .song-book-round-index-cell,
+:root[data-theme='dark'] .song-vs-event-unit-mv-sep,
+:root[data-theme='dark'] .song-vs-total-mv-sep,
+:root[data-theme='dark'] .song-mini-btn,
+:root[data-theme='dark'] .song-role-count,
+:root[data-theme='dark'] .song-image-date-caption,
+:root[data-theme='dark'] .song-oc-event-unit-count,
+:root[data-theme='dark'] .song-3dmv-section-title,
+:root[data-theme='dark'] .song-disclaimer,
+:root[data-theme='dark'] .song-filter-field,
+:root[data-theme='dark'] .song-filter-select,
+:root[data-theme='dark'] .song-group-pill,
+:root[data-theme='dark'] .song-group-pill.is-other,
+:root[data-theme='dark'] .song-page-btn,
+:root[data-theme='dark'] .song-page-text,
+:root[data-theme='dark'] .song-page-count,
+:root[data-theme='dark'] .song-toast-tag-label,
+:root[data-theme='dark'] .song-toast-meta span,
+:root[data-theme='dark'] .song-page-size-field,
+:root[data-theme='dark'] .song-page-size-select,
+:root[data-theme='dark'] .nav-link {
+  color: var(--ui-appearance-secondary);
+}
+
+:root[data-theme='dark'] .app-update-modal-mask,
+:root[data-theme='dark'] .app-release-log-image,
+:root[data-theme='dark'] .stats-top-id-input,
+:root[data-theme='dark'] .source-item.active .source-item-count,
+:root[data-theme='dark'] .source-export-name-input,
+:root[data-theme='dark'] .source-export-range-input,
+:root[data-theme='dark'] .screenshot-export-modal-mask,
+:root[data-theme='dark'] .duo-unit-row,
+:root[data-theme='dark'] .attr-summary-table thead th,
+:root[data-theme='dark'] .attr-summary-total-row,
+:root[data-theme='dark'] .attr-summary-total-row td,
+:root[data-theme='dark'] .preview-char-select-toggle,
+:root[data-theme='dark'] .preview-char-chip,
+:root[data-theme='dark'] .preview-festival-chip,
+:root[data-theme='dark'] .preview-head-filter-toggle,
+:root[data-theme='dark'] .preview-head-filter-btn,
+:root[data-theme='dark'] .preview-collapse-btn,
+:root[data-theme='dark'] .preview-attr-row,
+:root[data-theme='dark'] .preview-attr-summary-row,
+:root[data-theme='dark'] .preview-festival-row,
+:root[data-theme='dark'] .preview-daily-card,
+:root[data-theme='dark'] .preview-char-attr-card,
+:root[data-theme='dark'] .preview-char-attr-table thead th,
+:root[data-theme='dark'] .preview-char-attr-total-row td,
+:root[data-theme='dark'] .preview-vs-mini-table th,
+:root[data-theme='dark'] .preview-vs-mini-table td,
+:root[data-theme='dark'] .preview-vs-mini-table thead th,
+:root[data-theme='dark'] .preview-vs-score-table th,
+:root[data-theme='dark'] .preview-vs-score-table td,
+:root[data-theme='dark'] .preview-step,
+:root[data-theme='dark'] .preview-step-empty,
+:root[data-theme='dark'] .predict-switch-dialog-btn,
+:root[data-theme='dark'] .special-predict-mode-toggle,
+:root[data-theme='dark'] .special-multi-source-trigger,
+:root[data-theme='dark'] .special-multi-source-option,
+:root[data-theme='dark'] .special-multi-source-order,
+:root[data-theme='dark'] .special-page-picker select,
+:root[data-theme='dark'] .special-source-picker select,
+:root[data-theme='dark'] .special-range-field input,
+:root[data-theme='dark'] .special-inline-color-input,
+:root[data-theme='dark'] .special-secondary-btn,
+:root[data-theme='dark'] .special-history-btn,
+:root[data-theme='dark'] .special-multi-empty-canvas,
+:root[data-theme='dark'] .song-mv-chip.is-other,
+:root[data-theme='dark'] .song-cover-album-head,
+:root[data-theme='dark'] .stats-nav.mobile-floating .nav-cutoff,
+:root[data-theme='dark'] .stats-nav.mobile-floating .nav-section,
+:root[data-theme='dark'] .stats-nav.mobile-floating .nav-group,
+:root[data-theme='dark'] .song-screenshot-modal-mask,
+:root[data-theme='dark'] .song-book-round-missing-cell,
+:root[data-theme='dark'] .song-3dmv-total-circle {
+  background: var(--ui-appearance-fill);
+}
+
+:root[data-theme='dark'] .app-release-log-image,
+:root[data-theme='dark'] .stats-top-id-input,
+:root[data-theme='dark'] .stats-top-mini-btn,
+:root[data-theme='dark'] .stats-top-menu-btn,
+:root[data-theme='dark'] .username-input,
+:root[data-theme='dark'] .source-list,
+:root[data-theme='dark'] .source-item.active .source-item-count,
+:root[data-theme='dark'] .source-actions,
+:root[data-theme='dark'] .source-export-status,
+:root[data-theme='dark'] .app-screenshot-modal-spinner,
+:root[data-theme='dark'] .source-export-confirm,
+:root[data-theme='dark'] .io-drop-zone,
+:root[data-theme='dark'] .mobile-source-trigger,
+:root[data-theme='dark'] .mobile-tab-glider,
+:root[data-theme='dark'] .card-export-btn,
+:root[data-theme='dark'] .screenshot-export-modal,
+:root[data-theme='dark'] .screenshot-export-modal-spinner,
+:root[data-theme='dark'] .card-panel:not(.stats-nav),
+:root[data-theme='dark'] .count-table th,
+:root[data-theme='dark'] .count-table td,
+:root[data-theme='dark'] .dist-unit-summary,
+:root[data-theme='dark'] .id-step-btn,
+:root[data-theme='dark'] .reset-mini-btn,
+:root[data-theme='dark'] .support-card,
+:root[data-theme='dark'] .support-member-avatar,
+:root[data-theme='dark'] .lineup-card,
+:root[data-theme='dark'] .lineup-toggle-btn,
+:root[data-theme='dark'] .festival-card,
+:root[data-theme='dark'] .festival-card-table,
+:root[data-theme='dark'] .festival-count-badge,
+:root[data-theme='dark'] .festival-perm-mark,
+:root[data-theme='dark'] .matrix-wrap,
+:root[data-theme='dark'] .matrix-table th,
+:root[data-theme='dark'] .matrix-table td,
+:root[data-theme='dark'] .duo-unit-row,
+:root[data-theme='dark'] .duo-table th,
+:root[data-theme='dark'] .duo-table td,
+:root[data-theme='dark'] .duo-head-avatar,
+:root[data-theme='dark'] .duo-last-table th,
+:root[data-theme='dark'] .duo-last-table td,
+:root[data-theme='dark'] .duo-pair-avatar,
+:root[data-theme='dark'] .duo-last-table .jump-link,
+:root[data-theme='dark'] .attr-summary-card,
+:root[data-theme='dark'] .attr-summary-avatar,
+:root[data-theme='dark'] .attr-summary-table,
+:root[data-theme='dark'] .attr-summary-table th,
+:root[data-theme='dark'] .attr-summary-table td,
+:root[data-theme='dark'] .record-block,
+:root[data-theme='dark'] .record-sort-btn,
+:root[data-theme='dark'] .record-table th,
+:root[data-theme='dark'] .record-table td,
+:root[data-theme='dark'] .record-avatar,
+:root[data-theme='dark'] .fes-cell-avatar,
+:root[data-theme='dark'] .special-limited-unit-segment,
+:root[data-theme='dark'] .special-limited-char-avatar,
+:root[data-theme='dark'] .jump-link,
+:root[data-theme='dark'] .related-panel .duo-last-table th,
+:root[data-theme='dark'] .related-panel .duo-last-table td,
+:root[data-theme='dark'] .year-stats-table th,
+:root[data-theme='dark'] .year-stats-table td,
+:root[data-theme='dark'] .preview-row,
+:root[data-theme='dark'] .btn-group button:disabled:not(.active),
+:root[data-theme='dark'] .btn-group-sm button:disabled:not(.active),
+:root[data-theme='dark'] .char-chip:hover,
+:root[data-theme='dark'] .icon-group.attributes img:hover,
+:root[data-theme='dark'] .icon-group.units img:hover,
+:root[data-theme='dark'] .icon-group.is-disabled img.icon-disabled:not(.icon-active),
+:root[data-theme='dark'] .rarity-item:hover,
+:root[data-theme='dark'] .btn-group button:hover,
+:root[data-theme='dark'] .btn-group-sm button:hover,
+:root[data-theme='dark'] .panel-reset-btn:hover,
+:root[data-theme='dark'] .filter-mode-row .btn-group button.panel-reset-btn:disabled,
+:root[data-theme='dark'] .editor-series-chip,
+:root[data-theme='dark'] .member-card-placeholder,
+:root[data-theme='dark'] .vs-avatar-placeholder,
+:root[data-theme='dark'] .fes-type-icon-placeholder,
+:root[data-theme='dark'] .song-mv-pill-placeholder,
+:root[data-theme='dark'] .song-tooltip .info-icon,
+:root[data-theme='dark'] .tooltip-content,
+:root[data-theme='dark'] .preview-config-panel,
+:root[data-theme='dark'] .preview-config-reset,
+:root[data-theme='dark'] .preview-config-btn,
+:root[data-theme='dark'] .preview-char-select,
+:root[data-theme='dark'] .preview-char-select-toggle,
+:root[data-theme='dark'] .preview-char-chip,
+:root[data-theme='dark'] .preview-festival-chip,
+:root[data-theme='dark'] .preview-panel,
+:root[data-theme='dark'] .preview-head-filter-toggle,
+:root[data-theme='dark'] .preview-head-filter-btn,
+:root[data-theme='dark'] .preview-collapse-btn,
+:root[data-theme='dark'] .preview-attr-row,
+:root[data-theme='dark'] .preview-attr-summary-row,
+:root[data-theme='dark'] .preview-festival-row,
+:root[data-theme='dark'] .preview-daily-card,
+:root[data-theme='dark'] .preview-daily-score-cell,
+:root[data-theme='dark'] .preview-daily-score-cell.is-cfes,
+:root[data-theme='dark'] .preview-char-attr-card,
+:root[data-theme='dark'] .preview-step,
+:root[data-theme='dark'] .birthday-row,
+:root[data-theme='dark'] .birthday-info-popover,
+:root[data-theme='dark'] .birthday-info-card,
+:root[data-theme='dark'] .predict-switch-dialog-icon,
+:root[data-theme='dark'] .predict-switch-dialog-btn,
+:root[data-theme='dark'] .close-btn,
+:root[data-theme='dark'] .close-btn:hover,
+:root[data-theme='dark'] .pool-disable-popover,
+:root[data-theme='dark'] .save-all-btn,
+:root[data-theme='dark'] .special-lock-inner,
+:root[data-theme='dark'] .special-lock-input,
+:root[data-theme='dark'] .special-toolbar-group,
+:root[data-theme='dark'] .special-predict-mode-toggle,
+:root[data-theme='dark'] .special-multi-source-trigger,
+:root[data-theme='dark'] .special-multi-source-option,
+:root[data-theme='dark'] .special-multi-source-order,
+:root[data-theme='dark'] .special-page-picker select,
+:root[data-theme='dark'] .special-source-picker select,
+:root[data-theme='dark'] .special-range-field input,
+:root[data-theme='dark'] .special-inline-color-input,
+:root[data-theme='dark'] .special-history-btn,
+:root[data-theme='dark'] .special-editor-select-field select,
+:root[data-theme='dark'] .special-style-control,
+:root[data-theme='dark'] .special-align-control,
+:root[data-theme='dark'] .special-text-select,
+:root[data-theme='dark'] .special-mini-field input,
+:root[data-theme='dark'] .special-multi-empty-canvas,
+:root[data-theme='dark'] .anvo-mode-btn,
+:root[data-theme='dark'] .song-vs-pill,
+:root[data-theme='dark'] .song-role-card,
+:root[data-theme='dark'] .song-stat-card,
+:root[data-theme='dark'] .song-role-avatar,
+:root[data-theme='dark'] .song-image-count-circle,
+:root[data-theme='dark'] .song-oc-event-vs-icon,
+:root[data-theme='dark'] .song-oc-event-vs-icon.is-placeholder-slot,
+:root[data-theme='dark'] .song-oc-event-unit-card,
+:root[data-theme='dark'] .song-cover-album-card,
+:root[data-theme='dark'] .song-cover-album-extra,
+:root[data-theme='dark'] .song-cover-album-status,
+:root[data-theme='dark'] .song-screenshot-modal,
+:root[data-theme='dark'] .song-screenshot-modal-spinner,
+:root[data-theme='dark'] .song-book-round-legend-pill,
+:root[data-theme='dark'] .song-book-round-table th,
+:root[data-theme='dark'] .song-book-round-table td,
+:root[data-theme='dark'] .song-mini-btn,
+:root[data-theme='dark'] .song-duo-unit-card,
+:root[data-theme='dark'] .song-vs-event-image-tag-pill,
+:root[data-theme='dark'] .song-home-btn,
+:root[data-theme='dark'] .song-3dmv-unit-card,
+:root[data-theme='dark'] .song-3dmv-vs-chip-icon,
+:root[data-theme='dark'] .song-april-year-card,
+:root[data-theme='dark'] .song-disclaimer,
+:root[data-theme='dark'] .song-search,
+:root[data-theme='dark'] .song-filter-select,
+:root[data-theme='dark'] .song-list-wrap,
+:root[data-theme='dark'] .song-group-pill,
+:root[data-theme='dark'] .song-page-btn,
+:root[data-theme='dark'] .song-image-title-toast,
+:root[data-theme='dark'] .song-page-size-select,
+:root[data-theme='dark'] .pjsk-table th,
+:root[data-theme='dark'] .pjsk-table td {
+  border-color: var(--ui-appearance-border);
+}
+
+:root[data-theme='dark'] .username-input,
+:root[data-theme='dark'] .screenshot-export-modal,
+:root[data-theme='dark'] .card-panel:not(.stats-nav),
+:root[data-theme='dark'] .count-table,
+:root[data-theme='dark'] .lineup-toggle-btn,
+:root[data-theme='dark'] .festival-card-table,
+:root[data-theme='dark'] .festival-card-tier-cell,
+:root[data-theme='dark'] .festival-card-tier-cell-fes,
+:root[data-theme='dark'] .matrix-table,
+:root[data-theme='dark'] .attr-summary-table,
+:root[data-theme='dark'] .matrix-total-row td,
+:root[data-theme='dark'] .record-block,
+:root[data-theme='dark'] .special-limited-unit-segment,
+:root[data-theme='dark'] .compact-tip:active::after,
+:root[data-theme='dark'] .compact-tip:focus-visible::after,
+:root[data-theme='dark'] .preview-festival-perm,
+:root[data-theme='dark'] .birthday-info-card,
+:root[data-theme='dark'] .pool-disable-popover,
+:root[data-theme='dark'] .special-lock-inner,
+:root[data-theme='dark'] .special-action-btn:not(:disabled):hover,
+:root[data-theme='dark'] .special-secondary-btn:not(:disabled):hover,
+:root[data-theme='dark'] .special-upload-btn:hover,
+:root[data-theme='dark'] .special-align-control button:hover,
+:root[data-theme='dark'] .special-style-control button:hover,
+:root[data-theme='dark'] .anvo-mode-btn,
+:root[data-theme='dark'] .song-role-card,
+:root[data-theme='dark'] .song-stat-card,
+:root[data-theme='dark'] .song-mini-icon-btn,
+:root[data-theme='dark'] .song-oc-event-unit-card,
+:root[data-theme='dark'] .song-cover-album-status,
+:root[data-theme='dark'] .song-screenshot-modal,
+:root[data-theme='dark'] .song-mini-btn,
+:root[data-theme='dark'] .song-home-btn,
+:root[data-theme='dark'] .song-filter-select,
+:root[data-theme='dark'] .song-list-wrap,
+:root[data-theme='dark'] .song-list-wrap.is-h-scroll .song-table td:nth-child(2),
+:root[data-theme='dark'] .song-group-pill.is-other,
+:root[data-theme='dark'] .song-page-btn,
+:root[data-theme='dark'] .song-image-title-toast,
+:root[data-theme='dark'] .song-page-size-select,
+:root[data-theme='dark'] .song-placeholder-row td {
+  background: var(--ui-appearance-surface);
+}
+
+:root[data-theme='dark'] .app-data-loader,
+:root[data-theme='dark'] .btn-group button:disabled:not(.active),
+:root[data-theme='dark'] .btn-group-sm button:disabled:not(.active),
+:root[data-theme='dark'] .icon-group.is-disabled img.icon-disabled:not(.icon-active),
+:root[data-theme='dark'] .filter-mode-row .btn-group button.panel-reset-btn:disabled,
+:root[data-theme='dark'] .member-card-placeholder,
+:root[data-theme='dark'] .vs-avatar-placeholder,
+:root[data-theme='dark'] .fes-type-icon-placeholder,
+:root[data-theme='dark'] .song-mv-pill-placeholder,
+:root[data-theme='dark'] .song-tooltip .info-icon,
+:root[data-theme='dark'] .tooltip-content,
+:root[data-theme='dark'] .birthday-info-popover,
+:root[data-theme='dark'] .ev-id,
+:root[data-theme='dark'] .pool-section,
+:root[data-theme='dark'] .drawer-footer,
+:root[data-theme='dark'] .special-toolbar-group,
+:root[data-theme='dark'] .special-editor-select-field select,
+:root[data-theme='dark'] .special-style-control,
+:root[data-theme='dark'] .special-align-control,
+:root[data-theme='dark'] .special-text-select,
+:root[data-theme='dark'] .special-mini-field input {
+  background: var(--ui-glass-optical-control-bg);
+}
+
+:root[data-theme='dark'] .source-actions .io-btn:disabled,
+:root[data-theme='dark'] .source-export-status,
+:root[data-theme='dark'] .app-screenshot-modal-mask,
+:root[data-theme='dark'] .source-export-confirm,
+:root[data-theme='dark'] .source-export-confirm-actions .io-btn,
+:root[data-theme='dark'] .io-drop-zone,
+:root[data-theme='dark'] .nav-cutoff,
+:root[data-theme='dark'] .duo-cell-empty,
+:root[data-theme='dark'] .duo-zero,
+:root[data-theme='dark'] .preview-row,
+:root[data-theme='dark'] .preview-label,
+:root[data-theme='dark'] .global-config-bar {
+  background: var(--ui-appearance-group);
+}
+
+:root[data-theme='dark'] .abbr-text,
+:root[data-theme='dark'] .lineup-empty,
+:root[data-theme='dark'] .festival-empty,
+:root[data-theme='dark'] .duo-cell-empty,
+:root[data-theme='dark'] .duo-zero,
+:root[data-theme='dark'] .score-empty,
+:root[data-theme='dark'] .filter-mode-row .btn-group button.panel-reset-btn:disabled,
+:root[data-theme='dark'] .event-date,
+:root[data-theme='dark'] .event-end-date,
+:root[data-theme='dark'] .preview-daily-score-cell.is-empty,
+:root[data-theme='dark'] .preview-vs-score-empty,
+:root[data-theme='dark'] .cfg-group select:disabled,
+:root[data-theme='dark'] .mini-select:disabled,
+:root[data-theme='dark'] .special-multi-source-count,
+:root[data-theme='dark'] .song-cover-album-track-number,
+:root[data-theme='dark'] .song-book-round-empty,
+:root[data-theme='dark'] .song-group-empty,
+:root[data-theme='dark'] .song-mv-empty {
+  color: var(--ui-appearance-tertiary);
+}
+
+:root[data-theme='dark'] .lineup-more,
+:root[data-theme='dark'] .nuigurumi-table tbody tr.nuigurumi-round-start > td,
+:root[data-theme='dark'] .fes-row,
+:root[data-theme='dark'] .pool-section,
+:root[data-theme='dark'] .pool-disable-popover::after,
+:root[data-theme='dark'] .drawer-footer,
+:root[data-theme='dark'] .special-editor-row-font,
+:root[data-theme='dark'] .special-editor-row-colors,
+:root[data-theme='dark'] .special-editor-row-geometry,
+:root[data-theme='dark'] .song-cover-album-foot,
+:root[data-theme='dark'] .song-cover-album-track + .song-cover-album-track,
+:root[data-theme='dark'] .song-3dmv-text-section.is-full-vocal,
+:root[data-theme='dark'] .song-3dmv-image-section.is-full-vocal {
+  border-top-color: var(--ui-appearance-border);
+}
+
+:root[data-theme='dark'] .festival-card-table th,
+:root[data-theme='dark'] .festival-card-table td,
+:root[data-theme='dark'] .special-limited-unit-spacer,
+:root[data-theme='dark'] .special-limited-head-spacer,
+:root[data-theme='dark'] .special-limited-row-label,
+:root[data-theme='dark'] .special-limited-char-head,
+:root[data-theme='dark'] .special-limited-data-cell,
+:root[data-theme='dark'] .special-limited-unit-band,
+:root[data-theme='dark'] .nuigurumi-table tbody tr > td:last-child,
+:root[data-theme='dark'] .nuigurumi-table tbody tr > td.nuigurumi-members-cell,
+:root[data-theme='dark'] .song-table th:not(:last-child),
+:root[data-theme='dark'] .song-table td:not(:last-child) {
+  border-right-color: var(--ui-appearance-border);
+}
+
+:root[data-theme='dark'] .festival-card-table th,
+:root[data-theme='dark'] .festival-card-table td,
+:root[data-theme='dark'] .special-limited-unit-spacer,
+:root[data-theme='dark'] .special-limited-head-spacer,
+:root[data-theme='dark'] .special-limited-row-label,
+:root[data-theme='dark'] .special-limited-char-head,
+:root[data-theme='dark'] .special-limited-data-cell,
+:root[data-theme='dark'] .special-limited-unit-band,
+:root[data-theme='dark'] .nuigurumi-table tbody tr.nuigurumi-round-end > td,
+:root[data-theme='dark'] .drawer-header,
+:root[data-theme='dark'] .song-cover-album-head,
+:root[data-theme='dark'] .song-insight-table th,
+:root[data-theme='dark'] .song-insight-table td,
+:root[data-theme='dark'] .song-table th,
+:root[data-theme='dark'] .song-table td {
+  border-bottom-color: var(--ui-appearance-border);
+}
+
+:root[data-theme='dark'] .festival-card-tier-head-three,
+:root[data-theme='dark'] .festival-card-tier-head-two,
+:root[data-theme='dark'] .festival-card-tier-cell-three,
+:root[data-theme='dark'] .festival-card-tier-cell-two,
+:root[data-theme='dark'] .special-limited-matrix:not(.is-card-mode) .special-limited-segment-4,
+:root[data-theme='dark'] .special-limited-matrix.is-card-mode .special-limited-segment-4,
+:root[data-theme='dark'] .nuigurumi-table tbody tr > td.nuigurumi-round-cell,
+:root[data-theme='dark'] .nuigurumi-table tbody tr > td.nuigurumi-mobile-meta-cell {
+  border-left-color: var(--ui-appearance-border);
+}
+
+:root[data-theme='dark'] .matrix-zero {
+  background-color: var(--ui-appearance-group);
+}
+
+:root[data-theme='dark'] .matrix-table td.matrix-num.matrix-vs-zero {
+  background-color: var(--ui-appearance-surface) !important;
+}
+
+:root[data-theme='dark'] .matrix-table td.duo-num.duo-diagonal,
+:root[data-theme='dark'] .cfg-group select:disabled,
+:root[data-theme='dark'] .mini-select:disabled {
+  background-color: var(--ui-appearance-fill);
+}
+
+/* These cells have inline light bases beneath data-colored gradients, or a
+   legacy !important white reset. Override only the neutral base, retaining the
+   member/unit/attribute layer and the matrix's colored group boundaries. */
+:root[data-theme='dark'] .duo-table th.duo-char-head,
+:root[data-theme='dark'] .vs-unit-score-table td[style*='background-image'],
+:root[data-theme='dark'] .fes-record-table td[style*='background-image'] {
+  background-color: var(--ui-appearance-surface-soft) !important;
+  color: var(--ui-appearance-label);
+}
+:root[data-theme='dark'] .matrix-table .matrix-total-row td {
+  background: var(--ui-appearance-surface-soft) !important;
+  color: var(--ui-appearance-label);
+}
+:root[data-theme='dark'] .matrix-table td.duo-num.duo-diagonal {
+  background-color: rgba(15, 23, 42, 0.42) !important;
+}
+:root[data-theme='dark'] #rel-vs-unit-last-four .vs-mini-days-cell {
+  /* Keep the existing heatmap's relative shades beneath a dark wash. */
+  background-image: linear-gradient(rgba(15, 23, 42, 0.76), rgba(15, 23, 42, 0.76));
+  color: var(--ui-appearance-label) !important;
+}
+
+:root[data-theme='dark'] .vs-original-stat-table .vs-original-type-cell {
+  background-color: var(--ui-appearance-surface-soft);
+}
+
+:root[data-theme='dark'] .nav-link.active {
+  color: var(--ui-appearance-blue);
+}
+
+/* Feature-owned aliases stay on their consumers, including Teleported panels. */
+:root[data-theme='dark'] .source-menu {
+  --source-glass-border: var(--ui-glass-rim-light);
+  --source-inner-border: var(--ui-appearance-border);
+}
+:root[data-theme='dark'] .predict-drawer,
+:root[data-theme='dark'] .predict-drawer.is-mobile-sheet {
+  --pe-glass-bg: var(--ui-glass-optical-group-bg);
+  --pe-glass-bg-hover: var(--ui-glass-optical-control-bg-hover);
+  --pe-glass-bg-strong: var(--ui-glass-optical-control-bg);
+  --pe-glass-border: var(--ui-glass-optical-micro-border);
+  --pe-glass-shadow: var(--ui-glass-optical-micro-group-shadow);
+  --pe-glass-shadow-soft: var(--ui-glass-optical-micro-shadow);
+  --ui-glass-editor-control-fill: var(--ui-glass-editor-micro-control-fill);
+  --ui-glass-editor-tag-fill: var(--ui-glass-editor-micro-tag-fill);
+}
+
+:root[data-theme='dark'] :is(.desktop-tab-switcher, .mobile-tab-switcher) > .primary-tab-button.active,
+:root[data-theme='dark'] .nav-tabs > .source-dropdown > .source-trigger.top-nav-glass-capsule.ui-liquid-glass.active,
+:root[data-theme='dark'] :is(.mobile-source-trigger, .source-special-entry-btn, .source-export-status,
+  .preview-festival-inline-toggle, .preview-festival-label, .preview-meta, .preview-step,
+  .compact-filter-count, .filter-mode-hit-count, .predict-cleanup-info, .ev-id,
+  .special-multi-source-trigger span:nth-child(2), .special-secondary-btn.active,
+  .special-follow-btn.active, .special-multi-source-option.active, .special-case-actions button:hover,
+  .special-case-actions button:focus-visible, .predict-switch-dialog-copy strong) {
+  color: var(--ui-appearance-accent);
+}
+:root[data-theme='dark'] .source-item {
+  color: var(--ui-appearance-label);
+}
+:root[data-theme='dark'] .source-item.active {
+  color: #fff;
+}
+:root[data-theme='dark'] .source-item.active .source-item-count {
+  color: #e3fff9;
+  background: rgba(3, 46, 44, 0.42);
+}
+:root[data-theme='dark'] .source-menu .io-btn,
+:root[data-theme='dark'] .source-menu .source-order-btn,
+:root[data-theme='dark'] .source-menu .source-mini-btn {
+  color: var(--ui-appearance-label);
+}
+:root[data-theme='dark'] :is(.stats-top-mini-btn, .stats-top-menu-btn) {
+  color: var(--ui-appearance-label);
+  background: var(--ui-glass-optical-control-bg);
+  border-color: var(--ui-glass-optical-micro-border);
+  box-shadow: var(--ui-glass-optical-micro-shadow);
+}
+:root[data-theme='dark'] .floating-top-btn.ui-liquid-glass {
+  background: var(--ui-glass-surface-bg);
+  color: var(--ui-appearance-label);
+}
+:root[data-theme='dark'] .floating-top-btn-icon {
+  text-shadow: none;
+}
+:root[data-theme='dark'] .predict-info {
+  color: #f9a8d4;
+  background: linear-gradient(145deg, rgba(131, 45, 94, 0.36), rgba(58, 41, 69, 0.24));
+  border-color: rgba(249, 168, 212, 0.34);
+}
+:root[data-theme='dark'] :is(.predict-cleanup-info, .filter-mode-hit-count, .source-special-entry-btn,
+  .special-export-status, .app-update-banner) {
+  background: linear-gradient(145deg, rgba(15, 98, 91, 0.34), rgba(30, 61, 75, 0.24));
+  border-color: rgba(110, 231, 212, 0.34);
+}
+:root[data-theme='dark'] .btn-group button.active,
+:root[data-theme='dark'] .btn-group-sm button.active {
+  color: #fff;
+}
+:root[data-theme='dark'] :is(.char-chip.is-selected, .icon-group img.icon-active,
+  .special-secondary-btn.active, .special-follow-btn.active, .special-multi-source-option.active) {
+  background: rgba(45, 140, 134, 0.30);
+}
+:root[data-theme='dark'] :is(.anvo-mode-btn.active, .song-mini-btn.active) {
+  color: #bfdbfe;
+  background: rgba(59, 130, 246, 0.28);
+}
+:root[data-theme='dark'] .rarity-item.active {
+  background: rgba(217, 157, 44, 0.30);
+}
+:root[data-theme='dark'] .predict-switch-dialog-btn.is-discard {
+  color: #fecdd3;
+  background: rgba(159, 18, 57, 0.28);
+}
+
+/* Data surfaces keep the original unit/member/attribute color beneath a dark
+   wash. Use an image layer so inline background colors remain data-owned. */
+:root[data-theme='dark'] :is(.song-role-card, .song-stat-card, .song-duo-unit-card,
+  .song-oc-event-unit-card, .song-vs-event-unit-card, .song-vs-event-image-group,
+  .song-3dmv-unit-card, .song-2dmv-unit-card, .song-cover-album-group,
+  .song-cover-album-card, .song-cover-album-extra) {
+  background-image: linear-gradient(rgba(15, 23, 42, 0.84), rgba(15, 23, 42, 0.84));
+}
+:root[data-theme='dark'] :is(.lineup-attr-cell, .lineup-total-cell, .lineup-member-cell) {
+  color: var(--ui-appearance-label);
+  background-image: linear-gradient(rgba(15, 23, 42, 0.80), rgba(15, 23, 42, 0.80));
+}
+:root[data-theme='dark'] :is(.lineup-member-cell.is-empty, .lineup-empty) {
+  color: var(--ui-appearance-tertiary);
+}
+:root[data-theme='dark'] .lineup-member-score {
+  /* FES score styles carry an inline neutral ink color. */
+  color: var(--ui-appearance-label) !important;
+}
+:root[data-theme='dark'] .lineup-jump.jump-link {
+  color: var(--ui-appearance-label) !important;
+  background-color: var(--ui-appearance-surface-soft) !important;
+}
+:root[data-theme='dark'] :is(.attr-summary-table tbody tr.attr-summary-data-row td,
+  .matrix-table td.row-char, .matrix-vs-unit-total-row td,
+  .festival-card-tier-head, .festival-card-tier-cell, .festival-card-tier-cell-fes,
+  .song-book-round-oc-cell) {
+  background-image: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.82));
+}
+:root[data-theme='dark'] .special-limited-char-head {
+  background: var(--special-limited-char-tint, var(--ui-appearance-fill));
+}
+:root[data-theme='dark'] :is(.matrix-vs-unit-total-row td) {
+  background-blend-mode: multiply;
+}
+:root[data-theme='dark'] :is(.song-vs-pill, .song-image-count-circle, .song-vs-event-image-tag-pill,
+  .song-book-round-vs-cell.is-2d, .song-book-round-vs-cell.is-3d,
+  .song-book-round-legend-pill.is-2d, .song-book-round-legend-pill.is-3d) {
+  background-image: linear-gradient(rgba(15, 23, 42, 0.52), rgba(15, 23, 42, 0.52));
+}
+
+/* Preserve the distinct statistical categories with brighter versions of their
+   existing hues; neutral base labels must not mask these state selectors. */
+:root[data-theme='dark'] :is(.count-cell.lim, .count-cell.pure-score, .count-cell.fes-limited,
+  .festival-tier-four, .matrix-table td.matrix-num.matrix-max,
+  .vs-unit-last-four-mini-table .vs-mini-days-cell.vs-four-count-max,
+  .song-vs-event-title.is-no-2dmv, .song-oc-event-song-title.is-no-2dmv,
+  .song-role-list li.is-deleted-song .song-role-song-id,
+  .song-role-list li.is-deleted-song .song-role-song-title,
+  .song-vs-event-unit-mv-num-3d, .song-vs-total-mv-3d, .song-oc-event-mv-stat-chip.is-3d) {
+  color: #fda4af;
+}
+:root[data-theme='dark'] :is(.count-cell.p-score, .count-cell.recovery) { color: #f9a8d4; }
+:root[data-theme='dark'] :is(.count-cell.score-up, .count-cell.reward) { color: #fdba74; }
+:root[data-theme='dark'] :is(.count-cell.banner, .count-cell.fes-limited-ban,
+  .count-cell.three-star, .festival-tier-three) { color: #c4b5fd; }
+:root[data-theme='dark'] :is(.count-cell.two-star, .count-cell.limited-ban, .festival-tier-two) { color: #6ee7b7; }
+:root[data-theme='dark'] :is(.count-cell.accuracy, .matrix-table td.matrix-num.matrix-min,
+  .vs-unit-last-four-mini-table .vs-mini-days-cell.vs-four-count-min,
+  .song-role-song-id, .song-toast-id, .song-toast-compact-id, .song-disclaimer a) {
+  color: var(--ui-appearance-blue);
+}
+
+:root[data-theme='dark'] .song-april-year-card {
+  background: var(--ui-glass-optical-group-bg);
+  border-color: var(--ui-appearance-border);
+  box-shadow: var(--ui-shell-glass-shadow-soft);
+}
+:root[data-theme='dark'] .song-april-year-title {
+  color: var(--ui-control-label);
+}
+:root[data-theme='dark'] .song-april-year-count {
+  color: var(--ui-control-label-muted);
+}
+:root[data-theme='dark'] .card-detail-tooltip {
+  --card-tooltip-surface-bg: var(--ui-glass-optical-control-bg);
+}
+
+/* These categorical chips intentionally retain their light fill and dark ink. */
+:root[data-theme='dark'] :is(.nuigurumi-type-chip.is-cfes, .nuigurumi-type-chip.is-limited) {
+  color: #173042;
+}
+:root[data-theme='dark'] .song-diff-badge.is-hard { color: #0f172a; }
+:root[data-theme='dark'] .song-mv-chip.is-other { color: var(--ui-appearance-secondary); }
+:root[data-theme='dark'] .nuigurumi-mobile-meta-line.nuigurumi-mobile-type {
+  color: var(--ui-appearance-blue);
+}
+:root[data-theme='dark'] :is(.song-jacket-media, .song-april-song-jacket) {
+  background-color: var(--ui-appearance-surface-soft);
+}
+:root[data-theme='dark'] .song-mv-chip.is-3d {
+  color: #f9a8d4;
+  background: rgba(244, 114, 182, 0.16);
+}
+:root[data-theme='dark'] .song-mv-chip.is-2d {
+  color: #99f6e4;
+  background: rgba(45, 212, 191, 0.16);
+}
+:root[data-theme='dark'] .song-mv-chip.is-vs2d {
+  color: #bae6fd;
+  background: rgba(56, 189, 248, 0.16);
+}
+:root[data-theme='dark'] .song-mv-chip.is-original {
+  color: #ddd6fe;
+  background: rgba(167, 139, 250, 0.18);
+}
+
+/* Only monochrome UI glyphs are recolored; card art, jackets and unit logos are
+   deliberately outside this selector. */
+:root[data-theme='dark'] :is(.floating-menu-icon, .matrix-sort-icon,
+  .reset-mini-icon, .stats-top-reset-icon, .nav-collapse-fab-icon,
+  .song-mini-icon-btn-img, .song-diff-order-icon, .song-home-btn-icon) {
+  filter: brightness(0) saturate(100%) invert(90%);
+}
+:root[data-theme='dark'] :is(.primary-tab-button .btn-icon,
+  .compact-btn-icon[src^='/data/icon/'], .nav-collapse-icon) {
+  filter: brightness(0) saturate(100%) invert(90%);
+}
+:root[data-theme='dark'] .mobile-tab-switcher > .primary-tab-button.active .btn-icon {
+  filter: brightness(0) saturate(100%) invert(90%);
+}
+:root[data-theme='dark'] :is(.song-oc-unit-logo, .song-cover-album-group-logo,
+  .support-unit-title-logo, .festival-unit-logo, .festival-card-fes-logo-box,
+  .matrix-avatar-unit-logo, .record-unit-avatar, .duo-unit-logo,
+  .mini-unit-logo, .special-limited-unit-logo, .matrix-vs-unit-total-logo) {
+  /* Keep official artwork and its transparent silhouette. A thin edge light
+     makes black strokes legible without painting a rectangular white plate. */
+  background-color: transparent;
+  filter: drop-shadow(0 0 0.7px rgba(226, 232, 240, 0.78));
+}
+/* Fine, dark wordmarks need a crisp edge rather than a rectangular backing. */
+:root[data-theme='dark'] img:is([src*='unit_logo_ln.'], [src*='unit_logo_nc.']):not(.special-unit-logo):not(.special-canvas *) {
+  background-color: transparent;
+  filter: drop-shadow(0.6px 0 0 rgba(226, 232, 240, 0.75))
+    drop-shadow(-0.6px 0 0 rgba(226, 232, 240, 0.75))
+    drop-shadow(0 0.6px 0 rgba(226, 232, 240, 0.75))
+    drop-shadow(0 -0.6px 0 rgba(226, 232, 240, 0.75));
+}
+/* The VS wordmark is monochrome, so its ink can follow the dark UI glyphs. */
+:root[data-theme='dark'] img[src*='unit_logo_vs.']:not(.special-unit-logo):not(.special-canvas *) {
+  background-color: transparent;
+  filter: brightness(0) saturate(100%) invert(90%);
+}
+
+/* Export clones may be attached directly to body and inherit no page wrapper.
+   Their canvas backdrop must agree with the foreground selected above. */
+:root[data-theme='dark'] :is(.export-clone-root, .song-export-clone-root) {
+  color: var(--ui-appearance-label);
+  background-color: var(--ui-appearance-surface) !important;
+}
+:root[data-theme='dark'] .export-clone-root .matrix-total-row td {
+  /* Clone preparation freezes cell backgrounds inline. Keep total rows aligned
+     with the current neutral surface even when an older snapshot was light. */
+  background: var(--ui-appearance-surface-soft) !important;
+  color: var(--ui-appearance-label);
+}
+
+@media (forced-colors: active) {
+  :root[data-theme='dark'],
+  :root[data-theme='dark'] body,
+  :root[data-theme='dark'] #app {
+    color: CanvasText;
+    background: Canvas;
+  }
+}

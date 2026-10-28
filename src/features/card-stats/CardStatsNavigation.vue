@@ -38,32 +38,6 @@
           </div>
         </div>
 
-          <div v-if="!isMobileNav" class="nav-name-format export-hide">
-            <span class="nav-name-format-title">名称格式</span>
-            <div class="nav-name-format-options">
-              <label class="nav-name-format-option">
-                <input class="pjsk-ui-choice" v-model="navNameFormat" type="radio" value="abbr" />
-                缩写
-              </label>
-              <label class="nav-name-format-option">
-                <input class="pjsk-ui-choice" v-model="navNameFormat" type="radio" value="single" />
-                单字
-              </label>
-            </div>
-          </div>
-          <div class="nav-name-format export-hide">
-            <span class="nav-name-format-title">卡面展示</span>
-            <div class="nav-name-format-options">
-              <label class="nav-name-format-option">
-                <input class="pjsk-ui-choice" v-model="navCardImageMode" type="radio" value="before" />
-                花前
-              </label>
-              <label class="nav-name-format-option">
-                <input class="pjsk-ui-choice" v-model="navCardImageMode" type="radio" value="after" />
-                花后
-              </label>
-            </div>
-          </div>
           <div class="nav-quick-wrap">
             <div class="nav-scroll">
               <div v-for="group in navGroups" :key="group.id" class="nav-group">
@@ -98,8 +72,6 @@
 
 <script setup>
 import UiSurfaceTransition from '../../components/ui/UiSurfaceTransition.vue';
-defineProps(["isNavTopLayout","navCollapsed","setNavCollapsed","isMiniFloatingNav","safeMaxEventId","adjustDisplayEventId","onDisplayEventIdFocus","onDisplayEventIdInput","onDisplayEventIdBlur","resetTopBarDisplayEventId","isMobileNav","navGroups","isGroupActive","handleParentNavClick","isGroupExpanded","activeNavId","handleChildNavClick"]);
+defineProps(["isNavTopLayout","navCollapsed","setNavCollapsed","isMiniFloatingNav","safeMaxEventId","adjustDisplayEventId","onDisplayEventIdFocus","onDisplayEventIdInput","onDisplayEventIdBlur","resetTopBarDisplayEventId","navGroups","isGroupActive","handleParentNavClick","isGroupExpanded","activeNavId","handleChildNavClick"]);
 const displayEventIdDraft = defineModel('displayEventIdDraft');
-const navNameFormat = defineModel('navNameFormat');
-const navCardImageMode = defineModel('navCardImageMode');
 </script>

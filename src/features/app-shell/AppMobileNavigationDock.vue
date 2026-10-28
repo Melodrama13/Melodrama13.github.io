@@ -51,19 +51,21 @@
         type="button"
         class="pjsk-ui-action mobile-source-trigger ui-liquid-glass ui-liquid-glass--refractive"
         :class="{ 'is-open': sourceMenuOpen }"
-        :disabled="isHistoryPredictEditorOpen"
+        aria-haspopup="dialog"
+        aria-controls="app-settings-panel"
         :aria-expanded="sourceMenuOpen"
-        :aria-label="`数据源：${activePredictSourceName}`"
-        :title="isHistoryPredictEditorOpen ? '预测面板打开时不可操作数据源' : `当前数据源：${activePredictSourceName}`"
+        aria-label="设置"
+        title="设置"
         @pointerdown.stop
         @click.stop="toggleSourceMenu"
       >
-        源
+        <Settings :size="20" aria-hidden="true" />
       </button>
     </div>
 </template>
 
 <script setup>
+import { Settings } from 'lucide-vue-next';
 const props = defineProps({
   tabGestures: { type: Object, required: true },
   tabCatalog: { type: Object, required: true },
@@ -73,7 +75,6 @@ const props = defineProps({
 });
 const { isMobileTabDragging, mobileTabSwitcherStyle, onPrimaryTabPointerDown, onPrimaryTabPointerMove, onPrimaryTabPointerUp, onPrimaryTabPointerCancel, PRIMARY_TABS, selectPrimaryTab, MOBILE_TAB_ICONS, MOBILE_TAB_LABELS, mobileTabIndex, isMobileTabPressed, isTabGliderActive, primaryTabPressedIndex, primaryTabSwitcherRef } = props.tabGestures;
 const { currentTab } = props.tabCatalog;
-const { showSourceDropdownInNav, isHistoryPredictEditorOpen } = props.tabNavigation;
+const { showSourceDropdownInNav } = props.tabNavigation;
 const { sourceMenuOpen, toggleSourceMenu, mobileSourceTriggerRef } = props.sourceMenu;
-const { activePredictSourceName } = props.predictionSources;
 </script>

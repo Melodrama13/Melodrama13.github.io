@@ -4,7 +4,19 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/elements/rarity_birthday.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (() => {
+        let appearance = 'system';
+        try {
+          const savedAppearance = JSON.parse(localStorage.getItem('pjsk_planner_settings_v1') || 'null')?.appearance;
+          if (['light', 'dark', 'system'].includes(savedAppearance)) appearance = savedAppearance;
+        } catch {}
+        const theme = appearance === 'dark' || (appearance === 'system' && globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
     <title>pjsk-planner</title>
   </head>
   <body>
