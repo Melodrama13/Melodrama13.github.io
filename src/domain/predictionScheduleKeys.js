@@ -1,7 +1,15 @@
 /** Developer-maintained numeric-event order, including historical positions. */
 const KEY_PATTERN = /^(?:\d{2}(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(?:[1-9]\d*|Test(?:[2-9]|[1-9]\d+)?|Final(?:[2-9]|[1-9]\d+)?|Extra[1-9]\d*|Release)|Compilation\d{3,})$/i;
+const WORLD_LINK_KEY_PATTERN = /^(\d{2})WL([1-9]\d*)(LN|MMJ|VBS|WS|NC|VS|P[1-9]\d*|Final)$/i;
+const parseWorldLinkKey = value => {
+  const match = String(value ?? '').trim().match(WORLD_LINK_KEY_PATTERN);
+  if (!match || !Number.isSafeInteger(Number(match[2]))) return null;
+  const subject = match[3].toUpperCase();
+  if (subject.startsWith('P') && !Number.isSafeInteger(Number(subject.slice(1)))) return null;
+  return { series: Number(match[2]), subject };
+};
 export const normalizePredictionScheduleKey = value => String(value ?? '').trim().toLowerCase();
-export const isPredictionScheduleKey = value => typeof value === 'string' && KEY_PATTERN.test(value.trim());
+export const isPredictionScheduleKey = value => typeof value === 'string' && (KEY_PATTERN.test(value.trim()) || parseWorldLinkKey(value) !== null);
 const hasNumericId = event => /^\d+$/.test(String(event?.id ?? ''));
 
 /** Array position is the current numeric ID; dates never determine identity. */
@@ -21,12 +29,25 @@ const eventKind = event => {
   const type = String(event?.event_type || '').trim();
   if (/测试|test/i.test(type)) return 'test';
   if (/终章/.test(type) && /World\s*Link|WL/i.test(type)) return 'final';
+  if (type === 'World Link') return 'worldLink';
   return type === '总集篇' ? 'compilation' : 'normal';
 };
 const assertOrderEntryKind = (entry, event) => {
   const key = normalizePredictionScheduleKey(entry.key);
-  const expected = key.startsWith('compilation') ? 'compilation' : /test\d*$/.test(key) ? 'test' : /final\d*$/.test(key) ? 'final' : /release$/.test(key) ? 'release' : 'normal';
-  if (eventKind(event) !== expected) throw new Error('顺序表 ' + entry.key + ' 与活动 ' + entry.eventId + ' 的特殊类型不一致，请更新顺序表和活动数据。');
+  const worldLink = parseWorldLinkKey(entry.key);
+  const expected = worldLink ? (worldLink.subject === 'FINAL' ? 'final' : 'worldLink')
+    : key.startsWith('compilation') ? 'compilation' : /test\d*$/.test(key) ? 'test' : /final\d*$/.test(key) ? 'final' : /release$/.test(key) ? 'release' : 'normal';
+  const kind = eventKind(event);
+  if (kind !== expected || (kind === 'final' && !worldLink)) throw new Error('顺序表 ' + entry.key + ' 与活动 ' + entry.eventId + ' 的特殊类型不一致，请更新顺序表和活动数据。');
+  if (!worldLink) return;
+  const isFinal = worldLink.subject === 'FINAL';
+  const sourceSeries = event.type_series_id;
+  if ((!isFinal || sourceSeries !== null && sourceSeries !== '' && sourceSeries !== undefined)
+    && Number(sourceSeries) !== worldLink.series) throw new Error('顺序表 ' + entry.key + ' 与活动 ' + entry.eventId + ' 的 WL 轮次不一致。');
+  const unit = String(event.unit || '').trim().toUpperCase();
+  if (isFinal || worldLink.subject.startsWith('P')) {
+    if (unit) throw new Error('顺序表 ' + entry.key + ' 的终章或跨团篇章不应绑定单个团体。');
+  } else if (unit !== worldLink.subject) throw new Error('顺序表 ' + entry.key + ' 与活动 ' + entry.eventId + ' 的 WL 团体不一致。');
 };
 
 /** Validate the full resource snapshot before any stored prediction is cleaned. */

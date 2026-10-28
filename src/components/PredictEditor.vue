@@ -21,6 +21,7 @@
   :startSheetDrag="startSheetDrag"
   :event="event"
   :isFixedRosterMode="isFixedRosterMode"
+  :isWorldLinkMode="isWorldLinkMode"
   :form="form"
   :applyGlobalAttr="applyGlobalAttr"
   :ATTRS="ATTRS"
@@ -140,7 +141,7 @@ const { disableReasonPopoverName, disableReasonPopoverPinned, disableReasonHover
   get toggleChar() { return toggleChar; }
 });
 
-const { isWorldLinkMode, isFixedRosterCollabMode, isFixedRosterMode, fixedRosterTip, isWorldLinkFinalChapter, normalizedBoxLockedUnits, isApplyingRules, getOCUnit, isUnitLockedInCurrentRound, isFesFestival, isBfesSkillAvailable, isPScoreAvailable, isVsFesSkillMode, isActiveFesSkill, isFesSkillTag, isBannerEligibleChar, bannerCandidates, activeBannerName, syncBannerName, shouldMarkBannerCard, getBannerUnit, getDisplayUnit, isVSUnitLocked, isBfesLocked, isForcedBfesInBox, isBfesVsUnitLocked, isUnitScoreLocked, isConfirmedSkillLocked, isSkillLocked, isRarityLocked, isAttrLocked, isCharSelectable, getCharDisableReason, clearInvalidBoxBanner, applyBoxPoolRestriction, applyGlobalAttrToFourStars, applyFesRules, applyAutoSkillRules, lockVSUnitToBanner, applyAllRules } = usePredictionRosterRules({
+const { isWorldLinkMode, isFixedRosterCollabMode, isFixedRosterMode, fixedRosterTip, normalizedBoxLockedUnits, isApplyingRules, getOCUnit, isUnitLockedInCurrentRound, isFesFestival, isBfesSkillAvailable, isPScoreAvailable, isVsFesSkillMode, isActiveFesSkill, isFesSkillTag, isBannerEligibleChar, bannerCandidates, activeBannerName, syncBannerName, shouldMarkBannerCard, getBannerUnit, getDisplayUnit, isVSUnitLocked, isBfesLocked, isForcedBfesInBox, isBfesVsUnitLocked, isUnitScoreLocked, isConfirmedSkillLocked, isSkillLocked, isRarityLocked, isAttrLocked, isCharSelectable, getCharDisableReason, clearInvalidBoxBanner, applyBoxPoolRestriction, applyGlobalAttrToFourStars, applyFesRules, applyAutoSkillRules, lockVSUnitToBanner, applyAllRules } = usePredictionRosterRules({
   get form() { return form; },
   get isWorldLinkTeamSeries() { return isWorldLinkTeamSeries; },
   get props() { return props; },

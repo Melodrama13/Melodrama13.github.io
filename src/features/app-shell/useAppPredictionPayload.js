@@ -209,7 +209,7 @@ const buildPredictEventPatchFromPayload = (payload, options = {}) => {
     ? ''
     : buildBannerNameWithUnit(resolvedBannerName, bannerCard?.Affiliation);
 
-  return ports.predictionSchedule.retargetPredictPatch({
+  return ports.predictionSchedule.normalizePredictionPatchBySource(ports.predictionSchedule.retargetPredictPatch({
     id: targetEventId,
     predict_schema_version: 5,
     event_title: event_title,
@@ -221,7 +221,7 @@ const buildPredictEventPatchFromPayload = (payload, options = {}) => {
     banner: finalBanner,
     unit: eventType === 'World Link' ? worldLinkUnit : finalUnit,
     isPredict: true
-  }, sourceEvent);
+  }, sourceEvent));
 };
 
 return {

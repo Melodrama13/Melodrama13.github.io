@@ -2,6 +2,7 @@ import { computed } from "vue";
 import { getBaseName, hexToRgb, rgbaFromHex, mixHexWithWhite, normalizeId } from './specialPredictionFormatters.js';
 import { mergeCollaborationCardPredictions } from '../../domain/collaborationEvents.js';
 import { isCompilationEvent } from '../../utils/compilationEvents.js';
+import { getWorldLinkEventTypeLabel, isTeamWorldLinkEvent } from '../../domain/worldLink.js';
 
 /** Owns special prediction case rows with explicit instance dependencies. */
 export function useSpecialCaseRows(ports = {}) {
@@ -141,7 +142,11 @@ const buildRenderedCase = ({ base, patch, source, caseIndex = 0, multi = false }
   const normalCards = annotateCards(normalSourceCards, bannerBase);
   const memberSlots = multi && !isCollab ? buildCaseMemberSlots(normalCards) : normalCards;
   const eventType = isCollab ? '联动' : ports.eventCatalog.getEventType(event);
-  const resolvedUnit = ports.eventCatalog.getEventUnit(event) || ports.eventCatalog.resolveUnitFromCards(cards);
+  const isWorldLink = eventType === 'World Link';
+  const resolvedUnit = isWorldLink && !isTeamWorldLinkEvent(event) ? ''
+    : ports.eventCatalog.getEventUnit(event) || ports.eventCatalog.resolveUnitFromCards(cards);
+  const wlBorderColor = ports.metadata.unitColorMap.value[resolvedUnit]
+    || ports.metadata.charMap.value['初音未来']?.color || '#33CCBB';
   const colorName = bannerBase
     || getBaseName(normalCards.find((card) => !ports.metadata.vsNameSet.value.has(getBaseName(card?.Name)))?.Name)
     || getBaseName(normalCards[0]?.Name);
@@ -162,6 +167,7 @@ const buildRenderedCase = ({ base, patch, source, caseIndex = 0, multi = false }
     sourceIds: source?.id ? [source.id] : [],
     sourceNames: source?.name ? [source.name] : [],
     eventType,
+    eventTypeLabel: getWorldLinkEventTypeLabel({ ...event, event_type: eventType }),
     hasPrediction: !!patch,
     isCollab,
     detailKind,
@@ -169,8 +175,9 @@ const buildRenderedCase = ({ base, patch, source, caseIndex = 0, multi = false }
     rowClass: `${ports.eventCatalog.getRowLimitClass(event, cards)}${isCollab ? ' is-collab-event' : ''}`.trim(),
     unitLabel: resolvedUnit.toUpperCase(),
     unitLogo: ports.noteTokens.UNIT_LOGOS[resolvedUnit] || '',
-    seriesLabel: isCollab ? '' : ports.eventCatalog.buildSeriesLabel(event),
+    seriesLabel: isCollab ? '' : ports.eventCatalog.buildSeriesLabel(event, resolvedUnit),
     detailStyle: {
+      '--special-wl-border-color': wlBorderColor,
       '--special-row-gradient': rowGradient,
       '--special-collab-border-gradient': buildMemberBorderGradient(normalCards, mainColor),
       '--special-row-color-soft': rgbaFromHex(mainColor, 0.7),

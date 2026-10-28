@@ -1,11 +1,12 @@
 import { computed } from 'vue';
-import { isWorldLinkCardType } from '../../domain/worldLink.js';
+import { isWorldLinkCardType, getWorldLinkEventTypeLabel } from '../../domain/worldLink.js';
 
 /** Presentation owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
  * Dependencies: props, Formatting, PreviewSelections.
  */
 export function useHistoryPresentation(ports) {
+const getEventTypeLabel = event => getWorldLinkEventTypeLabel(event, ports.props.predictionScheduleOrder);
 const FALLBACK_UNIT_COLORS = {
   ln: '#4455DD',
   mmj: '#88DD44',
@@ -250,6 +251,7 @@ const getFestivalPreviewUnitLogo = (name) => {
 
 return {
   UNIT_COLORS,
+  getEventTypeLabel,
   translateType,
   translateSkill,
   translateAttr,

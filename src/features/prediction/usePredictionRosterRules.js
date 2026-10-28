@@ -1,5 +1,6 @@
 import { computed } from "vue";
 import { isCollaborationEvent } from "../../domain/collaborationEvents.js";
+import { WORLD_LINK_PREDICTION_SKILL } from '../../domain/worldLink.js';
 
 /** Owns prediction roster rules; state is per editor instance. */
 export const usePredictionRosterRules = (dependencies = {}) => {
@@ -10,10 +11,6 @@ export const usePredictionRosterRules = (dependencies = {}) => {
     if (isFixedRosterCollabMode.value) return '联动人选、人数、星级与组合已固定，仅预测花色和技能';
     if (isWorldLinkMode.value) return 'World Link 人选固定，无需 Ban主';
     return '第一个角色默认为 Ban主';
-  });
-  const isWorldLinkFinalChapter = computed(() => {
-    const sid = Number(dependencies.props.event?.type_series_id);
-    return String(dependencies.form.eventType || '').trim() === 'World Link' && sid === 3;
   });
   const normalizedBoxLockedUnits = computed(() => {
     const list = Array.isArray(dependencies.props.boxLockedUnits) ? dependencies.props.boxLockedUnits : [];
@@ -32,7 +29,7 @@ export const usePredictionRosterRules = (dependencies = {}) => {
     return normalizedBoxLockedUnits.value.includes(String(unit || '').trim().toLowerCase());
   };
   const isFesFestival = () => dependencies.FES_FESTIVALS.includes(String(dependencies.props.event?.festival || '').trim());
-  const isBfesSkillAvailable = (char) => !isFixedRosterCollabMode.value && !!dependencies.ACTIVE_FES_SKILL_KEY && isFesFestival() && String(char?.rarity) === '4';
+  const isBfesSkillAvailable = (char) => !isWorldLinkMode.value && !isFixedRosterCollabMode.value && !!dependencies.ACTIVE_FES_SKILL_KEY && isFesFestival() && String(char?.rarity) === '4';
   const isPScoreAvailable = (char) => String(char?.rarity) === '4';
   const isVsFesSkillMode = (char) => isBfesSkillAvailable(char) && dependencies.VS_NAMES.includes(char?.name);
   const isActiveFesSkill = (skillType) => String(skillType || '').trim() === dependencies.ACTIVE_FES_SKILL_KEY;
@@ -130,7 +127,7 @@ export const usePredictionRosterRules = (dependencies = {}) => {
     return !isVsFesSkillMode(char) && !isBfesLocked(char) && dependencies.form.gachaType === 'limited' && dependencies.VS_NAMES.includes(char?.name) && String(char?.rarity) === '4';
   };
 
-  const isConfirmedSkillLocked = () => isWorldLinkFinalChapter.value;
+  const isConfirmedSkillLocked = () => isWorldLinkMode.value;
 
   const isSkillLocked = (char) => {
     return isConfirmedSkillLocked() || isForcedBfesInBox(char) || isUnitScoreLocked(char);
@@ -141,7 +138,7 @@ export const usePredictionRosterRules = (dependencies = {}) => {
   };
 
   const isAttrLocked = (char) => {
-    return !!dependencies.form.predictAttr && String(char?.rarity) === '4' && !isBfesLocked(char);
+    return !isWorldLinkMode.value && !!dependencies.form.predictAttr && String(char?.rarity) === '4' && !isBfesLocked(char);
   };
 
   const isCharSelectable = (name) => {
@@ -193,6 +190,10 @@ export const usePredictionRosterRules = (dependencies = {}) => {
   };
 
   const applyGlobalAttrToFourStars = () => {
+    if (isWorldLinkMode.value) {
+      dependencies.form.predictAttr = '';
+      return;
+    }
     if (!dependencies.form.predictAttr) return;
     dependencies.form.selectedChars.forEach((c) => {
       if (String(c.rarity) === '4' && !isBfesLocked(c)) {
@@ -202,7 +203,7 @@ export const usePredictionRosterRules = (dependencies = {}) => {
   };
 
   const applyFesRules = () => {
-    if (isFixedRosterCollabMode.value) return;
+    if (isWorldLinkMode.value || isFixedRosterCollabMode.value) return;
     dependencies.form.selectedChars.forEach((c) => {
       if (!isBfesSkillAvailable(c) && isActiveFesSkill(c.skillType)) {
         c.skillType = '-';
@@ -220,7 +221,7 @@ export const usePredictionRosterRules = (dependencies = {}) => {
         return;
       }
       if (isConfirmedSkillLocked()) {
-        c.skillType = 'score_up';
+        c.skillType = WORLD_LINK_PREDICTION_SKILL;
         return;
       }
 
@@ -278,7 +279,6 @@ export const usePredictionRosterRules = (dependencies = {}) => {
     get isFixedRosterCollabMode() { return isFixedRosterCollabMode; },
     get isFixedRosterMode() { return isFixedRosterMode; },
     get fixedRosterTip() { return fixedRosterTip; },
-    get isWorldLinkFinalChapter() { return isWorldLinkFinalChapter; },
     get normalizedBoxLockedUnits() { return normalizedBoxLockedUnits; },
     get isApplyingRules() { return isApplyingRules; },
     get getOCUnit() { return getOCUnit; },

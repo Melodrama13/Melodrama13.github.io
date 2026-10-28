@@ -44,7 +44,7 @@
 
             <div class="type-indicator">
               <span class="type-tag" :style="getTypeTagStyle(row.event)">
-                {{ row.event.event_type }}
+                {{ getEventTypeLabel(row.event) }}
               </span>
               <span class="series-text">{{ formatSeries(row.event) }}</span>
             </div>
@@ -56,6 +56,7 @@
               <div v-for="(card, normalIndex) in getNormalCards(row.event.memberCards)" :key="`${card.CardID}-${normalIndex}`" class="member-card-box">
                 <div
                   class="avatar-container"
+                  :data-unit="String(card.Affiliation || '').trim().toLowerCase()"
                   :class="{ 'is-open': isCardTooltipOpen(row.key, card, `n-${normalIndex}`) }"
                   :style="{ borderColor: getUnitColor(card.Affiliation) }"
                   @mouseenter="handleCardTooltipEnter(row.key, card, `n-${normalIndex}`, $event)"
@@ -121,6 +122,7 @@
               <div v-for="(card, fesIndex) in getFesCards(row.event.memberCards)" :key="`${card.CardID}-${fesIndex}`" class="member-card-box">
                 <div
                   class="avatar-container"
+                  :data-unit="String(card.Affiliation || '').trim().toLowerCase()"
                   :class="{ 'is-open': isCardTooltipOpen(row.key, card, `f-${fesIndex}`) }"
                   :style="{ borderColor: getUnitColor(card.Affiliation) }"
                   @mouseenter="handleCardTooltipEnter(row.key, card, `f-${fesIndex}`, $event)"
@@ -280,7 +282,7 @@ const { getPredictStatus } = props.predictionEligibility;
 const { removePredict } = props.predictionEditor;
 const { getBoxTurnInRound } = props.eventOrdering;
 const { shouldRenderEventHeavy, getEventPlaceholderMemberCount, getEventPlaceholderVsCount } = props.progressiveRender;
-const { translateType, translateSkill, translateAttr, getCharAbbr, getUnitColor, getCharColor, isVirtualSinger, isSpecialFestival, getNormalCards, getFesCards, getFesType, getMemberRibbonLabel, getTypeTagStyle, formatSeries, formatSeriesCompact, getEditorSeriesStyle, parseVS } = props.presentation;
+const { getEventTypeLabel, translateType, translateSkill, translateAttr, getCharAbbr, getUnitColor, getCharColor, isVirtualSinger, isSpecialFestival, getNormalCards, getFesCards, getFesType, getMemberRibbonLabel, getTypeTagStyle, formatSeries, formatSeriesCompact, getEditorSeriesStyle, parseVS } = props.presentation;
 const { getVisibleCardTooltipImageList, onCardTooltipImageError } = props.cardMedia;
 </script>
 

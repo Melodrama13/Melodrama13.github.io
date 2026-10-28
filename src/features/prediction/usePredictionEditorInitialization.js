@@ -31,7 +31,8 @@ export const usePredictionEditorInitialization = (dependencies = {}) => {
         : (currentGacha === 'UE限定' ? 'ue' : 'perm');
       dependencies.form.isGachaLocked = hasFixedGacha;
 
-      dependencies.form.predictAttr = dependencies.normalizePredictionAttribute(newVal.event_attribute);
+      dependencies.form.predictAttr = dependencies.isWorldLinkTeamSeries(newVal)
+        ? '' : dependencies.normalizePredictionAttribute(newVal.event_attribute);
       dependencies.form.bannerName = '';
 
       if (newVal.memberCards && (newVal.isPredict || dependencies.isFixedRosterMode.value)) {

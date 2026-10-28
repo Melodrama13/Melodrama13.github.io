@@ -86,7 +86,7 @@
                 : { background: 'linear-gradient(45deg, rgba(253, 124, 193, 0.20) 0%, rgba(135, 192, 255, 0.20) 50%, rgba(248, 255, 135, 0.20) 100%)' },
               row.event.gacha_type === '普通限定'
                 ? { border: '3px solid #ff4d4f' }
-                : (row.event.gacha_type === 'UE限定' ? { border: '3px solid #f59e0b' } : {})
+                : (row.event.event_type === 'World Link' || row.event.gacha_type === 'UE限定' ? { border: '3px solid #33ccbb' } : {})
               ]">
           <HistoryEventRowContent
   :history-now="clock.spoilerNow.value"

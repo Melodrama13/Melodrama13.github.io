@@ -101,7 +101,10 @@
                       <span class="special-case-label" :style="getPageCaseLabelStyle(page.key)">{{ caseItem.caseLabel }}</span>
                       <img v-if="caseItem.detailKind === 'box' && caseItem.unitLogo" :src="caseItem.unitLogo" class="special-unit-logo" :alt="caseItem.unitLabel" />
                       <img v-else-if="caseItem.detailKind === 'mixed'" src="/specialized/se.png" class="special-se-logo" alt="混活" />
-                      <span v-else-if="caseItem.detailKind === 'wl'" class="special-wl-text">World Link</span>
+                      <template v-else-if="caseItem.detailKind === 'wl'">
+                        <img v-if="caseItem.unitLogo" :src="caseItem.unitLogo" class="special-unit-logo" :alt="caseItem.unitLabel" />
+                        <span class="special-wl-text">{{ caseItem.eventTypeLabel }}</span>
+                      </template>
                       <span v-else class="special-unknown-text">{{ caseItem.eventType || '待定' }}</span>
                       <span v-if="caseItem.seriesLabel" class="special-series-label">{{ caseItem.seriesLabel }}</span>
                     </div>

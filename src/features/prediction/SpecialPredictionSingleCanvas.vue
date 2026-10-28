@@ -71,7 +71,8 @@
                   <img src="/specialized/se.png" class="special-se-logo" alt="混活" />
                 </template>
                 <template v-else-if="row.detailKind === 'wl'">
-                  <span class="special-wl-text">World Link</span>
+                  <img v-if="row.unitLogo" :src="row.unitLogo" class="special-unit-logo" :alt="row.unitLabel" />
+                  <span class="special-wl-text">{{ row.eventTypeLabel }}</span>
                 </template>
                 <template v-else>
                   <span class="special-unknown-text">{{ row.eventType || '待定' }}</span>

@@ -2,7 +2,7 @@ import { computed } from "vue";
 import { isCompilationEvent } from "../../utils/compilationEvents.js";
 import { normalizeUnit, normalizeId, getBaseName } from './specialPredictionFormatters.js';
 import { isCollaborationEvent } from '../../domain/collaborationEvents.js';
-import { isWorldLinkCardType } from '../../domain/worldLink.js';
+import { isWorldLinkCardType, isTeamWorldLinkEvent } from '../../domain/worldLink.js';
 
 /** Owns special prediction event catalog with explicit instance dependencies. */
 export function useSpecialEventCatalog(ports = {}) {
@@ -86,7 +86,7 @@ const resolveUnitFromCards = (cards) => {
   return normalizeUnit(firstOc?.Affiliation || normalCards[0]?.Affiliation);
 };
 
-const buildSeriesLabel = (event) => {
+const buildSeriesLabel = (event, unit = getEventUnit(event)) => {
   const sid = String(event?.type_series_id || '').trim();
   const eventType = getEventType(event);
   if (!sid) return eventType === 'World Link' ? getWlPartLabel(event) : '';
@@ -94,7 +94,10 @@ const buildSeriesLabel = (event) => {
   const bannerLabel = banner || '';
   if (eventType === '箱活') return `${bannerLabel}${sid}箱`;
   if (eventType === '混活') return `${bannerLabel}${sid}混`;
-  if (eventType === 'World Link') return `WL${sid}${getWlPartLabel(event)}`;
+  if (eventType === 'World Link') {
+    const unitPrefix = isTeamWorldLinkEvent(event) && unit ? `${unit.toUpperCase()} ` : '';
+    return `${unitPrefix}WL${sid}${getWlPartLabel(event)}`;
+  }
   return sid;
 };
 

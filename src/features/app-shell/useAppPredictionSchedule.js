@@ -3,7 +3,7 @@ import { isCompilationEvent } from "../../utils/compilationEvents.js";
 import { normalizePredictionScheduleKey, getPredictionScheduleOrderEntries } from "../../domain/predictionScheduleKeys.js";
 import { getExplicitPredictionKey, resolveImportedPredictionKey } from "../../domain/legacyPredictionMigration.js";
 import { normalizeCollaborationEventId, isCollaborationEvent, mergeCollaborationCardPredictions } from "../../domain/collaborationEvents.js";
-import { isTeamWorldLinkEvent } from '../../domain/worldLink.js';
+import { isTeamWorldLinkEvent, WORLD_LINK_PREDICTION_SKILL } from '../../domain/worldLink.js';
 
 /** Owns application prediction schedule with per-instance state and explicit peer interfaces. */
 export function useAppPredictionSchedule(ports = {}) {
@@ -204,6 +204,9 @@ const normalizeWorldLinkPatch = (patch) => {
     event_type: sourceType,
     gacha_type: sourceEvent.gacha_type,
     type_series_id: sourceEvent.type_series_id,
+    event_attribute: '',
+    memberCards: Array.isArray(patch.memberCards)
+      ? patch.memberCards.map(card => ({ ...card, Skill: WORLD_LINK_PREDICTION_SKILL })) : patch.memberCards,
     banner: '',
     unit: isTeamWorldLinkEvent(sourceEvent) ? (sourceEvent.unit || patch.unit || '') : ''
   };

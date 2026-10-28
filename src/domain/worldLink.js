@@ -7,6 +7,30 @@ export function getWorldLinkCardSeries(type) {
 
 export const isWorldLinkCardType = type => getWorldLinkCardSeries(type) !== null;
 
+// Prediction defaults are shared by every WL round; official card data stays authoritative.
+export const WORLD_LINK_PREDICTION_SKILL = 'score_up';
+
+// Naming transitions apply equally to activity and finale tags.
+const WORLD_LINK_TYPE_NAMES = Object.freeze([
+  { firstSeries: 1, name: 'World Link' },
+  { firstSeries: 4, name: 'World Crown' }
+]);
+
+export function getWorldLinkEventTypeLabel(event, scheduleOrder = null) {
+  const type = String(event?.event_type || '').trim();
+  const isFinal = type === 'World Link终章';
+  if (type !== 'World Link' && !isFinal) return type;
+
+  const declaredSeries = Number(event?.type_series_id);
+  const key = scheduleOrder?.keys?.[event?.id] || event?.key || '';
+  const keySeries = String(key).match(/^\d{2}WL([1-9]\d*)/i)?.[1];
+  const series = Number.isSafeInteger(declaredSeries) && declaredSeries > 0 ? declaredSeries : Number(keySeries);
+  if (!Number.isSafeInteger(series) || series <= 0) return type;
+
+  const name = WORLD_LINK_TYPE_NAMES.findLast(rule => series >= rule.firstSeries)?.name;
+  return name ? `${name}${isFinal ? '终章' : ''}` : type;
+}
+
 export function hasFixedWorldLinkRoster(event) {
   const type = String(event?.event_type || event?.source_event_type || '').trim();
   const series = Number(event?.type_series_id);

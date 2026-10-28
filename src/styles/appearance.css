@@ -1075,6 +1075,11 @@
     drop-shadow(0 0.6px 0 rgba(226, 232, 240, 0.75))
     drop-shadow(0 -0.6px 0 rgba(226, 232, 240, 0.75));
 }
+/* VS affiliation rings use the group's white color on dark surfaces. */
+:root[data-theme='dark'] [data-feature-page='history'] .avatar-container[data-unit='vs'] {
+  border-color: #ffffff !important;
+}
+
 /* The VS wordmark is monochrome, so its ink can follow the dark UI glyphs. */
 :root[data-theme='dark'] img[src*='unit_logo_vs.']:not(.special-unit-logo):not(.special-canvas *) {
   background-color: transparent;

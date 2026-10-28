@@ -1,5 +1,6 @@
 import { ref, computed } from "vue";
 import { isCollaborationEvent, mergeCollaborationCardPredictions } from '../../domain/collaborationEvents.js';
+import { WORLD_LINK_PREDICTION_SKILL } from '../../domain/worldLink.js';
 
 /** Owns application prediction overlay with per-instance state and explicit peer interfaces. */
 export function useAppPredictionOverlay(ports = {}) {
@@ -25,7 +26,7 @@ const getFixedRosterCardKey = (card) => {
 const mergeFixedRosterCards = (baseCardsForEvent, predictCardsForEvent) => {
   if (!Array.isArray(baseCardsForEvent) || baseCardsForEvent.length === 0) return [];
   if (!Array.isArray(predictCardsForEvent) || predictCardsForEvent.length === 0) {
-    return [...baseCardsForEvent].sort((a, b) => b.Rarity - a.Rarity);
+    return baseCardsForEvent.map(card => ({ ...card, Skill: WORLD_LINK_PREDICTION_SKILL })).sort((a, b) => b.Rarity - a.Rarity);
   }
 
   const usedPredictIndexes = new Set();
@@ -44,12 +45,12 @@ const mergeFixedRosterCards = (baseCardsForEvent, predictCardsForEvent) => {
 
   const merged = baseCardsForEvent.map((baseCard) => {
     const patchCard = findPredictForBase(baseCard);
-    if (!patchCard) return { ...baseCard };
+    if (!patchCard) return { ...baseCard, Skill: WORLD_LINK_PREDICTION_SKILL };
 
     return {
       ...baseCard,
       Attribute: ports.predictionPayload.normalizePredictionAttribute(patchCard.Attribute) || baseCard.Attribute,
-      Skill: patchCard.Skill || baseCard.Skill
+      Skill: WORLD_LINK_PREDICTION_SKILL
     };
   });
 
@@ -102,7 +103,7 @@ const totalEventData = computed(() => {
     const isCollaboration = isCollaborationEvent(jsonEvent);
     const isFixedRosterEvent = isWorldLinkEvent || isCollaboration;
     const combinedRawCards = [...baseCardsForThisEvent, ...predictCardsForThisEvent];
-    const combinedCards = (effectivePatch && predictCardsForThisEvent.length > 0)
+    const combinedCards = (effectivePatch && (isWorldLinkEvent || predictCardsForThisEvent.length > 0))
       ? (isFixedRosterEvent
         ? (isCollaboration ? mergeCollaborationCardPredictions(baseCardsForThisEvent, predictCardsForThisEvent) : mergeFixedRosterCards(baseCardsForThisEvent, predictCardsForThisEvent))
         : ports.predictionPayload.sortPredictedCardsForDisplay(combinedRawCards, event.banner))

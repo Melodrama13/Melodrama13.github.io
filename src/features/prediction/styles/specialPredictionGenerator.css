@@ -1421,7 +1421,7 @@
 }
 
 .special-case-card.is-ue-event, :global([data-feature-page="special-prediction"] :is(.special-case-card.is-ue-event)), :global(:is(.special-case-card.is-ue-event)[data-feature-page="special-prediction"]) {
-  border: 3px solid #f59e0b;
+  border: 3px solid var(--special-wl-border-color, #33ccbb);
   padding: 6px;
 }
 
@@ -1778,7 +1778,7 @@
 :global(:is(.special-event-row.is-ue-event .special-date-box)[data-feature-page="special-prediction"]),
 :global([data-feature-page="special-prediction"] :is(.special-event-row.is-ue-event .special-detail-box)),
 :global(:is(.special-event-row.is-ue-event .special-detail-box)[data-feature-page="special-prediction"]) {
-  border: 3px solid #f59e0b;
+  border: 3px solid var(--special-wl-border-color, #33ccbb);
 }
 
 .special-date-box, :global([data-feature-page="special-prediction"] :is(.special-date-box)), :global(:is(.special-date-box)[data-feature-page="special-prediction"]) {
