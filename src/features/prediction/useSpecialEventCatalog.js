@@ -2,6 +2,7 @@ import { computed } from "vue";
 import { isCompilationEvent } from "../../utils/compilationEvents.js";
 import { normalizeUnit, normalizeId, getBaseName } from './specialPredictionFormatters.js';
 import { isCollaborationEvent } from '../../domain/collaborationEvents.js';
+import { isWorldLinkCardType } from '../../domain/worldLink.js';
 
 /** Owns special prediction event catalog with explicit instance dependencies. */
 export function useSpecialEventCatalog(ports = {}) {
@@ -117,7 +118,7 @@ const getWlPartLabel = (event) => {
 
 const getLimitedRibbonLabel = (card) => {
   const type = String(card?.Type || '').trim().toLowerCase();
-  if (['wl1', 'wl2', 'wl3', 'ue'].includes(type)) return 'WL限定';
+  if (isWorldLinkCardType(type) || type === 'ue') return 'WL限定';
   if (type === 'bfes' || type === 'cfes') return 'FES限定';
   if (type === 'limited') return '期间限定';
   if (type === 'collab' || type === 'collab_t') return '联动限定';
@@ -132,7 +133,7 @@ const hasCardType = (cards, types) => {
 const getRowLimitClass = (event, cards) => {
   const eventType = getEventType(event);
   const gachaType = String(event?.gacha_type || '').trim();
-  if (eventType === 'World Link' || gachaType === 'UE限定' || hasCardType(cards, ['ue', 'wl1', 'wl2', 'wl3'])) {
+  if (eventType === 'World Link' || gachaType === 'UE限定' || hasCardType(cards, ['ue']) || (cards || []).some(card => isWorldLinkCardType(card?.Type))) {
     return 'is-ue-event';
   }
   if (gachaType === '普通限定' || hasCardType(cards, ['limited', 'collab_t'])) {

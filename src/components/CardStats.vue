@@ -483,7 +483,7 @@ const emit = defineEmits(['jump-to-event', 'stats-preview-update', 'stats-top-st
 const cardStatsRootRef = ref(null);
 
 const constants = useCardConstants({
-
+  get props() { return props; }
 });
 
 const metadata = useCardMetadata({

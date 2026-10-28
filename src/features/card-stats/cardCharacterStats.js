@@ -171,7 +171,7 @@ export function buildCardCharacterStats({
       stats[name].lastRewardWithCollabOrderId = Math.max(Number(stats[name].lastRewardWithCollabOrderId || 0), progressOrderId);
     }
 
-    // 统计限定卡片；WL3 与歌限由共享复选框状态控制。
+    // 统计限定卡片；发限WL与歌限由共享复选框状态控制。
     if (shouldIncludeCardInLimitedStats(card)) {
       stats[name].limitedCount++;
       stats[name].lastLimitedOrderId = Math.max(Number(stats[name].lastLimitedOrderId || 0), progressOrderId);

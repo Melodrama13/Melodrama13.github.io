@@ -1,5 +1,6 @@
 import { ref, computed, reactive } from 'vue';
 import { isDuoCollaborationEvent } from './cardDuoRules.js';
+import { isWorldLinkCardType } from '../../domain/worldLink.js';
 
 /** Owns card duo behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -70,7 +71,7 @@ export function useCardDuo(inputs) {
     const cardType = String(card?.Type || '').trim().toLowerCase();
     if (cardType === 'limited') return true;
     if (cardType === 'collab' || cardType === 'collab_t') return true;
-    if (cardType === 'wl1' || cardType === 'wl2' || cardType === 'wl3') return true;
+    if (isWorldLinkCardType(cardType)) return true;
     return inputs.presentation.isFesCardType(cardType);
   };
 

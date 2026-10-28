@@ -1,5 +1,5 @@
-
-
+import { computed } from 'vue';
+import { getWorldLinkStatTypes } from '../../domain/worldLink.js';
 /** Owns card constants behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
  */
@@ -48,17 +48,16 @@ export function useCardConstants(inputs) {
 
   const VS_UNIT_SORT_ORDER = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 
-  const VS_ORIGINAL_STAT_TYPES = ['大罪', 'CFES', 'BFES', 'WL1', 'WL2', 'WL3', '其他'];
+  const worldLinkStatTypes = computed(() => getWorldLinkStatTypes(inputs.props?.allCards || [], inputs.props?.allEvents || []));
+  const VS_ORIGINAL_STAT_TYPES = computed(() => ['大罪', 'CFES', 'BFES', ...worldLinkStatTypes.value.map(row => row.label), '其他']);
 
   const RELATED_FES_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc', 'vs'];
 
-  const SPECIAL_LIMITED_STAT_TYPES = Object.freeze([
+  const SPECIAL_LIMITED_STAT_TYPES = computed(() => Object.freeze([
     { key: 'cfes', label: 'CFES' },
     { key: 'bfes', label: 'BFES' },
-    { key: 'wl1', label: 'WL1' },
-    { key: 'wl2', label: 'WL2' },
-    { key: 'wl3', label: 'WL3' }
-  ]);
+    ...worldLinkStatTypes.value
+  ]));
 
   const SUPPORT_UNITS = ['vs', 'ln', 'mmj', 'vbs', 'ws', 'nc'];
 
@@ -97,7 +96,7 @@ export function useCardConstants(inputs) {
     VS_UNIT_SORT_ORDER,
     ATTRS,
     ATTR_COLORS,
-    VS_ORIGINAL_STAT_TYPES,
+    get VS_ORIGINAL_STAT_TYPES() { return VS_ORIGINAL_STAT_TYPES.value; },
     FESTIVAL_VS_UNIT_ORDER,
     FES_CARD_TYPES,
     FES_SKILL_TYPES,
@@ -106,7 +105,7 @@ export function useCardConstants(inputs) {
     SUPPORT_UNITS,
     EXCLUDED_PERIOD_EVENT_TYPES,
     RELATED_FES_UNITS,
-    SPECIAL_LIMITED_STAT_TYPES,
+    get SPECIAL_LIMITED_STAT_TYPES() { return SPECIAL_LIMITED_STAT_TYPES.value; },
     ATTR_LABELS,
     DUO_OC_UNITS,
     DUO_VS_TOTAL_KEY,

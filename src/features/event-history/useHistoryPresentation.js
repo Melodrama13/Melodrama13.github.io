@@ -1,4 +1,5 @@
 import { computed } from 'vue';
+import { isWorldLinkCardType } from '../../domain/worldLink.js';
 
 /** Presentation owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
@@ -55,7 +56,8 @@ const VS_NAMES = computed(() => {
 });
 
 const translateType = (t) => {
-  const map = { perm: '常驻', limited: '普通限定', collab: '联动限定', collab_t: '联动限定', cfes: 'CFES', bfes: 'BFES', movie: '剧场版限定', wl1: 'WL1', wl2: 'WL2', wl3: 'WL3' };
+  if (isWorldLinkCardType(t)) return String(t).trim().toUpperCase();
+  const map = { perm: '常驻', limited: '普通限定', collab: '联动限定', collab_t: '联动限定', cfes: 'CFES', bfes: 'BFES', movie: '剧场版限定' };
   return map[t?.toLowerCase()] || t;
 };
 
@@ -140,7 +142,7 @@ const getMemberRibbonLabel = (card) => {
   if (type === 'limited') return '期间限定';
   if (type === 'collab' || type === 'collab_t') return '联动限定';
   if (ports.previewSelections.isFesCardType(type)) return 'FES限定';
-  if (['wl1', 'wl2', 'wl3'].includes(type)) return 'WL限定';
+  if (isWorldLinkCardType(type)) return 'WL限定';
   return '';
 };
 

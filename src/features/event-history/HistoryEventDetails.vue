@@ -18,7 +18,7 @@
       <div class="event-detail-pool-heading"><h4>{{ event.gacha_title || '卡池名称未收录' }}</h4><span v-if="event.gacha_type" class="event-detail-gacha-type event-detail-surface ui-liquid-glass ui-liquid-glass--chip" :data-gacha-type="event.gacha_type">{{ event.gacha_type === '联动_true' ? '联动限定' : event.gacha_type }}</span></div>
       <section v-for="group in details.groups" :key="group.key" class="event-detail-card-group" :data-card-group="group.key" :aria-label="group.label">
         <h4 class="event-detail-group-heading"><img v-if="group.icon" :src="`/elements/fes_${group.icon === 'bfes' ? 'bloom' : 'colorful'}.webp`" :alt="group.label" :title="group.label" loading="lazy" decoding="async" /><template v-else>{{ group.label }}</template><small>{{ group.cards.length }}</small></h4>
-        <div class="event-detail-card-grid"><HistoryEventDetailCard v-for="card in group.cards" :key="card.CardID" :card="card" :presentation="presentation" :card-media="cardMedia" :song-media="songMedia" :attribute-labels="attributeLabels" /></div>
+        <div class="event-detail-card-grid"><HistoryEventDetailCard v-for="card in group.cards" :key="`${card.CardID}-${card.Name}-${card.Affiliation}`" :card="card" :presentation="presentation" :card-media="cardMedia" :song-media="songMedia" :attribute-labels="attributeLabels" /></div>
       </section>
       <p v-if="!details.groups.length" class="event-detail-empty">暂无已实装卡片资料</p>
     </section>

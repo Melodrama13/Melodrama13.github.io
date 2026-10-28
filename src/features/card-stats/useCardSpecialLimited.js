@@ -14,9 +14,9 @@ export function useCardSpecialLimited(inputs) {
     }, anchorEl);
   };
 
-  const specialLimitedRows = inputs.constants.SPECIAL_LIMITED_STAT_TYPES;
+  const specialLimitedRows = computed(() => inputs.constants.SPECIAL_LIMITED_STAT_TYPES);
 
-  const SPECIAL_LIMITED_TYPE_KEY_SET = new Set(inputs.constants.SPECIAL_LIMITED_STAT_TYPES.map((row) => row.key));
+  const SPECIAL_LIMITED_TYPE_KEY_SET = computed(() => new Set(specialLimitedRows.value.map((row) => row.key)));
 
   const getSpecialLimitedBreakBeforeClasses = (index) => {
     if (index <= 1) return [];
@@ -85,7 +85,7 @@ export function useCardSpecialLimited(inputs) {
       if (!inputs.eventCatalog.isCardWithinLimit(card, maxEid)) return;
 
       const type = String(card?.Type || '').trim().toLowerCase();
-      if (!SPECIAL_LIMITED_TYPE_KEY_SET.has(type)) return;
+      if (!SPECIAL_LIMITED_TYPE_KEY_SET.value.has(type)) return;
       if (String(card?.Rarity || '').trim() !== '4') return;
 
       const baseName = inputs.metadata.getCardBaseName(card?.Name);

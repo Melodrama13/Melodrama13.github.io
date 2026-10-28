@@ -127,11 +127,14 @@ const totalCardsData = computed(() => {
       .map((c) => String(c?.CardID || '').trim())
       .filter((id) => id)
   );
+  const usedEventIds = new Set(totalEventData.value.map(event => String(event.id)));
 
   // movie 等非活动绑定卡不会出现在 totalEventData.memberCards，需要补入统计源。
   const detachedBaseCards = (ports.resourceLoading.baseCards.value || []).filter((card) => {
     const cardId = String(card?.CardID || '').trim();
-    return cardId && !usedCardIds.has(cardId);
+    return cardId && (cardId === '-'
+      ? !usedEventIds.has(String(card.EventID))
+      : !usedCardIds.has(cardId));
   });
 
   return [...eventCards, ...detachedBaseCards];

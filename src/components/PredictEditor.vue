@@ -86,6 +86,7 @@ import { usePredictionEditorInitialization } from '../features/prediction/usePre
 import { usePredictionEditorLifecycle } from '../features/prediction/usePredictionEditorLifecycle.js';
 import { usePredictionRuleSynchronization } from '../features/prediction/usePredictionRuleSynchronization.js';
 import { usePredictionEditorActions } from '../features/prediction/usePredictionEditorActions.js';
+import { hasFixedWorldLinkRoster } from '../domain/worldLink.js';
 
 
 import { reactive, inject, computed, ref } from "vue";
@@ -118,12 +119,7 @@ const form = reactive({
   isTypeLocked: false
 });
 
-const isWorldLinkTeamSeries = (eventLike) => {
-  const type = String(eventLike?.event_type || eventLike?.source_event_type || '').trim();
-  if (type !== 'World Link') return false;
-  const sid = Number(eventLike?.type_series_id);
-  return Number.isFinite(sid) && sid > 0 && sid <= 3;
-};
+const isWorldLinkTeamSeries = hasFixedWorldLinkRoster;
 
 const { MOBILE_BREAKPOINT, SHEET_MIN_VH, SHEET_MID_VH, SHEET_MAX_VH, isMobileViewport, sheetHeightVh, sheetDragState, clamp, setSheetDragStart, applySheetDragMove, moveSheetDragMouse, endSheetDragMouse, moveSheetDragTouch, endSheetDragTouch, detachSheetPointerListeners, attachSheetTouchListeners, updateMobileViewport, drawerStyle, endSheetDrag, startSheetDragMouse, startSheetDrag } = usePredictionEditorSheet({
 

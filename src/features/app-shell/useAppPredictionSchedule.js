@@ -3,6 +3,7 @@ import { isCompilationEvent } from "../../utils/compilationEvents.js";
 import { normalizePredictionScheduleKey, getPredictionScheduleOrderEntries } from "../../domain/predictionScheduleKeys.js";
 import { getExplicitPredictionKey, resolveImportedPredictionKey } from "../../domain/legacyPredictionMigration.js";
 import { normalizeCollaborationEventId, isCollaborationEvent, mergeCollaborationCardPredictions } from "../../domain/collaborationEvents.js";
+import { isTeamWorldLinkEvent } from '../../domain/worldLink.js';
 
 /** Owns application prediction schedule with per-instance state and explicit peer interfaces. */
 export function useAppPredictionSchedule(ports = {}) {
@@ -196,14 +197,15 @@ const normalizeWorldLinkPatch = (patch) => {
   if (!patch || typeof patch !== 'object') return patch;
   const sourceEvent = getSourceEventById(patch.id);
   const sourceType = String(sourceEvent?.event_type || '').trim();
-  const sourceSid = Number(sourceEvent?.type_series_id);
-  const isNonTeamWorldLink = sourceType === 'World Link' && (!Number.isFinite(sourceSid) || sourceSid > 2 || sourceSid <= 0);
-  if (!isNonTeamWorldLink) return patch;
+  if (sourceType !== 'World Link') return patch;
 
   return {
     ...patch,
+    event_type: sourceType,
+    gacha_type: sourceEvent.gacha_type,
+    type_series_id: sourceEvent.type_series_id,
     banner: '',
-    unit: ''
+    unit: isTeamWorldLinkEvent(sourceEvent) ? (sourceEvent.unit || patch.unit || '') : ''
   };
 };
 

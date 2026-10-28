@@ -1,5 +1,6 @@
 import { GAME_ATTRIBUTE_NAME_BY_LOWERCASE_KEY } from "../../domain/gameAttributes.js";
 import { isCollaborationEvent, normalizeCollaborationEventId, mergeCollaborationCardPredictions } from "../../domain/collaborationEvents.js";
+import { isTeamWorldLinkEvent } from '../../domain/worldLink.js';
 
 /** Owns application prediction payload with per-instance state and explicit peer interfaces. */
 export function useAppPredictionPayload(ports = {}) {
@@ -102,11 +103,7 @@ function sortPredictedCardsForDisplay(cards, bannerName) {
   return bannerCard ? [bannerCard, ...merged] : merged;
 }
 
-const isTeamWorldLink = (eventType, typeSeriesId) => {
-  if (String(eventType || '').trim() !== 'World Link') return false;
-  const sid = Number(typeSeriesId);
-  return Number.isFinite(sid) && sid > 0 && sid <= 2;
-};
+const isTeamWorldLink = (eventType, typeSeriesId, unit = '') => isTeamWorldLinkEvent({ event_type: eventType, type_series_id: typeSeriesId, unit });
 
 const buildPredictEventPatchFromPayload = (payload, options = {}) => {
   if (!payload || typeof payload !== 'object') return null;
@@ -170,7 +167,7 @@ const buildPredictEventPatchFromPayload = (payload, options = {}) => {
   const nextTypeSeriesId = eventType === 'World Link'
     ? (sourceEvent?.type_series_id ?? null)
     : getNextTypeSeriesId({ eventId, eventType, bannerName: resolvedBannerName });
-  const teamWorldLink = isTeamWorldLink(eventType, nextTypeSeriesId ?? sourceEvent?.type_series_id);
+  const teamWorldLink = isTeamWorldLink(eventType, nextTypeSeriesId ?? sourceEvent?.type_series_id, sourceEvent?.unit);
 
   const generatedCardsRaw = safeSelectedChars.map((char, index) => {
     const rarity = char.rarity || "4";

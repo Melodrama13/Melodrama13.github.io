@@ -2,6 +2,7 @@ import { groupBy, makeMilestone, OC_UNITS } from './milestoneShared.js';
 import { PRECEDENT_SKILL_LABELS } from './precedentRecords.js';
 import { isPoolFesCard, isPoolLimitedCard, isFesMilestoneSkill } from './milestoneRules.js';
 import { isDuoCollaborationEvent } from '../card-stats/cardDuoRules.js';
+import { isWorldLinkCardType, isTeamWorldLinkEvent } from '../../domain/worldLink.js';
 
 export const POOL_CONTEXT_LABELS = Object.freeze({
   all: '首次同池', box: '首次箱活同池', mix: '首次混活同池', collab: '首次联动同池',
@@ -15,8 +16,8 @@ export const getPoolEventContext = source => {
   if (['wl', 'world link', 'world link终章'].includes(String(event.event_type).toLowerCase())) {
     const types = new Set((source.allCards || source.cards).map(entry => String(entry.card.Type).toLowerCase()));
     if (types.has('wl3')) return 'mix';
-    if (types.has('wl1') || types.has('wl2')) return 'box';
-    return Number(event.type_series_id) === 3 ? 'mix' : [1, 2].includes(Number(event.type_series_id)) ? 'box' : '';
+    if (types.has('wl1') || types.has('wl2') || ([...types].some(isWorldLinkCardType) && isTeamWorldLinkEvent(event))) return 'box';
+    return Number(event.type_series_id) === 3 ? 'mix' : isTeamWorldLinkEvent(event) ? 'box' : '';
   }
   return isDuoCollaborationEvent(event) ? 'collab' : '';
 };

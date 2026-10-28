@@ -3065,6 +3065,7 @@ td.record-char, :global([data-feature-page="cards"] :is(td.record-char)), :globa
     var(--special-limited-head-height)
     var(--special-limited-cfes-height)
     repeat(4, var(--special-limited-data-height));
+  grid-auto-rows: var(--special-limited-data-height);
   flex: 0 0 100%;
   overflow: hidden;
   border: 1px solid #d9e2ef;
@@ -3158,15 +3159,9 @@ td.record-char, :global([data-feature-page="cards"] :is(td.record-char)), :globa
   background: linear-gradient(135deg, rgba(255, 136, 196, 0.28), rgba(92, 177, 255, 0.24));
 }
 
-.special-limited-row-label.is-wl1,
-.special-limited-row-label.is-wl2,
-.special-limited-row-label.is-wl3,
-:global([data-feature-page="cards"] :is(.special-limited-row-label.is-wl1)),
-:global(:is(.special-limited-row-label.is-wl1)[data-feature-page="cards"]),
-:global([data-feature-page="cards"] :is(.special-limited-row-label.is-wl2)),
-:global(:is(.special-limited-row-label.is-wl2)[data-feature-page="cards"]),
-:global([data-feature-page="cards"] :is(.special-limited-row-label.is-wl3)),
-:global(:is(.special-limited-row-label.is-wl3)[data-feature-page="cards"]) {
+.special-limited-row-label.is-wl,
+:global([data-feature-page="cards"] :is(.special-limited-row-label.is-wl)),
+:global(:is(.special-limited-row-label.is-wl)[data-feature-page="cards"]) {
   background: rgba(57, 197, 187, 0.16);
 }
 

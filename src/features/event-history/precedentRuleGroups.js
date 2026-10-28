@@ -2,7 +2,7 @@ import { queryFamily } from './precedentQueryDefinitions.js';
 import { hasLimitedSubdivision, isPeriodBanner } from './precedentPeriodRules.js';
 
 export const MILESTONE_RULE_OPTIONS = [
-  { key: 'includeSongLimited', label: '限定计入歌限' }, { key: 'includeWl3', label: '限定计入WL3' },
+  { key: 'includeSongLimited', label: '限定计入歌限' }, { key: 'includeWl3', label: '限定计入发限WL' },
   { key: 'includeUnitScoreInPureScore', label: '分卡计入团分' }, { key: 'includeFestivalFes', label: '百六计入FES' },
   { key: 'useRewardCountForLowStars', label: '三星/二星仅报酬' }, { key: 'includeCollabRewardCards', label: '报酬计入联动' },
   { key: 'poolIncludeFes', label: '同池计入FES' }, { key: 'poolOwnVsOnly', label: '同池仅计入本团V' },

@@ -8,7 +8,7 @@
         <div class="selected-list" :key="selectedRenderKey">
           <div
             v-for="(char, idx) in form.selectedChars"
-            :key="char.cardId || `${char.name}-${idx}`"
+            :key="`${char.cardId || ''}-${char.name}-${idx}`"
             class="editor-card"
             :class="{ 'is-banner-card': shouldMarkBannerCard(char) }"
           >

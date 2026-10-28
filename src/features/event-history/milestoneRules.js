@@ -1,4 +1,5 @@
 import { shouldCountCardAsLimited } from '../../utils/cardLimitedRules.js';
+import { isWorldLinkCardType } from '../../domain/worldLink.js';
 
 export const DEFAULT_MILESTONE_RULES = Object.freeze({
   includeWl3: false, includeSongLimited: true, includeUnitScoreInPureScore: false,
@@ -26,7 +27,7 @@ export const MILESTONE_METRICS = Object.freeze({
 export const isFesCard = card => ['cfes', 'bfes'].includes(String(card?.Type).toLowerCase());
 export const isPoolFesCard = card => isFesCard(card) || /^cfes|^bfes_up$/.test(String(card?.Skill).toLowerCase());
 export const isFesMilestoneSkill = skill => /^cfes|^bfes/.test(String(skill).toLowerCase());
-export const isPoolLimitedCard = card => ['limited', 'collab', 'collab_t', 'wl1', 'wl2', 'wl3', 'cfes', 'bfes'].includes(String(card?.Type).toLowerCase());
+export const isPoolLimitedCard = card => isWorldLinkCardType(card?.Type) || ['limited', 'collab', 'collab_t', 'cfes', 'bfes'].includes(String(card?.Type).toLowerCase());
 export const isMilestoneLimited = (card, rules) => shouldCountCardAsLimited(card, rules);
 export const isRewardCard = (card, includeCollab = false) => ['2', '3'].includes(String(card.Rarity))
   && (/^\d+$/.test(String(card.EventID)) || includeCollab && String(card.Type).toLowerCase() === 'collab');

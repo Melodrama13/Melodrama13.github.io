@@ -1,3 +1,5 @@
+import { isWorldLinkCardType } from '../../domain/worldLink.js';
+
 // Pure event history rules; the page owns criteria and reactive inputs.
 export function selectEventHistoryRows({
   events, mode, hasEventFilters, hasDetailFilters, detailCriteria,
@@ -15,7 +17,7 @@ export function selectEventHistoryRows({
   const matchDetailCardType = (card, typeValue) => {
     const cType = String(card?.Type || '').toLowerCase();
     if (typeValue === 'collab') return cType === 'collab' || cType === 'collab_t';
-    if (typeValue === 'ue') return ['wl1', 'wl2', 'wl3'].includes(cType);
+    if (typeValue === 'ue') return cType === 'ue' || isWorldLinkCardType(cType);
     return cType === String(typeValue || '').toLowerCase();
   };
 

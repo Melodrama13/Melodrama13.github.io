@@ -1,4 +1,5 @@
 import { computed } from 'vue';
+import { getWorldLinkStatTypes, isWorldLinkCardType } from '../../domain/worldLink.js';
 
 /** Vs Preview owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
@@ -7,7 +8,8 @@ import { computed } from 'vue';
 export function useHistoryVsPreview(ports) {
 const PREVIEW_VS_NAMES = ['初音未来', '镜音铃', '镜音连', '巡音流歌', 'MEIKO', 'KAITO'];
 
-const PREVIEW_VS_ORIGINAL_STAT_TYPES = ['大罪', 'CF', 'BF', 'WL1', 'WL2', 'WL3', '其他'];
+const PREVIEW_VS_ORIGINAL_STAT_TYPES = computed(() => ['大罪', 'CF', 'BF',
+  ...getWorldLinkStatTypes(ports.previewCutoff?.previewEffectiveCards?.value || [], ports.props?.allEvents || []).map(row => row.label), '其他']);
 
 const PREVIEW_ATTR_ORDER = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
 
@@ -18,9 +20,7 @@ const getPreviewVsOriginalStatType = (card, sourceKey) => {
   const cardType = String(card?.Type || '').trim().toLowerCase();
   if (cardType === 'cfes') return 'CF';
   if (cardType === 'bfes') return 'BF';
-  if (cardType.startsWith('wl1')) return 'WL1';
-  if (cardType.startsWith('wl2')) return 'WL2';
-  if (cardType.startsWith('wl3')) return 'WL3';
+  if (isWorldLinkCardType(cardType)) return cardType.toUpperCase();
   return '其他';
 };
 
@@ -188,7 +188,7 @@ const previewVsUnitScoreUnitRows = computed(() => {
 const previewVsOriginalRows = computed(() => {
   const maxId = Number(ports.previewCutoff.previewMaxEventId.value);
   const rows = Object.fromEntries(
-    PREVIEW_VS_ORIGINAL_STAT_TYPES.map((type) => [
+    PREVIEW_VS_ORIGINAL_STAT_TYPES.value.map((type) => [
       type,
       {
         type,
@@ -198,7 +198,7 @@ const previewVsOriginalRows = computed(() => {
   );
 
   if (!Number.isFinite(maxId) || maxId <= 0) {
-    return PREVIEW_VS_ORIGINAL_STAT_TYPES.map((type) => rows[type]);
+    return PREVIEW_VS_ORIGINAL_STAT_TYPES.value.map((type) => rows[type]);
   }
 
   ports.previewCutoff.previewEffectiveCards.value.forEach((card) => {
@@ -226,7 +226,7 @@ const previewVsOriginalRows = computed(() => {
     });
   });
 
-  return PREVIEW_VS_ORIGINAL_STAT_TYPES.map((type) => {
+  return PREVIEW_VS_ORIGINAL_STAT_TYPES.value.map((type) => {
     const row = rows[type];
     PREVIEW_VS_NAMES.forEach((name) => {
       row.attrsByVs[name] = row.attrsByVs[name]

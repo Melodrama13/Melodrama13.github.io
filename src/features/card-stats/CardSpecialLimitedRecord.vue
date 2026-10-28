@@ -45,7 +45,7 @@
                       <img :src="`/chibi_s/${getCharAbbr(char.name)}.webp`" class="special-limited-char-avatar" :style="{ borderColor: char.color }" :alt="char.name" />
                     </div>
                     <template v-for="row in specialLimitedRows" :key="`special-limited-row-${unitGroup.unit}-${row.key}`">
-                      <div class="special-limited-row-label" :class="`is-${row.key}`">
+                      <div class="special-limited-row-label" :class="[`is-${row.key}`, { 'is-wl': row.key.startsWith('wl') }]">
                         <span>{{ row.label }}</span>
                       </div>
                       <div

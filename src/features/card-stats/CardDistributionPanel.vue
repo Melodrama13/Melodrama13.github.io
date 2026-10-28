@@ -41,10 +41,10 @@
                   <label
                     v-if="panel.id === 'limited'"
                     class="reward-collab-toggle stats-checkbox"
-                    title="勾选后，限定总数与限定间隔记录会计入WL3卡。"
+                    title="勾选后，限定总数与限定间隔记录会计入发限WL卡。"
                   >
                     <input class="pjsk-ui-choice" v-model="limitedIncludeWl3" type="checkbox" />
-                    <span>{{ isMobileNav ? 'WL3' : '统计WL3' }}</span>
+                    <span>{{ isMobileNav ? '发限WL' : '统计发限WL' }}</span>
                   </label>
                   <label
                     v-if="panel.id === 'limited'"

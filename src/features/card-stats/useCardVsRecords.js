@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue';
+import { isWorldLinkCardType } from '../../domain/worldLink.js';
 
 /** Owns card vs records behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -165,9 +166,7 @@ export function useCardVsRecords(inputs) {
     const cardType = String(card?.Type || '').trim().toLowerCase();
     if (cardType === 'cfes') return 'CFES';
     if (cardType === 'bfes') return 'BFES';
-    if (cardType.startsWith('wl1')) return 'WL1';
-    if (cardType.startsWith('wl2')) return 'WL2';
-    if (cardType.startsWith('wl3')) return 'WL3';
+    if (isWorldLinkCardType(cardType)) return cardType.toUpperCase();
     return '其他';
   };
 
