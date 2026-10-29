@@ -103,13 +103,11 @@
                   @click="$emit('show-song-title', $event, song.songName || '-', { songId: song.songId })"
                 >
                   <div :class="['song-jacket-media', 'song-duo-song-jacket-item', { 'is-3d-frame': song.has3d }]">
-                    <img crossorigin="anonymous"
+                    <img crossorigin="anonymous" loading="lazy" decoding="async"
                       v-if="song.jacketUrl"
                       :src="song.jacketUrl"
                       :alt="`${song.songName || '歌曲'} 封面`"
                       class="song-jacket-img song-duo-song-jacket-img media-load-shimmer"
-                      loading="lazy"
-                      decoding="async"
                       @load="$emit('jacket-load', $event)"
                       @error="$emit('jacket-error', $event)"
                     />

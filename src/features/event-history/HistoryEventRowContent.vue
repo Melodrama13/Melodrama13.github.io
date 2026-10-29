@@ -203,13 +203,10 @@
                 <div class="tooltip-content">
                   <div v-if="shouldRenderSongTooltipContent(row.key)" class="song-tooltip-hero">
                     <div class="song-tooltip-jacket-wrap" :class="{ 'is-failed': !getSongTooltipImageSrc(row.event) }">
-                      <img
-                        crossorigin="anonymous"
+                      <img crossorigin="anonymous" loading="lazy" decoding="async"
                         :src="getSongTooltipImageSrc(row.event)"
                         class="song-tooltip-jacket media-load-shimmer"
                         :alt="`${getSongTitleText(row.event) || '歌曲'} 曲绘`"
-                        loading="lazy"
-                        decoding="async"
                         @load="onSongTooltipImageLoad"
                         @error="onSongTooltipImageError"
                       />

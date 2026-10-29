@@ -1,8 +1,9 @@
 <template>
   <div class="card-artwork" :class="[`card-artwork--${artworkVersion}`, { 'card-artwork--failed': imageFailed }]" :data-card-artwork-version="artworkVersion" :style="{ width: artworkSize }">
-    <img v-if="hasImage" class="card-artwork__image media-load-shimmer"
+    <!-- WebKit can start fetching when src is assigned; configure CORS/lazy first. -->
+    <img v-if="hasImage" class="card-artwork__image media-load-shimmer" crossorigin="anonymous" loading="lazy" decoding="async"
       :src="src || undefined" :data-card-src="deferredSrc || undefined" :alt="alt"
-      crossorigin="anonymous" loading="lazy" decoding="async" @load="onLoad" @error="onError" />
+      @load="onLoad" @error="onError" />
     <span v-show="!hasImage || imageFailed" class="card-artwork__fallback" role="img" :aria-label="alt">
       <img v-if="fallbackSrc" :src="fallbackSrc" alt="" loading="lazy" decoding="async" />
       <span v-else-if="fallbackText">{{ fallbackText }}</span>

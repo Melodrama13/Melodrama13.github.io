@@ -20,7 +20,8 @@ export const OFFICIAL_COVER_ALBUMS = Object.freeze([
 /** Observed omissions, not permanent exclusions or assertions about licensing. */
 export const COVER_ALBUM_EXCEPTIONS = Object.freeze([
   { unit: 'ln', songId: 148 }, // ray
-  { unit: 'ln', songId: 184 }, // Hello,world! (not Hello, Worker)
+  { unit: 'ln', songId: 184 }, // Hello,world!
+  { unit: 'mmj', songId: 550 }, // shake it!
   { unit: 'vbs', songId: 245 }, // 阿吽のビーツ
-  { unit: 'ws', songId: 623 } // とうほう☆ワンダーランド：已确认不收录 Vol.4，后续收录待确认
+  { unit: 'ws', songId: 623 } // とうほう☆ワンダーランド
 ]);

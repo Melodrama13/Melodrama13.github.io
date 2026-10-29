@@ -58,13 +58,11 @@
                             @click="showSongImageTitle($event, song.title || '-', { songId: song.id })"
                           >
                             <div class="song-jacket-media song-duo-song-jacket-item song-oc-event-jacket">
-                              <img crossorigin="anonymous"
+                              <img crossorigin="anonymous" loading="lazy" decoding="async"
                                 v-if="song.jacketUrl"
                                 :src="song.jacketUrl"
                                 :alt="`${song.title || '歌曲'} 封面`"
                                 class="song-jacket-img song-duo-song-jacket-img media-load-shimmer"
-                                loading="lazy"
-                                decoding="async"
                                 @load="onSongJacketLoad"
                                 @error="onSongJacketError"
                               />

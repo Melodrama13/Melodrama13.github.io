@@ -2,7 +2,7 @@
   <article class="event-detail-card event-detail-surface ui-liquid-glass ui-liquid-glass--chip" :data-card-id="card.CardID">
     <div class="event-detail-card-faces" :class="{ 'is-single': faces.length === 1 && !song }">
       <figure v-if="song" class="event-detail-card-song" :data-song-id="song.id">
-        <img crossorigin="anonymous" :src="songMedia.getSongTooltipImageSrc({ song_id: song.id })" :alt="song.title" loading="lazy" decoding="async" />
+        <img crossorigin="anonymous" loading="lazy" decoding="async" :src="songMedia.getSongTooltipImageSrc({ song_id: song.id })" :alt="song.title" />
         <span class="event-detail-card-song-fallback event-detail-surface ui-liquid-glass ui-liquid-glass--chip"><Music2 :size="24" aria-hidden="true" /></span>
       </figure>
       <figure v-for="face in faces" :key="face.variant">

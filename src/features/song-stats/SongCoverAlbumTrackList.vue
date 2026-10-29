@@ -15,7 +15,7 @@
           @blur="clearSongImageTitleToast"
           @click="showSongImageTitle($event, track.title, { songId: track.id, releaseDate: track.releaseDate })"
         >
-          <img v-if="track.jacketUrl" :src="track.jacketUrl" :alt="`${track.title} 封面`" class="song-jacket-img media-load-shimmer" crossorigin="anonymous" loading="lazy" decoding="async" @load="onSongJacketLoad" @error="onSongJacketError" />
+          <img crossorigin="anonymous" loading="lazy" decoding="async" v-if="track.jacketUrl" :src="track.jacketUrl" :alt="`${track.title} 封面`" class="song-jacket-img media-load-shimmer" @load="onSongJacketLoad" @error="onSongJacketError" />
           <span class="song-jacket-fallback">-</span>
           <span v-if="track.vsNames.length" class="song-oc-event-vs-icons is-mini is-overlay song-cover-album-vs-icons">
             <img v-for="name in track.vsNames" :key="name" :src="getCharacterAvatarSrc(name)" :alt="name" :title="name" class="song-oc-event-vs-icon song-cover-album-vs-icon" />

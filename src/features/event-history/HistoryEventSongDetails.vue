@@ -3,7 +3,7 @@
     <div class="event-detail-section-heading"><h3><Music2 :size="16" aria-hidden="true" />书下曲</h3><span>#{{ song.id }}</span></div>
     <div class="event-song-intro">
       <div class="event-song-cover-wrap">
-        <img class="event-song-cover" crossorigin="anonymous" :src="songMedia.getSongTooltipImageSrc(event)" :alt="song.title" loading="lazy" decoding="async" />
+        <img crossorigin="anonymous" loading="lazy" decoding="async" class="event-song-cover" :src="songMedia.getSongTooltipImageSrc(event)" :alt="song.title" />
         <span class="event-song-cover-fallback event-detail-surface ui-liquid-glass ui-liquid-glass--chip"><Music2 :size="26" aria-hidden="true" /></span>
       </div>
       <div class="event-song-copy"><div class="event-song-title-row"><h4>{{ song.title }}</h4><div v-if="mvTags.length" class="event-song-tags"><span v-for="tag in mvTags" :key="tag.label" class="event-detail-surface ui-liquid-glass ui-liquid-glass--chip" :class="tag.tone">{{ tag.label }} MV</span></div></div><p v-if="event.song_alias" class="event-song-alias">{{ event.song_alias }}</p>
