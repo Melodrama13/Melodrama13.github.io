@@ -10265,6 +10265,14 @@
         ]
       },
       {
+        "vocal_id": 2116,
+        "type": "another_vocal",
+        "released_at": "2026/10/31",
+        "characters": [
+          "东云彰人"
+        ]
+      },
+      {
         "vocal_id": 520,
         "type": "another_vocal",
         "released_at": "2022/6/10",
@@ -33131,6 +33139,14 @@
           "东云绘名",
           "晓山瑞希"
         ]
+      },
+      {
+        "vocal_id": 2117,
+        "type": "another_vocal",
+        "released_at": "2026/10/31",
+        "characters": [
+          "朝比奈真冬"
+        ]
       }
     ]
   },
@@ -35977,6 +35993,42 @@
     ]
   },
   {
+    "id": 783,
+    "title": "ULTIM@TE☆BE∀M!!",
+    "pronunciation": "あるてぃめっとびーむ",
+    "composer": "xi",
+    "lyricist": "xi",
+    "arranger": "xi",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-10-31 15:00:00",
+    "categories": [
+      "original"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 10,
+      "normal": 16,
+      "hard": 25,
+      "expert": 32,
+      "master": 35,
+      "append": 38
+    },
+    "vocals": [
+      {
+        "vocal_id": 1340,
+        "type": "original_song",
+        "released_at": "2026/10/31",
+        "characters": [
+          "初音未来"
+        ]
+      }
+    ]
+  },
+  {
     "id": 784,
     "title": "オブソミート",
     "pronunciation": "おぶそみーと",
@@ -36781,6 +36833,50 @@
         "released_at": "2026/10/26",
         "characters": [
           "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 828,
+    "title": "プレデター",
+    "pronunciation": "ぷれでたー",
+    "composer": "遼遼",
+    "lyricist": "遼遼",
+    "arranger": "遼遼",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-11-02 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vbs"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 13,
+      "hard": 18,
+      "expert": 25,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1872,
+        "type": "original_song",
+        "released_at": "2026/11/2",
+        "characters": [
+          "flower"
+        ]
+      },
+      {
+        "vocal_id": 2118,
+        "type": "sekai",
+        "released_at": "2026/11/2",
+        "characters": [
+          "KAITO",
+          "东云彰人",
+          "青柳冬弥"
         ]
       }
     ]
