@@ -18,17 +18,20 @@ export const syncCardYearCaptureLayout = (sourceRoot, cloneRoot) => {
     const cloneCard = cloneCards[index];
     const cloneWrap = cloneCard?.querySelector('.year-stats-wrap');
     const cloneTable = cloneWrap?.querySelector('.year-stats-table');
+    const sourceScroll = sourceWrap?.querySelector(':scope > .ui-static-corner-scroll');
+    const cloneScroll = cloneWrap?.querySelector(':scope > .ui-static-corner-scroll');
     if (!sourceTable || !cloneTable) return;
     hasCardTables = true;
 
     const tableWidth = Math.ceil(sourceTable.getBoundingClientRect().width);
-    const wrapWidth = tableWidth + getHorizontalChrome(sourceWrap);
+    // The scroll padding replaces the frame border area through its negative margin.
+    const wrapWidth = tableWidth + getHorizontalChrome(sourceScroll || sourceWrap);
     const cardWidth = wrapWidth + getHorizontalChrome(sourceCard);
     cloneTable.style.width = `${tableWidth}px`;
     cloneTable.style.minWidth = `${tableWidth}px`;
     cloneTable.style.maxWidth = 'none';
 
-    [[cloneWrap, wrapWidth], [cloneCard, cardWidth]].forEach(([element, width]) => {
+    [[cloneScroll, wrapWidth], [cloneWrap, wrapWidth], [cloneCard, cardWidth]].filter(([element]) => element).forEach(([element, width]) => {
       element.style.boxSizing = 'border-box';
       element.style.width = `${width}px`;
       element.style.minWidth = `${width}px`;

@@ -44,7 +44,7 @@ const usesRewards = computed(() => props.draft.cardSlots.some(slot => slot.rarit
 .configuration-fields label { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 0.72rem; color: var(--precedent-muted); }
 .configuration-fields select { box-sizing: border-box; width: 100%; min-width: 0; height: 36px; padding: 0 28px 0 11px; font-family: inherit; font-size: 0.8rem; color: var(--precedent-ink); border: 1px solid var(--ui-control-border); background: transparent; text-overflow: ellipsis; }
 .configuration-cards { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 10px; margin-top: 12px; }
-.configuration-card { min-width: 0; padding: 10px; border: 1px solid var(--precedent-divider); border-radius: 14px; background: var(--precedent-surface-fill); }
+.configuration-card { min-width: 0; padding: var(--ui-surface-group-padding); border: 1px solid var(--precedent-divider); border-radius: 14px; background: var(--precedent-surface-fill); }
 .configuration-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
 .configuration-card header strong { color: var(--precedent-ink); font-size: 0.75rem; font-weight: 650; }
 .configuration-card-actions { display: flex; gap: 4px; }
@@ -57,7 +57,7 @@ const usesRewards = computed(() => props.draft.cardSlots.some(slot => slot.rarit
   .configuration-fields label { gap: 4px; }
   .configuration-fields select { width: calc(100% / var(--precedent-field-scale)); height: calc(var(--precedent-field-height) / var(--precedent-field-scale)); margin-block: calc((var(--precedent-field-height) - var(--precedent-field-height) / var(--precedent-field-scale)) / 2); font-size: 16px; transform: scale(var(--precedent-field-scale)); transform-origin: left center; }
   .configuration-cards { gap: 8px; margin-top: 9px; }
-  .configuration-card { padding: 8px; border-radius: 12px; }
+  .configuration-card { padding: var(--ui-surface-group-padding); border-radius: 12px; }
 }
 @container history-precedent (min-width: 760px) {
   .configuration-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }

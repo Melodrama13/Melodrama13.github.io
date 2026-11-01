@@ -4,8 +4,8 @@
                 <div class="block-head-left">
                   <h3>{{ getRelatedRecordTitle('rel-vs-unit-score') }}</h3>
                   <label class="fes-card-mode-toggle stats-checkbox">
-                    <input class="pjsk-ui-choice" :checked="vsUnitScoreShowCardImages" type="checkbox" @change="onVsUnitScoreShowCardImagesChange" />
-                    <span>显示卡面</span>
+                    <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="vsUnitScoreShowCardImages" type="checkbox" @change="onVsUnitScoreShowCardImagesChange" />
+                    <span><UiCompactLabel text="显示卡面" compact="卡面" /></span>
                   </label>
                 </div>
                 <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-unit-score', '特殊统计_团分统计')">PNG</button>
@@ -60,6 +60,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","vsUnitScoreShowCardImages","onVsUnitScoreShowCardImagesChange","isExportingPng","exportElementPng","VS_NAMES","getVsScoreVsHeadStyle","getCharAbbr","getCharColor","vsUnitScoreAttrByUnitRows","getVsScoreUnitHeadStyle","unitLogoMap","getVsScoreCellStyle","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS"]);
 </script>

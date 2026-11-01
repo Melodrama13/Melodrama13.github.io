@@ -4,12 +4,12 @@
                 <div class="block-head-left">
                   <h3>{{ getRelatedRecordTitle('rel-limited-long') }}</h3>
                   <label class="fes-card-mode-toggle stats-checkbox">
-                    <input class="pjsk-ui-choice" :checked="intervalLimitedShowCardImages" type="checkbox" @change="onIntervalLimitedShowCardImagesChange" />
-                    显示卡面
+                    <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="intervalLimitedShowCardImages" type="checkbox" @change="onIntervalLimitedShowCardImagesChange" />
+                    <UiCompactLabel text="显示卡面" compact="卡面" />
                   </label>
                   <label class="reward-collab-toggle stats-checkbox" title="勾选后，限定统计会计入发限WL卡。">
-                    <input class="pjsk-ui-choice" v-model="limitedIncludeWl3" type="checkbox" />
-                    <span>{{ isMobileNav ? '发限WL' : '统计发限WL' }}</span>
+                    <input aria-label="统计发限WL" class="pjsk-ui-choice" v-model="limitedIncludeWl3" type="checkbox" />
+                    <span><UiCompactLabel text="统计发限WL" compact="WL" /></span>
                   </label>
                   <label class="reward-collab-toggle stats-checkbox" title="勾选后，限定统计会计入歌限卡。">
                     <input class="pjsk-ui-choice" v-model="limitedIncludeSongLimited" type="checkbox" />
@@ -18,6 +18,7 @@
                 </div>
                 <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-limited-long', '间隔记录_限定最长间隔')">PNG</button>
               </div>
+            <div class="record-table-scroll">
               <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalLimitedShowCardImages }]">
                 <thead>
                   <tr>
@@ -90,9 +91,11 @@
                 </tbody>
               </table>
             </div>
+            </div>
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","intervalLimitedShowCardImages","onIntervalLimitedShowCardImagesChange","isMobileNav","isExportingPng","exportElementPng","limitedLongestDisplayRecords","getRecordTint","getCharAbbr","getCharColor","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","jumpToHistoryByEventRef","getJumpLinkLabel","formatGapValue"]);
 const limitedIncludeWl3 = defineModel('limitedIncludeWl3');

@@ -4,8 +4,8 @@
             <div class="section-head-left">
               <h2>节日人选</h2>
               <label class="festival-card-mode-toggle stats-checkbox" title="勾选后，节日人选按年份展示卡面。">
-                <input class="pjsk-ui-choice" v-model="festivalShowCardImages" type="checkbox" />
-                显示卡面
+                <input aria-label="显示卡面" class="pjsk-ui-choice" v-model="festivalShowCardImages" type="checkbox" />
+                <UiCompactLabel text="显示卡面" compact="卡面" />
               </label>
               <label v-if="!festivalShowCardImages && showDesktopNameControls" class="festival-hide-name-toggle stats-checkbox export-hide" title="勾选后不显示角色头像下方名称。">
                 <input class="pjsk-ui-choice" v-model="hideFestivalCharNames" type="checkbox" />
@@ -39,13 +39,13 @@
                     高星合并低星
                   </label>
                   <label v-if="canToggleFestivalFes(fest.festival)" class="festival-fes-toggle stats-checkbox">
-                    <input class="pjsk-ui-choice"
+                    <input aria-label="统计FES" class="pjsk-ui-choice"
                       :checked="festivalFesEnabled"
                       :indeterminate="festivalFesEnabledIndeterminate"
                       type="checkbox"
                       @change="onFestivalFesEnabledChange"
                     />
-                    统计FES
+                    <UiCompactLabel text="统计FES" compact="FES" />
                   </label>
                 </div>
                 <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng(fest.anchorId, `节日人选_${fest.festival}`)">PNG</button>
@@ -292,6 +292,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["showDesktopNameControls","festivalMergeHigherRanks","festivalMergeHigherRanksIndeterminate","onFestivalMergeHigherRanksChange","isExportingPng","exportElementPng","festivalCharStats","festivalMergeToggles","canToggleFestivalFes","festivalFesEnabled","festivalFesEnabledIndeterminate","onFestivalFesEnabledChange","getFestivalTierCount","getFestivalTierIcon","getCharAbbr","getStepFestivalAvatarStyle","getFestivalUnitLogoByName","getFestivalDisplayNameLabel","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS"]);
 const festivalShowCardImages = defineModel('festivalShowCardImages');

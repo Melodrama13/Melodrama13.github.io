@@ -8,6 +8,7 @@
 }
 
 .section-head {
+  padding-inline: var(--ui-surface-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -20,6 +21,8 @@
 }
 
 .section-head-left {
+  min-width: 0;
+  flex-wrap: wrap;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -80,7 +83,7 @@
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: var(--stats-radius-panel);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-  padding: 12px;
+  padding: var(--ui-surface-panel-padding);
 }
 
 .anvo-mode-switch {
@@ -315,12 +318,13 @@
 .song-stat-card {
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  padding: 9px;
+  padding: var(--ui-surface-group-padding);
   background: #ffffff;
   min-width: 0;
 }
 
 .song-role-head {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -781,4 +785,9 @@
   object-fit: cover;
   display: block;
   border-radius: 0;
+}
+
+/* Wrap complete title/filter items instead of stacking individual characters. */
+.section-head-left > :is(h2, label) {
+  white-space: nowrap;
 }

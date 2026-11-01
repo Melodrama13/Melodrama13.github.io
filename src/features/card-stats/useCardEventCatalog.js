@@ -1,14 +1,13 @@
-import { GAME_ATTRIBUTE_NAME_BY_LOWERCASE_KEY } from '../../domain/gameAttributes.js';
 import { computed } from 'vue';
 import { buildCardPeriodIndex } from './cardPeriodIndex.js';
+import { isCardWithinStatisticsLimit, shouldSkipStatisticsPredictEvent, getCardStatisticsReferenceDate, formatCardStatisticsDate } from './cardStatisticsScope.js';
+import { normalizeCardStatisticsAttribute } from './cardStatisticsRules.js';
 
 /** Owns card event catalog behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
  */
 export function useCardEventCatalog(inputs) {
-  const normalizeCardStatsAttribute = (attributeValue) => {
-    return GAME_ATTRIBUTE_NAME_BY_LOWERCASE_KEY[String(attributeValue || '').trim().toLowerCase()] || '';
-  };
+  const normalizeCardStatsAttribute = normalizeCardStatisticsAttribute;
 
   const normalizeSourceKey = (value) => String(value ?? '').trim();
 
@@ -41,14 +40,7 @@ export function useCardEventCatalog(inputs) {
   };
 
   const isCardWithinLimit = (card, maxEid) => {
-    const eid = String(card?.EventID || '').trim();
-    if (isNumericEventId(eid)) return Number(eid) <= Number(maxEid);
-    const cutoffDate = getStatsCutoffDate(maxEid);
-    if (!cutoffDate) return true;
-    const sourceDate = getCardSourceDate(card);
-    if (!sourceDate) return true;
-    if (sourceDate.getTime() !== cutoffDate.getTime()) return sourceDate < cutoffDate;
-    return true;
+    return isCardWithinStatisticsLimit(card, maxEid, { cutoffDate: getStatsCutoffDate(maxEid), getCardSourceDate });
   };
 
   const safeMaxEventId = computed(() => {
@@ -56,9 +48,7 @@ export function useCardEventCatalog(inputs) {
     return n ?? 0;
   });
 
-  const includePredictEventsInStats = computed(() => Number(safeMaxEventId.value) > Number(inputs.cutoff.autoCurrentId.value));
-
-  const shouldSkipPredictEvent = (ev) => !!(ev?.isPredict && !includePredictEventsInStats.value);
+  const shouldSkipPredictEvent = (ev) => shouldSkipStatisticsPredictEvent(ev, safeMaxEventId.value, inputs.cutoff.autoCurrentId.value);
 
   const allEventsById = computed(() => {
     const map = {};
@@ -70,23 +60,14 @@ export function useCardEventCatalog(inputs) {
   });
 
   const referenceDateObj = computed(() => {
-    const fallback = new Date();
     const maxEid = Number(safeMaxEventId.value);
-    if (!Number.isFinite(maxEid) || maxEid <= 0) return fallback;
-    if (maxEid === Number(inputs.cutoff.autoCurrentId.value)) return fallback;
-
-    const refEvent = allEventsById.value[maxEid];
-    const refDate = inputs.presentation.parseDateSafe(refEvent?.start_date);
-    return refDate || fallback;
+    return getCardStatisticsReferenceDate({
+      maxEventId: maxEid, currentEventId: inputs.cutoff.autoCurrentId.value,
+      cutoffEvent: allEventsById.value[maxEid], parseDateSafe: inputs.presentation.parseDateSafe,
+    });
   });
 
-  const referenceDateStr = computed(() => {
-    const d = referenceDateObj.value;
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}/${m}/${day}`;
-  });
+  const referenceDateStr = computed(() => formatCardStatisticsDate(referenceDateObj.value));
 
   const eventsById = computed(() => {
     const map = {};

@@ -4,8 +4,8 @@
             <div class="section-head-left">
               <h2>支援配队</h2>
               <label class="support-wl-toggle fes-card-mode-toggle stats-checkbox export-hide">
-                <input class="pjsk-ui-choice" :checked="supportShowCardImages" type="checkbox" @change="onSupportShowCardImagesChange" />
-                <span>显示卡面</span>
+                <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="supportShowCardImages" type="checkbox" @change="onSupportShowCardImagesChange" />
+                <span><UiCompactLabel text="显示卡面" compact="卡面" /></span>
               </label>
               <label class="support-wl-toggle stats-checkbox export-hide" title="勾选后才计算并显示 WL 配队（更耗时）。">
                 <input class="pjsk-ui-choice" :checked="supportEnableWlLineup" type="checkbox" @change="onSupportEnableWlLineupChange" />
@@ -94,6 +94,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["supportShowCardImages","onSupportShowCardImagesChange","supportEnableWlLineup","onSupportEnableWlLineupChange","supportUseCompilationRules","onSupportCompilationRulesChange","isExportingPng","exportElementPng","supportLineupRows","getSupportCardId","getUnitAccentColor","hexToRgba","supportUnitTitleLogoMap","unitLogoMap","supportUseOriginalVsTeam","onSupportUseOriginalVsTeamChange","getLineupRowStyle","isSupportAttrIcon","ATTR_LABELS","getLineupMemberCellStyle","getLineupSlotCardImageSrc","onMediaImageLoad","onMediaImageError","SUPPORT_WL_ATTR","getSupportMemberIconKey","jumpToHistoryByEventRef","getJumpLinkLabel","formatSupportTotal"]);
 </script>

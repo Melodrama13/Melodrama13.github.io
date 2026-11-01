@@ -1,7 +1,8 @@
 <template>
-  <details class="precedent-evidence">
+  <details class="precedent-evidence" @toggle="evidenceOpen = $event.target.open">
     <summary class="pjsk-ui-action">依据<span v-if="evidenceCount"> {{ evidenceCount }}</span></summary>
-    <div v-if="record.type === 'interval'" class="precedent-interval-evidence">
+    <template v-if="record.type === 'quantityGap'"><HistoryPrecedentGapEvidence v-if="evidenceOpen" :record="record" :presentation="presentation" :card-media="cardMedia" :attribute-labels="attributeLabels" :event-for-card="eventForCard" :jump-to-event="jumpToEvent" /></template>
+    <div v-else-if="record.type === 'interval'" class="precedent-interval-evidence">
       <template v-for="section in intervalSections" :key="section.key">
       <section v-for="range in section.ranges" :key="range.key" class="precedent-evidence-section" :data-evidence-section="section.key" :aria-label="`${section.label} · ${range.name}`">
         <h4>{{ section.key === 'previous' && range.metrics.length === 1 ? `此前${range.metrics[0].unit === 'days' ? '天数' : '期数'}纪录` : section.label }}</h4>
@@ -46,17 +47,19 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { ArrowUpRight } from 'lucide-vue-next';
 import HistoryPrecedentCardGallery from './HistoryPrecedentCardGallery.vue';
 import HistoryPrecedentSongGallery from './HistoryPrecedentSongGallery.vue';
 import HistoryPrecedentEventGallery from './HistoryPrecedentEventGallery.vue';
+import HistoryPrecedentGapEvidence from './HistoryPrecedentGapEvidence.vue';
 import { buildIntervalEvidenceSections } from './precedentEvidence.js';
 const props = defineProps({ record: { type: Object, required: true }, presentation: { type: Object, required: true },
   cardMedia: { type: Object, required: true }, attributeLabels: { type: Object, required: true },
   scopeOptions: { type: Array, required: true }, eventForCard: { type: Function, required: true }, jumpToEvent: { type: Function, required: true } });
 const intervalSections = computed(() => buildIntervalEvidenceSections(props.record, props.eventForCard));
-const evidenceCount = computed(() => props.record.songEvidence?.length ?? props.record.eventEvidence?.length ?? props.record.evidence.length);
+const evidenceOpen = ref(false);
+const evidenceCount = computed(() => props.record.gapSnapshots?.length ?? props.record.songEvidence?.length ?? props.record.eventEvidence?.length ?? props.record.evidence.length);
 const scopeLabel = scope => props.scopeOptions.find(option => option.value === scope)?.label || scope;
 const alternateCeilings = computed(() => (props.record.ceilingFirsts || []).filter(first => first.advancement
   && first.advancement !== props.record.advancement && first.advancement.days !== props.record.advancement?.days));

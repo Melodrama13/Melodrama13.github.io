@@ -1,245 +1,81 @@
 import { computed } from 'vue';
-import { getWorldLinkStatTypes, isWorldLinkCardType } from '../../domain/worldLink.js';
+import { getWorldLinkStatTypes } from '../../domain/worldLink.js';
+import { calculateCardVsStatistics } from '../card-stats/cardVsStatistics.js';
+import { normalizeCardStatisticsAttribute, CARD_STATISTICS_ATTRIBUTES, CARD_STATISTICS_VS_NAMES } from '../card-stats/cardStatisticsRules.js';
+import { formatCardStatisticsDate } from '../card-stats/cardStatisticsScope.js';
 
 /** Vs Preview owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
  * Dependencies: props, PreviewSelections, PreviewCutoff, Formatting, SourceDates.
  */
 export function useHistoryVsPreview(ports) {
-const PREVIEW_VS_NAMES = ['初音未来', '镜音铃', '镜音连', '巡音流歌', 'MEIKO', 'KAITO'];
+const PREVIEW_VS_NAMES = CARD_STATISTICS_VS_NAMES;
 
-const PREVIEW_VS_ORIGINAL_STAT_TYPES = computed(() => ['大罪', 'CF', 'BF',
+const PREVIEW_VS_ORIGINAL_STAT_TYPES = computed(() => ['大罪', 'CFES', 'BFES',
   ...getWorldLinkStatTypes(ports.previewCutoff?.previewEffectiveCards?.value || [], ports.props?.allEvents || []).map(row => row.label), '其他']);
 
-const PREVIEW_ATTR_ORDER = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
+const parseDateSafe = value => ports.formatting.parseDateSafe(value);
 
-const getPreviewVsOriginalStatType = (card, sourceKey) => {
-  const normalizedSourceKey = String(sourceKey || '').trim().toLowerCase();
-  if (normalizedSourceKey === 'c1') return '大罪';
+const sharedVsStatistics = computed(() => {
+  const maxEventId = Number(ports.previewCutoff.previewMaxEventId.value);
+  const eventsById = Object.fromEntries((ports.props.allEvents || [])
+    .filter(event => ports.formatting.isNumericEventId(event?.id)
+      && !ports.previewCutoff.shouldSkipPreviewPredictEvent?.(event))
+    .map(event => [Number(event.id), event]));
+  const referenceDate = ports.previewCutoff.previewReferenceDateStr?.value
+    || formatCardStatisticsDate(ports.previewCutoff.previewReferenceDate?.value
+      || parseDateSafe(ports.previewCutoff.previewCutoffEvent.value?.start_date) || new Date());
+  return calculateCardVsStatistics({
+    cards: Number.isFinite(maxEventId) && maxEventId > 0 ? ports.previewCutoff.previewEffectiveCards.value : [],
+    maxEventId, eventsById,
+    sourceEventsById: Object.fromEntries((ports.props.allEvents || []).map(event => [String(event.id), event])),
+    cutoffDate: ports.previewCutoff.previewCutoffEvent.value?.start_date,
+    vsNames: PREVIEW_VS_NAMES,
+    unitOrder: ports.previewSelections.PREVIEW_BOX_UNITS,
+    statTypes: PREVIEW_VS_ORIGINAL_STAT_TYPES.value,
+    attributes: CARD_STATISTICS_ATTRIBUTES,
+    isCardWithinLimit: ports.previewCutoff.isCardWithinPreviewLimit,
+    isNumericEventId: ports.formatting.isNumericEventId,
+    parseDateSafe,
+    normalizeAttribute: normalizeCardStatisticsAttribute,
+    getCardProgressOrderId: ports.previewCutoff.getPreviewCardProgressOrderId,
+    referenceDate,
 
-  const cardType = String(card?.Type || '').trim().toLowerCase();
-  if (cardType === 'cfes') return 'CF';
-  if (cardType === 'bfes') return 'BF';
-  if (isWorldLinkCardType(cardType)) return cardType.toUpperCase();
-  return '其他';
-};
-
-const previewVsLastFourMap = computed(() => {
-  const result = {};
-  PREVIEW_VS_NAMES.forEach((vs) => {
-    result[vs] = Object.fromEntries(ports.previewSelections.PREVIEW_BOX_UNITS.map((u) => [u, null]));
-  });
-
-  const maxId = Number(ports.previewCutoff.previewMaxEventId.value);
-  if (!Number.isFinite(maxId) || maxId <= 0) return result;
-
-  const eventDateById = {};
-  (ports.props.allEvents || []).forEach((event) => {
-    const eid = ports.formatting.normalizeEventId(event?.id);
-    if (!eid || !ports.previewCutoff.isEventWithinPreviewLimit(event, maxId)) return;
-    eventDateById[eid] = ports.sourceDates.getDateValue(event?.start_date);
-  });
-
-  ports.previewCutoff.previewEffectiveCards.value.forEach((card) => {
-    const eid = ports.formatting.normalizeEventId(card?.EventID);
-    if (!eid || !ports.previewCutoff.isCardWithinPreviewLimit(card, maxId)) return;
-    const rarity = String(card?.Rarity || '').trim();
-    if (rarity !== '4') return;
-    const name = String(card?.Name || '').trim().split(' ')[0];
-    if (!PREVIEW_VS_NAMES.includes(name)) return;
-    const unit = String(card?.Affiliation || '').trim().toLowerCase();
-    if (!ports.previewSelections.PREVIEW_BOX_UNITS.includes(unit)) return;
-    const dateValue = Number(eventDateById[eid] || 0);
-    if (!dateValue) return;
-    const current = result[name][unit];
-    if (current === null || dateValue > current) {
-      result[name][unit] = dateValue;
-    }
-  });
-
-  return result;
-});
-
-const previewReferenceDateValue = computed(() => {
-  const t = ports.sourceDates.getDateValue(ports.previewCutoff.previewCutoffEvent.value?.start_date);
-  return t > 0 ? t : Date.now();
-});
-
-const previewVsLastFourCompactRows = computed(() => {
-  const anchor = Number(previewReferenceDateValue.value || Date.now());
-  return PREVIEW_VS_NAMES.map((name) => {
-    const unitMap = previewVsLastFourMap.value[name] || {};
-    const daysByUnit = {};
-    ports.previewSelections.PREVIEW_BOX_UNITS.forEach((unit) => {
-      const t = Number(unitMap[unit] || 0);
-      daysByUnit[unit] = t > 0 ? Math.max(0, Math.floor((anchor - t) / 86400000)) : '-';
-    });
-    return { name, daysByUnit };
   });
 });
 
-const previewVsLastFourUnitRows = computed(() => {
-  const rowMap = Object.fromEntries(
-    previewVsLastFourCompactRows.value.map((row) => [row.name, row])
-  );
-  return ports.previewSelections.PREVIEW_BOX_UNITS.map((unit) => {
-    const daysByVs = {};
-    PREVIEW_VS_NAMES.forEach((name) => {
-      daysByVs[name] = rowMap[name]?.daysByUnit?.[unit] ?? '-';
-    });
-    return { unit, daysByVs };
-  });
-});
+// Floating tables retain their existing orientations and missing-record marker.
+const previewVsLastFourCompactRows = computed(() => PREVIEW_VS_NAMES.map(name => ({
+  name,
+  daysByUnit: Object.fromEntries(ports.previewSelections.PREVIEW_BOX_UNITS.map(unit => {
+    const record = sharedVsStatistics.value.lastFourRecords.find(row => row.key === `${name} ${unit}`);
+    return [unit, record?.dateValue ? record.days : '-'];
+  })),
+})));
 
-const previewVsUnitFourCountCompactRows = computed(() => {
-  const maxId = Number(ports.previewCutoff.previewMaxEventId.value);
-  const rows = Object.fromEntries(
-    PREVIEW_VS_NAMES.map((name) => [
-      name,
-      {
-        name,
-        countByUnit: Object.fromEntries(ports.previewSelections.PREVIEW_BOX_UNITS.map((u) => [u, 0]))
-      }
-    ])
-  );
+const previewVsLastFourUnitRows = computed(() => ports.previewSelections.PREVIEW_BOX_UNITS.map(unit => ({
+  unit,
+  daysByVs: Object.fromEntries(previewVsLastFourCompactRows.value.map(row => [row.name, row.daysByUnit[unit]])),
+})));
 
-  if (!Number.isFinite(maxId) || maxId <= 0) {
-    return PREVIEW_VS_NAMES.map((name) => rows[name]);
-  }
+const previewVsUnitFourCountCompactRows = computed(() => PREVIEW_VS_NAMES.map(name => ({
+  name,
+  countByUnit: Object.fromEntries(ports.previewSelections.PREVIEW_BOX_UNITS.map(unit => [unit,
+    sharedVsStatistics.value.fourCountRecords.find(row => row.key === `${name} ${unit}`)?.count || 0])),
+})));
 
-  ports.previewCutoff.previewEffectiveCards.value.forEach((card) => {
-    if (!ports.previewCutoff.isCardWithinPreviewLimit(card, maxId)) return;
-    if (String(card?.Rarity || '').trim() !== '4') return;
+const previewVsUnitFourCountUnitRows = computed(() => ports.previewSelections.PREVIEW_BOX_UNITS.map(unit => ({
+  unit,
+  countByVs: Object.fromEntries(previewVsUnitFourCountCompactRows.value.map(row => [row.name, row.countByUnit[unit]])),
+})));
 
-    const baseName = String(card?.Name || '').trim().split(/\s+/)[0] || '';
-    if (!PREVIEW_VS_NAMES.includes(baseName)) return;
+const previewVsUnitScoreUnitRows = computed(() => sharedVsStatistics.value.scoreRows
+  .map(({ unit, attrsByVs }) => ({ unit, attrsByVs })));
 
-    const unit = String(card?.Affiliation || '').trim().toLowerCase();
-    if (!ports.previewSelections.PREVIEW_BOX_UNITS.includes(unit)) return;
-
-    rows[baseName].countByUnit[unit] += 1;
-  });
-
-  return PREVIEW_VS_NAMES.map((name) => rows[name]);
-});
-
-const previewVsUnitFourCountUnitRows = computed(() => {
-  const rowMap = Object.fromEntries(
-    previewVsUnitFourCountCompactRows.value.map((row) => [row.name, row])
-  );
-  return ports.previewSelections.PREVIEW_BOX_UNITS.map((unit) => {
-    const countByVs = {};
-    PREVIEW_VS_NAMES.forEach((name) => {
-      countByVs[name] = Number(rowMap[name]?.countByUnit?.[unit] || 0);
-    });
-    return { unit, countByVs };
-  });
-});
-
-const previewVsUnitScoreRows = computed(() => {
-  const maxId = Number(ports.previewCutoff.previewMaxEventId.value);
-  const rows = Object.fromEntries(
-    PREVIEW_VS_NAMES.map((name) => [
-      name,
-      {
-        name,
-        attrsByUnit: Object.fromEntries(ports.previewSelections.PREVIEW_BOX_UNITS.map((u) => [u, []]))
-      }
-    ])
-  );
-
-  if (!Number.isFinite(maxId) || maxId <= 0) {
-    return PREVIEW_VS_NAMES.map((name) => rows[name]);
-  }
-
-  ports.previewCutoff.previewEffectiveCards.value.forEach((card) => {
-    if (!ports.previewCutoff.isCardWithinPreviewLimit(card, maxId)) return;
-    const skill = String(card?.Skill || '').trim().toLowerCase();
-    if (skill !== 'unit_score') return;
-
-    const baseName = String(card?.Name || '').trim().split(/\s+/)[0] || '';
-    if (!PREVIEW_VS_NAMES.includes(baseName)) return;
-
-    const unit = String(card?.Affiliation || '').trim().toLowerCase();
-    if (!ports.previewSelections.PREVIEW_BOX_UNITS.includes(unit)) return;
-
-    const attr = ports.formatting.normalizeEventHistoryAttribute(card?.Attribute);
-    if (!PREVIEW_ATTR_ORDER.includes(attr)) return;
-
-    rows[baseName].attrsByUnit[unit].push(attr);
-  });
-
-  return PREVIEW_VS_NAMES.map((name) => rows[name]);
-});
-
-const previewVsUnitScoreUnitRows = computed(() => {
-  const rowMap = Object.fromEntries(
-    previewVsUnitScoreRows.value.map((row) => [row.name, row])
-  );
-  return ports.previewSelections.PREVIEW_BOX_UNITS.map((unit) => {
-    const attrsByVs = {};
-    PREVIEW_VS_NAMES.forEach((name) => {
-      attrsByVs[name] = rowMap[name]?.attrsByUnit?.[unit] || [];
-    });
-    return { unit, attrsByVs };
-  });
-});
-
-const previewVsOriginalRows = computed(() => {
-  const maxId = Number(ports.previewCutoff.previewMaxEventId.value);
-  const rows = Object.fromEntries(
-    PREVIEW_VS_ORIGINAL_STAT_TYPES.value.map((type) => [
-      type,
-      {
-        type,
-        attrsByVs: Object.fromEntries(PREVIEW_VS_NAMES.map((name) => [name, []]))
-      }
-    ])
-  );
-
-  if (!Number.isFinite(maxId) || maxId <= 0) {
-    return PREVIEW_VS_ORIGINAL_STAT_TYPES.value.map((type) => rows[type]);
-  }
-
-  ports.previewCutoff.previewEffectiveCards.value.forEach((card) => {
-    if (!ports.previewCutoff.isCardWithinPreviewLimit(card, maxId)) return;
-    if (String(card?.Rarity || '').trim() !== '4') return;
-
-    const baseName = String(card?.Name || '').trim().split(/\s+/)[0] || '';
-    if (!PREVIEW_VS_NAMES.includes(baseName)) return;
-
-    const unit = String(card?.Affiliation || '').trim().toLowerCase();
-    if (unit !== 'vs') return;
-
-    const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
-    if (!sourceKey) return;
-
-    const attr = ports.formatting.normalizeEventHistoryAttribute(card?.Attribute);
-    if (!PREVIEW_ATTR_ORDER.includes(attr)) return;
-
-    const statType = getPreviewVsOriginalStatType(card, sourceKey);
-    if (!rows[statType]) return;
-
-    rows[statType].attrsByVs[baseName].push({
-      attr,
-      orderId: ports.previewCutoff.getPreviewCardProgressOrderId(card)
-    });
-  });
-
-  return PREVIEW_VS_ORIGINAL_STAT_TYPES.value.map((type) => {
-    const row = rows[type];
-    PREVIEW_VS_NAMES.forEach((name) => {
-      row.attrsByVs[name] = row.attrsByVs[name]
-        .sort((a, b) => {
-          const orderDiff = Number(a?.orderId || 0) - Number(b?.orderId || 0);
-          if (orderDiff !== 0) return orderDiff;
-          return PREVIEW_ATTR_ORDER.indexOf(a?.attr) - PREVIEW_ATTR_ORDER.indexOf(b?.attr);
-        })
-        .map((item) => item.attr);
-    });
-    return row;
-  });
-});
+const previewVsOriginalRows = computed(() => sharedVsStatistics.value.originalRows.map(({ type, attrsByVs }) => ({
+  type: type === 'CFES' ? 'CF' : type === 'BFES' ? 'BF' : type,
+  attrsByVs,
+})));
 
 const previewVsLastFourMaxDays = computed(() => {
   let max = 0;

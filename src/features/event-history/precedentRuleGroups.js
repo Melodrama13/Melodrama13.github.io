@@ -14,6 +14,12 @@ export function getQueryRuleGroups(query) {
   const local = (key, label) => ({ key, label, target: 'draft' });
   const shared = keys => MILESTONE_RULE_OPTIONS.filter(option => keys.includes(option.key)).map(option => ({ ...option, target: 'milestone' }));
   group('结果', family === 'achievement' && query.type !== 'interval' && query.attributeMode !== 'skillFirst' ? [local('onlyMilestones', '仅里程碑')] : []);
+  if (family === 'sequence' && query.sequenceMetric === 'quantityGap') {
+    group('结果', [local('onlyMilestones', '仅连续期数破纪录')]);
+    group('比较范围', [local('gapExcludeMiku', '排除初音未来')]);
+    if (query.gapMetric === 'limited') group('卡片来源', shared(['includeSongLimited', 'includeWl3']));
+    return groups;
+  }
 
   const activity = [], cards = [], affiliation = [], counts = [];
   if (family === 'sequence') {

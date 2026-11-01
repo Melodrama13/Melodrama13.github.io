@@ -17,3 +17,9 @@ export function getThresholdAdvancement(history, threshold, scope) {
     days: Math.round((current.timestamp - previous.timestamp) / 86400000), previous,
   };
 }
+
+/** Reuse the candidate pass to offer only counts that an exact query can return. */
+export function getObservedQuantityBounds(rows, countFor) {
+  const quantities = [...new Set(rows.map(countFor))].sort((a, b) => a - b);
+  return { min: quantities[0] ?? 0, max: quantities.at(-1) ?? 0, quantities, people: [] };
+}

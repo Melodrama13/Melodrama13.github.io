@@ -119,7 +119,12 @@
           data-feature-view="birthday-row" data-feature-page="history" class="birthday-row"
           :class="{ 'is-open': isBirthdayInfoOpen(row) }"
           :style="{ backgroundColor: getBirthdayRowTint(row.name) }"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isBirthdayInfoOpen(row)"
           @click.stop="toggleBirthdayInfo(row)"
+          @keydown.enter.self.prevent="toggleBirthdayInfo(row)"
+          @keydown.space.self.prevent="toggleBirthdayInfo(row)"
         >
           <HistoryBirthdayRowContent
   :formatting="formatting"
@@ -209,7 +214,6 @@ const props = defineProps({
   allCharacters: { type: Array, default: () => [] },
   allBaseCards: { type: Array, default: () => [] },
   predictionScheduleOrder: { type: Object, default: null },
-  statsPreviewData: { type: Object, default: null },
   jumpEventId: { type: [Number, String], default: null },
   jumpEventSeq: { type: Number, default: 0 }
 });
@@ -324,7 +328,7 @@ const previewSelections = useHistoryPreviewSelections({
   get previewCutoff() { return previewCutoff; },
   get previewLayout() { return previewLayout; },
 });
-const { PREVIEW_FESTIVAL_TYPES, CHAR_MAP, selectedPreviewPanelIds, selectedPreviewAttrChars, selectedPreviewDailyLineupChars, selectedPreviewCharAttrChars, previewIncludeCollabReward, previewThreeUseRewardCount, previewTwoUseRewardCount, previewIncludeUnitScoreInPureScore, previewFestivalMergeHigherRanks, selectedPreviewFestival, previewFestivalFesToggles, previewSelectableChars, togglePreviewAttrChar, clearPreviewAttrChars, togglePreviewDailyLineupChar, clearPreviewDailyLineupChars, togglePreviewCharAttrChar, clearPreviewCharAttrChars, canAppendCurrentLineupToPreviewAttr, appendPreviewAttrCharsFromCurrentLineup, canAppendCurrentLineupToPreviewDailyLineup, appendPreviewDailyLineupCharsFromCurrentLineup, canAppendCurrentLineupToPreviewCharAttr, appendPreviewCharAttrCharsFromCurrentLineup, handlePredictSelectionChange, setSelectedPreviewFestival, cyclePreviewLimitedBanEventTypeFilter, cyclePreviewBannerEventTypeFilter, previewLimitedBanFilterButtonText, previewLimitedBanFilterButtonTitle, previewBannerFilterButtonText, previewBannerFilterButtonTitle, previewPanelOptions, togglePreviewPanelType } = previewSelections;
+const { PREVIEW_FESTIVAL_TYPES, CHAR_MAP, selectedPreviewPanelIds, selectedPreviewAttrChars, selectedPreviewDailyLineupChars, selectedPreviewCharAttrChars, previewIncludeCollabReward, previewThreeUseRewardCount, previewTwoUseRewardCount, previewIncludeUnitScoreInPureScore, previewFestivalMergeHigherRanks, selectedPreviewFestival, previewFestivalFesToggles, previewSelectableChars, togglePreviewAttrChar, clearPreviewAttrChars, togglePreviewDailyLineupChar, clearPreviewDailyLineupChars, togglePreviewCharAttrChar, clearPreviewCharAttrChars, canAppendCurrentLineupToPreviewAttr, appendPreviewAttrCharsFromCurrentLineup, canAppendCurrentLineupToPreviewDailyLineup, appendPreviewDailyLineupCharsFromCurrentLineup, canAppendCurrentLineupToPreviewCharAttr, appendPreviewCharAttrCharsFromCurrentLineup, handlePredictSelectionChange, setSelectedPreviewFestival, previewPanelOptions, togglePreviewPanelType } = previewSelections;
 
 const festivalPreview = useHistoryFestivalPreview({
   props,

@@ -54,14 +54,6 @@
           </p>
         </section>
 
-        <section id="panel-song-stats" class="stats-section card-panel section-main" data-scroll-anchor="panel-song-stats">
-          <div class="section-head">
-            <div class="section-head-left">
-              <h2>{{ getSongSectionTitle('panel-song-stats') }}</h2>
-            </div>
-          </div>
-
-          <div class="stats-grid">
             <SongUniqueStatsPanel
   :isExportingPng="isExportingPng"
   :exportSongPanelPng="exportSongPanelPng"
@@ -232,9 +224,6 @@
   :onSongJacketError="onSongJacketError"
 
 />
-          </div>
-        </section>
-
         <SongSearchPanel
   :registerSongListWrap="el => songListWrapRef = el"
   :isSongTableOverflowing="isSongTableOverflowing"

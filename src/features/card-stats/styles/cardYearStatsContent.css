@@ -16,8 +16,7 @@
 
 .year-stats-panel .year-stats-wrap {
   max-height: none;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: visible;
   border-radius: 12px;
 }
 
@@ -82,4 +81,10 @@
   .year-stats-table {
     min-width: calc(var(--year-character-count) * 42px);
   }
+}
+
+.year-stats-panel .year-stats-wrap > .ui-static-corner-scroll {
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: hidden;
 }

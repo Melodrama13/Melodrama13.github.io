@@ -64,6 +64,7 @@
 :global(:is(.section-head)[data-feature-page="cards"]),
 :global([data-feature-page="cards"] :is(.block-head)),
 :global(:is(.block-head)[data-feature-page="cards"]) {
+  padding-inline: var(--ui-surface-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -311,7 +312,7 @@
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: var(--stats-radius-panel);
-  padding: 14px;
+  padding: var(--ui-surface-panel-padding);
   box-shadow: 0 6px 20px rgba(17, 24, 39, 0.06);
 }
 
@@ -366,7 +367,7 @@
   align-items: center;
   gap: 6px;
   margin-top: 8px;
-  padding: 6px;
+  padding: var(--ui-surface-summary-padding);
   border: 1px solid #eef2f7;
   border-radius: 999px;
   background: #f8fafc;
@@ -376,11 +377,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 3px;
   width: 100%;
   min-width: 0;
-  min-height: 26px;
-  padding: 3px 6px;
+  min-height: var(--ui-surface-summary-chip-height);
+  padding: 3px 2px;
   border: 1px solid transparent;
   border-radius: 999px;
   font-weight: 800;
@@ -675,27 +676,29 @@
 
 .lineup-grid, :global([data-feature-page="cards"] :is(.lineup-grid)), :global(:is(.lineup-grid)[data-feature-page="cards"]) {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 10px;
 }
 
 .support-grid, :global([data-feature-page="cards"] :is(.support-grid)), :global(:is(.support-grid)[data-feature-page="cards"]) {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 10px;
 }
 
 .support-card, :global([data-feature-page="cards"] :is(.support-card)), :global(:is(.support-card)[data-feature-page="cards"]) {
+  min-width: 0;
   position: relative;
   border: 1px solid #dbe3ee;
   border-radius: var(--stats-radius-card);
-  padding: 9px;
+  padding: var(--ui-surface-group-padding);
   background-image: linear-gradient(to right, var(--unit-card-accent-color, #94a3b8) 0, var(--unit-card-accent-color, #94a3b8) 3px, transparent 3px, transparent 100%);
   background-repeat: no-repeat;
   box-shadow: 0 5px 14px rgba(15, 23, 42, 0.12);
 }
 
 .support-head, :global([data-feature-page="cards"] :is(.support-head)), :global(:is(.support-head)[data-feature-page="cards"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -777,16 +780,18 @@
 }
 
 .lineup-card, :global([data-feature-page="cards"] :is(.lineup-card)), :global(:is(.lineup-card)[data-feature-page="cards"]) {
+  min-width: 0;
   position: relative;
   border: 1px solid #dbe3ee;
   border-radius: var(--stats-radius-card);
-  padding: 9px;
+  padding: var(--ui-surface-group-padding);
   background-image: linear-gradient(to right, var(--unit-card-accent-color, #94a3b8) 0, var(--unit-card-accent-color, #94a3b8) 3px, transparent 3px, transparent 100%);
   background-repeat: no-repeat;
   box-shadow: 0 5px 14px rgba(15, 23, 42, 0.12);
 }
 
 .lineup-char-head, :global([data-feature-page="cards"] :is(.lineup-char-head)), :global(:is(.lineup-char-head)[data-feature-page="cards"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -876,6 +881,7 @@
 }
 
 .lineup-plan-row, :global([data-feature-page="cards"] :is(.lineup-plan-row)), :global(:is(.lineup-plan-row)[data-feature-page="cards"]) {
+  min-width: 0;
   display: grid;
   grid-template-columns: 30px repeat(5, minmax(0, 1fr)) 48px;
   gap: 5px;
@@ -895,6 +901,7 @@
 :global(:is(.lineup-total-cell)[data-feature-page="cards"]),
 :global([data-feature-page="cards"] :is(.lineup-member-cell)),
 :global(:is(.lineup-member-cell)[data-feature-page="cards"]) {
+  min-width: 0;
   border: 1px solid var(--lineup-row-border, #cbd5e1);
   border-radius: 12px;
   background: var(--lineup-row-bg, rgba(255, 255, 255, 0.88));
@@ -1017,7 +1024,7 @@
   border: 1px solid #dbe3ee;
   border-radius: var(--stats-radius-card);
   background: linear-gradient(180deg, #ffffff, #f8fbff);
-  padding: 10px;
+  padding: var(--ui-surface-panel-padding);
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
   overflow-x: visible;
 }
@@ -1029,6 +1036,7 @@
 }
 
 .festival-card-head, :global([data-feature-page="cards"] :is(.festival-card-head)), :global(:is(.festival-card-head)[data-feature-page="cards"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1458,10 +1466,8 @@
 
 .matrix-wrap, :global([data-feature-page="cards"] :is(.matrix-wrap)), :global(:is(.matrix-wrap)[data-feature-page="cards"]) {
   position: relative;
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: calc(100vh - 140px);
-  max-height: calc(100dvh - 140px);
+  overflow: visible;
+  max-height: none;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
 }
@@ -1643,7 +1649,7 @@
   border: 1px solid rgba(148, 163, 184, 0.5);
   border-left: 3px solid var(--duo-unit-color, #94a3b8);
   border-radius: var(--stats-radius-card);
-  padding: 8px;
+  padding: var(--ui-surface-group-padding) var(--ui-surface-group-padding) var(--ui-surface-group-padding) calc(var(--ui-surface-group-padding) - 2px);
   background: rgba(255, 255, 255, 0.72);
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
 }
@@ -1658,7 +1664,7 @@
 .duo-unit-combined-head, :global([data-feature-page="cards"] :is(.duo-unit-combined-head)), :global(:is(.duo-unit-combined-head)[data-feature-page="cards"]) {
   position: absolute;
   top: 8px;
-  right: 8px;
+  right: calc(var(--ui-surface-group-padding) + var(--ui-surface-group-header-inset));
   z-index: 3;
 }
 
@@ -1768,7 +1774,7 @@
 }
 
 .duo-matrix-wrap, :global([data-feature-page="cards"] :is(.duo-matrix-wrap)), :global(:is(.duo-matrix-wrap)[data-feature-page="cards"]) {
-  max-height: min(72vh, 680px);
+  max-height: none;
   border-radius: var(--stats-radius-card);
 }
 
@@ -2202,13 +2208,14 @@
   position: relative;
   border: 1px solid #dbe3ee;
   border-radius: var(--stats-radius-card);
-  padding: 8px;
+  padding: var(--ui-surface-group-padding);
   background-image: linear-gradient(to right, var(--unit-card-accent-color, #94a3b8) 0, var(--unit-card-accent-color, #94a3b8) 3px, transparent 3px, transparent 100%);
   background-repeat: no-repeat;
   box-shadow: 0 5px 14px rgba(15, 23, 42, 0.12);
 }
 
 .attr-summary-card-head, :global([data-feature-page="cards"] :is(.attr-summary-card-head)), :global(:is(.attr-summary-card-head)[data-feature-page="cards"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2366,10 +2373,16 @@
   border: 1px solid #e5e7eb;
   border-radius: var(--stats-radius-card);
   background: #fff;
-  padding: 10px;
+  padding: var(--ui-surface-group-padding);
 }
 
 .related-panel .record-block, :global([data-feature-page="cards"] :is(.related-panel .record-block)), :global(:is(.related-panel .record-block)[data-feature-page="cards"]) {
+  min-width: 0;
+}
+
+/* The frame owns its border-box decoration; only table content can scroll. */
+.related-panel .record-table-scroll, :global([data-feature-page="cards"] .record-table-scroll) {
+  min-width: 0;
   overflow-x: auto;
 }
 
@@ -2380,6 +2393,7 @@
 }
 
 .record-head-row, :global([data-feature-page="cards"] :is(.record-head-row)), :global(:is(.record-head-row)[data-feature-page="cards"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3946,3 +3960,9 @@ td.record-char, :global([data-feature-page="cards"] :is(td.record-char)), :globa
   font-weight: 800;
   color: #0f172a;
 }
+
+.matrix-wrap > .ui-static-corner-scroll, :global([data-feature-page="cards"] .matrix-wrap > .ui-static-corner-scroll) {
+  max-height: calc(100vh - 140px);
+  max-height: calc(100dvh - 140px);
+}
+.duo-full-wrap > .ui-static-corner-scroll, :global([data-feature-page="cards"] .duo-full-wrap > .ui-static-corner-scroll) { max-height: min(72vh, 680px); }

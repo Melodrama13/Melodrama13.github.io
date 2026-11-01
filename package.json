@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm run check:prediction-order",
+    "prebuild": "npm run check:prediction-order && node scripts/generateCornerOptics.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "check:ui": "node scripts/check-ui-policy.js",

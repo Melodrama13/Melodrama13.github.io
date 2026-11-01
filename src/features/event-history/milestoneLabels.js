@@ -22,6 +22,7 @@ const SILVER_COUNTS = new Set(['pureScore', 'pScore', 'scoreUp', 'recovery', 'ac
   'limitedBanner', 'boxLimitedBanner', 'mixedLimitedBanner']);
 
 export function getMilestoneGrade(record) {
+  if (record.type === 'quantityGap') return record.milestoneAction === 'duration' ? 'gold' : 'silver';
   if (record.type === 'count') return GOLD_COUNTS.has(record.metric) ? 'gold' : SILVER_COUNTS.has(record.metric) ? 'silver' : 'bronze';
   if (['interval', 'lineup'].includes(record.type)) return 'gold';
   if (record.type === 'attribute') return record.ceilingFirsts.some(first => first.attribute === 'any') ? 'gold' : 'silver';
@@ -49,6 +50,7 @@ export function getMilestoneBadges(record) {
 
 /** The visible badge and its accessible name share one naming source. */
 export function getMilestoneLabel(record) {
+  if (record.type === 'quantityGap') return plain(record.milestoneAction === 'duration' ? '持续新纪录' : `${record.gapMetric === 'limited' ? '限定' : '四星'}差距`);
   if (record.type === 'count') return plain(`${COUNT_LABELS[record.metric]}新上限`);
   if (record.type === 'attribute') {
     return attributeCeilingLabel(record.cohort, record.ceilingFirsts.some(first => first.attribute === 'any') ? 'any' : record.attribute);
@@ -65,6 +67,7 @@ export function getMilestoneLabel(record) {
 }
 
 export const MILESTONE_NAME_CATALOG = Object.freeze([
+  { category: '数量差距', names: ['四星差距', '限定差距', '持续新纪录'] },
   { category: '数量新上限', names: Object.values(COUNT_LABELS).map(label => `${label}新上限`) },
   { category: '间隔纪录', names: ['间隔新纪录'], titleVariants: Object.values(INTERVAL_METRIC_LABELS).flatMap(metric => ['最长', '最短'].map(direction => `${metric}${direction}间隔`)) },
   { category: '花色新上限', names: ['OC', 'VS'].flatMap(cohort => [`${cohort}花色新上限`, ...Object.values(PRECEDENT_ATTRIBUTE_LABELS).map(attribute => `${cohort}${attribute}新上限`)]) },

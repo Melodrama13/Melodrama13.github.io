@@ -1,26 +1,26 @@
 import { ref, computed, reactive } from 'vue';
-import { shouldCountCardAsLimited } from '../../utils/cardLimitedRules.js';
-import { buildCardCharacterStats } from './cardCharacterStats.js';
+import { useCardDistributionStatistics } from './useCardDistributionStatistics.js';
+import { CARD_STATISTICS_DEFAULTS, CARD_STATISTICS_EVENT_TYPES, normalizeStatisticsEventTypes } from './cardStatisticsRules.js';
 
 /** Owns card distribution behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
  */
 export function useCardDistribution(inputs) {
-  const includeCollabRewardCards = ref(false);
+  const includeCollabRewardCards = ref(CARD_STATISTICS_DEFAULTS.includeCollabRewardCards);
 
-  const useRewardCountForLowStars = ref(true);
+  const useRewardCountForLowStars = ref(CARD_STATISTICS_DEFAULTS.useRewardCountForLowStars);
 
   const useRewardCountForThreeStar = useRewardCountForLowStars;
 
   const useRewardCountForTwoStar = useRewardCountForLowStars;
 
-  const limitedIncludeWl3 = ref(false);
+  const limitedIncludeWl3 = ref(CARD_STATISTICS_DEFAULTS.includeWl3);
 
-  const limitedIncludeSongLimited = ref(true);
+  const limitedIncludeSongLimited = ref(CARD_STATISTICS_DEFAULTS.includeSongLimited);
 
   const hideDistCharNames = ref(true);
 
-  const EVENT_TYPE_FILTER_OPTIONS = Object.freeze(['箱活', '混活']);
+  const EVENT_TYPE_FILTER_OPTIONS = CARD_STATISTICS_EVENT_TYPES;
 
   const createEventTypeFilter = () => ref([...EVENT_TYPE_FILTER_OPTIONS]);
 
@@ -32,9 +32,9 @@ export function useCardDistribution(inputs) {
 
   const fesLimitedBanEventTypeFilter = createEventTypeFilter();
 
-  const fesLimitedIncludeFes = ref(false);
+  const fesLimitedIncludeFes = ref(CARD_STATISTICS_DEFAULTS.includeFestivalFes);
 
-  const includeUnitScoreInPureScore = ref(false);
+  const includeUnitScoreInPureScore = ref(CARD_STATISTICS_DEFAULTS.includeUnitScoreInPureScore);
 
   const DIST_VS_SUMMARY_PANEL_IDS = [
     'four',
@@ -84,28 +84,7 @@ export function useCardDistribution(inputs) {
 
   const isDistPanelVsSummaryEnabled = (panelId) => !!distVsUnitSummaryToggles[String(panelId || '')];
 
-  const isEventRewardCard = (card, options = {}) => {
-    const rarity = String(card?.Rarity || '').trim();
-    if (!['2', '3'].includes(rarity)) return false;
-    const includeCollab = options?.includeCollab === true || includeCollabRewardCards.value;
-    // 默认按活动卡计算报酬；勾选后额外计入联动二/三星。
-    if (inputs.eventCatalog.isNumericEventId(card?.EventID)) return true;
-    if (!includeCollab) return false;
-    return String(card?.Type || '').trim().toLowerCase() === 'collab';
-  };
-
-  const shouldIncludeCardInLimitedStats = (card) => shouldCountCardAsLimited(card, {
-    includeWl3: limitedIncludeWl3.value,
-    includeSongLimited: limitedIncludeSongLimited.value
-  });
-
-  const normalizeEventTypeFilter = (value) => {
-    if (Array.isArray(value)) {
-      return EVENT_TYPE_FILTER_OPTIONS.filter((type) => value.includes(type));
-    }
-    if (value === 'all') return [...EVENT_TYPE_FILTER_OPTIONS];
-    return EVENT_TYPE_FILTER_OPTIONS.includes(value) ? [value] : [];
-  };
+  const normalizeEventTypeFilter = normalizeStatisticsEventTypes;
 
   const isEventTypeSelected = (filterValue, eventType) => {
     return normalizeEventTypeFilter(filterValue).includes(eventType);
@@ -135,176 +114,6 @@ export function useCardDistribution(inputs) {
     setEventTypeFilterValue(fesLimitedBanEventTypeFilter, targetType, checked);
   };
 
-  const limitedBanCountMap = computed(() => {
-    const map = {};
-    const maxEid = inputs.eventCatalog.safeMaxEventId.value;
-    const typeFilter = limitedBanEventTypeFilter.value;
-
-    (inputs.props.allEvents || []).forEach((ev) => {
-      if (!inputs.eventCatalog.isNumericEventId(ev?.id)) return;
-      const eid = Number(ev.id);
-      if (eid > maxEid) return;
-
-      const eventType = String(ev?.event_type || '').trim();
-      if (!isEventTypeSelected(typeFilter, eventType)) return;
-
-      if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
-
-      const bannerName = inputs.presentation.normalizeBannerName(ev?.banner);
-      if (!inputs.metadata.CHAR_ORDER[bannerName]) return;
-      if (inputs.metadata.VS_NAMES.includes(bannerName)) return;
-      map[bannerName] = (map[bannerName] || 0) + 1;
-    });
-
-    return map;
-  });
-
-  const limitedBanLastEventIdMap = computed(() => {
-    const map = {};
-    const maxEid = inputs.eventCatalog.safeMaxEventId.value;
-    const typeFilter = limitedBanEventTypeFilter.value;
-
-    (inputs.props.allEvents || []).forEach((ev) => {
-      if (!inputs.eventCatalog.isNumericEventId(ev?.id)) return;
-      const eid = Number(ev.id);
-      if (eid > maxEid) return;
-
-      const eventType = String(ev?.event_type || '').trim();
-      if (!isEventTypeSelected(typeFilter, eventType)) return;
-
-      if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
-
-      const bannerName = inputs.presentation.normalizeBannerName(ev?.banner);
-      if (!inputs.metadata.CHAR_ORDER[bannerName]) return;
-      if (inputs.metadata.VS_NAMES.includes(bannerName)) return;
-      map[bannerName] = Math.max(Number(map[bannerName] || 0), eid);
-    });
-
-    return map;
-  });
-
-  const fesLimitedEventIdSet = computed(() => {
-    const maxEid = inputs.eventCatalog.safeMaxEventId.value;
-    const fesEventIds = new Set();
-    const result = new Set();
-
-    (inputs.props.allCards || []).forEach((card) => {
-      if (!inputs.eventCatalog.isCardWithinLimit(card, maxEid)) return;
-      const eidRaw = String(card?.EventID || '').trim();
-      if (!inputs.eventCatalog.isNumericEventId(eidRaw)) return;
-      const type = String(card?.Type || '').trim().toLowerCase();
-      if (inputs.presentation.isFesCardType(type)) {
-        fesEventIds.add(Number(eidRaw));
-      }
-    });
-
-    (inputs.props.allEvents || []).forEach((ev) => {
-      if (inputs.eventCatalog.shouldSkipPredictEvent(ev)) return;
-      if (!inputs.eventCatalog.isNumericEventId(ev?.id)) return;
-      const eid = Number(ev.id);
-      if (eid > maxEid) return;
-      if (String(ev?.gacha_type || '').trim() !== '普通限定') return;
-      if (!fesEventIds.has(eid)) return;
-      result.add(eid);
-    });
-
-    return result;
-  });
-
-  const fesLimitedBanCountMap = computed(() => {
-    const map = {};
-    const targetEventIds = fesLimitedEventIdSet.value;
-    const typeFilter = fesLimitedBanEventTypeFilter.value;
-    if (!targetEventIds.size) return map;
-
-    (inputs.props.allEvents || []).forEach((ev) => {
-      if (!inputs.eventCatalog.isNumericEventId(ev?.id)) return;
-      const eid = Number(ev.id);
-      if (!targetEventIds.has(eid)) return;
-
-      const eventType = String(ev?.event_type || '').trim();
-      if (!isEventTypeSelected(typeFilter, eventType)) return;
-
-      const bannerName = inputs.presentation.normalizeBannerName(ev?.banner);
-      if (!inputs.metadata.CHAR_ORDER[bannerName]) return;
-      if (inputs.metadata.VS_NAMES.includes(bannerName)) return;
-      map[bannerName] = (map[bannerName] || 0) + 1;
-    });
-
-    return map;
-  });
-
-  const fesLimitedBanLastEventIdMap = computed(() => {
-    const map = {};
-    const targetEventIds = fesLimitedEventIdSet.value;
-    const typeFilter = fesLimitedBanEventTypeFilter.value;
-    if (!targetEventIds.size) return map;
-
-    (inputs.props.allEvents || []).forEach((ev) => {
-      if (!inputs.eventCatalog.isNumericEventId(ev?.id)) return;
-      const eid = Number(ev.id);
-      if (!targetEventIds.has(eid)) return;
-
-      const eventType = String(ev?.event_type || '').trim();
-      if (!isEventTypeSelected(typeFilter, eventType)) return;
-
-      const bannerName = inputs.presentation.normalizeBannerName(ev?.banner);
-      if (!inputs.metadata.CHAR_ORDER[bannerName]) return;
-      if (inputs.metadata.VS_NAMES.includes(bannerName)) return;
-      map[bannerName] = Math.max(Number(map[bannerName] || 0), eid);
-    });
-
-    return map;
-  });
-
-  const bannerCountMap = computed(() => {
-    const map = {};
-    const maxEid = inputs.eventCatalog.safeMaxEventId.value;
-    const typeFilter = bannerEventTypeFilter.value;
-
-    (inputs.props.allEvents || []).forEach((ev) => {
-      if (inputs.eventCatalog.shouldSkipPredictEvent(ev)) return;
-      if (!inputs.eventCatalog.isNumericEventId(ev?.id)) return;
-      const eid = Number(ev.id);
-      if (eid > maxEid) return;
-
-      const eventType = String(ev?.event_type || '').trim();
-      if (!['箱活', '混活'].includes(eventType)) return;
-      if (!isEventTypeSelected(typeFilter, eventType)) return;
-
-      const bannerName = inputs.presentation.normalizeBannerName(ev?.banner);
-      if (!inputs.metadata.CHAR_ORDER[bannerName]) return;
-      if (inputs.metadata.VS_NAMES.includes(bannerName)) return;
-      map[bannerName] = (map[bannerName] || 0) + 1;
-    });
-
-    return map;
-  });
-
-  const bannerLastEventIdMap = computed(() => {
-    const map = {};
-    const maxEid = inputs.eventCatalog.safeMaxEventId.value;
-    const typeFilter = bannerEventTypeFilter.value;
-
-    (inputs.props.allEvents || []).forEach((ev) => {
-      if (inputs.eventCatalog.shouldSkipPredictEvent(ev)) return;
-      if (!inputs.eventCatalog.isNumericEventId(ev?.id)) return;
-      const eid = Number(ev.id);
-      if (eid > maxEid) return;
-
-      const eventType = String(ev?.event_type || '').trim();
-      if (!['箱活', '混活'].includes(eventType)) return;
-      if (!isEventTypeSelected(typeFilter, eventType)) return;
-
-      const bannerName = inputs.presentation.normalizeBannerName(ev?.banner);
-      if (!inputs.metadata.CHAR_ORDER[bannerName]) return;
-      if (inputs.metadata.VS_NAMES.includes(bannerName)) return;
-      map[bannerName] = Math.max(Number(map[bannerName] || 0), eid);
-    });
-
-    return map;
-  });
-
   const onIncludeUnitScoreInPureScoreChange = (event) => {
     const checked = !!event?.target?.checked;
     const anchorEl = event?.target instanceof HTMLElement ? event.target : null;
@@ -313,81 +122,11 @@ export function useCardDistribution(inputs) {
     }, anchorEl);
   };
 
-  const getCardProgressOrderId = (card) => {
-    const cardId = Number(String(card?.CardID || '').trim());
-    if (Number.isFinite(cardId) && cardId > 0) return cardId;
-    const eventId = Number(String(card?.EventID || '').trim());
-    if (Number.isFinite(eventId) && eventId > 0) return eventId * 10000;
-    return 0;
-  };
-
-  const getStatProgressOrderKey = (row, key) => {
-    if (key === 'fourStarCount') return Number(row?.lastFourStarOrderId || 0);
-    if (key === 'limitedCount') return Number(row?.lastLimitedOrderId || 0);
-    if (key === 'fesLimitedCount') return Number(row?.lastFesLimitedOrderId || 0);
-    if (key === 'scoreUpCount') return Number(row?.lastScoreUpOrderId || 0);
-    if (key === 'pScoreCount') return Number(row?.lastPScoreOrderId || 0);
-    if (key === 'pureScoreCount') return Number(row?.lastPureScoreOrderId || 0);
-    if (key === 'recoveryCount') return Number(row?.lastRecoveryOrderId || 0);
-    if (key === 'accuracyCount') return Number(row?.lastAccuracyOrderId || 0);
-    if (key === 'threeStarCount') return Number(row?.lastThreeStarOrderId || 0);
-    if (key === 'twoStarCount') return Number(row?.lastTwoStarOrderId || 0);
-    if (key === 'rewardThreeCount') return Number(row?.lastRewardThreeOrderId || 0);
-    if (key === 'rewardTwoCount') return Number(row?.lastRewardTwoOrderId || 0);
-    if (key === 'rewardThreeCountWithCollab') return Number(row?.lastRewardThreeWithCollabOrderId || 0);
-    if (key === 'rewardTwoCountWithCollab') return Number(row?.lastRewardTwoWithCollabOrderId || 0);
-    if (key === 'rewardTotalCount') return Number(row?.lastRewardOrderId || 0);
-    if (key === 'bannerCount') return Number(row?.lastBannerOrderId || 0);
-    if (key === 'limitedBanCount') return Number(row?.lastLimitedBanOrderId || 0);
-    if (key === 'fesLimitedBanCount') return Number(row?.lastFesLimitedBanOrderId || 0);
-    return Number(row?.lastCardOrderId || 0);
-  };
-
-  const processedStats = computed(() => buildCardCharacterStats({
-    cards: inputs.props.allCards || [],
-    maxEventId: inputs.eventCatalog.safeMaxEventId.value,
-    includeUnitScoreInPureScore: includeUnitScoreInPureScore.value,
-    isCardWithinLimit: inputs.eventCatalog.isCardWithinLimit,
-    normalizeCardStatsAttribute: inputs.eventCatalog.normalizeCardStatsAttribute,
-    isEventRewardCard,
-    fesLimitedEventIds: fesLimitedEventIdSet.value,
-    includeFestivalFes: fesLimitedIncludeFes.value,
-    attributeKeys: inputs.constants.ATTRS,
-    bannerCounts: bannerCountMap.value,
-    bannerLastEventIds: bannerLastEventIdMap.value,
-    limitedBannerCounts: limitedBanCountMap.value,
-    limitedBannerLastEventIds: limitedBanLastEventIdMap.value,
-    festivalLimitedBannerCounts: fesLimitedBanCountMap.value,
-    festivalLimitedBannerLastEventIds: fesLimitedBanLastEventIdMap.value,
-    isNumericEventId: inputs.eventCatalog.isNumericEventId,
-    isFesCardType: inputs.presentation.isFesCardType,
-    shouldIncludeCardInLimitedStats,
-    getCardProgressOrderId,
-    normalizeBannerName: inputs.presentation.normalizeBannerName
-  }));
-
-  const groupByCount = (data, key) => {
-    const groups = {};
-    data.forEach(char => {
-      const count = char[key];
-      if (!groups[count]) groups[count] = [];
-      groups[count].push(char);
-    });
-    return Object.keys(groups)
-      .map(count => ({
-        count: parseInt(count, 10),
-        chars: groups[count].sort((a, b) => {
-          const ao = getStatProgressOrderKey(a, key);
-          const bo = getStatProgressOrderKey(b, key);
-          if (ao !== bo) return ao - bo;
-          const ac = inputs.metadata.CHAR_ORDER[String(a?.name || '').split(/\s+/)[0]] || 999;
-          const bc = inputs.metadata.CHAR_ORDER[String(b?.name || '').split(/\s+/)[0]] || 999;
-          if (ac !== bc) return ac - bc;
-          return String(a?.name || '').localeCompare(String(b?.name || ''), 'zh-Hans-CN');
-        })
-      }))
-      .sort((a, b) => b.count - a.count);
-  };
+  const { processedStats, groupByCount, fesLimitedEventIdSet, isEventRewardCard,
+    shouldIncludeCardInLimitedStats, getCardProgressOrderId, getStatProgressOrderKey } = useCardDistributionStatistics(inputs, {
+    includeCollabRewardCards, limitedIncludeWl3, limitedIncludeSongLimited, includeUnitScoreInPureScore,
+    fesLimitedIncludeFes, bannerEventTypeFilter, limitedBanEventTypeFilter, fesLimitedBanEventTypeFilter,
+  });
 
   const DIST_SUMMARY_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
 

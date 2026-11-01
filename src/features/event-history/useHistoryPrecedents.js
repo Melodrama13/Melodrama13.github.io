@@ -11,6 +11,7 @@ import { queryFamily, achievementProject, setAchievementProject, sequenceOptions
 import { getQueryPeriods } from './precedentPeriods.js';
 import { hasLimitedSubdivision, isPeriodBanner, periodMetricTitle, periodKindLabel } from './precedentPeriodRules.js';
 import { createConfigurationCard, isValidConfigurationCard } from './precedentPoolQueries.js';
+import { QUANTITY_GAP_METRICS, QUANTITY_GAP_MIN } from './precedentQuantityGaps.js';
 
 const initialQuery = () => ({
   type: 'attribute', scope: 'all', character: '', attribute: 'any', threshold: 'MAX',
@@ -18,6 +19,7 @@ const initialQuery = () => ({
   metric: 'four', attributeMode: 'count', onlyMilestones: false, secondCharacter: '',
   direction: 'longest', unit: 'days', minInterval: '',
   sequenceMetric: 'four', sequence: 'unitBox', sequenceOwner: '', streakProperty: 'attribute', includeBirthday: false, includeFes: false, includeWl: false, includeCollab: false, vs: '',
+  gapMetric: 'four', gapComparison: 'range', gapThreshold: QUANTITY_GAP_MIN, gapOperator: 'atLeast', gapExcludeMiku: true,
   cardSlots: [createConfigurationCard()],
   periodKind: 'year', periodValue: 'all', periodLength: 3, newYearNextYear: true, includeIncomplete: true, limitedKind: '', coverage: '', intervalHistory: false,
 });
@@ -28,7 +30,7 @@ export const PRECEDENT_SCOPE_OPTIONS = [
   { value: 'nc', label: 'NC' }, { value: 'vs', label: 'VS' },
 ];
 const SKILL_LABELS = PRECEDENT_SKILL_LABELS;
-const MILESTONE_CATEGORIES = { count: '首次达成', interval: '间隔纪录', attribute: '花色达成', pair: '首次同池' };
+const MILESTONE_CATEGORIES = { count: '首次达成', interval: '间隔纪录', attribute: '花色达成', pair: '首次同池', gap: '数量差距' };
 
 /** Page-owned query state. Historical evidence always uses base cards, independently of predictions and list filters. */
 export function useHistoryPrecedents(ports) {
@@ -93,18 +95,25 @@ export function useHistoryPrecedents(ports) {
   const periodOptions = computed(() => getQueryPeriods(catalog.value, { ...draft, periodValue: 'all' }));
   const draftColorBounds = computed(() => getHistoryQueryBounds(catalog.value, draft, milestoneRules));
   const quantityOptions = computed(() => {
-    const { min, max } = draftColorBounds.value;
-    if (draft.type === 'sequence') return max === 0 ? [{ value: 'MAX', label: '0(MAX)' }]
-      : Array.from({ length: max + (draft.sequenceMetric === 'flowerGap' ? 1 : 0) }, (_, index) => ({ value: index === 0 ? 'MAX' : max - index, label: index === 0 ? `${max}(MAX)` : String(max - index) }));
-    const values = Array.from({ length: max }, (_, index) => max - index);
-    if (min === 0) values.push(0);
+    const { min, max, quantities } = draftColorBounds.value;
+    const exact = draft.type !== 'period' || !['atLeast', 'atMost'].includes(draft.operator);
+    const observed = exact && Array.isArray(quantities);
+    let values = observed ? [...quantities].reverse() : Array.from({ length: max }, (_, index) => max - index);
+    if (!exact && draft.operator === 'atMost') values = values.filter(value => value >= min);
+    if (!observed && min === 0 && !values.includes(0)) values.push(0);
+    if (!values.length) values = [0];
+    if (draft.type === 'sequence') return values.map(value => ({ value: value === max ? 'MAX' : value, label: value === max ? `${max}(MAX)` : String(value) }));
     return values.map(value => value === max && value === min
       ? { value: draft.threshold === 'MIN' ? 'MIN' : 'MAX', label: `${value}(MAX=MIN)` }
       : value === max ? { value: 'MAX', label: `${value}(MAX)` }
       : value === min ? { value: 'MIN', label: `${value}(MIN)` }
       : { value, label: String(value) });
   });
-  const isValid = computed(() => draft.type === 'pool' ? (draft.threshold === '' || ['MAX', 'MIN'].includes(draft.threshold) || Number.isInteger(Number(draft.threshold)) && Number(draft.threshold) >= 0)
+  const isValid = computed(() => draft.type === 'sequence' && draft.sequenceMetric === 'quantityGap'
+    ? Number.isInteger(Number(draft.gapThreshold)) && Number(draft.gapThreshold) >= QUANTITY_GAP_MIN
+      && Number(draft.gapThreshold) <= draftColorBounds.value.gapMax
+      && (['MAX', 'MIN'].includes(draft.threshold) || Number.isInteger(Number(draft.threshold)) && Number(draft.threshold) >= 1)
+    : draft.type === 'pool' ? (draft.threshold === '' || ['MAX', 'MIN'].includes(draft.threshold) || Number.isInteger(Number(draft.threshold)) && Number(draft.threshold) >= 0)
     && draft.cardSlots.every(isValidConfigurationCard)
     : draft.type === 'period' ? (draft.periodKind !== 'events' || Number.isInteger(Number(draft.periodLength)) && Number(draft.periodLength) >= 1)
     && (['MAX', 'MIN'].includes(draft.threshold) || Number.isInteger(Number(draft.threshold)) && Number(draft.threshold) >= 0)
@@ -158,7 +167,8 @@ export function useHistoryPrecedents(ports) {
   const normalizeQuantity = () => {
     if (draft.type === 'interval' || draft.attributeMode === 'skillFirst' || draft.type === 'pool' && draft.threshold === '' || ['MAX', 'MIN'].includes(draft.threshold)) return;
     const count = Number(draft.threshold);
-    if (count < (draft.type === 'period' ? 0 : 1) || count === draftColorBounds.value.max || draft.type !== 'lineup' && count > draftColorBounds.value.max) draft.threshold = 'MAX';
+    if (['sequence', 'period', 'pool'].includes(draft.type) && !quantityOptions.value.some(option => Number.parseInt(option.label) === count)
+      || count < (['period', 'pool'].includes(draft.type) ? 0 : 1) || count === draftColorBounds.value.max || draft.type !== 'lineup' && count > draftColorBounds.value.max) draft.threshold = 'MAX';
     else if (draft.type !== 'sequence' && count === draftColorBounds.value.min) draft.threshold = 'MIN';
   };
   const search = () => {
@@ -217,10 +227,16 @@ export function useHistoryPrecedents(ports) {
   };
   // The holder of a cohort-wide record is evidence, not the record's subject.
   // Query matches, personal firsts/completions and streaks keep their own names.
-  const recordTitleName = record => record.isPersonalAchievement ? record.name || '' : ['count', 'interval'].includes(record.type)
+  const recordTitleName = record => record.isPersonalAchievement ? record.name || '' : ['count', 'interval', 'quantityGap'].includes(record.type)
     || record.type === 'attribute' && (record.category || record.isGroupCompletion) ? '' : record.name || '';
   const recordTitle = record => {
     const person = recordTitleName(record), prefix = person ? `${person} · ` : '';
+    if (record.type === 'quantityGap') {
+      const metric = QUANTITY_GAP_METRICS[record.gapMetric], cohort = record.scope !== 'all' && record.gapComparison !== 'personal' ? `${record.scopeLabel} · ` : '';
+      const label = record.gapComparison === 'personal' ? '落后' : '极差';
+      if (record.milestoneAction === 'onset') return `${cohort}${metric}${label} ${record.gapSnapshots[0].gap} 张`;
+      return `${prefix}${cohort}${metric}${label} ${record.gapOperator === 'equal' ? '' : '≥ '}${record.gapThreshold} 张 · 持续 ${record.after} 期`;
+    }
     if (record.type === 'sequence') {
       const subject = record.name || record.pair?.join(' × ') || record.scopeLabel || '';
       const label = record.sequenceMetric === 'flowerGap' ? '缺席' : '连续';
@@ -246,7 +262,11 @@ export function useHistoryPrecedents(ports) {
     return `同池 ${record.after} 张${SKILL_LABELS[record.skill] || '四星'}`;
   };
   const recordDescription = record => {
-    if (record.type === 'sequence') return `${record.sequenceOwner ? `${record.sequenceOwner}的箱活` : SEQUENCE_LABELS[record.sequence] || '全部活动'} · ${record.sequenceMetric === 'sameAttribute' ? record.streakProperty === 'skill' ? '同技能' : '同色' : SEQUENCE_METRICS[record.sequenceMetric]}`;
+    if (record.type === 'quantityGap') return record.milestoneAction === 'duration'
+      ? `此前最长 ${record.previousDuration} 期 · 本期刷新纪录`
+      : record.milestoneAction === 'onset' ? `${record.scopeLabel} · 本段持续 ${record.episodeDuration} 期`
+      : `${record.scopeLabel} · 最大差距 ${record.peakGap} 张`;
+    if (record.type === 'sequence') return `${record.sequenceOwner ? `${record.sequenceOwner}箱活` : SEQUENCE_LABELS[record.sequence] || '全部活动'} · ${record.sequenceMetric === 'sameAttribute' ? record.streakProperty === 'skill' ? '同技能' : '同色' : SEQUENCE_METRICS[record.sequenceMetric]}`;
     if (record.type === 'pool') {
       const matches = record.configurationMatches || [], rewards = matches.filter(match => ['2', '3'].includes(String(match.card.Rarity))).length;
       return `${record.totalUp} 张 UP${matches.length ? ` · 匹配 ${matches.length} 张${rewards ? ` · 含 ${rewards} 张报酬` : ''}` : ' · 完整卡池'}`;
@@ -285,6 +305,11 @@ export function useHistoryPrecedents(ports) {
   ])).values()];
   const recordCheckpoints = record => {
     const points = [];
+    if (record.type === 'quantityGap') {
+      const start = record.gapSnapshots[0], end = record.recovery || record.gapSnapshots.at(-1);
+      return [start, end].map((point, index) => ({ key: index ? 'end' : 'start', label: index ? record.recovered ? '恢复点' : '终点' : '起点',
+        timestamp: point.timestamp, holders: index ? record.recoveryActors || [] : record.onsetActors || [], events: [eventContexts.value.get(String(point.event.id)) || point.event] }));
+    }
     if (['sequence', 'period'].includes(record.type)) {
       return [{ key: 'start', label: '起点', timestamp: record.startTimestamp, holders: [], events: record.startEvent ? [eventContexts.value.get(String(record.startEvent.id)) || record.startEvent] : [] },
         { key: 'end', label: '终点', timestamp: record.timestamp, holders: record.contributors || [], events: record.events.map(event => eventContexts.value.get(String(event.id)) || event) }];
@@ -302,7 +327,10 @@ export function useHistoryPrecedents(ports) {
     });
     return points.map(point => ({ ...point, events: point.events.map(event => eventContexts.value.get(String(event.id)) || event) }));
   };
-  watch([() => draft.type, draftColorBounds], normalizeQuantity);
+  watch([() => draft.type, draftColorBounds], () => {
+    if (draft.type === 'sequence' && draft.sequenceMetric === 'quantityGap' && Number(draft.gapThreshold) > draftColorBounds.value.gapMax) draft.gapThreshold = QUANTITY_GAP_MIN;
+    normalizeQuantity();
+  });
   watch(() => draft.attributeMode, value => {
     if (value !== 'count' && draft.attribute === 'all') draft.attribute = 'any';
     if (value === 'streak') draft.skill = '';
@@ -315,12 +343,24 @@ export function useHistoryPrecedents(ports) {
   watch(() => draft.character, value => { if (value === draft.secondCharacter) draft.secondCharacter = ''; });
   watch(() => draft.sequenceMetric, metric => {
     if (draft.type !== 'sequence') return;
-    draft.sequence = metric === 'sameAttribute' ? 'cards' : ['bannerUnit', 'flowerGap'].includes(metric) ? 'all' : 'unitBox';
+    draft.sequence = metric === 'sameAttribute' ? 'cards' : ['bannerUnit', 'flowerGap', 'quantityGap'].includes(metric) ? 'all' : 'unitBox';
     draft.attribute = 'any'; draft.skill = ''; draft.vs = ''; draft.character = ''; draft.secondCharacter = ''; draft.onlyMilestones = false;
     draft.sequenceOwner = ''; draft.streakProperty = 'attribute'; draft.includeBirthday = false;
+    if (metric === 'quantityGap') Object.assign(draft, { gapMetric: 'four', gapComparison: 'range', gapThreshold: QUANTITY_GAP_MIN, gapOperator: 'atLeast', gapExcludeMiku: true });
     if (metric === 'songVs') draft.includeWl = false;
     draft.threshold = 'MAX'; resetSearch();
   }, { flush: 'sync' });
+  watch(() => draft.gapMetric, value => {
+    if (draft.type !== 'sequence' || draft.sequenceMetric !== 'quantityGap') return;
+    draft.gapExcludeMiku = value !== 'limited'; draft.gapThreshold = QUANTITY_GAP_MIN; draft.threshold = 'MAX';
+  }, { flush: 'sync' });
+  watch([() => draft.gapComparison, () => draft.gapThreshold, () => draft.gapOperator, () => draft.gapExcludeMiku,
+    () => draft.scope, () => draft.character, () => milestoneRules.includeWl3, () => milestoneRules.includeSongLimited], () => {
+    if (draft.type !== 'sequence' || draft.sequenceMetric !== 'quantityGap') return;
+    if (draft.gapComparison !== 'personal' || draft.gapExcludeMiku && draft.character === '初音未来') draft.character = '';
+    if (!Number.isInteger(Number(draft.gapThreshold)) || Number(draft.gapThreshold) < QUANTITY_GAP_MIN) draft.gapThreshold = QUANTITY_GAP_MIN;
+    draft.threshold = 'MAX';
+  });
   watch(() => draft.streakProperty, value => {
     if (draft.type !== 'sequence' || draft.sequenceMetric !== 'sameAttribute') return;
     if (value === 'skill') draft.attribute = 'any'; else draft.skill = '';

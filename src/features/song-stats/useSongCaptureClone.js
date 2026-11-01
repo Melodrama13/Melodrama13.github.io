@@ -2,6 +2,7 @@ import { copyCaptureCssVariables, copyCaptureCssVariablesFromAncestors, copyCapt
 import { syncCloneImagesWithSource, syncCloneBackgroundStylesWithSource, sanitizeSongCloneForExport } from './songCaptureClone.js';
 import { syncCaptureCloneFormControls } from '../../services/capture/captureElementState.js';
 import { waitNextPaint } from './songFormatters.js';
+import { getStaticCornerPaintElement } from '../../ui/staticCorners.js';
 
 /** Explicit dependencies keep this feature instance isolated. Effects connect after page composition. */
 export function useSongCaptureClone({
@@ -17,7 +18,7 @@ const prepareSongExportClone = async (targetEl) => {
   const sourceStyle = window.getComputedStyle(targetEl);
   const rootStyle = rootEl instanceof HTMLElement ? window.getComputedStyle(rootEl) : null;
   const sourceRadiusVar = String(sourceStyle.getPropertyValue('--stats-radius-btn') || '').trim();
-  const sourceBgColor = String(sourceStyle.backgroundColor || '').trim();
+  const sourceBgColor = String(window.getComputedStyle(getStaticCornerPaintElement(targetEl)).backgroundColor || '').trim();
   const hasVisibleBg = sourceBgColor && sourceBgColor !== 'transparent' && sourceBgColor !== 'rgba(0, 0, 0, 0)';
 
   const clone = targetEl.cloneNode(true);
@@ -173,6 +174,36 @@ const prepareSongExportClone = async (targetEl) => {
     block.style.height = `${Math.max(1, fullHeight)}px`;
     block.style.overflow = 'visible';
   });
+
+  // Expand both frame and real scroller so the 980px song table is not clipped.
+  const sourceSongFrames = targetEl.querySelectorAll('.song-list-wrap');
+  let songListExportWidth = Math.ceil(rect.width);
+  clone.querySelectorAll('.song-list-wrap').forEach((frame, index) => {
+    const sourceScroll = sourceSongFrames[index]?.querySelector(':scope > .ui-static-corner-scroll');
+    const scroll = frame.querySelector(':scope > .ui-static-corner-scroll');
+    if (!sourceScroll || !scroll) return;
+    const width = Math.max(sourceScroll.scrollWidth, sourceScroll.clientWidth);
+    let enclosingWidth = width;
+    let ancestor = sourceSongFrames[index];
+    while (ancestor !== targetEl && ancestor.parentElement) {
+      ancestor = ancestor.parentElement;
+      const style = window.getComputedStyle(ancestor);
+      enclosingWidth += ['paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderRightWidth']
+        .reduce((sum, name) => sum + (Number.parseFloat(style[name]) || 0), 0);
+    }
+    songListExportWidth = Math.max(songListExportWidth, Math.ceil(enclosingWidth));
+    [frame, scroll].forEach((element) => {
+      element.style.width = `${width}px`;
+      element.style.maxWidth = 'none';
+      element.style.height = 'auto';
+      element.style.maxHeight = 'none';
+      element.style.overflow = 'visible';
+    });
+  });
+  if (songListExportWidth > Math.ceil(rect.width)) {
+    clone.style.width = `${songListExportWidth}px`;
+    clone.style.minWidth = `${songListExportWidth}px`;
+  }
 
   const host = document.createElement('div');
   host.className = 'song-export-clone-host';

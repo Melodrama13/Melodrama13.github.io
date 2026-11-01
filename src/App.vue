@@ -46,6 +46,7 @@
           :style="sourceMenuStyle"
           @pointerdown.stop
         >
+          <div class="source-menu-scroll ui-static-corner-scroll">
           <AppSettingsContents
   :prediction-sources="predictionSources"
   :source-menu="sourceMenu"
@@ -56,6 +57,7 @@
   :all-cards="baseCards"
   :all-characters="charactersData"
 />
+          </div>
         </div>
       </UiSurfaceTransition>
       </Teleport>
@@ -130,12 +132,9 @@
           :predict-sources="predictSources"
           :active-predict-source-id="activePredictSourceId"
           :predict-user-name="predictUserName"
-          :stats-preview-data="statsPreviewData"
-          :preview-sync-event-id="previewSyncEventId"
           :jump-event-id="historyJumpEventId"
           :jump-event-seq="historyJumpSeq"
           @jump-to-event="handleStatsJumpToEvent"
-          @stats-preview-update="handleStatsPreviewUpdate"
           @stats-top-state-change="scheduleStatsTopControlStateSync"
           @sync-preview-event-id="handlePreviewSyncEventId"
         />
@@ -291,7 +290,7 @@ const shellLifecycle = useAppShellLifecycle({
 });
 
 const { tabs, currentTab } = tabCatalog;
-const { historyJumpEventId, historyJumpSeq, statsPreviewData, previewSyncEventId, tabComponentRef, contentAreaRef, showSourceDropdownInNav, showPredictInfoInNav, handleStatsPreviewUpdate, handlePreviewSyncEventId, handleContentScroll, handleStatsJumpToEvent } = tabNavigation;
+const { historyJumpEventId, historyJumpSeq, tabComponentRef, contentAreaRef, showSourceDropdownInNav, showPredictInfoInNav, handlePreviewSyncEventId, handleContentScroll, handleStatsJumpToEvent } = tabNavigation;
 const { predictImportInputRef, handleImportPredictsFile } = predictionFiles;
 const { sourceMenuOpen, sourceMenuPanelRef, sourceMenuStyle } = sourceMenu;
 const { predictUserName, predictiveEvents, predictSources, activePredictSourceId, cleanedPatchNoticeCount, setCleanedPatchNoticeCount } = predictionSources;

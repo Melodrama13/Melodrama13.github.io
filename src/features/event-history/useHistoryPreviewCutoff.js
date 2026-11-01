@@ -1,4 +1,6 @@
 import { computed } from 'vue';
+import { isCardWithinStatisticsLimit, shouldSkipStatisticsPredictEvent, getCardStatisticsReferenceDate, formatCardStatisticsDate } from '../card-stats/cardStatisticsScope.js';
+import { getCardStatisticsProgressOrderId } from '../card-stats/cardStatisticsRules.js';
 
 /** Preview Cutoff owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
@@ -85,6 +87,9 @@ const isEventWithinPreviewLimit = (event, maxId = previewMaxEventId.value) => {
   if (!eventKey) return true;
 
   const cutoffEvent = previewCutoffEvent.value;
+  if (ports.formatting.isNumericEventId(eventKey) && (!cutoffEvent || ports.formatting.isNumericEventId(cutoffEvent.id))) {
+    return Number(eventKey) <= Number(maxId);
+  }
   if (cutoffEvent) return ports.eventOrdering.compareEventOrderAsc(event, cutoffEvent) <= 0;
 
   if (ports.formatting.isNumericEventId(eventKey)) return Number(eventKey) <= Number(maxId);
@@ -95,6 +100,13 @@ const isEventWithinPreviewLimit = (event, maxId = previewMaxEventId.value) => {
 };
 
 const isCardWithinPreviewLimit = (card, maxId) => {
+  const cutoffEvent = previewCutoffEvent.value;
+  if (!cutoffEvent || ports.formatting.isNumericEventId(cutoffEvent.id)) {
+    return isCardWithinStatisticsLimit(card, maxId, {
+      cutoffDate: ports.sourceDates.getEventIdCutoffDate(maxId),
+      getCardSourceDate: value => ports.sourceDates.getCardSourceDate(value),
+    });
+  }
   const eidRaw = String(card?.EventID || '').trim();
   if (!eidRaw) return true;
   const sourceEvent = previewEventBySourceKey.value.get(eidRaw);
@@ -108,13 +120,20 @@ const isCardWithinPreviewLimit = (card, maxId) => {
   return true;
 };
 
-const getPreviewCardProgressOrderId = (card) => {
-  const cardId = Number(String(card?.CardID || '').trim());
-  if (Number.isFinite(cardId) && cardId > 0) return cardId;
-  const eventId = Number(String(card?.EventID || '').trim());
-  if (Number.isFinite(eventId) && eventId > 0) return eventId * 10000;
-  return 0;
-};
+const getPreviewCardProgressOrderId = getCardStatisticsProgressOrderId;
+
+const shouldSkipPreviewPredictEvent = event => shouldSkipStatisticsPredictEvent(
+  event, previewMaxEventId.value, ports.predictionEligibility.getCurrentEventId()
+);
+
+const previewReferenceDate = computed(() => getCardStatisticsReferenceDate({
+  maxEventId: previewMaxEventId.value,
+  currentEventId: ports.predictionEligibility.getCurrentEventId(),
+  cutoffEvent: previewCutoffEvent.value,
+  parseDateSafe: ports.formatting.parseDateSafe,
+}));
+
+const previewReferenceDateStr = computed(() => formatCardStatisticsDate(previewReferenceDate.value));
 
 
 return {
@@ -125,5 +144,8 @@ return {
   isEventWithinPreviewLimit,
   previewCutoffEvent,
   getPreviewCardProgressOrderId,
+  shouldSkipPreviewPredictEvent,
+  previewReferenceDate,
+  previewReferenceDateStr,
 };
 }

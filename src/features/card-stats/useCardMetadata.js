@@ -1,4 +1,5 @@
 import { computed, reactive } from 'vue';
+import { CARD_STATISTICS_VS_NAMES } from './cardStatisticsRules.js';
 
 /** Owns card metadata behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -54,7 +55,7 @@ export function useCardMetadata(inputs) {
 
   const CHAR_ORDER = reactive({});
 
-  const DEFAULT_VS_NAMES = ['初音未来', '镜音铃', '镜音连', '巡音流歌', 'MEIKO', 'KAITO'];
+  const DEFAULT_VS_NAMES = CARD_STATISTICS_VS_NAMES;
 
   const VS_NAMES = reactive([...DEFAULT_VS_NAMES]);
 

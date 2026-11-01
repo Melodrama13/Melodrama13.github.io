@@ -5,12 +5,12 @@
                   <h3>{{ getRelatedRecordTitle('rel-vs-unit-last-four') }}</h3>
                   <div class="record-head-controls">
                     <label class="record-compact-toggle stats-checkbox">
-                      <input class="pjsk-ui-choice" :checked="vsUnitLastFourCompact" type="checkbox" @change="onVsUnitLastFourCompactChange" />
-                      简略版本
+                      <input aria-label="简略版本" class="pjsk-ui-choice" :checked="vsUnitLastFourCompact" type="checkbox" @change="onVsUnitLastFourCompactChange" />
+                      <UiCompactLabel text="简略版本" compact="简略" />
                     </label>
                     <label v-if="!vsUnitLastFourCompact" class="fes-card-mode-toggle stats-checkbox">
-                      <input class="pjsk-ui-choice" :checked="vsUnitLastFourShowCardImages" type="checkbox" @change="onVsUnitLastFourShowCardImagesChange" />
-                      显示卡面
+                      <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="vsUnitLastFourShowCardImages" type="checkbox" @change="onVsUnitLastFourShowCardImagesChange" />
+                      <UiCompactLabel text="显示卡面" compact="卡面" />
                     </label>
                     <button
                       v-if="!vsUnitLastFourCompact"
@@ -95,6 +95,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","vsUnitLastFourCompact","onVsUnitLastFourCompactChange","vsUnitLastFourShowCardImages","onVsUnitLastFourShowCardImagesChange","vsUnitLastFourSort","onToggleVsUnitLastFourSort","vsUnitLastFourSortLabel","isExportingPng","exportElementPng","vsUnitLastFourDisplayRecords","getRecordTint","getCharAbbr","getCharColor","getVsUnitLogoByKey","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","jumpToHistoryByEventRef","getJumpLinkLabel","VS_NAMES","getVsMiniVsHeadStyle","vsUnitLastFourCompactUnitRows","getVsMiniUnitHeadStyle","unitLogoMap","getVsMiniDataCellStyle"]);
 </script>

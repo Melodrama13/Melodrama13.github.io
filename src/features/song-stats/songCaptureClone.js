@@ -1,4 +1,5 @@
 import { isViewportAtMost, UI_BREAKPOINTS } from '../../ui/breakpoints.js';
+import { getStaticCornerPaintElement } from '../../ui/staticCorners.js';
 
 export const syncCloneImagesWithSource = (sourceRoot, cloneRoot) => {
   if (!(sourceRoot instanceof HTMLElement) || !(cloneRoot instanceof HTMLElement)) return;
@@ -103,7 +104,7 @@ export const syncCloneBackgroundStylesWithSource = (sourceRoot, cloneRoot) => {
     const sourceEl = sourceNodes[idx];
     const cloneEl = cloneNodes[idx];
     if (!(sourceEl instanceof HTMLElement) || !(cloneEl instanceof HTMLElement)) continue;
-    const computed = window.getComputedStyle(sourceEl);
+    const computed = window.getComputedStyle(getStaticCornerPaintElement(sourceEl));
     const background = String(computed.background || '').trim();
     const bgColor = String(computed.backgroundColor || '').trim();
     const bgImage = String(computed.backgroundImage || '').trim();
@@ -118,6 +119,7 @@ export const syncCloneBackgroundStylesWithSource = (sourceRoot, cloneRoot) => {
     if (bgImage && bgImage !== 'none') {
       cloneEl.style.backgroundImage = bgImage;
     }
+    if (sourceEl.hasAttribute('data-ui-static-corner')) continue;
     if (border && border !== '0px none rgb(0, 0, 0)') {
       cloneEl.style.border = border;
     } else if (borderColor && borderColor !== 'rgba(0, 0, 0, 0)') {

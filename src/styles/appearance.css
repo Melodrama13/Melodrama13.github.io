@@ -44,6 +44,7 @@
   --ui-glass-prominent-bg: linear-gradient(145deg, rgba(48, 62, 85, 0.82), rgba(29, 41, 61, 0.78) 52%, rgba(22, 33, 49, 0.74));
   --ui-glass-modal-bg: linear-gradient(145deg, rgba(44, 57, 79, 0.96), rgba(27, 39, 58, 0.94) 54%, rgba(23, 33, 49, 0.92));
   --ui-glass-fallback-bg: #202b3d;
+  --ui-glass-depth-ink: rgba(0, 0, 0, 0.30);
   --ui-glass-chip-bg: rgba(65, 81, 108, 0.30);
   --ui-glass-chip-bg-hover: rgba(82, 100, 130, 0.42);
   --ui-glass-rim-light: rgba(218, 232, 255, 0.30);
@@ -337,10 +338,6 @@
 :root[data-theme='dark'] .preview-char-select-toggle,
 :root[data-theme='dark'] .preview-festival-chip,
 :root[data-theme='dark'] .preview-head-toggle,
-:root[data-theme='dark'] .preview-head-filter-toggle,
-:root[data-theme='dark'] .preview-head-filter-btn,
-:root[data-theme='dark'] .preview-collapse-btn,
-:root[data-theme='dark'] .preview-drag-hint,
 :root[data-theme='dark'] .preview-attr-head,
 :root[data-theme='dark'] .preview-attr-summary-row,
 :root[data-theme='dark'] .preview-festival-head,
@@ -442,12 +439,8 @@
 :root[data-theme='dark'] .preview-char-select-toggle,
 :root[data-theme='dark'] .preview-char-chip,
 :root[data-theme='dark'] .preview-festival-chip,
-:root[data-theme='dark'] .preview-head-filter-toggle,
-:root[data-theme='dark'] .preview-head-filter-btn,
-:root[data-theme='dark'] .preview-collapse-btn,
 :root[data-theme='dark'] .preview-attr-row,
 :root[data-theme='dark'] .preview-attr-summary-row,
-:root[data-theme='dark'] .preview-festival-row,
 :root[data-theme='dark'] .preview-daily-card,
 :root[data-theme='dark'] .preview-char-attr-card,
 :root[data-theme='dark'] .preview-char-attr-table thead th,
@@ -457,8 +450,6 @@
 :root[data-theme='dark'] .preview-vs-mini-table thead th,
 :root[data-theme='dark'] .preview-vs-score-table th,
 :root[data-theme='dark'] .preview-vs-score-table td,
-:root[data-theme='dark'] .preview-step,
-:root[data-theme='dark'] .preview-step-empty,
 :root[data-theme='dark'] .predict-switch-dialog-btn,
 :root[data-theme='dark'] .special-predict-mode-toggle,
 :root[data-theme='dark'] .special-multi-source-trigger,
@@ -569,17 +560,12 @@
 :root[data-theme='dark'] .preview-char-chip,
 :root[data-theme='dark'] .preview-festival-chip,
 :root[data-theme='dark'] .preview-panel,
-:root[data-theme='dark'] .preview-head-filter-toggle,
-:root[data-theme='dark'] .preview-head-filter-btn,
-:root[data-theme='dark'] .preview-collapse-btn,
 :root[data-theme='dark'] .preview-attr-row,
 :root[data-theme='dark'] .preview-attr-summary-row,
-:root[data-theme='dark'] .preview-festival-row,
 :root[data-theme='dark'] .preview-daily-card,
 :root[data-theme='dark'] .preview-daily-score-cell,
 :root[data-theme='dark'] .preview-daily-score-cell.is-cfes,
 :root[data-theme='dark'] .preview-char-attr-card,
-:root[data-theme='dark'] .preview-step,
 :root[data-theme='dark'] .birthday-row,
 :root[data-theme='dark'] .birthday-info-popover,
 :root[data-theme='dark'] .birthday-info-card,

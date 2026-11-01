@@ -12,7 +12,7 @@
   }
 
   .card-panel:not(.stats-nav) {
-    padding: 9px;
+    padding: var(--ui-surface-panel-padding);
     border-radius: 14px;
   }
 
@@ -61,7 +61,7 @@
   }
 
   .card-panel:not(.stats-nav) {
-    padding: 8px;
+    padding: var(--ui-surface-panel-padding);
   }
 
   .record-table {

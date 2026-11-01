@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue';
-import { isWorldLinkCardType } from '../../domain/worldLink.js';
+import { calculateCardVsStatistics } from './cardVsStatistics.js';
 
 /** Owns card vs records behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -159,17 +159,6 @@ export function useCardVsRecords(inputs) {
     return inputs.metadata.unitLogoMap[unit] || '';
   };
 
-  const getVsOriginalStatType = (card, sourceKey) => {
-    const normalizedSourceKey = String(sourceKey || '').trim().toLowerCase();
-    if (normalizedSourceKey === 'c1') return '大罪';
-
-    const cardType = String(card?.Type || '').trim().toLowerCase();
-    if (cardType === 'cfes') return 'CFES';
-    if (cardType === 'bfes') return 'BFES';
-    if (isWorldLinkCardType(cardType)) return cardType.toUpperCase();
-    return '其他';
-  };
-
   const VS_UNIT_ROW_KEYS = computed(() => inputs.metadata.VS_NAMES.flatMap((vsName) =>
     inputs.constants.VS_UNIT_SORT_ORDER.map((unit) => buildVsUnitKey(vsName, unit))
   ));
@@ -181,86 +170,28 @@ export function useCardVsRecords(inputs) {
     return `${baseAbbr} ${unit}`;
   };
 
-  const vsUnitLastFourRecords = computed(() => {
-    const maxEid = inputs.eventCatalog.safeMaxEventId.value;
-    const maxEventDate = inputs.presentation.parseDateSafe(inputs.eventCatalog.eventsById.value[maxEid]?.start_date);
-    const latestByKey = {};
+  const sharedVsStatistics = computed(() => calculateCardVsStatistics({
+    cards: inputs.props.allCards,
+    maxEventId: inputs.eventCatalog.safeMaxEventId.value,
+    eventsById: inputs.eventCatalog.eventsById.value,
+    sourceEventsById: Object.fromEntries((inputs.props.allEvents || []).map(event => [String(event.id), event])),
+    vsNames: inputs.metadata.VS_NAMES,
+    unitOrder: inputs.constants.VS_UNIT_SORT_ORDER,
+    statTypes: inputs.constants.VS_ORIGINAL_STAT_TYPES,
+    attributes: inputs.constants.ATTRS,
+    isCardWithinLimit: inputs.eventCatalog.isCardWithinLimit,
+    isNumericEventId: inputs.eventCatalog.isNumericEventId,
+    parseDateSafe: inputs.presentation.parseDateSafe,
+    normalizeAttribute: inputs.eventCatalog.normalizeCardStatsAttribute,
+    getCardProgressOrderId: inputs.distribution.getCardProgressOrderId,
+    buildCardImageSrc: inputs.media.buildCardImageSrc,
+    getVsUnitRecordLabel,
+    getNonBanEventMark: inputs.presentation.getNonBanEventMark,
+    referenceDate: inputs.eventCatalog.referenceDateStr.value,
+    countPeriodsSince: inputs.eventCatalog.countPeriodsSince,
+  }));
 
-    (inputs.props.allCards || []).forEach((card) => {
-      if (!inputs.eventCatalog.isCardWithinLimit(card, maxEid)) return;
-      if (String(card?.Rarity || '').trim() !== '4') return;
-
-      const fullName = String(card?.Name || '').trim();
-      const baseName = fullName.split(/\s+/)[0] || fullName;
-      if (!inputs.metadata.VS_NAMES.includes(baseName)) return;
-
-      const unit = String(card?.Affiliation || '').trim().toLowerCase();
-      if (!inputs.constants.VS_UNIT_SORT_ORDER.includes(unit)) return;
-
-      const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
-      if (!sourceKey) return;
-
-      const isNum = inputs.eventCatalog.isNumericEventId(sourceKey);
-      const ev = isNum ? inputs.eventCatalog.eventsById.value[Number(sourceKey)] : null;
-      const eventDateStr = String(ev?.start_date || card?.Date || '').trim();
-      const eventDate = inputs.presentation.parseDateSafe(eventDateStr);
-      if (!eventDate) return;
-      if (!isNum && maxEventDate && eventDate > maxEventDate) return;
-
-      const recordKey = buildVsUnitKey(baseName, unit);
-      const prev = latestByKey[recordKey];
-      const nextRecord = {
-        key: recordKey,
-        name: recordKey,
-        label: getVsUnitRecordLabel(recordKey),
-        eventRef: ev
-          ? {
-              id: Number(ev.id),
-              date: ev.start_date,
-              typeSeriesId: ev.type_series_id,
-              eventType: String(ev.event_type || '').trim(),
-              banner: String(ev.banner || '').trim(),
-              unit: String(ev.unit || '').trim(),
-              sourceKey: String(ev.id)
-            }
-          : null,
-        eventLabel: ev
-          ? inputs.presentation.getNonBanEventMark({
-              id: Number(ev.id),
-              typeSeriesId: ev.type_series_id,
-              eventType: String(ev.event_type || '').trim(),
-              banner: String(ev.banner || '').trim(),
-              unit: String(ev.unit || '').trim(),
-              sourceKey: String(ev.id)
-            })
-          : `ID ${sourceKey}`,
-        date: eventDateStr,
-        dateValue: eventDate.getTime(),
-        days: inputs.presentation.daysBetween(eventDateStr, inputs.eventCatalog.referenceDateStr.value),
-        periods: ev ? inputs.eventCatalog.countPeriodsSince({ id: Number(ev.id), date: ev.start_date }) : 0
-      };
-
-      if (!prev || nextRecord.dateValue > prev.dateValue) {
-        latestByKey[recordKey] = nextRecord;
-      }
-    });
-
-    return VS_UNIT_ROW_KEYS.value.map((key) => {
-      const hit = latestByKey[key];
-      if (hit) return hit;
-      return {
-        key,
-        name: key,
-        label: getVsUnitRecordLabel(key),
-        eventRef: null,
-        eventLabel: '-',
-        date: '-',
-        dateValue: 0,
-        days: 0,
-        periods: 0
-      };
-    });
-  });
+  const vsUnitLastFourRecords = computed(() => sharedVsStatistics.value.lastFourRecords);
 
   const vsUnitLastFourRecordsSorted = computed(() => {
     const rows = [...vsUnitLastFourRecords.value];
@@ -300,134 +231,9 @@ export function useCardVsRecords(inputs) {
     return inputs.constants.VS_UNIT_SORT_ORDER.map((unit) => rowMap[unit]);
   });
 
-  const vsUnitScoreAttrByUnitRows = computed(() => {
-    const maxEid = inputs.eventCatalog.safeMaxEventId.value;
-    const maxEventDate = inputs.presentation.parseDateSafe(inputs.eventCatalog.eventsById.value[maxEid]?.start_date);
-    const rowMap = Object.fromEntries(
-      inputs.constants.VS_UNIT_SORT_ORDER.map((unit) => [
-        unit,
-        {
-          unit,
-          attrsByVs: Object.fromEntries(inputs.metadata.VS_NAMES.map((name) => [name, []])),
-          cardsByVs: Object.fromEntries(inputs.metadata.VS_NAMES.map((name) => [name, []]))
-        }
-      ])
-    );
+  const vsUnitScoreAttrByUnitRows = computed(() => sharedVsStatistics.value.scoreRows);
 
-    (inputs.props.allCards || []).forEach((card) => {
-      if (!inputs.eventCatalog.isCardWithinLimit(card, maxEid)) return;
-      const skill = String(card?.Skill || '').trim().toLowerCase();
-      if (skill !== 'unit_score') return;
-
-      const fullName = String(card?.Name || '').trim();
-      const baseName = fullName.split(/\s+/)[0] || fullName;
-      if (!inputs.metadata.VS_NAMES.includes(baseName)) return;
-
-      const unit = String(card?.Affiliation || '').trim().toLowerCase();
-      if (!inputs.constants.VS_UNIT_SORT_ORDER.includes(unit)) return;
-
-      const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
-      if (!sourceKey) return;
-      const isNum = inputs.eventCatalog.isNumericEventId(sourceKey);
-      const ev = isNum ? inputs.eventCatalog.eventsById.value[Number(sourceKey)] : null;
-      const eventDate = inputs.presentation.parseDateSafe(String(ev?.start_date || card?.Date || '').trim());
-      if (!eventDate) return;
-      if (!isNum && maxEventDate && eventDate > maxEventDate) return;
-
-      const attr = inputs.eventCatalog.normalizeCardStatsAttribute(card?.Attribute);
-      const cardId = inputs.distribution.getCardProgressOrderId(card);
-      rowMap[unit].cardsByVs[baseName].push({
-        cardId,
-        attr,
-        name: baseName,
-        imageSrc: inputs.media.buildCardImageSrc(card?.CardID, baseName, { rarity: String(card?.Rarity || '4') })
-      });
-    });
-
-    return inputs.constants.VS_UNIT_SORT_ORDER.map((unit) => {
-      const row = rowMap[unit];
-      inputs.metadata.VS_NAMES.forEach((name) => {
-        row.cardsByVs[name].sort((a, b) => {
-          const aid = Number(a?.cardId || 0);
-          const bid = Number(b?.cardId || 0);
-          if (aid !== bid) return aid - bid;
-          return inputs.constants.ATTRS.indexOf(a?.attr) - inputs.constants.ATTRS.indexOf(b?.attr);
-        });
-        row.attrsByVs[name] = row.cardsByVs[name]
-          .map((item) => item?.attr)
-          .filter((attr) => inputs.constants.ATTRS.includes(attr));
-      });
-      return row;
-    });
-  });
-
-  const vsUnitFourCountDetailRecords = computed(() => {
-    const maxEid = inputs.eventCatalog.safeMaxEventId.value;
-    const maxEventDate = inputs.presentation.parseDateSafe(inputs.eventCatalog.eventsById.value[maxEid]?.start_date);
-    const rowMap = Object.fromEntries(
-      VS_UNIT_ROW_KEYS.value.map((key) => {
-        const { baseName } = parseVsUnitKey(key);
-        return [
-          key,
-          {
-            key,
-            name: baseName,
-            label: getVsUnitRecordLabel(key),
-            count: 0,
-            attrs: [],
-            cards: []
-          }
-        ];
-      })
-    );
-
-    (inputs.props.allCards || []).forEach((card) => {
-      if (!inputs.eventCatalog.isCardWithinLimit(card, maxEid)) return;
-      if (String(card?.Rarity || '').trim() !== '4') return;
-
-      const fullName = String(card?.Name || '').trim();
-      const baseName = fullName.split(/\s+/)[0] || fullName;
-      if (!inputs.metadata.VS_NAMES.includes(baseName)) return;
-
-      const unit = String(card?.Affiliation || '').trim().toLowerCase();
-      if (!inputs.constants.VS_UNIT_SORT_ORDER.includes(unit)) return;
-
-      const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
-      if (!sourceKey) return;
-      const isNum = inputs.eventCatalog.isNumericEventId(sourceKey);
-      const ev = isNum ? inputs.eventCatalog.eventsById.value[Number(sourceKey)] : null;
-      const eventDate = inputs.presentation.parseDateSafe(String(ev?.start_date || card?.Date || '').trim());
-      if (!eventDate) return;
-      if (!isNum && maxEventDate && eventDate > maxEventDate) return;
-
-      const key = buildVsUnitKey(baseName, unit);
-      const row = rowMap[key];
-      if (!row) return;
-
-      const attr = inputs.eventCatalog.normalizeCardStatsAttribute(card?.Attribute);
-      row.cards.push({
-        cardId: inputs.distribution.getCardProgressOrderId(card),
-        attr,
-        name: baseName,
-        imageSrc: inputs.media.buildCardImageSrc(card?.CardID, baseName, { rarity: String(card?.Rarity || '4') })
-      });
-    });
-
-    return VS_UNIT_ROW_KEYS.value.map((key) => {
-      const row = rowMap[key];
-      row.cards.sort((a, b) => {
-        const aid = Number(a?.cardId || 0);
-        const bid = Number(b?.cardId || 0);
-        if (aid !== bid) return aid - bid;
-        return inputs.constants.ATTRS.indexOf(a?.attr) - inputs.constants.ATTRS.indexOf(b?.attr);
-      });
-      row.attrs = row.cards
-        .map((item) => item?.attr)
-        .filter((attr) => inputs.constants.ATTRS.includes(attr));
-      row.count = row.cards.length;
-      return row;
-    });
-  });
+  const vsUnitFourCountDetailRecords = computed(() => sharedVsStatistics.value.fourCountRecords);
 
   const vsUnitFourCountRows = computed(() => {
     const rowMap = Object.fromEntries(
@@ -492,66 +298,7 @@ export function useCardVsRecords(inputs) {
     return rows;
   });
 
-  const vsOriginalStatRows = computed(() => {
-    const maxEid = inputs.eventCatalog.safeMaxEventId.value;
-    const maxEventDate = inputs.presentation.parseDateSafe(inputs.eventCatalog.eventsById.value[maxEid]?.start_date);
-    const rowMap = Object.fromEntries(
-      inputs.constants.VS_ORIGINAL_STAT_TYPES.map((type) => [
-        type,
-        {
-          type,
-          attrsByVs: Object.fromEntries(inputs.metadata.VS_NAMES.map((name) => [name, []])),
-          cardsByVs: Object.fromEntries(inputs.metadata.VS_NAMES.map((name) => [name, []]))
-        }
-      ])
-    );
-
-    (inputs.props.allCards || []).forEach((card) => {
-      if (!inputs.eventCatalog.isCardWithinLimit(card, maxEid)) return;
-      if (String(card?.Rarity || '').trim() !== '4') return;
-
-      const fullName = String(card?.Name || '').trim();
-      const baseName = fullName.split(/\s+/)[0] || fullName;
-      if (!inputs.metadata.VS_NAMES.includes(baseName)) return;
-
-      const unit = String(card?.Affiliation || '').trim().toLowerCase();
-      if (unit !== 'vs') return;
-
-      const sourceKey = String(card?.EventID || '').trim() || String(card?.GachaID || '').trim();
-      if (!sourceKey) return;
-      const isNum = inputs.eventCatalog.isNumericEventId(sourceKey);
-      const ev = isNum ? inputs.eventCatalog.eventsById.value[Number(sourceKey)] : null;
-      const eventDate = inputs.presentation.parseDateSafe(String(ev?.start_date || card?.Date || '').trim());
-      if (!eventDate) return;
-      if (!isNum && maxEventDate && eventDate > maxEventDate) return;
-
-      const attr = inputs.eventCatalog.normalizeCardStatsAttribute(card?.Attribute);
-      const statType = getVsOriginalStatType(card, sourceKey);
-      if (!rowMap[statType]) return;
-      rowMap[statType].cardsByVs[baseName].push({
-        cardId: inputs.distribution.getCardProgressOrderId(card),
-        attr,
-        name: baseName,
-        imageSrc: inputs.media.buildCardImageSrc(card?.CardID, baseName, { rarity: String(card?.Rarity || '4') })
-      });
-    });
-
-    return inputs.constants.VS_ORIGINAL_STAT_TYPES.map((type) => {
-      const row = rowMap[type];
-      inputs.metadata.VS_NAMES.forEach((name) => {
-        row.cardsByVs[name].sort((a, b) => {
-          const aid = Number(a?.cardId || 0);
-          const bid = Number(b?.cardId || 0);
-          if (aid !== bid) return aid - bid;
-          return inputs.constants.ATTRS.indexOf(a?.attr) - inputs.constants.ATTRS.indexOf(b?.attr);
-        });
-        row.attrsByVs[name] = row.cardsByVs[name]
-          .map((item) => item?.attr)
-          .filter((attr) => inputs.constants.ATTRS.includes(attr));
-      });
-      return row;
-    });
-  });
+  const vsOriginalStatRows = computed(() => sharedVsStatistics.value.originalRows);
 
   const getVsOriginalOtherRowCards = (row) => {
     if (!row?.cardsByVs) return [];

@@ -265,8 +265,7 @@ const updateSourceMenuPosition = () => {
     top: openAbove ? 'auto' : `${Math.round(Math.max(6, rect.bottom + 6))}px`,
     bottom: openAbove ? `${Math.round(vh - rect.top + 8)}px` : 'auto',
     width: `${Math.round(width)}px`,
-    maxHeight: `${Math.round(maxHeight)}px`,
-    overflowY: 'auto',
+    '--source-menu-max-height': `${Math.round(maxHeight)}px`,
     zIndex: 4200
   };
 };

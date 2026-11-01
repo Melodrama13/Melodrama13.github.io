@@ -4,8 +4,8 @@
       <div class="section-head-left">
         <h2>年份统计</h2>
         <label class="stats-checkbox">
-          <input class="pjsk-ui-choice" v-model="yearShowCardImages" type="checkbox" />
-          显示卡面
+          <input aria-label="显示卡面" class="pjsk-ui-choice" v-model="yearShowCardImages" type="checkbox" />
+          <UiCompactLabel text="显示卡面" compact="卡面" />
         </label>
         <label v-if="yearShowCardImages" class="stats-checkbox">
           <input class="pjsk-ui-choice" v-model="yearShowCardDates" type="checkbox" />
@@ -20,12 +20,12 @@
           团统计VS
         </label>
         <label class="stats-checkbox" title="从周年活动到下一周年前一期活动，联动按活动开启日期归属。">
-          <input class="pjsk-ui-choice" v-model="yearUseOperatingYear" type="checkbox" />
-          按照运营年统计
+          <input aria-label="按照运营年统计" class="pjsk-ui-choice" v-model="yearUseOperatingYear" type="checkbox" />
+          <UiCompactLabel text="按照运营年统计" compact="运营年" />
         </label>
         <label class="stats-checkbox" title="仅影响自然年统计；运营年始终按周年周期划分。">
-          <input class="pjsk-ui-choice" v-model="yearNewYearNextYear" :disabled="yearUseOperatingYear" type="checkbox" />
-          新年计入下一年
+          <input aria-label="新年计入下一年" class="pjsk-ui-choice" v-model="yearNewYearNextYear" :disabled="yearUseOperatingYear" type="checkbox" />
+          <UiCompactLabel text="新年计入下一年" compact="新年次年" />
         </label>
         <div class="head-inline-filters" role="group" aria-label="年份统计稀有度">
           <label v-for="option in yearRarityOptions" :key="option.value" class="stats-checkbox">
@@ -69,7 +69,8 @@
             </tr>
           </tbody>
         </table>
-        <div v-else class="matrix-wrap year-stats-wrap" tabindex="0" role="region" :aria-label="`${panel.title}角色卡面，按实装时间从上至下排列`">
+        <div v-else class="matrix-wrap year-stats-wrap">
+          <div class="ui-static-corner-scroll" tabindex="0" role="region" :aria-label="`${panel.title}角色卡面，按实装时间从上至下排列`">
           <table class="year-stats-table" :style="{ '--year-character-count': panel.characters.length }">
             <thead>
               <tr>
@@ -106,6 +107,7 @@
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
         <div v-if="!yearShowCardImages" class="dist-unit-summary">
           <span v-for="unitRow in panel.unitSummary" :key="unitRow.unit" class="dist-unit-summary-chip" :style="getDistUnitSummaryChipStyle(unitRow.unit)" :title="`${unitRow.title}：${unitRow.total}`">
@@ -120,6 +122,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps([
   'yearPanels', 'yearRarityOptions', 'yearCardTypeOptions', 'showDesktopNameControls', 'isExportingPng', 'exportElementPng',

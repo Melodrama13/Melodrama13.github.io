@@ -193,11 +193,26 @@ function decorate(record, query, index) {
   isPersonalAchievement: !query.onlyMilestones || Boolean(query.character) };
 }
 
+function decorateQuantityGap(record, index) {
+  if (record.gapComparison !== 'range' || record.scope !== 'all' || record.gapThreshold !== 3 || record.gapOperator !== 'atLeast') return record;
+  const matches = record.gapSnapshots.flatMap(point => index.get(milestoneEventKey(point.event.id)) || [])
+    .filter(item => item.type === 'quantityGap' && item.gapMetric === record.gapMetric
+      && item.gapExcludeMiku === record.gapExcludeMiku && String(item.startEvent.id) === String(record.startEvent.id));
+  if (!matches.length) return record;
+  const badges = [...new Map(matches.flatMap(item => item.badges).map(badge => [badge.text, badge])).values()]
+    .sort((a, b) => MILESTONE_GRADES[a.grade].order - MILESTONE_GRADES[b.grade].order);
+  return { ...record, badges: badges.filter(badge => badge.grade === badges[0].grade), badge: badges[0].text, badgeParts: badges[0], grade: badges[0].grade };
+}
+
 /** Ordinary achievements are the source; milestones annotate/filter them, never replace their history. */
 export function queryHistoryPrecedents(catalog, criteria, options = {}) {
   const query = { type: 'attribute', attributeMode: 'count', scope: 'all', order: 'all', threshold: 'MAX', metric: 'four', ...criteria };
   const rules = normalizeMilestoneRules(options.rules), index = options.index || buildMilestoneIndex(catalog, rules);
-  if (query.type === 'sequence') return prioritizePrecedentResults(querySequencePrecedents(catalog, query, rules), query.order);
+  if (query.type === 'sequence') {
+    const result = querySequencePrecedents(catalog, query, rules);
+    return prioritizePrecedentResults(query.sequenceMetric === 'quantityGap'
+      ? { ...result, records: result.records.map(record => decorateQuantityGap(record, index)) } : result, query.order);
+  }
   if (query.type === 'pool') return prioritizePrecedentResults(queryPoolPrecedents(catalog, query, rules), query.order);
   if (query.type === 'period') return prioritizePrecedentResults(queryPeriodPrecedents(catalog, query, rules), query.order);
   if (query.type === 'interval') query.onlyMilestones = true;

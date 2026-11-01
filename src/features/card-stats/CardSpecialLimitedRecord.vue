@@ -4,8 +4,8 @@
                 <div class="block-head-left">
                   <h3>{{ getRelatedRecordTitle('rel-special-limited-stat') }}</h3>
                   <label class="support-wl-toggle fes-card-mode-toggle stats-checkbox export-hide">
-                    <input class="pjsk-ui-choice" :checked="specialLimitedShowCardImages" type="checkbox" @change="onSpecialLimitedShowCardImagesChange" />
-                    <span>显示卡面</span>
+                    <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="specialLimitedShowCardImages" type="checkbox" @change="onSpecialLimitedShowCardImagesChange" />
+                    <span><UiCompactLabel text="显示卡面" compact="卡面" /></span>
                   </label>
                 </div>
                 <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-special-limited-stat', '特殊统计_特殊限定统计')">PNG</button>
@@ -103,6 +103,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","specialLimitedShowCardImages","onSpecialLimitedShowCardImagesChange","isExportingPng","exportElementPng","specialLimitedHasDoubleCfes","specialLimitedUnitGroups","hasSpecialLimitedDoubleCfes","unitLogoMap","getCharAbbr","specialLimitedRows","specialLimitedMatrix","onMediaImageLoad","onMediaImageError","getCharSingleMark","ATTRS","ATTR_LABELS"]);
 </script>

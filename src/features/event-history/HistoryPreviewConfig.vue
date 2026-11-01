@@ -1,15 +1,17 @@
 <template>
 <div data-feature-view="history-preview-config" data-feature-page="history" class="preview-config-panel ui-liquid-glass ui-liquid-glass--prominent ui-glass-optical-detail" :class="{ 'is-collapsed': previewFloatingCollapsed || previewConfigBodyCollapsed }" :style="previewConfigPanelStyle" @mousedown="bringPreviewConfigToFront" @touchstart="bringPreviewConfigToFront">
           <div class="preview-config-head" @mousedown.prevent="startDragPreviewConfig($event)" @touchstart.prevent="startDragPreviewConfigTouch($event)">
-            <span>悬浮统计（最多6个）</span>
+            <span class="preview-config-title">悬浮统计（最多6个）</span>
             <div class="preview-config-actions">
               <button v-if="!previewConfigBodyCollapsed" class="pjsk-ui-action preview-config-reset" @mousedown.stop @touchstart.stop @click="resetPreviewPanelLayout">重置布局</button>
-              <button class="pjsk-ui-action preview-config-reset" @mousedown.stop @touchstart.stop @click="previewConfigBodyCollapsed = !previewConfigBodyCollapsed">{{ previewConfigBodyCollapsed ? '展开' : '收起' }}</button>
+              <HistoryPreviewCollapseButton :collapsed="previewConfigBodyCollapsed" label="悬浮统计" @toggle="previewConfigBodyCollapsed = !previewConfigBodyCollapsed" />
             </div>
           </div>
-          <div v-show="!previewFloatingCollapsed && !previewConfigBodyCollapsed" class="preview-config-options">
+          <div v-show="!previewFloatingCollapsed && !previewConfigBodyCollapsed" class="preview-config-body">
+          <div class="preview-config-options">
             <button
               v-for="opt in previewPanelOptions"
+              :data-preview-type="opt.id"
               :key="`opt-${opt.id}`"
               class="pjsk-ui-action preview-config-btn"
               :class="{ 'is-active': opt.selected }"
@@ -117,10 +119,12 @@
               </button>
             </div>
           </div>
+          </div>
         </div>
 </template>
 
 <script setup>
+import HistoryPreviewCollapseButton from './HistoryPreviewCollapseButton.vue';
 const props = defineProps({
   previewLayout: { type: Object, required: true },
   previewSelections: { type: Object, required: true },

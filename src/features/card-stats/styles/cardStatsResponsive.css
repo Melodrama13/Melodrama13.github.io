@@ -72,7 +72,7 @@
 
 @media (max-width: 900px) {
   .pjsk-stats, :global([data-feature-page="cards"] :is(.pjsk-stats)), :global(:is(.pjsk-stats)[data-feature-page="cards"]) {
-    padding: 8px;
+    padding: 6px;
     --matrix-sticky-top: 0px;
   }
 
@@ -140,7 +140,7 @@
   }
 
   .card-panel:not(.stats-nav), :global([data-feature-page="cards"] :is(.card-panel:not(.stats-nav))), :global(:is(.card-panel:not(.stats-nav))[data-feature-page="cards"]) {
-    padding: 9px;
+    padding: var(--ui-surface-panel-padding);
     border-radius: 14px;
   }
 
@@ -207,13 +207,13 @@
 
   .dist-unit-summary, :global([data-feature-page="cards"] :is(.dist-unit-summary)), :global(:is(.dist-unit-summary)[data-feature-page="cards"]) {
     gap: 3px;
-    padding: 4px;
+    padding: var(--ui-surface-summary-padding);
   }
 
   .dist-unit-summary-chip, :global([data-feature-page="cards"] :is(.dist-unit-summary-chip)), :global(:is(.dist-unit-summary-chip)[data-feature-page="cards"]) {
     gap: 3px;
-    min-height: 22px;
-    padding: 2px 4px;
+    min-height: var(--ui-surface-summary-chip-height);
+    padding: 3px 2px;
   }
 
   .dist-unit-summary-logo, :global([data-feature-page="cards"] :is(.dist-unit-summary-logo)), :global(:is(.dist-unit-summary-logo)[data-feature-page="cards"]) {
@@ -310,9 +310,7 @@
     margin-top: 1px;
   }
 
-  .matrix-wrap, :global([data-feature-page="cards"] :is(.matrix-wrap)), :global(:is(.matrix-wrap)[data-feature-page="cards"]) {
-    overflow-x: auto;
-    overflow-y: auto;
+  .matrix-wrap > .ui-static-corner-scroll, :global([data-feature-page="cards"] .matrix-wrap > .ui-static-corner-scroll) {
     max-height: calc(100vh - 120px);
     max-height: calc(100dvh - 120px);
   }
@@ -322,7 +320,7 @@
   }
 
   .duo-unit-row, :global([data-feature-page="cards"] :is(.duo-unit-row)), :global(:is(.duo-unit-row)[data-feature-page="cards"]) {
-    padding: 6px;
+    padding: var(--ui-surface-group-padding) var(--ui-surface-group-padding) var(--ui-surface-group-padding) calc(var(--ui-surface-group-padding) - 2px);
     overflow: visible;
   }
 
@@ -598,7 +596,7 @@
   }
 
   .attr-summary-card, :global([data-feature-page="cards"] :is(.attr-summary-card)), :global(:is(.attr-summary-card)[data-feature-page="cards"]) {
-    padding: 7px;
+    padding: var(--ui-surface-group-padding);
   }
 
   .attr-summary-table th,
@@ -760,7 +758,7 @@
   }
 
   .festival-card, :global([data-feature-page="cards"] :is(.festival-card)), :global(:is(.festival-card)[data-feature-page="cards"]) {
-    padding: 8px;
+    padding: var(--ui-surface-panel-padding);
   }
 
   .record-grid, :global([data-feature-page="cards"] :is(.record-grid)), :global(:is(.record-grid)[data-feature-page="cards"]) {
@@ -769,7 +767,7 @@
   }
 
   .record-block, :global([data-feature-page="cards"] :is(.record-block)), :global(:is(.record-block)[data-feature-page="cards"]) {
-    padding: 8px;
+    padding: var(--ui-surface-group-padding);
     overflow-x: visible;
   }
 
@@ -962,9 +960,16 @@
   }
 }
 
+/* Keep the fixed-height strip readable through three levels of 14px frames. */
+@media (max-width: 520px) {
+  .dist-unit-summary-chip, :global([data-feature-page="cards"] .dist-unit-summary-chip) { gap: 2px; }
+  .dist-unit-summary-logo, :global([data-feature-page="cards"] .dist-unit-summary-logo) { width: 12px; height: 12px; flex-basis: 12px; }
+  .dist-unit-summary-num, :global([data-feature-page="cards"] .dist-unit-summary-num) { font-size: 11px; }
+}
+
 @media (max-width: 520px) {
   .pjsk-stats, :global([data-feature-page="cards"] :is(.pjsk-stats)), :global(:is(.pjsk-stats)[data-feature-page="cards"]) {
-    padding: 6px;
+    padding: 4px;
   }
 
   .related-panel, :global([data-feature-page="cards"] :is(.related-panel)), :global(:is(.related-panel)[data-feature-page="cards"]) {
@@ -1009,7 +1014,7 @@
   }
 
   .card-panel:not(.stats-nav), :global([data-feature-page="cards"] :is(.card-panel:not(.stats-nav))), :global(:is(.card-panel:not(.stats-nav))[data-feature-page="cards"]) {
-    padding: 8px;
+    padding: var(--ui-surface-panel-padding);
   }
 
   .nav-scroll, :global([data-feature-page="cards"] :is(.nav-scroll)), :global(:is(.nav-scroll)[data-feature-page="cards"]) { max-height: none; }
@@ -1057,7 +1062,7 @@
   }
 
   .duo-unit-row, :global([data-feature-page="cards"] :is(.duo-unit-row)), :global(:is(.duo-unit-row)[data-feature-page="cards"]) {
-    padding: 5px;
+    padding: var(--ui-surface-group-padding) var(--ui-surface-group-padding) var(--ui-surface-group-padding) calc(var(--ui-surface-group-padding) - 2px);
   }
 
   .duo-unit-card, :global([data-feature-page="cards"] :is(.duo-unit-card)), :global(:is(.duo-unit-card)[data-feature-page="cards"]) {

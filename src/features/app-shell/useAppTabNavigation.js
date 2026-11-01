@@ -7,8 +7,6 @@ const historyJumpEventId = ref(null);
 
 const historyJumpSeq = ref(0);
 
-const statsPreviewData = ref(null);
-
 const previewSyncEventId = ref(null);
 
 const tabComponentRef = ref(null);
@@ -33,10 +31,6 @@ const showStatsTopControlInNav = computed(() => ports.tabCatalog.currentTab.valu
 const showSourceDropdownInNav = computed(() => ['history', 'stats', 'songs'].includes(ports.tabCatalog.currentTab.value));
 
 const showPredictInfoInNav = computed(() => ports.predictionSources.predictiveEvents.value.length > 0 && ports.tabCatalog.currentTab.value === 'history');
-
-const handleStatsPreviewUpdate = (payload) => {
-  statsPreviewData.value = payload || null;
-};
 
 const handlePreviewSyncEventId = (eventId) => {
   const n = Number(eventId);
@@ -127,7 +121,6 @@ watch(ports.tabCatalog.currentTab, async (nextTab, prevTab) => {
 return {
 historyJumpEventId,
 historyJumpSeq,
-statsPreviewData,
 previewSyncEventId,
 tabComponentRef,
 contentAreaRef,
@@ -139,7 +132,6 @@ canUsePredictionSources,
 showStatsTopControlInNav,
 showSourceDropdownInNav,
 showPredictInfoInNav,
-handleStatsPreviewUpdate,
 handlePreviewSyncEventId,
 saveStatsScroll,
 saveSongsScroll,

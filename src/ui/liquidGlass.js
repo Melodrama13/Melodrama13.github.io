@@ -1,3 +1,5 @@
+import { sampleStaticCornerOptics } from './staticCornerOptics.js';
+
 /*!
  * Liquid Glass refraction field derived from liquid-glass-js
  * (https://github.com/dashersw/liquid-glass-js), Copyright (c) 2025
@@ -131,6 +133,10 @@ export function buildLiquidGlassDisplacement({
   const pageWidth = Math.max(1, Number(viewportWidth) || 0);
   const pageHeight = Math.max(1, Number(viewportHeight) || 0);
   const fieldConfig = { ...GLASS_PRESET, ...config };
+  const staticCornerSpec = Number.isFinite(fieldConfig.cornerCurve)
+    ? { width: surfaceWidth, height: surfaceHeight,
+      radii: fieldConfig.cornerRadii ?? surfaceRadius, curve: fieldConfig.cornerCurve, profiles: fieldConfig.cornerProfiles }
+    : null;
   const longestEdge = Math.max(surfaceWidth, surfaceHeight);
   if (longestEdge * 0.25 > MAX_MAP_EDGE) {
     throw new RangeError(`Liquid glass surface exceeds the ${MAX_MAP_EDGE}px displacement-map cap`);
@@ -157,7 +163,11 @@ export function buildLiquidGlassDisplacement({
       const ty = Math.abs(py + 0.5 - mapHeight / 2) - (mapHeight / 2 - sampledRadius);
       const outside = Math.hypot(Math.max(tx, 0), Math.max(ty, 0));
       const inside = Math.min(Math.max(tx, ty), 0);
-      const distPx = Math.max(-(outside + inside - sampledRadius), 0) / supersample;
+      const cornerSample = staticCornerSpec
+        ? sampleStaticCornerOptics(staticCornerSpec, (px + 0.5) / supersample, (py + 0.5) / supersample)
+        : null;
+      const distPx = cornerSample ? Math.max(0, cornerSample.distance)
+        : Math.max(-(outside + inside - sampledRadius), 0) / supersample;
       const edgeFall = Math.exp(-distPx * fieldConfig.edgeDistance);
       const rimFall = Math.exp(-distPx * fieldConfig.rimDistance);
       const baseFall = 1 - Math.exp(-distPx * fieldConfig.baseDistance);
@@ -170,6 +180,10 @@ export function buildLiquidGlassDisplacement({
       if (normalLength > 0) {
         normalX /= normalLength;
         normalY /= normalLength;
+      }
+      if (cornerSample) {
+        normalX = cornerSample.normalX;
+        normalY = cornerSample.normalY;
       }
       const corner = Math.exp(
         -(Math.max(Math.min(cx, 1 - cx), Math.min(cy, 1 - cy)) * minDimension) * 0.3
@@ -189,6 +203,10 @@ export function buildLiquidGlassDisplacement({
         const length = Math.hypot(nx, ny) || 1;
         nx = nx / length * Math.sign(cx - 0.5);
         ny = ny / length * Math.sign(cy - 0.5);
+        if (cornerSample) {
+          nx = cornerSample.normalX;
+          ny = cornerSample.normalY;
+        }
         const selectorLens = fieldConfig.lensRole === 'selector';
         const bevel = Math.min(32, minDimension * (selectorLens ? 0.25 : 0.23));
         const depth = Math.min(1, distPx / bevel);
@@ -632,6 +650,16 @@ function resolveLiquidGlassConfig(element, windowLike) {
   const warpStrength = Number.isFinite(parsedWarpStrength) && parsedWarpStrength > 0
     ? Math.min(parsedWarpStrength, 0.2)
     : 0;
+  const continuous = Boolean(element.getAttribute?.('data-ui-static-corner'));
+  const rawCurve = Number.parseFloat(computed?.getPropertyValue?.('--ui-corner-resolved-curve')
+    || computed?.getPropertyValue?.('--ui-corner-curve'));
+  const sharedRadii = (computed?.getPropertyValue?.('--ui-corner-radii') || '').trim().split(/\s+/).map(Number.parseFloat);
+  let cornerProfiles;
+  if (continuous) {
+    try { const value = JSON.parse(computed?.getPropertyValue?.('--ui-corner-profiles') || 'null'); if (Array.isArray(value) && value.length===4) cornerProfiles=value; } catch { /* ordinary uniform corner */ }
+  }
+  const cornerRadii = continuous && sharedRadii.length === 4 && sharedRadii.every(Number.isFinite)
+    ? sharedRadii : [0, 0, 0, 0];
   return {
     ...GLASS_PRESET,
     profile: element.getAttribute?.('data-ui-glass-profile') === 'lens' ? 'lens' : 'standard',
@@ -644,7 +672,8 @@ function resolveLiquidGlassConfig(element, windowLike) {
     rippleEffect: GLASS_PRESET.rippleEffect * strength,
     baseIntensity: GLASS_PRESET.baseIntensity * warpStrength,
     warp: warpStrength > 0,
-    blurRadius
+    blurRadius,
+    ...(continuous ? { cornerCurve: Number.isFinite(rawCurve) ? rawCurve : 2, cornerRadii, ...(cornerProfiles ? {cornerProfiles} : {}) } : {})
   };
 }
 

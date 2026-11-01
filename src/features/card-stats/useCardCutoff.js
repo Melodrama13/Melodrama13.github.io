@@ -47,8 +47,7 @@ export function useCardCutoff(inputs) {
 
   const displayEventId = computed({
     get: () => {
-      const syncId = toFiniteEventId(inputs.props.previewSyncEventId);
-      const preferred = syncId ?? manualEventId.value ?? autoCurrentId.value;
+      const preferred = manualEventId.value ?? autoCurrentId.value;
       const n = toFiniteEventId(preferred);
       return n ?? 0;
     },

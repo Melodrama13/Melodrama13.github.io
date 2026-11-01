@@ -11,6 +11,7 @@
                 <button class="pjsk-ui-action pjsk-ui-btn-pill card-export-btn song-export-btn" :disabled="isExportingPng" @click="exportSongPanelPng('panel-oc-stats', getSongSectionTitle('panel-oc-stats'))">PNG</button>
               </div>
               <div class="song-insight-scroll song-oc-scroll">
+                <div class="ui-static-corner-scroll">
                 <table class="song-insight-table song-oc-table">
                   <thead>
                     <tr>
@@ -40,6 +41,7 @@
                     </tr>
                   </tbody>
                 </table>
+                </div>
               </div>
             </article>
 </template>

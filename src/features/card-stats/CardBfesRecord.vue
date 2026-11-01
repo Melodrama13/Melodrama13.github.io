@@ -4,8 +4,8 @@
                 <div class="block-head-left">
                   <h3>{{ getRelatedRecordTitle('rel-bfes-stat') }}</h3>
                   <label class="support-wl-toggle fes-card-mode-toggle stats-checkbox export-hide">
-                    <input class="pjsk-ui-choice" :checked="fesRecordShowCardImages" type="checkbox" @change="onFesRecordShowCardImagesChange" />
-                    <span>显示卡面</span>
+                    <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="fesRecordShowCardImages" type="checkbox" @change="onFesRecordShowCardImagesChange" />
+                    <span><UiCompactLabel text="显示卡面" compact="卡面" /></span>
                   </label>
                 </div>
                 <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-bfes-stat', '特殊统计_BFES统计')">PNG</button>
@@ -85,6 +85,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","fesRecordShowCardImages","onFesRecordShowCardImagesChange","isExportingPng","exportElementPng","ATTRS","getFesMatrixAttrHeadStyle","ATTR_LABELS","RELATED_FES_UNITS","getFesMatrixUnitHeadStyle","unitLogoMap","getFesMatrixCellStyle","bfesRecordMatrix","getCharColor","getFesMatrixUnitStripCellStyle","onMediaImageLoad","onMediaImageError","getFesMatrixTotalCellStyle","getFesMatrixTotalChipStyle"]);
 </script>

@@ -1,5 +1,6 @@
 <template>
 <div data-feature-view="app-update-prompt-content" data-feature-page="app" class="app-update-modal ui-motion-dialog-panel ui-liquid-glass ui-liquid-glass--modal" role="dialog" aria-modal="true" aria-label="版本更新日志">
+        <div data-feature-page="app" class="app-update-modal-scroll ui-static-corner-scroll">
         <div class="app-update-modal-title">{{ appUpdatePromptTitle }}</div>
         <div class="app-update-modal-subtitle">{{ appUpdatePromptSubtitle }}</div>
         <ul class="app-update-log-list">
@@ -8,6 +9,7 @@
         <div class="app-update-modal-actions">
           <button class="pjsk-ui-action app-update-btn" @click="reloadForAppUpdate">立即更新</button>
           <button class="pjsk-ui-action app-update-btn app-update-btn-muted" @click="dismissAppUpdateBanner">稍后</button>
+        </div>
         </div>
       </div>
 </template>

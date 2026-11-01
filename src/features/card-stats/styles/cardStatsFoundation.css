@@ -6,10 +6,10 @@
   min-height: 100vh;
   min-height: 100dvh;
   --matrix-sticky-top: 0px;
-  --stats-radius-panel: 28px;
+  --stats-radius-panel: var(--ui-radius-panel, 36px);
   --stats-nav-radius: var(--ui-stats-nav-radius);
   --stats-nav-inner-radius: var(--ui-stats-nav-inner-radius);
-  --stats-radius-card: 22px;
+  --stats-radius-card: var(--ui-radius-group, 26px);
   --stats-radius-btn: var(--ui-stats-control-radius);
   --stats-nav-width: var(--ui-stats-nav-width);
   --stats-nav-left: var(--ui-stats-nav-left);

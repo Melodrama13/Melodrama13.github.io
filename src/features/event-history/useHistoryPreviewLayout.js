@@ -54,6 +54,7 @@ const PREVIEW_LAYER_BASE = 4200;
 const PREVIEW_CONFIG_LEFT = 14;
 
 const PREVIEW_CONFIG_WIDTH = 360;
+const PREVIEW_CONFIG_NARROW_WIDTH = 352;
 
 const PREVIEW_CONFIG_PANEL_SAFE_HEIGHT = 230;
 
@@ -84,6 +85,23 @@ const getPreviewDragMinY = () => {
   return Math.max(PREVIEW_SCREEN_EDGE_GAP, Math.round(rect.top + 2));
 };
 
+// Bounds are read only for placement/drag/resize, never to derive corner shapes.
+const getPreviewReachableBounds = (scale = 1) => {
+  const height = window.visualViewport?.height || window.innerHeight;
+  const minY = Math.min(getPreviewDragMinY(), Math.max(0, height - PREVIEW_DRAG_MIN_VISIBLE_Y));
+  let bottom = height;
+  if (isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax) && ports.predictionEditor.isEditorOpen.value) {
+    const sheet = ports.predictionEditor.predictEditorRef?.value?.getDrawerElement?.();
+    const rect = sheet?.classList.contains('is-mobile-sheet') ? sheet.getBoundingClientRect() : null;
+    if (rect?.height > 0) bottom = Math.min(bottom, rect.top);
+  }
+  const header = Math.max(PREVIEW_DRAG_MIN_VISIBLE_Y, 54 * scale);
+  // A nearly full-height sheet leaves no useful strip for six title bars.
+  // The floating group sits above it, so a viewport cascade stays reachable.
+  if (bottom - minY < header + 128) bottom = height;
+  return { minY, maxY: Math.max(minY, bottom - header - 8) };
+};
+
 const previewConfigPanelStyle = computed(() => {
   const x = previewConfigPanelPos.value.x;
   const y = previewConfigPanelPos.value.y;
@@ -92,15 +110,16 @@ const previewConfigPanelStyle = computed(() => {
   return {
     left: `${x}px`,
     top: `${y}px`,
+    '--preview-config-top': `${y}px`,
     zIndex: z
   };
 });
 
 const clampPreviewConfigPanelPos = (x, y) => {
-  const panelWidth = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.historyPreviewMax) ? 320 : 360;
+  const panelWidth = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax)
+    ? Math.min(PREVIEW_CONFIG_NARROW_WIDTH, window.innerWidth - 16) : PREVIEW_CONFIG_WIDTH;
   const maxX = Math.max(0, window.innerWidth - panelWidth - 6);
-  const maxY = Math.max(0, window.innerHeight - 42);
-  const minY = getPreviewDragMinY();
+  const { minY, maxY } = getPreviewReachableBounds();
   return {
     x: Math.min(maxX, Math.max(6, x)),
     y: Math.min(maxY, Math.max(minY, y))
@@ -168,6 +187,13 @@ const handleDragPreviewConfigTouch = (event) => {
 
 const getPreviewDefaultPanelPosition = (idx = 0, avoidEditorDrawer = true) => {
   const slot = Number.isFinite(idx) ? idx : 0;
+  if (isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax)) {
+    const { minY, maxY } = getPreviewReachableBounds();
+    const step = Math.min(28, Math.max(0, (maxY - minY) / 5));
+    const start = Math.max(minY, Math.min(PREVIEW_CONFIG_PANEL_SAFE_HEIGHT, maxY - step * 5));
+    return { x: 8 + (slot % 3) * 8, y: start + Math.min(5, slot) * step };
+  }
+
   const isNarrow = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.historyPreviewMax);
   const baseX = isNarrow
     ? PREVIEW_CONFIG_LEFT
@@ -216,7 +242,7 @@ const resetPreviewPanelLayout = () => {
 const getPreviewPanelBaseSize = (panelId) => {
   if (panelId === 'attr-five') return { width: 216, height: 340 };
   if (panelId === 'daily-lineup') return { width: 228, height: 390 };
-  if (panelId === 'festival') return { width: 236, height: 350 };
+  if (panelId === 'festival' || panelId === 'year') return { width: 236, height: 350 };
   if (panelId === 'vs-last-four') return { width: 236, height: 242 };
   if (panelId === 'vs-unit-four-count') return { width: 236, height: 242 };
   if (panelId === 'vs-original') return { width: 236, height: 260 };
@@ -278,24 +304,21 @@ const getPreviewStepsStyle = (panelId) => {
   return {};
 };
 
+const getClampedPreviewPanelCoordinates = (panelId, x, y, scale = 1) => {
+  const panelWidth = getPreviewPanelBaseSize(panelId).width * scale;
+  const { minY, maxY } = getPreviewReachableBounds(scale);
+  return {
+    x: Math.min(Math.max(0, window.innerWidth - PREVIEW_DRAG_MIN_VISIBLE_X), Math.max(PREVIEW_DRAG_MIN_VISIBLE_X - panelWidth, x)),
+    y: Math.min(maxY, Math.max(minY, y))
+  };
+};
+
 const clampPreviewPanelPosition = (panelId) => {
   const current = previewPanelState.value[panelId];
   if (!current) return;
-  const base = getPreviewPanelBaseSize(panelId);
   const scale = Number.isFinite(current.scale) ? current.scale : 1;
-  const panelWidth = base.width * scale;
-  const panelHeight = current.collapsed ? 44 : (base.height * scale);
-  const maxX = Math.max(0, window.innerWidth - PREVIEW_DRAG_MIN_VISIBLE_X);
-  const maxY = Math.max(0, window.innerHeight - PREVIEW_DRAG_MIN_VISIBLE_Y);
-  const minY = getPreviewDragMinY();
-  previewPanelState.value = {
-    ...previewPanelState.value,
-    [panelId]: {
-      ...current,
-      x: Math.min(maxX, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelWidth, current.x)),
-      y: Math.min(maxY, Math.max(minY, current.y))
-    }
-  };
+  previewPanelState.value = { ...previewPanelState.value,
+    [panelId]: { ...current, ...getClampedPreviewPanelCoordinates(panelId, current.x, current.y, scale) } };
 };
 
 const startDragPreview = (panelId, event) => {
@@ -362,20 +385,12 @@ const handleDragPreview = (event) => {
   const panelId = previewDragState.value.panelId;
   if (!panelId) return;
   const current = previewPanelState.value[panelId] || getPreviewDefaultState(0);
-  const base = getPreviewPanelBaseSize(panelId);
-  const panelWidth = base.width * (current.scale || 1);
-  const panelHeight = current.collapsed ? 44 : (base.height * (current.scale || 1));
-  const maxX = Math.max(0, window.innerWidth - PREVIEW_DRAG_MIN_VISIBLE_X);
-  const maxY = Math.max(0, window.innerHeight - PREVIEW_DRAG_MIN_VISIBLE_Y);
-  const minY = getPreviewDragMinY();
-  const nextX = event.clientX - previewDragState.value.offsetX;
-  const nextY = event.clientY - previewDragState.value.offsetY;
+  const next = getClampedPreviewPanelCoordinates(panelId, event.clientX - previewDragState.value.offsetX, event.clientY - previewDragState.value.offsetY, current.scale || 1);
   previewPanelState.value = {
     ...previewPanelState.value,
     [panelId]: {
       ...current,
-      x: Math.min(maxX, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelWidth, nextX)),
-      y: Math.min(maxY, Math.max(minY, nextY))
+      ...next
     }
   };
 };
@@ -389,20 +404,12 @@ const handleDragPreviewTouch = (event) => {
   const panelId = previewDragState.value.panelId;
   if (!panelId) return;
   const current = previewPanelState.value[panelId] || getPreviewDefaultState(0);
-  const base = getPreviewPanelBaseSize(panelId);
-  const panelWidth = base.width * (current.scale || 1);
-  const panelHeight = current.collapsed ? 44 : (base.height * (current.scale || 1));
-  const maxX = Math.max(0, window.innerWidth - PREVIEW_DRAG_MIN_VISIBLE_X);
-  const maxY = Math.max(0, window.innerHeight - PREVIEW_DRAG_MIN_VISIBLE_Y);
-  const minY = getPreviewDragMinY();
-  const nextX = t.clientX - previewDragState.value.offsetX;
-  const nextY = t.clientY - previewDragState.value.offsetY;
+  const next = getClampedPreviewPanelCoordinates(panelId, t.clientX - previewDragState.value.offsetX, t.clientY - previewDragState.value.offsetY, current.scale || 1);
   previewPanelState.value = {
     ...previewPanelState.value,
     [panelId]: {
       ...current,
-      x: Math.min(maxX, Math.max(PREVIEW_SCREEN_EDGE_GAP - panelWidth, nextX)),
-      y: Math.min(maxY, Math.max(minY, nextY))
+      ...next
     }
   };
 };
@@ -490,7 +497,7 @@ watch(ports.previewPanels.previewFloatingPanels, (panels) => {
   });
   previewPanelState.value = nextState;
   panels.forEach((panel) => clampPreviewPanelPosition(panel.id));
-}, { immediate: true });
+}, { immediate: true, flush: 'post' });
 }
 return {
   previewFloatingCollapsed,

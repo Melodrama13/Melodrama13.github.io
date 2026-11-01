@@ -51,7 +51,7 @@
 
 @media (max-width: 900px) {
   .pjsk-song-stats, :global([data-feature-page="songs"] :is(.pjsk-song-stats)), :global(:is(.pjsk-song-stats)[data-feature-page="songs"]) {
-    padding: 8px;
+    padding: 6px;
     --song-btn-pad-x: 6px;
     --song-mini-toggle-size: 20px;
     --song-stat-min-card-width: 210px;
@@ -79,7 +79,7 @@
   }
 
   .card-panel:not(.stats-nav), :global([data-feature-page="songs"] :is(.card-panel:not(.stats-nav))), :global(:is(.card-panel:not(.stats-nav))[data-feature-page="songs"]) {
-    padding: 9px;
+    padding: var(--ui-surface-panel-padding);
     border-radius: 10px;
   }
 
@@ -377,7 +377,7 @@
 
 @media (max-width: 520px) {
   .pjsk-song-stats, :global([data-feature-page="songs"] :is(.pjsk-song-stats)), :global(:is(.pjsk-song-stats)[data-feature-page="songs"]) {
-    padding: 6px;
+    padding: 4px;
   }
 
 }

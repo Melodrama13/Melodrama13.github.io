@@ -1,10 +1,11 @@
 import { computed } from 'vue';
 import { getWorldLinkStatTypes } from '../../domain/worldLink.js';
+import { CARD_STATISTICS_ATTRIBUTES, CARD_STATISTICS_UNIT_ORDER, CARD_STATISTICS_FESTIVALS, CARD_STATISTICS_FESTIVAL_VS_UNIT_ORDER } from './cardStatisticsRules.js';
 /** Owns card constants behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
  */
 export function useCardConstants(inputs) {
-  const ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
+  const ATTRS = CARD_STATISTICS_ATTRIBUTES;
 
   const SUPPORT_WL_ATTR = 'wl';
 
@@ -40,13 +41,13 @@ export function useCardConstants(inputs) {
     Mysterious: '#8e65c2'
   });
 
-  const SPECIAL_FESTIVALS = ['新年', '婚活', '情人节', '白情', '半周年', '周年'];
+  const SPECIAL_FESTIVALS = CARD_STATISTICS_FESTIVALS;
 
   const FESTIVAL_ANCHOR_IDS = Object.fromEntries(SPECIAL_FESTIVALS.map((fest, idx) => [fest, `festival-${idx + 1}`]));
 
-  const FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
+  const FESTIVAL_VS_UNIT_ORDER = CARD_STATISTICS_FESTIVAL_VS_UNIT_ORDER;
 
-  const VS_UNIT_SORT_ORDER = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
+  const VS_UNIT_SORT_ORDER = CARD_STATISTICS_UNIT_ORDER;
 
   const worldLinkStatTypes = computed(() => getWorldLinkStatTypes(inputs.props?.allCards || [], inputs.props?.allEvents || []));
   const VS_ORIGINAL_STAT_TYPES = computed(() => ['大罪', 'CFES', 'BFES', ...worldLinkStatTypes.value.map(row => row.label), '其他']);

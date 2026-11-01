@@ -4,13 +4,14 @@
             <div class="section-head-left">
               <h2>角色矩阵</h2>
               <label class="matrix-pure-toggle stats-checkbox" title="勾选后，分卡统计会计入团分卡。">
-                <input class="pjsk-ui-choice" :checked="includeUnitScoreInPureScore" type="checkbox" @change="onIncludeUnitScoreInPureScoreChange" />
-                分卡统计团分
+                <input aria-label="分卡统计团分" class="pjsk-ui-choice" :checked="includeUnitScoreInPureScore" type="checkbox" @change="onIncludeUnitScoreInPureScoreChange" />
+                <UiCompactLabel text="分卡统计团分" compact="分卡团分" />
               </label>
             </div>
             <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-matrix', '角色矩阵')">PNG</button>
           </div>
           <div class="matrix-wrap">
+            <div class="ui-static-corner-scroll">
             <table class="matrix-table">
               <thead>
                 <tr>
@@ -103,10 +104,12 @@
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 defineProps(["includeUnitScoreInPureScore","onIncludeUnitScoreInPureScoreChange","isExportingPng","exportElementPng","ATTRS","matrixGroupClass","toggleMatrixSort","ATTR_LABELS","getMatrixSortIconSrc","attrMatrixRows","getMatrixUnitFrameClass","getCharTint","getMatrixUnitColor","getUnitMatrixTint","getCharAbbr","getCharColor","getAttrExtremeClass","attrMatrixTotalRow"]);
 </script>

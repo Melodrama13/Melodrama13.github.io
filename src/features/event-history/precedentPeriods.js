@@ -6,6 +6,7 @@ import { isPeriodBanner, hasLimitedSubdivision, matchesPeriodCard } from './prec
 import { OC_UNITS } from './milestoneShared.js';
 import { isDuoCollaborationEvent } from '../card-stats/cardDuoRules.js';
 import { markPrecedentPositions } from './precedentResultPositions.js';
+import { getObservedQuantityBounds } from './precedentThresholds.js';
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const orderCache = new WeakMap();
@@ -188,7 +189,8 @@ export function queryPeriodPrecedents(catalog, query, rules) {
       startTimestamp: first ? first.timestamp ?? first.source.timestamp : period.startTimestamp,
       timestamp: last ? last.timestamp ?? last.source.timestamp : period.endTimestamp, rules, isPersonalAchievement: true };
   }));
-  const max = Math.max(0, ...rows.map(row => row.value)), min = rows.length ? Math.min(...rows.map(row => row.value)) : 0;
+  const bounds = getObservedQuantityBounds(rows.filter(row => query.metric !== 'unitFour' || query.coverage !== 'all'
+    || row.period.totalEvents > 0 && row.value === row.period.totalEvents), row => row.value), { max, min } = bounds;
   const threshold = query.threshold === 'MAX' ? max : query.threshold === 'MIN' ? min : Number(query.threshold ?? max);
   let records = rows.filter(row => query.metric === 'unitFour' && query.coverage === 'all' ? row.period.totalEvents > 0 && row.value === row.period.totalEvents
     : query.operator === 'atLeast' ? row.value >= threshold : query.operator === 'atMost' ? row.value <= threshold : row.value === threshold);
@@ -199,5 +201,5 @@ export function queryPeriodPrecedents(catalog, query, rules) {
   if (query.order === 'first' || query.order === 'latest') {
     records = records.filter(row => row.queryPositions.includes(query.order));
   }
-  return { records, totalRecords, threshold, bounds: { max, min, people: [] }, periods };
+  return { records, totalRecords, threshold, bounds, periods };
 }

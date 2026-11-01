@@ -212,6 +212,7 @@ const { isCharInList, toggleChar, applyGlobalAttr, buildProcessedChars, buildPre
 });
 
 defineExpose({
+  getDrawerElement: () => drawerRef.value,
   hasUnsavedChanges,
   saveForEventSwitch,
   discardDraftForEventSwitch

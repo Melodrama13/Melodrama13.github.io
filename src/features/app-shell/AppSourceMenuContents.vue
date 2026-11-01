@@ -27,6 +27,7 @@
           </div>
           <div data-feature-view="app-source-menu-contents" data-feature-page="app" class="source-menu-title">切换数据源</div>
           <div data-feature-view="app-source-menu-contents" data-feature-page="app" class="source-list">
+            <div data-feature-page="app" class="source-list-scroll ui-static-corner-scroll">
             <div
               v-for="source in predictSources"
               :key="source.id"
@@ -53,6 +54,7 @@
               <button class="pjsk-ui-action source-order-btn" title="上移" @click.stop="movePredictSource(source.id, -1)">↑</button>
               <button class="pjsk-ui-action source-order-btn" title="下移" @click.stop="movePredictSource(source.id, 1)">↓</button>
               <span class="source-drag-handle" title="拖拽排序">⋮⋮</span>
+            </div>
             </div>
           </div>
 

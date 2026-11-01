@@ -23,6 +23,8 @@ const previewFloatingPanels = computed(() => {
         || def.id === 'daily-lineup'
         || def.id === 'char-attr'
       ) ? [] : ports.previewStatistics.getPreviewStepsByKey(def.statKey),
+      yearLabel: def.id === 'year' ? ports.previewStatistics.previewYearPanel.value?.title : '',
+      yearTotal: def.id === 'year' ? ports.previewStatistics.previewYearPanel.value?.total || 0 : 0,
       festivalName: def.id === 'festival' ? ports.previewCutoff.activePreviewFestivalName.value : '',
       festivalRows: def.id === 'festival' ? ports.festivalPreview.currentPreviewFestivalRows.value : [],
       festivalIncludeFes: def.id === 'festival' ? ports.festivalPreview.previewFestivalIncludeFes.value : false,

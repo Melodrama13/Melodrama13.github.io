@@ -4,12 +4,13 @@
                 <div class="block-head-left">
                   <h3>{{ getRelatedRecordTitle('rel-four-long') }}</h3>
                   <label class="fes-card-mode-toggle stats-checkbox">
-                    <input class="pjsk-ui-choice" :checked="intervalFourShowCardImages" type="checkbox" @change="onIntervalFourShowCardImagesChange" />
-                    显示卡面
+                    <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="intervalFourShowCardImages" type="checkbox" @change="onIntervalFourShowCardImagesChange" />
+                    <UiCompactLabel text="显示卡面" compact="卡面" />
                   </label>
                 </div>
                 <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-four-long', '间隔记录_四星最长间隔')">PNG</button>
               </div>
+            <div class="record-table-scroll">
               <table :class="['record-table', 'related-table', 'related-table-interval', { 'interval-record-table-card-mode': intervalFourShowCardImages }]">
                 <thead>
                   <tr>
@@ -82,9 +83,11 @@
                 </tbody>
               </table>
             </div>
+            </div>
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","intervalFourShowCardImages","onIntervalFourShowCardImagesChange","isExportingPng","exportElementPng","fourStarLongestDisplayRecords","getRecordTint","getCharAbbr","getCharColor","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","jumpToHistoryByEventRef","getJumpLinkLabel","formatGapValue"]);
 </script>

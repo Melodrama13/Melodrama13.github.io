@@ -1,19 +1,20 @@
+import { CARD_YEAR_DEFAULTS } from '../card-stats/cardYearStats.js';
 import { computed, ref, watch } from 'vue';
+import { CARD_STATISTICS_DEFAULTS, CARD_STATISTICS_ATTRIBUTES, CARD_STATISTICS_UNIT_ORDER,
+  CARD_STATISTICS_FESTIVALS, CARD_STATISTICS_FESTIVAL_VS_UNIT_ORDER, normalizeStatisticsEventTypes } from '../card-stats/cardStatisticsRules.js';
 
 /** Preview Selections owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
  * Dependencies: props, PredictionEditor, Formatting, PreviewCutoff, PreviewLayout.
  */
 export function useHistoryPreviewSelections(ports) {
-const PREVIEW_LIMITED_TYPES = new Set(['limited', 'cfes', 'bfes', 'collab_t']);
-
 const FES_CARD_TYPES = new Set(['cfes', 'bfes']);
 
-const PREVIEW_FESTIVAL_TYPES = ['新年', '婚活', '情人节', '白情', '半周年', '周年'];
+const PREVIEW_FESTIVAL_TYPES = CARD_STATISTICS_FESTIVALS;
 
-const PREVIEW_BOX_UNITS = ['ln', 'mmj', 'vbs', 'ws', 'nc'];
+const PREVIEW_BOX_UNITS = CARD_STATISTICS_UNIT_ORDER;
 
-const PREVIEW_ATTRS = ['Pure', 'Cool', 'Cute', 'Happy', 'Mysterious'];
+const PREVIEW_ATTRS = CARD_STATISTICS_ATTRIBUTES;
 
 const PREVIEW_DAILY_ATTR_COLOR = {
   Pure: '#84cc16',
@@ -59,29 +60,18 @@ const CHARACTER_BIRTHDAY_MD_MAP = computed(() => {
   return map;
 });
 
-const PREVIEW_DAILY_SKILL_BASE = {
-  bfes_up: 160,
-  cfes: 140,
-  p_score: 130,
-  score_up: 120,
-  accuracy: 100,
-  recovery: 100,
-  unit_score: 100,
-  default: 120
-};
-
 const PREVIEW_PANEL_DEFS = [
-  { id: 'four', title: '四星', icon: '⭐', statKey: 'fourStarCount', externalKey: 'fourStarCount' },
-  { id: 'limited', title: '限定', icon: '🎀', statKey: 'limitedCount', externalKey: 'limitedCount' },
-  { id: 'banner', title: 'Banner', icon: 'B', statKey: 'bannerCount', externalKey: 'bannerCount' },
-  { id: 'limited-ban', title: '限Ban', icon: '🚫', statKey: 'limitedBanCount', externalKey: 'limitedBanCount' },
+  { id: 'four', title: '四星', icon: '⭐', statKey: 'fourStarCount' },
+  { id: 'limited', title: '限定', icon: '🎀', statKey: 'limitedCount' },
+  { id: 'banner', title: 'Banner', icon: 'B', statKey: 'bannerCount' },
+  { id: 'limited-ban', title: '限Ban', icon: '🚫', statKey: 'limitedBanCount' },
   { id: 'vs-last-four', title: 'V上次四星', icon: 'V', statKey: 'vsLastFour' },
   { id: 'vs-unit-four-count', title: '团V四星', icon: '4', statKey: 'vsUnitFourCount' },
   { id: 'vs-unit-score', title: '团分', icon: 'U', statKey: 'vsUnitScore' },
   { id: 'vs-original', title: '原V', icon: 'O', statKey: 'vsOriginal' },
   { id: 'pure-score', title: '分卡', icon: 'S', statKey: 'pureScoreCount' },
   { id: 'p-score', title: 'P分', icon: 'P', statKey: 'pScoreCount' },
-  { id: 'score-up', title: '普分', icon: 'N', statKey: 'scoreUpCount', externalKey: 'scoreUpCount' },
+  { id: 'score-up', title: '普分', icon: 'N', statKey: 'scoreUpCount' },
   { id: 'recovery', title: '奶卡', icon: '❤', statKey: 'recoveryCount' },
   { id: 'accuracy', title: '判卡', icon: '✓', statKey: 'accuracyCount' },
   { id: 'three', title: '三星', icon: '3', statKey: 'threeStarCount' },
@@ -90,7 +80,8 @@ const PREVIEW_PANEL_DEFS = [
   { id: 'daily-lineup', title: '日挑配队', icon: '📊', statKey: 'dailyLineup' },
   { id: 'char-attr', title: '角色花色', icon: '📋', statKey: 'charAttr' },
   { id: 'attr-five', title: '花色', icon: '🧩', statKey: 'attrFive' },
-  { id: 'festival', title: '节日人选', icon: '🎊', statKey: 'festival', externalKey: 'festival' }
+  { id: 'year', title: '年份', icon: '📅', statKey: 'year' },
+  { id: 'festival', title: '节日人选', icon: '🎊', statKey: 'festival' }
 ];
 
 const PREVIEW_CHAR_ORDER = computed(() => {
@@ -106,7 +97,7 @@ const PREVIEW_CHAR_ORDER = computed(() => {
 
 const getPreviewCharOrder = (name) => Number(PREVIEW_CHAR_ORDER.value[String(name || '').trim()] || 999);
 
-const PREVIEW_FESTIVAL_VS_UNIT_ORDER = { ln: 1, mmj: 2, vbs: 3, ws: 4, nc: 5, vs: 6 };
+const PREVIEW_FESTIVAL_VS_UNIT_ORDER = CARD_STATISTICS_FESTIVAL_VS_UNIT_ORDER;
 
 const selectedPreviewPanelIds = ref([]);
 
@@ -120,25 +111,32 @@ const currentEditingSelectionNames = ref([]);
 
 const currentEditingSelectionCards = ref([]);
 
-const previewIncludeCollabReward = ref(false);
+const previewYearRarities = ref([...CARD_YEAR_DEFAULTS.rarities]);
+const previewYearCardTypes = ref([...CARD_YEAR_DEFAULTS.cardTypes]);
+const previewYearUseOperatingYear = ref(CARD_YEAR_DEFAULTS.useOperatingYear);
+const previewYearNewYearNextYear = ref(CARD_YEAR_DEFAULTS.newYearNextYear);
 
-const previewThreeUseRewardCount = ref(true);
+const previewIncludeCollabReward = ref(CARD_STATISTICS_DEFAULTS.includeCollabRewardCards);
 
-const previewTwoUseRewardCount = ref(true);
+const previewThreeUseRewardCount = ref(CARD_STATISTICS_DEFAULTS.useRewardCountForLowStars);
+const previewTwoUseRewardCount = previewThreeUseRewardCount;
 
-const previewIncludeUnitScoreInPureScore = ref(false);
+const previewLimitedIncludeWl3 = ref(CARD_STATISTICS_DEFAULTS.includeWl3);
+const previewLimitedIncludeSongLimited = ref(CARD_STATISTICS_DEFAULTS.includeSongLimited);
 
-const previewLimitedBanEventTypeFilter = ref('all');
+const previewIncludeUnitScoreInPureScore = ref(CARD_STATISTICS_DEFAULTS.includeUnitScoreInPureScore);
 
-const previewBannerEventTypeFilter = ref('all');
+const previewLimitedBanEventTypeFilter = ref(normalizeStatisticsEventTypes());
 
-const previewFestivalMergeHigherRanks = ref(false);
+const previewBannerEventTypeFilter = ref(normalizeStatisticsEventTypes());
+
+const previewFestivalMergeHigherRanks = ref(CARD_STATISTICS_DEFAULTS.festivalMergeHigherRanks);
 
 const selectedPreviewFestival = ref(PREVIEW_FESTIVAL_TYPES[0]);
 
 const previewFestivalFesToggles = ref({
-  '半周年': false,
-  '周年': false
+  '半周年': CARD_STATISTICS_DEFAULTS.includeFestivalFes,
+  '周年': CARD_STATISTICS_DEFAULTS.includeFestivalFes
 });
 
 const previewSelectableChars = computed(() => {
@@ -339,73 +337,17 @@ const setSelectedPreviewFestival = (festival) => {
   selectedPreviewFestival.value = festival;
 };
 
-const cyclePreviewLimitedBanEventTypeFilter = () => {
-  const current = previewLimitedBanEventTypeFilter.value;
-  if (current === 'all') {
-    previewLimitedBanEventTypeFilter.value = '箱活';
-    return;
-  }
-  if (current === '箱活') {
-    previewLimitedBanEventTypeFilter.value = '混活';
-    return;
-  }
-  previewLimitedBanEventTypeFilter.value = 'all';
-};
-
-const cyclePreviewBannerEventTypeFilter = () => {
-  const current = previewBannerEventTypeFilter.value;
-  if (current === 'all') {
-    previewBannerEventTypeFilter.value = '箱活';
-    return;
-  }
-  if (current === '箱活') {
-    previewBannerEventTypeFilter.value = '混活';
-    return;
-  }
-  previewBannerEventTypeFilter.value = 'all';
-};
-
-const previewLimitedBanFilterButtonText = computed(() => {
-  const current = previewLimitedBanEventTypeFilter.value;
-  if (current === '箱活') return '仅箱';
-  if (current === '混活') return '仅混';
-  return '箱混';
-});
-
-const previewLimitedBanFilterButtonTitle = computed(() => {
-  const current = previewLimitedBanEventTypeFilter.value;
-  if (current === '箱活') return '当前仅统计箱活，点击切换到混活';
-  if (current === '混活') return '当前仅统计混活，点击切换到全体';
-  return '当前统计全体，点击切换到箱活';
-});
-
-const previewBannerFilterButtonText = computed(() => {
-  const current = previewBannerEventTypeFilter.value;
-  if (current === '箱活') return '仅箱';
-  if (current === '混活') return '仅混';
-  return '箱混';
-});
-
-const previewBannerFilterButtonTitle = computed(() => {
-  const current = previewBannerEventTypeFilter.value;
-  if (current === '箱活') return '当前仅统计箱活Banner，点击切换到混活';
-  if (current === '混活') return '当前仅统计混活Banner，点击切换到全体';
-  return '当前统计全体Banner，点击切换到箱活';
-});
-
 const isFesCardType = (typeValue) => FES_CARD_TYPES.has(String(typeValue || '').trim().toLowerCase());
 
 const previewPanelOptions = computed(() => PREVIEW_PANEL_DEFS.map((def) => {
   const selected = selectedPreviewPanelIds.value.includes(def.id);
   const isFestival = def.id === 'festival';
-  const isLimitedBan = def.id === 'limited-ban';
+  const filter = def.id === 'limited-ban' ? previewLimitedBanEventTypeFilter.value : previewBannerEventTypeFilter.value;
+  const types = normalizeStatisticsEventTypes(filter);
+  const eventSuffix = types.length === 2 ? '' : `·${types.length ? (types[0] === '箱活' ? '箱' : '混') : '无'}`;
   const dynamicTitle = isFestival && ports.previewCutoff.activePreviewFestivalName.value
     ? `节日人选·${ports.previewCutoff.activePreviewFestivalName.value}`
-    : (isLimitedBan && previewLimitedBanEventTypeFilter.value !== 'all'
-      ? `限Ban·${previewLimitedBanEventTypeFilter.value === '箱活' ? '箱' : '混'}`
-      : (def.id === 'banner' && previewBannerEventTypeFilter.value !== 'all'
-        ? `Banner·${previewBannerEventTypeFilter.value === '箱活' ? '箱' : '混'}`
-        : def.title));
+    : ['limited-ban', 'banner'].includes(def.id) ? `${def.title}${eventSuffix}` : def.title;
   return {
     ...def,
     title: dynamicTitle,
@@ -441,6 +383,9 @@ return {
   selectedPreviewDailyLineupChars,
   selectedPreviewCharAttrChars,
   previewIncludeCollabReward,
+  previewYearRarities, previewYearCardTypes, previewYearUseOperatingYear, previewYearNewYearNextYear,
+  previewLimitedIncludeWl3,
+  previewLimitedIncludeSongLimited,
   previewThreeUseRewardCount,
   previewTwoUseRewardCount,
   previewIncludeUnitScoreInPureScore,
@@ -462,12 +407,6 @@ return {
   appendPreviewCharAttrCharsFromCurrentLineup,
   handlePredictSelectionChange,
   setSelectedPreviewFestival,
-  cyclePreviewLimitedBanEventTypeFilter,
-  cyclePreviewBannerEventTypeFilter,
-  previewLimitedBanFilterButtonText,
-  previewLimitedBanFilterButtonTitle,
-  previewBannerFilterButtonText,
-  previewBannerFilterButtonTitle,
   previewPanelOptions,
   togglePreviewPanelType,
   normalizeCharName,
@@ -478,13 +417,11 @@ return {
   PREVIEW_FESTIVAL_VS_UNIT_ORDER,
   isFesCardType,
   PREVIEW_BOX_UNITS,
-  PREVIEW_LIMITED_TYPES,
   previewLimitedBanEventTypeFilter,
   previewBannerEventTypeFilter,
   PREVIEW_ATTRS,
   PREVIEW_CHAR_ORDER,
   PREVIEW_PANEL_DEFS,
-  PREVIEW_DAILY_SKILL_BASE,
   PREVIEW_DAILY_CHAR_UNIT_MAP,
   PREVIEW_DAILY_ATTR_COLOR,
   watchSelectedPanels,

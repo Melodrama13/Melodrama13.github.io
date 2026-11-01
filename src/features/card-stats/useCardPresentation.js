@@ -1,3 +1,4 @@
+import { orderCardStatisticsNames } from './cardStatisticsRules.js';
 import { ref, computed, inject, hasInjectionContext } from 'vue';
 import { APP_SETTINGS_KEY } from '../../services/appSettings.js';
 
@@ -82,16 +83,7 @@ export function useCardPresentation(inputs) {
     return Math.round(diff / (1000 * 60 * 60 * 24));
   };
 
-  const toDisplayOrderedCharNames = (sourceNames) => {
-    const names = [...(sourceNames || [])].sort((a, b) => (inputs.metadata.CHAR_ORDER[a] || 999) - (inputs.metadata.CHAR_ORDER[b] || 999));
-    const lukaIdx = names.indexOf('巡音流歌');
-    const mikuIdx = names.indexOf('初音未来');
-    if (lukaIdx >= 0 && mikuIdx >= 0 && lukaIdx !== mikuIdx + 1) {
-      names.splice(lukaIdx, 1);
-      names.splice(mikuIdx + 1, 0, '巡音流歌');
-    }
-    return names;
-  };
+  const toDisplayOrderedCharNames = sourceNames => orderCardStatisticsNames(sourceNames, inputs.metadata.CHAR_ORDER);
 
   const compareCharOrder = (a, b) => (inputs.metadata.CHAR_ORDER[a] || 999) - (inputs.metadata.CHAR_ORDER[b] || 999);
 

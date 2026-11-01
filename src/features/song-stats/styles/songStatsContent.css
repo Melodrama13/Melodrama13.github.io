@@ -55,6 +55,7 @@
 :global(:is(.section-head)[data-feature-page="songs"]),
 :global([data-feature-page="songs"] :is(.block-head)),
 :global(:is(.block-head)[data-feature-page="songs"]) {
+  padding-inline: var(--ui-surface-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -67,6 +68,8 @@
 }
 
 .section-head-left, :global([data-feature-page="songs"] :is(.section-head-left)), :global(:is(.section-head-left)[data-feature-page="songs"]) {
+  min-width: 0;
+  flex-wrap: wrap;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -234,21 +237,23 @@
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: var(--stats-radius-panel);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-  padding: 12px;
+  padding: var(--ui-surface-panel-padding);
 }
 
 .section-main, :global([data-feature-page="songs"] :is(.section-main)), :global(:is(.section-main)[data-feature-page="songs"]) {
   margin-bottom: 14px;
 }
 
-.stats-grid, :global([data-feature-page="songs"] :is(.stats-grid)), :global(:is(.stats-grid)[data-feature-page="songs"]) {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
+/* Each statistics module is a peer of search, as on the card statistics page. */
+.stats-main > .stats-section + .stats-section,
+:global(.pjsk-song-stats .stats-main > [data-feature-page="songs"].stats-section + [data-feature-page="songs"].stats-section) {
+  margin-top: 18px;
 }
 
 .song-insight-scroll, :global([data-feature-page="songs"] :is(.song-insight-scroll)), :global(:is(.song-insight-scroll)[data-feature-page="songs"]) {
-  overflow: auto;
+  min-width: 0;
+  border: 1px solid var(--ui-surface-outline-inner);
+  overflow: visible;
 }
 
 .song-insight-table, :global([data-feature-page="songs"] :is(.song-insight-table)), :global(:is(.song-insight-table)[data-feature-page="songs"]) {
@@ -318,6 +323,7 @@
 }
 
 .song-book-round-title, :global([data-feature-page="songs"] :is(.song-book-round-title)), :global(:is(.song-book-round-title)[data-feature-page="songs"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   margin: 0 0 6px;
   color: #334155;
   font-size: 0.84rem;
@@ -743,12 +749,13 @@
 :global(:is(.song-stat-card)[data-feature-page="songs"]) {
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  padding: 9px;
+  padding: var(--ui-surface-group-padding);
   background: #ffffff;
   min-width: 0;
 }
 
 .song-role-head, :global([data-feature-page="songs"] :is(.song-role-head)), :global(:is(.song-role-head)[data-feature-page="songs"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -942,7 +949,7 @@
 .song-duo-unit-card, :global([data-feature-page="songs"] :is(.song-duo-unit-card)), :global(:is(.song-duo-unit-card)[data-feature-page="songs"]) {
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  padding: 9px;
+  padding: var(--ui-surface-group-padding);
 }
 
 .song-duo-pair-grid, :global([data-feature-page="songs"] :is(.song-duo-pair-grid)), :global(:is(.song-duo-pair-grid)[data-feature-page="songs"]) {
@@ -1527,7 +1534,7 @@
 }
 
 .song-oc-event-member-card, :global([data-feature-page="songs"] :is(.song-oc-event-member-card)), :global(:is(.song-oc-event-member-card)[data-feature-page="songs"]) {
-  padding: 8px;
+  padding: var(--ui-surface-group-padding);
 }
 
 .song-oc-event-text-list, :global([data-feature-page="songs"] :is(.song-oc-event-text-list)), :global(:is(.song-oc-event-text-list)[data-feature-page="songs"]) {
@@ -1707,12 +1714,13 @@
 .song-oc-event-unit-card, :global([data-feature-page="songs"] :is(.song-oc-event-unit-card)), :global(:is(.song-oc-event-unit-card)[data-feature-page="songs"]) {
   border: 1px solid rgba(51, 65, 85, 0.34);
   border-radius: 10px;
-  padding: 8px;
+  padding: var(--ui-surface-group-padding);
   background: #ffffff;
   min-width: 0;
 }
 
 .song-oc-event-unit-head, :global([data-feature-page="songs"] :is(.song-oc-event-unit-head)), :global(:is(.song-oc-event-unit-head)[data-feature-page="songs"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
@@ -1811,12 +1819,13 @@
 .song-3dmv-unit-card, :global([data-feature-page="songs"] :is(.song-3dmv-unit-card)), :global(:is(.song-3dmv-unit-card)[data-feature-page="songs"]) {
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  padding: 8px;
+  padding: var(--ui-surface-group-padding);
   min-width: 0;
   container-type: inline-size;
 }
 
 .song-3dmv-unit-head, :global([data-feature-page="songs"] :is(.song-3dmv-unit-head)), :global(:is(.song-3dmv-unit-head)[data-feature-page="songs"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   position: relative;
   display: grid;
   grid-template-columns: 82px minmax(0, 1fr);
@@ -2077,7 +2086,7 @@
 .song-april-year-card, :global([data-feature-page="songs"] :is(.song-april-year-card)), :global(:is(.song-april-year-card)[data-feature-page="songs"]) {
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 10px;
-  padding: 9px;
+  padding: var(--ui-surface-group-padding);
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.28)),
     linear-gradient(135deg, rgba(125, 211, 252, 0.18), rgba(244, 114, 182, 0.14) 52%, rgba(167, 243, 208, 0.16));
@@ -2088,6 +2097,7 @@
 }
 
 .song-april-year-head, :global([data-feature-page="songs"] :is(.song-april-year-head)), :global(:is(.song-april-year-head)[data-feature-page="songs"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2229,7 +2239,7 @@
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  overflow: auto;
+  overflow: visible;
 }
 
 .song-table, :global([data-feature-page="songs"] :is(.song-table)), :global(:is(.song-table)[data-feature-page="songs"]) {
@@ -2421,4 +2431,9 @@
   object-fit: cover;
   display: block;
   border-radius: 0;
+}
+
+/* Wrap complete title/filter items instead of stacking individual characters. */
+.section-head-left > :is(h2, label), :global([data-feature-page="songs"] .section-head-left > :is(h2, label)) {
+  white-space: nowrap;
 }

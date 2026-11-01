@@ -10,6 +10,7 @@
 
     <section v-else class="special-generator-shell">
       <div v-liquid-glass class="special-toolbar ui-liquid-glass ui-liquid-glass--regular">
+        <div class="special-toolbar-scroll ui-static-corner-scroll">
         <SpecialPredictionSourceControls
   :sourceSelection="sourceSelectionFeature"
   :pageAppearance="pageAppearanceFeature"
@@ -33,6 +34,7 @@
   :background="backgroundFeature"
   :capture="captureFeature"
 />
+        </div>
       </div>
 
       <div v-if="exportStatus" class="special-export-status" role="status" aria-live="polite">{{ exportStatus }}</div>

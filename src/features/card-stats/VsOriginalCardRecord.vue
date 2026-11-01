@@ -4,8 +4,8 @@
                 <div class="block-head-left">
                   <h3>{{ getRelatedRecordTitle('rel-vs-original-stat') }}</h3>
                   <label class="fes-card-mode-toggle stats-checkbox">
-                    <input class="pjsk-ui-choice" :checked="vsOriginalStatShowCardImages" type="checkbox" @change="onVsOriginalStatShowCardImagesChange" />
-                    <span>显示卡面</span>
+                    <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="vsOriginalStatShowCardImages" type="checkbox" @change="onVsOriginalStatShowCardImagesChange" />
+                    <span><UiCompactLabel text="显示卡面" compact="卡面" /></span>
                   </label>
                 </div>
                 <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-vs-original-stat', '特殊统计_原V统计')">PNG</button>
@@ -102,6 +102,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","vsOriginalStatShowCardImages","onVsOriginalStatShowCardImagesChange","isExportingPng","exportElementPng","VS_NAMES","getVsScoreVsHeadStyle","getCharAbbr","getCharColor","vsOriginalStatRows","getVsOriginalStatCellStyle","getVsOriginalOtherRowCards","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","getVsOriginalOtherRowAttrs"]);
 </script>

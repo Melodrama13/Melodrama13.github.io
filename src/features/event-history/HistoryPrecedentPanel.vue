@@ -4,8 +4,10 @@
     class="precedent-panel ui-liquid-glass ui-liquid-glass--prominent ui-glass-optical-detail"
     role="region" aria-labelledby="precedent-panel-title" tabindex="-1"
     data-html2canvas-ignore="true" @keydown.esc.stop.prevent="close()">
+    <span class="precedent-native-shadow" aria-hidden="true"><span class="precedent-native-shadow-cast"></span></span>
+    <span class="precedent-backdrop" aria-hidden="true"></span>
     <header class="precedent-header">
-      <h2 id="precedent-panel-title"><History :size="18" aria-hidden="true" />活动与先例</h2>
+      <h2 id="precedent-panel-title"><History :size="18" aria-hidden="true" /><span class="precedent-title-copy">活动与先例</span></h2>
       <UiGlassTabs v-model="mode" class="precedent-segment" :items="detailTabs" label="活动信息页面" contained />
       <button type="button" class="pjsk-ui-action precedent-close precedent-surface ui-liquid-glass ui-liquid-glass--chip" aria-label="收起活动与先例" @click="close()"><X :size="18" aria-hidden="true" /></button>
     </header>
@@ -71,6 +73,7 @@
               </div>
               <p v-if="record.advancement" class="precedent-record-advance"><span>{{ advancementLabel(record) }}</span><strong>用时 {{ record.advancement.days }} 天</strong></p>
               <p v-else-if="record.type === 'interval'" class="precedent-record-metrics"><span v-for="unit in record.recordUnits" :key="unit" class="precedent-record-metric"><template v-if="record.previousValues[unit] != null"><span class="precedent-previous-value">{{ record.previousValues[unit] }}</span><span class="precedent-metric-arrow" aria-hidden="true">→</span></template><strong class="precedent-result-number">{{ record[unit] }}</strong><span class="precedent-metric-unit">{{ unit === 'days' ? '天' : '期' }}</span></span></p>
+              <p v-else-if="record.type === 'quantityGap'" class="precedent-sequence-description"><span>{{ recordDescription(record) }}</span><span class="precedent-run-status precedent-surface ui-liquid-glass ui-liquid-glass--chip" :data-ongoing="record.ongoing"><i aria-hidden="true"></i>{{ record.milestoneAction === 'duration' ? '截至本期' : record.ongoing ? '仍在持续' : record.recovered ? '已恢复' : '已结束' }}</span></p>
               <p v-else-if="record.type === 'sequence'" class="precedent-sequence-description"><span>{{ recordDescription(record) }}</span><span v-if="record.sequenceMetric !== 'flowerGap'" class="precedent-run-status precedent-surface ui-liquid-glass ui-liquid-glass--chip" :data-ongoing="record.ongoing"><i aria-hidden="true"></i>{{ record.ongoing ? '仍在连续' : '已结束' }}</span></p>
               <p v-else>{{ recordDescription(record) }}</p>
             </div>
@@ -100,7 +103,7 @@
         </article>
         </div>
 
-        <div v-if="section.key === 'matches' && !filteredRecords.length" class="precedent-empty"><Search :size="23" aria-hidden="true" /><strong>{{ mode === 'event' ? '暂无此类里程碑' : appliedQuery.type === 'pool' ? '暂无匹配配置' : result.threshold === 0 ? '零张无需历史达成' : '暂无匹配先例' }}</strong><p v-if="mode === 'search' && (result.threshold !== 0 || appliedQuery.type === 'pool')">可放宽范围或数量条件。</p></div>
+        <div v-if="section.key === 'matches' && !filteredRecords.length" class="precedent-empty"><Search :size="23" aria-hidden="true" /><strong>{{ mode === 'event' ? '暂无此类里程碑' : appliedQuery.type === 'pool' ? '暂无匹配配置' : appliedQuery.sequenceMetric === 'quantityGap' && appliedQuery.type === 'sequence' ? '暂无异常差距' : result.threshold === 0 ? '零张无需历史达成' : '暂无匹配先例' }}</strong><p v-if="mode === 'search' && (result.threshold !== 0 || appliedQuery.type === 'pool' || appliedQuery.type === 'sequence' && appliedQuery.sequenceMetric === 'quantityGap')">可放宽范围或数量条件。</p></div>
         <button v-if="section.key === 'matches' && filteredRecords.length > visibleCount" type="button" class="pjsk-ui-action precedent-show-more precedent-surface ui-liquid-glass ui-liquid-glass--chip" @click="visibleCount += 10">更多 {{ filteredRecords.length - visibleCount }}<ChevronDown :size="14" aria-hidden="true" /></button>
         </div>
       </section>

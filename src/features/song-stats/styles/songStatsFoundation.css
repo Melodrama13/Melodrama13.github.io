@@ -5,7 +5,7 @@
   background: transparent;
   min-height: 100vh;
   min-height: 100dvh;
-  --stats-radius-panel: 18px;
+  --stats-radius-panel: var(--ui-radius-panel, 24px);
   --stats-nav-radius: var(--ui-stats-nav-radius);
   --stats-nav-inner-radius: var(--ui-stats-nav-inner-radius);
   --stats-radius-btn: var(--ui-stats-control-radius);

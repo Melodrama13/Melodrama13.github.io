@@ -5,6 +5,7 @@
             <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-vs-matrix', '虚拟歌手矩阵')">PNG</button>
           </div>
           <div class="matrix-wrap">
+            <div class="ui-static-corner-scroll">
             <table class="matrix-table">
               <thead>
                 <tr>
@@ -113,6 +114,7 @@
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 </template>

@@ -5,6 +5,7 @@
 }
 
 .section-head {
+  padding-inline: var(--ui-surface-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -79,7 +80,7 @@
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: var(--stats-radius-panel);
-  padding: 14px;
+  padding: var(--ui-surface-panel-padding);
   box-shadow: 0 6px 20px rgba(17, 24, 39, 0.06);
 }
 

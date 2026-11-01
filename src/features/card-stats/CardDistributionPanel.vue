@@ -43,8 +43,8 @@
                     class="reward-collab-toggle stats-checkbox"
                     title="勾选后，限定总数与限定间隔记录会计入发限WL卡。"
                   >
-                    <input class="pjsk-ui-choice" v-model="limitedIncludeWl3" type="checkbox" />
-                    <span>{{ isMobileNav ? '发限WL' : '统计发限WL' }}</span>
+                    <input aria-label="统计发限WL" class="pjsk-ui-choice" v-model="limitedIncludeWl3" type="checkbox" />
+                    <span><UiCompactLabel text="统计发限WL" compact="WL" /></span>
                   </label>
                   <label
                     v-if="panel.id === 'limited'"
@@ -67,24 +67,24 @@
                     class="reward-collab-toggle stats-checkbox"
                     title="勾选后，报酬统计会额外计入联动的二/三星卡。"
                   >
-                    <input class="pjsk-ui-choice" v-model="includeCollabRewardCards" type="checkbox" />
-                    统计联动
+                    <input aria-label="统计联动" class="pjsk-ui-choice" v-model="includeCollabRewardCards" type="checkbox" />
+                    <UiCompactLabel text="统计联动" compact="联动" />
                   </label>
                   <label
                     v-if="panel.id === 'pure-score'"
                     class="reward-collab-toggle stats-checkbox"
                     title="勾选后，4星分卡会计入团分卡。"
                   >
-                    <input class="pjsk-ui-choice" :checked="includeUnitScoreInPureScore" type="checkbox" @change="onIncludeUnitScoreInPureScoreChange" />
-                    统计团分
+                    <input aria-label="统计团分" class="pjsk-ui-choice" :checked="includeUnitScoreInPureScore" type="checkbox" @change="onIncludeUnitScoreInPureScoreChange" />
+                    <UiCompactLabel text="统计团分" compact="团分" />
                   </label>
                   <label
                     v-if="panel.id === 'fes-limited'"
                     class="reward-collab-toggle stats-checkbox"
                     title="勾选后，百六限定次数会额外计入当期FES卡。"
                   >
-                    <input class="pjsk-ui-choice" v-model="fesLimitedIncludeFes" type="checkbox" />
-                    统计FES
+                    <input aria-label="统计FES" class="pjsk-ui-choice" v-model="fesLimitedIncludeFes" type="checkbox" />
+                    <UiCompactLabel text="统计FES" compact="FES" />
                   </label>
                   <div v-if="panel.id === 'limited-ban'" class="head-inline-filters">
                     <label class="head-filter-toggle stats-checkbox" title="统计箱活限定Ban个数。">
@@ -183,6 +183,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 defineProps(["showDesktopNameControls","includeVsInDistUnitSummary","includeVsInDistUnitSummaryIndeterminate","onIncludeVsInDistUnitSummaryChange","isExportingPng","exportElementPng","groupPanels","distVsUnitSummaryToggles","isMobileNav","includeUnitScoreInPureScore","onIncludeUnitScoreInPureScoreChange","limitedBanEventTypeFilter","setLimitedBanEventTypeFilter","bannerEventTypeFilter","setBannerEventTypeFilter","fesLimitedBanEventTypeFilter","setFesLimitedBanEventTypeFilter","getCharAbbr","getStepFestivalAvatarStyle","getDistNameLabel","getDistUnitSummaryChipStyle","unitLogoMap"]);
 const hideDistCharNames = defineModel('hideDistCharNames');
 const limitedIncludeWl3 = defineModel('limitedIncludeWl3');

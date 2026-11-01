@@ -17,9 +17,9 @@
           </section>
 
           <section
-            :ref="registerSongListWrap"
             :class="['song-list-wrap', { 'is-h-scroll': isSongTableOverflowing }]"
           >
+            <div :ref="registerSongListWrap" class="ui-static-corner-scroll">
             <table class="song-table">
               <colgroup>
                 <col class="song-col-id" />
@@ -164,6 +164,7 @@
                 </tr>
               </tbody>
             </table>
+            </div>
           </section>
 
           <section class="song-pagination" v-if="filteredSongs.length > 0">

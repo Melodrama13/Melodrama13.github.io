@@ -4,8 +4,8 @@
             <div class="section-head-left">
               <h2>日挑配队</h2>
               <label class="support-wl-toggle fes-card-mode-toggle stats-checkbox export-hide">
-                <input class="pjsk-ui-choice" :checked="lineupShowCardImages" type="checkbox" @change="onLineupShowCardImagesChange" />
-                <span>显示卡面</span>
+                <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="lineupShowCardImages" type="checkbox" @change="onLineupShowCardImagesChange" />
+                <span><UiCompactLabel text="显示卡面" compact="卡面" /></span>
               </label>
             </div>
             <div class="lineup-section-actions">
@@ -127,6 +127,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["lineupShowCardImages","onLineupShowCardImagesChange","toggleLineupExpandedAll","getLineupGlobalToggleLabel","isExportingPng","exportElementPng","characterLineupRows","getLineupCardId","getCharColor","getMatrixUnitColor","getRecordTint","getCharAbbr","ATTR_LABELS","toggleLineupExpanded","getLineupToggleLabel","getLineupRowStyle","getLineupMemberCellStyle","getLineupSlotCardImageSrc","onMediaImageLoad","onMediaImageError","jumpToHistoryByEventRef","getJumpLinkLabel","isLineupExpanded"]);
 </script>

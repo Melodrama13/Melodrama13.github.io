@@ -5,12 +5,12 @@
                   <h3>{{ getRelatedRecordTitle('rel-vs-unit-four-count') }}</h3>
                   <div class="record-head-controls">
                     <label class="record-compact-toggle stats-checkbox">
-                      <input class="pjsk-ui-choice" :checked="vsUnitFourCountCompact" type="checkbox" @change="onVsUnitFourCountCompactChange" />
-                      简略版本
+                      <input aria-label="简略版本" class="pjsk-ui-choice" :checked="vsUnitFourCountCompact" type="checkbox" @change="onVsUnitFourCountCompactChange" />
+                      <UiCompactLabel text="简略版本" compact="简略" />
                     </label>
                     <label v-if="!vsUnitFourCountCompact" class="fes-card-mode-toggle stats-checkbox">
-                      <input class="pjsk-ui-choice" :checked="vsUnitFourCountShowCardImages" type="checkbox" @change="onVsUnitFourCountShowCardImagesChange" />
-                      显示卡面
+                      <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="vsUnitFourCountShowCardImages" type="checkbox" @change="onVsUnitFourCountShowCardImagesChange" />
+                      <UiCompactLabel text="显示卡面" compact="卡面" />
                     </label>
                     <button
                       v-if="!vsUnitFourCountCompact"
@@ -120,6 +120,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","vsUnitFourCountCompact","onVsUnitFourCountCompactChange","vsUnitFourCountShowCardImages","onVsUnitFourCountShowCardImagesChange","vsUnitFourCountSort","onToggleVsUnitFourCountSort","vsUnitFourCountSortLabel","isExportingPng","exportElementPng","vsUnitFourCountDisplayRecords","getRecordTint","getVsUnitVariantAvatarSrc","getCharColor","onVsUnitVariantAvatarError","getVsUnitLogoByKey","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","VS_NAMES","getVsScoreVsHeadStyle","getCharAbbr","vsUnitFourCountRows","getVsScoreUnitHeadStyle","unitLogoMap","getVsFourCountMiniCellClass","getVsScoreCellStyle"]);
 </script>

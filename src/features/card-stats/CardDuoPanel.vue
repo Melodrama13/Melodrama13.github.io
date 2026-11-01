@@ -31,13 +31,13 @@
                       {{ option.label }}
                     </label>
                     <label class="head-filter-toggle stats-checkbox" title="勾选后显示上次同池组合二人的当期卡面。">
-                      <input class="pjsk-ui-choice"
+                      <input aria-label="显示卡面" class="pjsk-ui-choice"
                         :checked="duoLastPoolShowCardImagesAll"
                         :indeterminate="duoLastPoolShowCardImagesIndeterminate"
                         type="checkbox"
                         @change="onDuoLastPoolShowCardImagesChange"
                       />
-                      显示卡面
+                      <UiCompactLabel text="显示卡面" compact="卡面" />
                     </label>
                   </div>
                 </div>
@@ -123,8 +123,8 @@
                       </span>
                       <div class="duo-unit-title-actions">
                         <label class="head-filter-toggle stats-checkbox" title="勾选后显示上次同池组合二人的当期卡面。">
-                          <input class="pjsk-ui-choice" :checked="unitRow.showCardImages" type="checkbox" @change="onDuoUnitLastPoolShowCardImagesChange(unitRow.unit, $event)" />
-                          显示卡面
+                          <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="unitRow.showCardImages" type="checkbox" @change="onDuoUnitLastPoolShowCardImagesChange(unitRow.unit, $event)" />
+                          <UiCompactLabel text="显示卡面" compact="卡面" />
                         </label>
                         <button class="pjsk-ui-action card-export-btn duo-unit-export-btn duo-unit-export-btn-inline" :disabled="isExportingPng" @click="exportElementPng(unitRow.id, `双人统计_${unitRow.title}_同池统计`)">PNG</button>
                       </div>
@@ -236,6 +236,7 @@
                 </div>
               </div>
               <div class="matrix-wrap duo-matrix-wrap duo-full-wrap">
+                <div class="ui-static-corner-scroll">
                 <table class="matrix-table duo-table duo-full-table">
                   <thead>
                     <tr>
@@ -267,6 +268,7 @@
                     </tr>
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
 
@@ -295,6 +297,7 @@
                 </div>
               </div>
               <div class="matrix-wrap duo-matrix-wrap duo-full-wrap">
+                <div class="ui-static-corner-scroll">
                 <table class="matrix-table duo-table duo-full-table">
                   <thead>
                     <tr>
@@ -326,6 +329,7 @@
                     </tr>
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           </div>
@@ -333,6 +337,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["isExportingPng","exportElementPng","getRelatedRecordTitle","DUO_FILTER_OPTIONS","isDuoUnitGlobalFilterChecked","isDuoUnitGlobalFilterIndeterminate","onDuoFilterChange","duoLastPoolShowCardImagesAll","duoLastPoolShowCardImagesIndeterminate","onDuoLastPoolShowCardImagesChange","duoUnitRows","getUnitAccentColor","unitLogoMap","onDuoUnitFilterChange","getDuoHeadCellStyle","getDuoMatrixCellClass","getDuoMatrixCellStyle","formatDuoCount","onDuoUnitLastPoolShowCardImagesChange","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","jumpToHistoryByEventRef","getJumpLinkLabel","duoPoolFilters","duoPoolMatrix","duoEventFilters","duoEventMatrix"]);
 </script>

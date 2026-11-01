@@ -19,6 +19,7 @@
   border-radius: 24px;
   color: var(--precedent-ink);
   text-align: left;
+  touch-action: pan-y pinch-zoom;
 }
 .precedent-panel:focus { outline: none; }
 .precedent-header { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--ui-control-border); }
@@ -29,7 +30,7 @@
 .precedent-segment :deep(.desktop-tab-track) { inset: 0; }
 .precedent-segment :deep(.primary-tab-button) { min-height: 26px; padding: 4px 9px; color: var(--precedent-muted); font-size: 0.75rem; line-height: 1.25; }
 .precedent-segment :deep(.primary-tab-button.active) { color: var(--precedent-accent); font-weight: 700; }
-.precedent-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; padding: 14px 18px; scrollbar-width: thin; }
+.precedent-scroll { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y pinch-zoom; min-height: 0; padding: 14px 18px; scrollbar-width: thin; }
 .precedent-rule-types { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
 .precedent-rule-types button { padding: 7px 15px; border: 1px solid var(--ui-control-border); border-radius: 999px; color: var(--precedent-muted); background: var(--precedent-surface-fill); font-size: 0.76rem; cursor: pointer; }
 .precedent-rule-types button.is-selected { color: var(--precedent-accent); border-color: var(--precedent-accent); background: var(--precedent-surface-fill); font-weight: 700; }
@@ -83,7 +84,7 @@
 .precedent-pending { color: var(--precedent-accent); font-size: 0.7rem; }
 .precedent-record-list { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 9px; margin-top: 9px; }
 .precedent-record-list:empty { display: none; }
-.precedent-record { position: relative; min-width: 0; border: 1px solid var(--ui-control-border); border-radius: 16px; padding: 10px 12px; background: var(--precedent-surface-fill); }
+.precedent-record { position: relative; min-width: 0; border: 1px solid var(--ui-control-border); border-radius: 16px; padding: var(--ui-surface-group-padding); background: var(--precedent-surface-fill); }
 .precedent-record-main { display: flex; align-items: center; gap: 10px; }
 .precedent-avatar, .precedent-record-icon { width: 38px; height: 38px; flex: 0 0 auto; object-fit: contain; }
 .precedent-record-icon { display: grid; place-items: center; border-radius: 12px; color: var(--precedent-accent); background: var(--precedent-surface-fill); }
@@ -142,7 +143,7 @@
 .precedent-jump { display: inline-flex; align-items: center; justify-content: center; gap: 3px; padding: 4px 9px; border: 1px solid var(--ui-control-border); border-radius: 999px; background: var(--precedent-surface-fill); color: var(--precedent-accent); font-size: 0.7rem; white-space: nowrap; cursor: pointer; }
 .precedent-unit-avatar { object-fit: contain; border-radius: 50%; }
 .precedent-record-rules { margin-top: 7px; color: var(--precedent-muted); font-size: 0.71rem; }
-.precedent-categories { flex-wrap: nowrap; max-width: 100%; overflow-x: auto; scrollbar-width: thin; padding-bottom: 3px; }
+.precedent-categories { flex-wrap: wrap; max-width: 100%; padding-bottom: 3px; }
 .precedent-categories button { flex: 0 0 auto; }
 .precedent-rule-options { display: flex; flex-wrap: wrap; gap: 2px 14px; margin-top: 6px; }
 .precedent-rule-cluster { display: flex; flex-wrap: wrap; gap: 2px 14px; max-width: 100%; }
@@ -177,15 +178,16 @@
 .precedent-show-more { margin: 12px auto 0; display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: var(--precedent-surface-fill); color: var(--precedent-muted); border: 1px solid var(--ui-control-border); border-radius: 999px; font-size: 0.74rem; cursor: pointer; }
 @media (max-width: 900px) {
   .precedent-panel { max-height: calc(100dvh - 145px); border-radius: 22px; }
+  .precedent-header { display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; padding: 8px 10px; gap: 8px; }
+  .precedent-header h2 { grid-column: 1; grid-row: 1; justify-content: center; width: 32px; height: 32px; margin: 0; gap: 0; }
+  .precedent-title-copy { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  .precedent-close { grid-column: 3; grid-row: 1; justify-self: center; }
+  .precedent-segment { grid-column: 2; grid-row: 1; justify-self: center; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(100%, 252px); min-width: 0; gap: 2px; padding: 2px; box-sizing: border-box; }
+  .precedent-segment :deep(.primary-tab-button) { min-height: 28px; padding: 4px 5px; font-size: 0.75rem; }
 }
 @media (max-width: 520px) {
   .precedent-panel { --precedent-field-scale: 0.8125; --precedent-field-height: 30px; inset-block-start: calc(100% + 6px); border-radius: 18px; }
-  .precedent-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; padding: 8px 10px; gap: 6px; }
-  .precedent-header h2 { font-size: 0.84rem; gap: 5px; }
   .precedent-header h2 > svg { width: 16px; height: 16px; }
-  .precedent-close { grid-column: 2; grid-row: 1; width: 32px; height: 32px; }
-  .precedent-segment { grid-column: 1 / -1; grid-row: 2; justify-self: center; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(100%, 280px); gap: 2px; padding: 2px; box-sizing: border-box; }
-  .precedent-segment :deep(.primary-tab-button) { min-height: 28px; padding: 4px 7px; font-size: 0.75rem; }
   .precedent-scroll { padding: 10px; }
   .precedent-rule-types { gap: 5px; margin-bottom: 9px; }
   .precedent-rule-types button { flex: 1; min-height: 32px; padding: 5px 7px; font-size: 0.73rem; }
@@ -220,7 +222,7 @@
   .precedent-categories button { min-height: 30px; padding: 4px 8px; }
   .precedent-results { margin-top: 10px; padding-top: 8px; }
   .precedent-record-list { gap: 7px; margin-top: 7px; }
-  .precedent-record { padding: 9px; border-radius: 13px; }
+  .precedent-record { padding: var(--ui-surface-group-padding); border-radius: 13px; }
   .precedent-avatar, .precedent-record-icon { width: 32px; height: 32px; }
   .precedent-record-main { gap: 8px; }
   .precedent-record h3 { font-size: 0.875rem; }

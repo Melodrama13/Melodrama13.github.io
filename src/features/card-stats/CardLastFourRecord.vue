@@ -4,12 +4,13 @@
                 <div class="block-head-left">
                   <h3>{{ getRelatedRecordTitle('rel-last-four') }}</h3>
                   <label class="fes-card-mode-toggle stats-checkbox">
-                    <input class="pjsk-ui-choice" :checked="relatedLastRecordShowCardImages" type="checkbox" @change="onRelatedLastRecordShowCardImagesChange" />
-                    显示卡面
+                    <input aria-label="显示卡面" class="pjsk-ui-choice" :checked="relatedLastRecordShowCardImages" type="checkbox" @change="onRelatedLastRecordShowCardImagesChange" />
+                    <UiCompactLabel text="显示卡面" compact="卡面" />
                   </label>
                 </div>
                 <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('rel-last-four', '间隔记录_上一次四星')">PNG</button>
               </div>
+            <div class="record-table-scroll">
               <table :class="['record-table', 'related-table', 'related-table-last', { 'last-record-table-card-mode': relatedLastRecordShowCardImages }]">
                 <thead>
                   <tr>
@@ -53,9 +54,11 @@
                 </tbody>
               </table>
             </div>
+            </div>
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 defineProps(["getRelatedRecordTitle","relatedLastRecordShowCardImages","onRelatedLastRecordShowCardImagesChange","isExportingPng","exportElementPng","lastFourStarDisplayRecords","getRecordTint","getCharAbbr","getCharColor","onMediaImageLoad","onMediaImageError","ATTRS","ATTR_LABELS","jumpToHistoryByEventRef","getJumpLinkLabel"]);
 </script>

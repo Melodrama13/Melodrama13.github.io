@@ -38,7 +38,7 @@ const faces = computed(() => {
 </script>
 
 <style scoped>
-.event-detail-card { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 10px; min-width: 0; padding: 10px; border: 1px solid var(--ui-control-border); border-radius: 14px; background: color-mix(in srgb, var(--event-detail-tint, var(--precedent-accent)) 4%, var(--event-detail-surface-fill)); }
+.event-detail-card { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 10px; min-width: 0; padding: var(--ui-surface-group-padding); border: 1px solid var(--ui-control-border); border-radius: 14px; background: color-mix(in srgb, var(--event-detail-tint, var(--precedent-accent)) 4%, var(--event-detail-surface-fill)); }
 .event-detail-card-faces { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; justify-self: center; width: 100%; max-width: 184px; gap: 6px; }
 .event-detail-card-faces figure { min-width: 0; margin: 0; }
 .event-detail-card-faces.is-single { grid-template-columns: minmax(0, 1fr); justify-items: center; }
@@ -59,7 +59,7 @@ const faces = computed(() => {
   .event-detail-card-faces { max-width: 156px; }
 }
 @container history-precedent (max-width: 520px) {
-  .event-detail-card { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px; border-radius: 13px; }
+  .event-detail-card { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr); align-items: center; gap: 10px; padding: var(--ui-surface-group-padding); border-radius: 13px; }
   .event-detail-card-faces { gap: 4px; }
   .event-detail-card-person h4 { font-size: 0.8125rem; }
 }

@@ -465,7 +465,6 @@ import { useCardEventCatalog } from '../features/card-stats/useCardEventCatalog.
 import { useCardLineupRules } from '../features/card-stats/useCardLineupRules.js';
 import { useCardEventLabels } from '../features/card-stats/useCardEventLabels.js';
 import { useCardPanelControls } from '../features/card-stats/useCardPanelControls.js';
-import { useCardPreview } from '../features/card-stats/useCardPreview.js';
 import { useCardMedia } from '../features/card-stats/useCardMedia.js';
 import { useCardEffects } from '../features/card-stats/useCardEffects.js';
 
@@ -476,10 +475,9 @@ const props = defineProps({
   allSongs: { type: Array, default: () => [] },
   allCharacters: { type: Array, default: () => [] },
   nuigurumiData: { type: Array, default: () => [] },
-  jumpEventId: { type: [Number, String], default: null },
-  previewSyncEventId: { type: [Number, String], default: null }
+  jumpEventId: { type: [Number, String], default: null }
 });
-const emit = defineEmits(['jump-to-event', 'stats-preview-update', 'stats-top-state-change']);
+const emit = defineEmits(['jump-to-event', 'stats-top-state-change']);
 const cardStatsRootRef = ref(null);
 
 const constants = useCardConstants({
@@ -719,13 +717,6 @@ const panelControls = useCardPanelControls({
   get navigation() { return navigation; },
 });
 
-const preview = useCardPreview({
-  get lineup() { return lineup; },
-  get distribution() { return distribution; },
-  get festivals() { return festivals; },
-  get eventCatalog() { return eventCatalog; },
-});
-
 const media = useCardMedia({
   props,
   cardStatsRootRef,
@@ -745,7 +736,6 @@ useCardEffects({
   media,
   captureModal,
   attributeMatrices,
-  preview,
   emit,
 });
 

@@ -164,6 +164,7 @@
 
 /* 专门负责流光的伪元素 */
 .event-item.is-active::before, :global([data-feature-page="history"] :is(.event-item.is-active)::before), :global(:is(.event-item.is-active)[data-feature-page="history"]::before) {
+  --ui-corner-accent-outset: 3px;
   content: "";
   position: absolute;
   /* 这里的负值决定了边框的粗细（向外扩散 3px） */
@@ -193,6 +194,29 @@
   animation: none;
   pointer-events: none;
   z-index: -1; /* 确保在内容下方，但在背景上方 */
+}
+
+/* Fixed 3px offset mask, including the declared physical border widths. */
+.event-item.is-active[data-ui-static-corner]::before,
+:global([data-feature-page="history"] .event-item.is-active[data-ui-static-corner]::before) {
+  top: calc(-3px - var(--ui-static-top-width));
+  left: calc(-3px - var(--ui-static-left-width));
+  right: calc(-3px - var(--ui-static-right-width));
+  bottom: calc(-3px - var(--ui-static-bottom-width));
+  width: auto;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  -webkit-clip-path: none;
+  clip-path: none;
+  -webkit-mask: none;
+  mask: none;
+  -webkit-mask-box-image-source: var(--ui-static-active-mask);
+  -webkit-mask-box-image-slice: var(--ui-static-active-slice) fill;
+  -webkit-mask-box-image-width: var(--ui-static-active-width);
+  -webkit-mask-box-image-repeat: stretch;
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
 }
 
 /* 筛选面板基础样式 */
@@ -1107,21 +1131,33 @@
   }
 
   .predict-preview-floating, :global([data-feature-page="history"] :is(.predict-preview-floating)), :global(:is(.predict-preview-floating)[data-feature-page="history"]) {
-    /* Keep the preview group's internal ordering below the bottom editor (3000),
-       so overlapping panels cannot intercept the sheet handle or its controls. */
-    z-index: 2900;
+    /* Floating tools stay reachable even when the bottom editor grows. */
+    position: fixed;
+    inset: 0;
+    z-index: 3100;
   }
 
   .preview-config-panel, :global([data-feature-page="history"] :is(.preview-config-panel)), :global(:is(.preview-config-panel)[data-feature-page="history"]) {
-    width: 320px;
+    width: min(352px, calc(100vw - 16px));
     left: 8px;
-    max-height: min(82vh, calc(100vh - var(--preview-config-top) - 8px));
-    max-height: min(82dvh, calc(100dvh - var(--preview-config-top) - 8px));
+    max-height: calc(100vh - var(--preview-config-top) - 8px);
+    max-height: calc(100dvh - var(--preview-config-top) - 8px);
+  }
+
+  .preview-festival-chips, :global([data-feature-page="history"] .preview-festival-chips) {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .preview-festival-chip, :global([data-feature-page="history"] .preview-festival-chip) {
+    min-width: 0;
+    padding-inline: 3px;
+    white-space: nowrap;
   }
 
   .preview-panel, :global([data-feature-page="history"] :is(.preview-panel)), :global(:is(.preview-panel)[data-feature-page="history"]) {
     min-width: 0;
-    padding: 6px 6px 5px;
+    padding: var(--ui-surface-group-padding);
   }
 
   .preview-avatar, :global([data-feature-page="history"] :is(.preview-avatar)), :global(:is(.preview-avatar)[data-feature-page="history"]) {

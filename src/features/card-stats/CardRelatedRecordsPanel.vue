@@ -4,13 +4,13 @@
             <div class="section-head-left">
               <h2>间隔记录</h2>
               <label class="fes-card-mode-toggle stats-checkbox" title="统一控制间隔记录中可切换卡面的子模块。">
-                <input class="pjsk-ui-choice"
+                <input aria-label="显示卡面" class="pjsk-ui-choice"
                   :checked="intervalPanelShowCardImagesAll"
                   :indeterminate="intervalPanelShowCardImagesIndeterminate"
                   type="checkbox"
                   @change="onIntervalPanelShowAllCardImagesChange"
                 />
-                显示卡面
+                <UiCompactLabel text="显示卡面" compact="卡面" />
               </label>
             </div>
             <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-related', '间隔记录')">PNG</button>
@@ -184,6 +184,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardLastFourRecord from './CardLastFourRecord.vue';
 import CardLastLimitedRecord from './CardLastLimitedRecord.vue';
 import CardFourLongestIntervalRecord from './CardFourLongestIntervalRecord.vue';

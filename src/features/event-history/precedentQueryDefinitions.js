@@ -23,7 +23,7 @@ export function setAchievementProject(draft, value) {
   else if (value === 'skillFirst') draft.attributeMode = 'skillFirst';
   else if (['lineup', 'pairFirst'].includes(value)) Object.assign(draft, { type: 'lineup', threshold: 'MAX', attribute: '', skill: '', onlyMilestones: value === 'pairFirst' });
 }
-export const sequenceOptions = draft => Object.entries(SEQUENCE_LABELS).filter(([key]) => draft.sequenceMetric === 'sameAttribute' ? ['cards', 'allCards'].includes(key)
+export const sequenceOptions = draft => Object.entries(SEQUENCE_LABELS).filter(([key]) => draft.sequenceMetric === 'quantityGap' ? key === 'all' : draft.sequenceMetric === 'sameAttribute' ? ['cards', 'allCards'].includes(key)
   : draft.sequenceMetric === 'songVs' ? ['ownBox', 'unitBox', 'allBox'].includes(key)
   : draft.sequenceMetric === 'flowerGap' ? ['all', 'allBox', 'mix'].includes(key)
   : !['cards', 'allCards'].includes(key)).map(([value, label]) => ({ value, label }));

@@ -6,9 +6,11 @@ import { OC_UNITS } from './milestoneShared.js';
 import { parseVirtualSingerNames } from '../../domain/virtualSingerNames.js';
 import { isDuoCollaborationEvent } from '../card-stats/cardDuoRules.js';
 import { markPrecedentPositions } from './precedentResultPositions.js';
+import { queryQuantityGapPrecedents } from './precedentQuantityGaps.js';
+import { getObservedQuantityBounds } from './precedentThresholds.js';
 
 export const SEQUENCE_LABELS = { all: '全部活动', ownBox: '本人箱活', unitBox: '本团箱活', allBox: '箱活', mix: '混活', cards: '个人四星', allCards: '个人全卡' };
-export const SEQUENCE_METRICS = { four: '出四星', noFour: '未出四星', reward: '出报酬', noReward: '未出报酬', card: '出卡', pair: '双人同池', sameAttribute: '同类型卡', songVs: '书下同V', bannerUnit: '同团Ban', flowerGap: '花色缺席' };
+export const SEQUENCE_METRICS = { four: '出四星', noFour: '未出四星', reward: '出报酬', noReward: '未出报酬', card: '出卡', pair: '双人同池', sameAttribute: '同类型卡', quantityGap: '数量差距', songVs: '书下同V', bannerUnit: '同团Ban', flowerGap: '花色缺席' };
 const unique = (items, key) => [...new Map(items.map(item => [key(item), item])).values()];
 const unitsFor = (catalog, query) => unique(periodPeople(catalog, { ...query, character: '' }).map(person => person.unit), unit => unit);
 const selected = (value, selection) => !selection || selection === 'any' || selection === 'all' || value === selection;
@@ -200,12 +202,14 @@ export function getSequenceRuns(catalog, query, rules) {
 }
 
 export function querySequencePrecedents(catalog, query, rules) {
-  const runs = getSequenceRuns(catalog, query, rules), max = Math.max(0, ...runs.map(run => run.after)), min = runs.length ? Math.min(...runs.map(run => run.after)) : 0;
+  if (query.sequenceMetric === 'quantityGap') return queryQuantityGapPrecedents(catalog, query, rules);
+  const runs = getSequenceRuns(catalog, query, rules).filter(run => !query.onlyMilestones || run.isRecord);
+  const bounds = getObservedQuantityBounds(runs, run => run.after), { max, min } = bounds;
+  if (query.sequenceMetric === 'flowerGap') bounds.quantities = getObservedQuantityBounds(runs.filter(run => run.isRecord || run.after === max), run => run.after).quantities;
   const threshold = query.threshold === 'MIN' ? min : query.threshold === 'MAX' || query.threshold == null ? max : Number(query.threshold);
   let records = runs.filter(run => (query.sequenceMetric !== 'flowerGap' || ['MAX', 'MIN'].includes(query.threshold) || run.isRecord)
     && (query.threshold === 'MAX' || query.threshold === 'MIN' ? run.after === threshold
-      : query.operator === 'atLeast' ? run.after >= threshold : query.operator === 'atMost' ? run.after <= threshold : run.after === threshold)
-    && (!query.onlyMilestones || run.isRecord));
+      : query.operator === 'atLeast' ? run.after >= threshold : query.operator === 'atMost' ? run.after <= threshold : run.after === threshold));
   records = records.map(record => {
     let count = 0;
     const step = query.sequenceMetric !== 'flowerGap' && record.steps.find(step => { count += step.weight; return count >= threshold; });
@@ -218,5 +222,5 @@ export function querySequencePrecedents(catalog, query, rules) {
     const timestamp = query.order === 'latest' ? records.at(-1)?.attainment.timestamp : records[0]?.attainment.timestamp;
     records = records.filter(record => record.attainment.timestamp === timestamp);
   }
-  return { records, threshold, totalRecords, bounds: { max, min, people: [] } };
+  return { records, threshold, totalRecords, bounds };
 }

@@ -13,7 +13,9 @@
   overflow: hidden;
   border-left-width: 1px;
   border-left-style: solid;
-  --pe-radius-card: 999px;
+  --pe-radius-card: var(--ui-radius-group, 26px);
+  --pe-radius-group: var(--ui-radius-group, 18px);
+  --pe-group-inset: var(--ui-surface-control-padding);
   --pe-radius-btn: 999px;
   --pe-glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(248, 250, 252, 0.16) 50%, rgba(226, 232, 240, 0.12));
   --pe-glass-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(248, 250, 252, 0.22) 54%, rgba(226, 232, 240, 0.18));
@@ -155,8 +157,8 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   margin: 0 -6px;
-  padding: 7px;
-  border-radius: 999px;
+  padding: var(--pe-group-inset);
+  border-radius: var(--pe-radius-group);
   border: 1px solid var(--ui-glass-editor-inner-border, rgba(255, 255, 255, 0.42));
   background: rgba(255, 255, 255, 0.12);
   box-shadow: var(--ui-glass-editor-group-shadow,
@@ -166,6 +168,8 @@
 }
 .global-config-bar.has-banner, :global([data-feature-page="prediction-editor"] :is(.global-config-bar.has-banner)), :global(:is(.global-config-bar.has-banner)[data-feature-page="prediction-editor"]) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .cfg-group, :global([data-feature-page="prediction-editor"] :is(.cfg-group)), :global(:is(.cfg-group)[data-feature-page="prediction-editor"]) {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   padding: 0;
   border: 0;
@@ -181,6 +185,8 @@
   text-align: center;
 }
 .cfg-group select, :global([data-feature-page="prediction-editor"] :is(.cfg-group select)), :global(:is(.cfg-group select)[data-feature-page="prediction-editor"]) {
+  display: block;
+  margin-top: auto;
   width: 100%;
   min-height: 30px;
   padding: 5px 24px 5px 10px;
@@ -250,11 +256,15 @@
 .editor-card::before, :global([data-feature-page="prediction-editor"] :is(.editor-card)::before), :global(:is(.editor-card)[data-feature-page="prediction-editor"]::before) {
   content: '';
   position: absolute;
-  inset: 1px;
-  border-radius: var(--pe-radius-card);
+  inset: -1px;
+  border-radius: 0;
   pointer-events: none;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.64), transparent 42%);
   opacity: 0.72;
+  -webkit-mask-box-image-source: var(--ui-static-inner-fill-mask);
+  -webkit-mask-box-image-slice: var(--ui-static-mask-slice) fill;
+  -webkit-mask-box-image-width: var(--ui-static-mask-width);
+  -webkit-mask-box-image-repeat: stretch;
 }
 .editor-card > *, :global([data-feature-page="prediction-editor"] :is(.editor-card > *)), :global(:is(.editor-card > *)[data-feature-page="prediction-editor"]) {
   position: relative;
@@ -519,7 +529,7 @@
   font-weight: 700;
   margin: 0;
   padding: 7px 12px;
-  border-radius: var(--pe-radius-card);
+  border-radius: var(--pe-radius-btn);
   background: var(--pe-glass-bg-strong);
   border: 1px solid var(--pe-glass-border);
   box-shadow: var(--pe-glass-shadow-soft);
@@ -551,7 +561,7 @@
   :global([data-feature-page="prediction-editor"] :is(.global-config-bar.has-banner)),
   :global(:is(.global-config-bar.has-banner)[data-feature-page="prediction-editor"]) {
     gap: 6px;
-    padding: 6px;
+    padding: var(--ui-surface-control-padding);
   }
 
   .cfg-group label, :global([data-feature-page="prediction-editor"] :is(.cfg-group label)), :global(:is(.cfg-group label)[data-feature-page="prediction-editor"]) {
@@ -583,6 +593,7 @@
   .predict-drawer, :global([data-feature-page="prediction-editor"] :is(.predict-drawer)), :global(:is(.predict-drawer)[data-feature-page="prediction-editor"]) {
     width: 100vw;
     height: 62dvh;
+    --pe-radius-card: var(--ui-radius-compact, 18px);
   }
 
   .drawer-header, :global([data-feature-page="prediction-editor"] :is(.drawer-header)), :global(:is(.drawer-header)[data-feature-page="prediction-editor"]) {
@@ -593,7 +604,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 5px;
     margin: 0 -4px;
-    padding: 6px;
+    padding: var(--ui-surface-control-padding);
   }
 
   .global-config-bar.has-banner, :global([data-feature-page="prediction-editor"] :is(.global-config-bar.has-banner)), :global(:is(.global-config-bar.has-banner)[data-feature-page="prediction-editor"]) {

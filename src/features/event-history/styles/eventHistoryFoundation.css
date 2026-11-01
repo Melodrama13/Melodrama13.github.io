@@ -32,35 +32,66 @@
 
 .preview-config-panel, :global([data-feature-page="history"] :is(.preview-config-panel)), :global(:is(.preview-config-panel)[data-feature-page="history"]) {
   position: fixed;
+  display: flex;
+  flex-direction: column;
   left: 14px;
   top: var(--preview-config-top);
   z-index: 6200;
   width: 360px;
   border: 1px solid rgba(255, 255, 255, 0.68);
-  border-radius: 24px;
-  padding: 8px;
+  border-radius: var(--ui-radius-panel, 24px);
+  padding: var(--ui-surface-group-padding);
   pointer-events: auto;
-  max-height: min(84vh, calc(100vh - var(--preview-config-top) - 10px));
-  max-height: min(84dvh, calc(100dvh - var(--preview-config-top) - 10px));
+  max-height: calc(100vh - var(--preview-config-top) - 10px);
+  max-height: calc(100dvh - var(--preview-config-top) - 10px);
+  overflow: visible;
+}
+
+/* The decorative frame stays outside the scrollport. Fitting content expands
+   naturally; only the body scrolls when the viewport really runs out of room. */
+.preview-config-body, :global([data-feature-page="history"] .preview-config-body) {
+  min-height: 0;
+  flex: 0 1 auto;
+  /* Keep content in place while shadows reach the frame instead of being cut
+     at the inner padding edge. Only the outer lower contour clips the body. */
+  box-sizing: border-box;
+  margin: -6px calc(-1px - var(--ui-surface-group-padding)) calc(-1px - var(--ui-surface-group-padding));
+  padding: 6px calc(1px + var(--ui-surface-group-padding)) calc(1px + var(--ui-surface-group-padding));
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-mask-box-image-source: var(--ui-static-fill-mask);
+  -webkit-mask-box-image-slice: var(--ui-static-mask-slice) fill;
+  -webkit-mask-box-image-width: var(--ui-static-lower-mask-width);
+  -webkit-mask-box-image-repeat: stretch;
 }
 
 .preview-config-head, :global([data-feature-page="history"] :is(.preview-config-head)), :global(:is(.preview-config-head)[data-feature-page="history"]) {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   font-size: 0.78rem;
   font-weight: 700;
   color: #334155;
-  margin-bottom: 6px;
+
+  margin-bottom: 0;
   cursor: grab;
   user-select: none;
   touch-action: none;
+  min-height: 32px;
+  gap: 8px;
+  padding-inline: var(--ui-surface-header-inset);
 }
 
 .preview-config-head:active, :global([data-feature-page="history"] :is(.preview-config-head:active)), :global(:is(.preview-config-head:active)[data-feature-page="history"]) {
   cursor: grabbing;
+}
+
+.preview-config-title, :global([data-feature-page="history"] .preview-config-title) {
+  margin-inline-start: 0;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
 .preview-config-actions, :global([data-feature-page="history"] :is(.preview-config-actions)), :global(:is(.preview-config-actions)[data-feature-page="history"]) {
@@ -73,11 +104,12 @@
   max-height: none;
   overflow: visible;
   border-radius: 999px;
-  padding: 6px 8px;
+
+  padding: var(--ui-surface-group-padding);
 }
 
 .preview-config-panel.is-collapsed .preview-config-head, :global([data-feature-page="history"] :is(.preview-config-panel.is-collapsed .preview-config-head)), :global(:is(.preview-config-panel.is-collapsed .preview-config-head)[data-feature-page="history"]) {
-  min-height: 30px;
+  min-height: 32px;
   margin-bottom: 0;
   align-items: center;
 }
@@ -139,12 +171,13 @@
   margin-top: 8px;
   border: 1px solid rgba(255, 255, 255, 0.52);
   border-radius: 18px;
-  padding: 8px;
+  padding: var(--ui-surface-group-padding);
   background: var(--ui-glass-optical-group-bg);
   box-shadow: var(--ui-glass-micro-group-shadow);
 }
 
 .preview-char-select-title, :global([data-feature-page="history"] :is(.preview-char-select-title)), :global(:is(.preview-char-select-title)[data-feature-page="history"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -250,8 +283,8 @@
 .preview-panel, :global([data-feature-page="history"] :is(.preview-panel)), :global(:is(.preview-panel)[data-feature-page="history"]) {
   position: fixed;
   min-width: 0;
-  border-radius: 24px;
-  padding: 10px 10px 8px;
+  border-radius: var(--ui-radius-panel, 24px);
+  padding: var(--ui-surface-group-padding);
   border: 1px solid rgba(255, 255, 255, 0.68);
   pointer-events: auto;
   overflow: hidden;
@@ -259,18 +292,24 @@
 
 .preview-panel.is-collapsed, :global([data-feature-page="history"] :is(.preview-panel.is-collapsed)), :global(:is(.preview-panel.is-collapsed)[data-feature-page="history"]) {
   min-width: 160px;
-  padding: 8px 10px;
+
+  padding: var(--ui-surface-group-padding);
 }
 
 .preview-panel-head, :global([data-feature-page="history"] :is(.preview-panel-head)), :global(:is(.preview-panel-head)[data-feature-page="history"]) {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 6px;
+
+  gap: 8px;
+
+  margin-bottom: 0;
   color: #1f2937;
   cursor: grab;
   user-select: none;
   touch-action: none;
+  min-height: 32px;
+  justify-content: space-between;
+  padding-inline: var(--ui-surface-header-inset);
 }
 
 .preview-panel-head:active, :global([data-feature-page="history"] :is(.preview-panel-head:active)), :global(:is(.preview-panel-head:active)[data-feature-page="history"]) {
@@ -280,87 +319,36 @@
 .preview-title, :global([data-feature-page="history"] :is(.preview-title)), :global(:is(.preview-title)[data-feature-page="history"]) {
   font-size: 0.86rem;
   font-weight: 700;
+  min-width: 0;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
 .preview-head-toggle, :global([data-feature-page="history"] :is(.preview-head-toggle)), :global(:is(.preview-head-toggle)[data-feature-page="history"]) {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-left: 6px;
+
+  gap: 3px;
+
+  margin-left: 0;
   font-size: 0.68rem;
   color: #475569;
   user-select: none;
+  margin: 0;
+  min-height: 20px;
+  line-height: 1.3;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: 0 0 auto;
 }
 
 .preview-head-toggle input, :global([data-feature-page="history"] :is(.preview-head-toggle input)), :global(:is(.preview-head-toggle input)[data-feature-page="history"]) {
-  width: 12px;
-  height: 12px;
-}
+  width: 13px;
 
-.preview-head-filters, :global([data-feature-page="history"] :is(.preview-head-filters)), :global(:is(.preview-head-filters)[data-feature-page="history"]) {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 6px;
-}
-
-.preview-head-filter-toggle, :global([data-feature-page="history"] :is(.preview-head-filter-toggle)), :global(:is(.preview-head-filter-toggle)[data-feature-page="history"]) {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 0.66rem;
-  color: #334155;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 999px;
-  padding: 1px 6px;
-  background: rgba(255, 255, 255, 0.54);
-  box-shadow: var(--ui-glass-micro-shadow);
-}
-
-.preview-head-filter-toggle input, :global([data-feature-page="history"] :is(.preview-head-filter-toggle input)), :global(:is(.preview-head-filter-toggle input)[data-feature-page="history"]) {
-  width: 11px;
-  height: 11px;
-}
-
-.preview-head-filter-btn, :global([data-feature-page="history"] :is(.preview-head-filter-btn)), :global(:is(.preview-head-filter-btn)[data-feature-page="history"]) {
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.54);
-  color: #334155;
-  font-size: 0.66rem;
-  line-height: 1;
-  padding: 3px 8px;
-  cursor: pointer;
-  box-shadow: var(--ui-glass-micro-shadow);
-}
-
-.preview-head-filter-btn:hover, :global([data-feature-page="history"] :is(.preview-head-filter-btn:hover)), :global(:is(.preview-head-filter-btn:hover)[data-feature-page="history"]) {
-  background: var(--ui-glass-optical-control-bg-hover);
-}
-
-.preview-collapse-btn, :global([data-feature-page="history"] :is(.preview-collapse-btn)), :global(:is(.preview-collapse-btn)[data-feature-page="history"]) {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  background: rgba(255, 255, 255, 0.54);
-  color: #334155;
-  font-size: 0.8rem;
-  cursor: pointer;
-  margin-left: 6px;
+  height: 13px;
+  margin: 0;
   padding: 0;
-  line-height: 1;
-  box-shadow: var(--ui-glass-micro-shadow);
-}
-
-.preview-collapse-btn:hover, :global([data-feature-page="history"] :is(.preview-collapse-btn:hover)), :global(:is(.preview-collapse-btn:hover)[data-feature-page="history"]) {
-  background: var(--ui-glass-optical-control-bg-hover);
-}
-
-.preview-drag-hint, :global([data-feature-page="history"] :is(.preview-drag-hint)), :global(:is(.preview-drag-hint)[data-feature-page="history"]) {
-  margin-left: auto;
-  font-size: 0.68rem;
-  color: #6b7280;
+  flex: 0 0 13px;
 }
 
 .preview-steps, :global([data-feature-page="history"] :is(.preview-steps)), :global(:is(.preview-steps)[data-feature-page="history"]) {
@@ -455,40 +443,32 @@
   margin-bottom: 2px;
 }
 
-.preview-festival-inline-toggle, :global([data-feature-page="history"] :is(.preview-festival-inline-toggle)), :global(:is(.preview-festival-inline-toggle)[data-feature-page="history"]) {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: #0f766e;
-  white-space: nowrap;
-}
-
-.preview-festival-inline-toggle input, :global([data-feature-page="history"] :is(.preview-festival-inline-toggle input)), :global(:is(.preview-festival-inline-toggle input)[data-feature-page="history"]) {
-  width: 12px;
-  height: 12px;
-}
-
 .preview-festival-row, :global([data-feature-page="history"] :is(.preview-festival-row)), :global(:is(.preview-festival-row)[data-feature-page="history"]) {
   width: 100%;
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  border-radius: 16px;
-  padding: 2px 6px;
-  background: rgba(255, 255, 255, 0.32);
-  border: 1px solid rgba(255, 255, 255, 0.42);
+
+  gap: 8px;
+
+  border-radius: 0;
+
+  padding: 5px 4px;
+
+  background: transparent;
+
+  border: 0;
   box-sizing: border-box;
 }
 
 .preview-festival-label, :global([data-feature-page="history"] :is(.preview-festival-label)), :global(:is(.preview-festival-label)[data-feature-page="history"]) {
-  flex: 0 0 30px;
-  min-width: 30px;
+  flex: 0 0 26px;
+
+  min-width: 26px;
   text-align: center;
   font-size: 0.72rem;
   font-weight: 700;
   color: #065f46;
+  line-height: 21px;
 }
 
 .preview-festival-avatars, :global([data-feature-page="history"] :is(.preview-festival-avatars)), :global(:is(.preview-festival-avatars)[data-feature-page="history"]) {
@@ -541,11 +521,12 @@
   border: 1px solid rgba(255, 255, 255, 0.48);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.32);
-  padding: 6px;
+  padding: var(--ui-surface-group-padding);
   box-sizing: border-box;
 }
 
 .preview-daily-head, :global([data-feature-page="history"] :is(.preview-daily-head)), :global(:is(.preview-daily-head)[data-feature-page="history"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -632,11 +613,12 @@
   border: 1px solid rgba(255, 255, 255, 0.48);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.32);
-  padding: 6px;
+  padding: var(--ui-surface-group-padding);
   box-sizing: border-box;
 }
 
 .preview-char-attr-head, :global([data-feature-page="history"] :is(.preview-char-attr-head)), :global(:is(.preview-char-attr-head)[data-feature-page="history"]) {
+  padding-inline: var(--ui-surface-group-header-inset);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -795,11 +777,16 @@
 .preview-step, :global([data-feature-page="history"] :is(.preview-step)), :global(:is(.preview-step)[data-feature-page="history"]) {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  border-radius: 16px;
-  padding: 2px 6px;
-  background: rgba(255, 255, 255, 0.32);
-  border: 1px solid rgba(255, 255, 255, 0.42);
+
+  gap: 8px;
+
+  border-radius: 0;
+
+  padding: 5px 4px;
+
+  background: transparent;
+
+  border: 0;
   color: #065f46;
   font-size: 0.72rem;
   line-height: 1.2;
@@ -813,6 +800,8 @@
   text-align: center;
   font-size: 0.84rem;
   font-weight: 700;
+  line-height: 21px;
+  font-variant-numeric: tabular-nums;
 }
 
 .preview-meta, :global([data-feature-page="history"] :is(.preview-meta)), :global(:is(.preview-meta)[data-feature-page="history"]) {
@@ -820,11 +809,15 @@
 }
 
 .preview-avatars, :global([data-feature-page="history"] :is(.preview-avatars)), :global(:is(.preview-avatars)[data-feature-page="history"]) {
-  display: flex;
+  display: grid;
   flex-wrap: wrap;
+
   gap: 3px;
   align-items: start;
   max-width: 100%;
+  grid-template-columns: repeat(auto-fill, 21px);
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .preview-avatar-box, :global([data-feature-page="history"] :is(.preview-avatar-box)), :global(:is(.preview-avatar-box)[data-feature-page="history"]) {
@@ -1190,6 +1183,7 @@ button:not(:disabled):active, :global([data-feature-page="history"] :is(button:n
   border: 1px solid rgba(15, 23, 42, 0.12);
   cursor: pointer;
   position: relative;
+  z-index: 1;
   transition: transform var(--ui-motion-state);
   box-sizing: border-box;
 }
@@ -1198,7 +1192,13 @@ button:not(:disabled):active, :global([data-feature-page="history"] :is(button:n
   filter: brightness(0.92);
 }
 
+.birthday-row:is(:hover, :focus-within), :global([data-feature-page="history"] :is(.birthday-row:is(:hover, :focus-within))), :global(:is(.birthday-row:is(:hover, :focus-within))[data-feature-page="history"]) {
+  z-index: 2;
+}
+
 .birthday-row.is-open, :global([data-feature-page="history"] :is(.birthday-row.is-open)), :global(:is(.birthday-row.is-open)[data-feature-page="history"]) {
+  /* Static corners isolate each row; raise the owner, as for event previews. */
+  z-index: 4;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
   border-color: rgba(14, 116, 144, 0.38);
   content-visibility: visible;
@@ -1258,4 +1258,50 @@ button:not(:disabled):active, :global([data-feature-page="history"] :is(button:n
   border: 1px solid rgba(148, 163, 184, 0.5);
   background: rgba(241, 245, 249, 0.9);
   flex: 0 0 auto;
+}
+
+/* Title and action slots avoid the continuous corners without narrowing tables.
+   Expanded and collapsed windows share the same title anchor. */
+.preview-config-panel > .preview-config-head,
+.preview-panel > .preview-panel-head,
+:global(.preview-config-panel[data-feature-page="history"] > .preview-config-head),
+:global(.preview-panel[data-feature-page="history"] > .preview-panel-head) {
+  padding-inline: var(--ui-surface-header-inset);
+}
+.preview-config-panel .preview-config-title,
+:global(.preview-config-panel[data-feature-page="history"] .preview-config-title) {
+  margin-inline-start: 0;
+}
+
+/* Options are a separate control row. Each label remains a compact input/text
+   pair; plain data groups share separators instead of individual surfaces. */
+.preview-panel-options, :global([data-feature-page="history"] .preview-panel-options) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 10px;
+  margin: 0 0 2px;
+  padding: 0 var(--ui-surface-header-inset) 3px;
+  border-bottom: 1px solid var(--ui-surface-outline-inner);
+}
+.preview-steps.is-grouped-list, :global([data-feature-page="history"] .preview-steps.is-grouped-list) { gap: 0; }
+.preview-step + .preview-step,
+.preview-festival-row + .preview-festival-row,
+:global([data-feature-page="history"] .preview-step + .preview-step),
+:global([data-feature-page="history"] .preview-festival-row + .preview-festival-row) {
+  border-top: 1px solid var(--ui-surface-outline-inner);
+}
+@media (pointer: coarse) {
+  .preview-head-toggle, :global([data-feature-page="history"] .preview-head-toggle) { min-height: 26px; }
+}
+
+.preview-year-summary, :global([data-feature-page="history"] .preview-year-summary) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 8px;
+  padding: 2px 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: inherit;
 }

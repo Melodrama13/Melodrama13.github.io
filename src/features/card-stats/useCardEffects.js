@@ -127,7 +127,4 @@ export function useCardEffects(inputs) {
     inputs.cutoff.scheduleTopBarStateChange();
   }, { deep: false });
 
-  watch(inputs.preview.statsPreviewPayload, (payload) => {
-    inputs.emit('stats-preview-update', payload);
-  }, { immediate: true });
 }

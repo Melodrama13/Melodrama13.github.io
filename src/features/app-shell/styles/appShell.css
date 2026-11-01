@@ -201,12 +201,15 @@
 
 .app-update-modal, :global([data-feature-page="app"] :is(.app-update-modal)), :global(:is(.app-update-modal)[data-feature-page="app"]) {
   width: min(520px, calc(100vw - 20px));
-  max-height: min(78vh, 640px);
-  overflow: auto;
   border-width: 1px;
   border-style: solid;
   border-radius: 14px;
-  padding: 14px;
+  padding: 0;
+}
+
+.app-update-modal-scroll, :global([data-feature-page="app"].app-update-modal-scroll) {
+  max-height: min(78vh, 640px);
+  padding: 15px;
 }
 
 .app-update-modal-title, :global([data-feature-page="app"] :is(.app-update-modal-title)), :global(:is(.app-update-modal-title)[data-feature-page="app"]) {
@@ -903,9 +906,13 @@ button.active, :global([data-feature-page="app"] :is(button.active)), :global(:i
   border-width: 1px;
   border-style: solid;
   border-radius: 22px;
-  padding: 10px;
-  overflow: hidden;
+  padding: 0;
   z-index: 2800;
+}
+
+.source-menu-scroll {
+  max-height: var(--source-menu-max-height, none);
+  padding: 11px;
 }
 
 .source-menu > *, :global([data-feature-page="app"] :is(.source-menu > *)), :global(:is(.source-menu > *)[data-feature-page="app"]) {
@@ -998,17 +1005,20 @@ button.active, :global([data-feature-page="app"] :is(button.active)), :global(:i
 }
 
 .source-list, :global([data-feature-page="app"] :is(.source-list)), :global(:is(.source-list)[data-feature-page="app"]) {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 220px;
-  overflow-y: auto;
-  padding: 7px;
+  padding: 0;
   margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 20px;
   background: var(--ui-glass-group-bg);
   box-shadow: var(--source-glass-shadow-soft);
+}
+
+.source-list-scroll, :global([data-feature-page="app"].source-list-scroll) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  padding: 8px;
 }
 
 .source-list:not(:has(.source-item-row + .source-item-row)), :global([data-feature-page="app"] :is(.source-list:not(:has(.source-item-row + .source-item-row)))), :global(:is(.source-list:not(:has(.source-item-row + .source-item-row)))[data-feature-page="app"]) {
@@ -1961,14 +1971,15 @@ button.active, :global([data-feature-page="app"] :is(button.active)), :global(:i
 
   .source-menu, :global([data-feature-page="app"] :is(.source-menu)), :global(:is(.source-menu)[data-feature-page="app"]) {
     min-width: 0;
-    max-height: calc(100vh - 74px);
-    max-height: calc(100dvh - 74px);
-    overflow-y: auto;
   }
 
-  .source-menu .source-list, :global([data-feature-page="app"] :is(.source-menu .source-list)), :global(:is(.source-menu .source-list)[data-feature-page="app"]) {
+  .source-menu-scroll {
+    max-height: var(--source-menu-max-height, calc(100dvh - 74px));
+  }
+
+  .source-menu .source-list-scroll, :global([data-feature-page="app"].source-list-scroll) {
     max-height: none;
-    overflow-y: visible;
+    overflow: visible !important;
   }
 
   .source-list:not(:has(.source-item-row + .source-item-row)),

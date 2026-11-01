@@ -4,13 +4,13 @@
             <div class="section-head-left">
               <h2>特殊统计</h2>
               <label class="fes-card-mode-toggle stats-checkbox" title="统一控制特殊统计中可切换卡面的子模块。">
-                <input class="pjsk-ui-choice"
+                <input aria-label="显示卡面" class="pjsk-ui-choice"
                   :checked="specialPanelShowCardImagesAll"
                   :indeterminate="specialPanelShowCardImagesIndeterminate"
                   type="checkbox"
                   @change="onSpecialPanelShowAllCardImagesChange"
                 />
-                显示卡面
+                <UiCompactLabel text="显示卡面" compact="卡面" />
               </label>
             </div>
             <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="exportElementPng('panel-special', '特殊统计')">PNG</button>
@@ -187,6 +187,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import VsCardLastFourRecord from './VsCardLastFourRecord.vue';
 import VsCardFourCountRecord from './VsCardFourCountRecord.vue';
 import VsCardUnitScoreRecord from './VsCardUnitScoreRecord.vue';

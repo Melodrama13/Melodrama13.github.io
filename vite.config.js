@@ -4,6 +4,10 @@ import { createHash } from 'node:crypto'
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { lazyModuleRecoveryPlugin } from './scripts/lazyModuleRecoveryPlugin.js'
+import { staticCornersTemplatePlugin, staticCornerPaintPlugin } from './scripts/staticCornersPlugin.js'
+import { generateStaticCorners } from './scripts/generateStaticCorners.mjs'
+
+generateStaticCorners()
 
 const buildId = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)
 const publicDataFiles = [
@@ -96,7 +100,8 @@ const versionManifestPlugin = () => ({
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), versionManifestPlugin(), lazyModuleRecoveryPlugin()],
+  plugins: [staticCornersTemplatePlugin(), vue(), versionManifestPlugin(), lazyModuleRecoveryPlugin()],
+  css: { postcss: { plugins: [staticCornerPaintPlugin()] } },
   define: {
     __APP_BUILD_ID__: JSON.stringify(buildId),
     __APP_RELEASE_NOTES__: JSON.stringify(releaseNotes),

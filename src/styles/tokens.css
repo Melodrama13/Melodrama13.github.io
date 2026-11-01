@@ -135,6 +135,7 @@
   );
   --ui-glass-modal-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.70) 54%, rgba(226, 232, 240, 0.58));
   --ui-glass-fallback-bg: #f8fafc;
+  --ui-glass-depth-ink: rgba(15, 23, 42, 0.16);
   --ui-glass-chip-bg: rgba(255, 255, 255, 0.30);
   --ui-glass-chip-bg-hover: rgba(255, 255, 255, 0.46);
   --ui-glass-rim-light: rgba(255, 255, 255, 0.88);

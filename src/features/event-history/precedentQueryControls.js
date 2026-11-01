@@ -1,5 +1,6 @@
 import { ACHIEVEMENT_GROUPS, PERIOD_METRICS, SEQUENCE_METRICS } from './precedentQueryDefinitions.js';
 import { hasLimitedSubdivision, isPeriodBanner, PERIOD_SKILL_LABELS } from './precedentPeriodRules.js';
+import { QUANTITY_GAP_METRICS, QUANTITY_GAP_MIN } from './precedentQuantityGaps.js';
 
 const options = labels => Object.entries(labels).map(([value, label]) => ({ value, label }));
 const select = (key, label, choices, ariaLabel = label) => ({ key, label, options: choices, ariaLabel });
@@ -32,9 +33,20 @@ export function getPrecedentQueryControls(state) {
     }
   } else if (family === 'sequence') {
     const groupedMetrics = [
-      { label: '出卡', keys: ['four', 'noFour', 'reward', 'noReward', 'card', 'sameAttribute'] },
+      { label: '出卡', keys: ['four', 'noFour', 'reward', 'noReward', 'card', 'sameAttribute', 'quantityGap'] },
       { label: '活动', keys: ['pair', 'songVs', 'bannerUnit', 'flowerGap'] },
     ].map(group => ({ label: group.label, options: group.keys.map(value => ({ value, label: SEQUENCE_METRICS[value] })) }));
+    if (q.sequenceMetric === 'quantityGap') {
+      core = [{ key: 'sequenceMetric', label: '项目', groups: groupedMetrics, ariaLabel: '连续项目' }, scope,
+        select('gapMetric', '指标', options(QUANTITY_GAP_METRICS), '差距指标'),
+        select('gapComparison', '比较', options({ range: '全体极差', personal: '个人落后' }), '差距比较')];
+      if (q.gapComparison === 'personal') core.push(person('character', '角色', people.filter(person => !q.gapExcludeMiku || person.value !== '初音未来')));
+      core.push({ ...quantity, label: '持续', ariaLabel: '持续期数' });
+      const maxGap = state.draftColorBounds.value.gapMax || QUANTITY_GAP_MIN;
+      secondary.push(select('gapOperator', '差值条件', options({ atLeast: '至少', equal: '恰好' })),
+        select('gapThreshold', '差值（张）', Array.from({ length: maxGap - QUANTITY_GAP_MIN + 1 }, (_, i) => ({ value: i + QUANTITY_GAP_MIN, label: String(i + QUANTITY_GAP_MIN) })), '差值'));
+      return { core, secondary };
+    }
     core = [{ key: 'sequenceMetric', label: '项目', groups: groupedMetrics, ariaLabel: '连续项目' }, scope,
       select('sequence', '序列', state.sequences.value, '观察序列')];
     if (q.sequenceMetric === 'pair') {

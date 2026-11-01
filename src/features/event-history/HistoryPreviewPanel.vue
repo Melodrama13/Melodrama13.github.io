@@ -1,8 +1,9 @@
 <template>
-<div data-feature-view="history-preview-panel" data-feature-page="history"
+<div v-static-corners data-ui-static-corner="float" data-ui-static-paint data-feature-view="history-preview-panel" data-feature-page="history"
 
 
           :key="panel.id"
+          :data-preview-panel="panel.id"
           :class="['preview-panel', 'ui-liquid-glass', 'ui-liquid-glass--prominent', 'ui-glass-optical-detail', { 'is-collapsed': isPreviewPanelCollapsed(panel.id) }]"
           :style="getPreviewPanelStyle(panel.id)"
           @mousedown="bringPreviewPanelToFront(panel.id)"
@@ -10,98 +11,35 @@
         >
           <div class="preview-panel-head" @mousedown.prevent="startDragPreview(panel.id, $event)" @touchstart.prevent="startDragPreviewTouch(panel.id, $event)">
             <span class="preview-title">{{ panel.title }}</span>
-            <label
-              v-if="panel.id === 'festival'"
-              class="preview-head-toggle"
-              @mousedown.stop
-              @touchstart.stop
-              @click.stop
-            >
-              <input class="pjsk-ui-choice" v-model="previewFestivalMergeHigherRanks" type="checkbox" />
-              <span>高星合并</span>
-            </label>
-            <label
-              v-if="panel.id === 'reward'"
-              class="preview-head-toggle"
-              title="勾选后，报酬统计会额外计入联动的二/三星卡。"
-              @mousedown.stop
-              @touchstart.stop
-              @click.stop
-            >
-              <input class="pjsk-ui-choice" v-model="previewIncludeCollabReward" type="checkbox" />
-              <span>联动</span>
-            </label>
-            <label
-              v-if="panel.id === 'three'"
-              class="preview-head-toggle"
-              title="勾选后，三星按报酬统计。"
-              @mousedown.stop
-              @touchstart.stop
-              @click.stop
-            >
-              <input class="pjsk-ui-choice" v-model="previewThreeUseRewardCount" type="checkbox" />
-              <span>报酬</span>
-            </label>
-            <label
-              v-if="panel.id === 'two'"
-              class="preview-head-toggle"
-              title="勾选后，二星按报酬统计。"
-              @mousedown.stop
-              @touchstart.stop
-              @click.stop
-            >
-              <input class="pjsk-ui-choice" v-model="previewTwoUseRewardCount" type="checkbox" />
-              <span>报酬</span>
-            </label>
-            <label
-              v-if="panel.id === 'pure-score'"
-              class="preview-head-toggle"
-              title="勾选后，分卡统计会计入团分卡。"
-              @mousedown.stop
-              @touchstart.stop
-              @click.stop
-            >
-              <input class="pjsk-ui-choice" v-model="previewIncludeUnitScoreInPureScore" type="checkbox" />
-              <span>团分</span>
-            </label>
-            <div
-              v-if="panel.id === 'limited-ban'"
-              class="preview-head-filters"
-              @mousedown.stop
-              @touchstart.stop
-              @click.stop
-            >
-              <button
-                class="pjsk-ui-action preview-head-filter-btn"
-                :title="previewLimitedBanFilterButtonTitle"
-                @click="cyclePreviewLimitedBanEventTypeFilter"
-              >{{ previewLimitedBanFilterButtonText }}</button>
-            </div>
-            <div
-              v-if="panel.id === 'banner'"
-              class="preview-head-filters"
-              @mousedown.stop
-              @touchstart.stop
-              @click.stop
-            >
-              <button
-                class="pjsk-ui-action preview-head-filter-btn"
-                :title="previewBannerFilterButtonTitle"
-                @click="cyclePreviewBannerEventTypeFilter"
-              >{{ previewBannerFilterButtonText }}</button>
-            </div>
-            <button
-              class="pjsk-ui-action preview-collapse-btn"
-              :title="isPreviewPanelCollapsed(panel.id) ? '展开' : '收起'"
-              @mousedown.stop
-              @touchstart.stop
-              @click.stop="togglePreviewPanelCollapsed(panel.id)"
-            >
-              {{ isPreviewPanelCollapsed(panel.id) ? '▸' : '▾' }}
-            </button>
-            <span class="preview-drag-hint">拖动</span>
+            <HistoryPreviewCollapseButton :collapsed="isPreviewPanelCollapsed(panel.id)" :label="panel.title" @toggle="togglePreviewPanelCollapsed(panel.id)" />
           </div>
-          <div v-show="!isPreviewPanelCollapsed(panel.id)" class="preview-steps" :style="getPreviewStepsStyle(panel.id)">
+          <div v-if="hasPreviewOptions" v-show="!isPreviewPanelCollapsed(panel.id)" class="preview-panel-options" role="group" :aria-label="`${panel.title}选项`" @mousedown.stop @touchstart.stop @click.stop>
+            <template v-if="panel.id === 'limited'">
+              <label class="preview-head-toggle" title="计入发限WL卡。"><input class="pjsk-ui-choice" v-model="previewLimitedIncludeWl3" type="checkbox" /><span>WL</span></label>
+              <label class="preview-head-toggle" title="计入歌限卡。"><input class="pjsk-ui-choice" v-model="previewLimitedIncludeSongLimited" type="checkbox" /><span>歌限</span></label>
+            </template>
+            <template v-if="panel.id === 'banner'">
+              <label v-for="type in CARD_STATISTICS_EVENT_TYPES" :key="type" class="preview-head-toggle"><input class="pjsk-ui-choice" v-model="previewBannerEventTypeFilter" :value="type" type="checkbox" /><span>{{ type }}</span></label>
+            </template>
+            <template v-if="panel.id === 'limited-ban'">
+              <label v-for="type in CARD_STATISTICS_EVENT_TYPES" :key="type" class="preview-head-toggle"><input class="pjsk-ui-choice" v-model="previewLimitedBanEventTypeFilter" :value="type" type="checkbox" /><span>{{ type }}</span></label>
+            </template>
+            <label v-if="['three', 'two'].includes(panel.id)" class="preview-head-toggle" title="三星、二星按报酬统计。"><input class="pjsk-ui-choice" v-model="previewThreeUseRewardCount" type="checkbox" /><span>报酬</span></label>
+            <label v-if="['reward', 'three', 'two'].includes(panel.id)" class="preview-head-toggle" :title="panel.id !== 'reward' &amp;&amp; !previewThreeUseRewardCount ? '先勾选报酬，再设置是否计入联动卡。' : '联动卡同时计入报酬及采用报酬口径的三星、二星。'"><input class="pjsk-ui-choice" v-model="previewIncludeCollabReward" :disabled="panel.id !== 'reward' && !previewThreeUseRewardCount" type="checkbox" /><span>联动</span></label>
+            <label v-if="['pure-score', 'char-attr'].includes(panel.id)" class="preview-head-toggle" title="分卡统计计入团分卡。"><input class="pjsk-ui-choice" v-model="previewIncludeUnitScoreInPureScore" type="checkbox" /><span>团分</span></label>
+            <template v-if="panel.id === 'year'">
+              <label class="preview-head-toggle" title="按周年活动至下一周年前一期活动划分。"><input class="pjsk-ui-choice" v-model="previewYearUseOperatingYear" type="checkbox" /><span>运营年</span></label>
+              <label class="preview-head-toggle" title="仅影响自然年统计，运营年始终按周年周期划分。"><input class="pjsk-ui-choice" v-model="previewYearNewYearNextYear" :disabled="previewYearUseOperatingYear" type="checkbox" /><span>新年次年</span></label>
+              <label v-for="option in CARD_YEAR_RARITY_OPTIONS" :key="option.value" class="preview-head-toggle"><input class="pjsk-ui-choice" v-model="previewYearRarities" :value="option.value" type="checkbox" /><span>{{ option.label }}</span></label>
+              <label v-for="option in CARD_YEAR_TYPE_OPTIONS" :key="option.value" class="preview-head-toggle"><input class="pjsk-ui-choice" v-model="previewYearCardTypes" :value="option.value" type="checkbox" /><span>{{ option.label }}</span></label>
+            </template>
+            <template v-if="panel.id === 'festival'">
+              <label class="preview-head-toggle" title="角色已在更高星级出现时，不再列入低星级。"><input class="pjsk-ui-choice" v-model="previewFestivalMergeHigherRanks" type="checkbox" /><span>高星合并</span></label>
+              <label v-if="panel.festivalShowFes" class="preview-head-toggle"><input class="pjsk-ui-choice" v-model="previewFestivalFesToggles[activePreviewFestivalName]" type="checkbox" /><span>FES</span></label>
+            </template>
+          </div>
+          <div v-show="!isPreviewPanelCollapsed(panel.id)" class="preview-steps" :class="{ 'is-grouped-list': panel.id === 'festival' || panel.steps.length > 0 }" :style="getPreviewStepsStyle(panel.id)">
+            <div v-if="panel.id === 'year'" class="preview-year-summary"><span>{{ panel.yearLabel }}</span><span>共 {{ panel.yearTotal }} 张</span></div>
             <template v-if="panel.id === 'attr-five'">
               <div class="preview-attr-head">
                 <span>角色</span>
@@ -138,16 +76,6 @@
             <template v-else-if="panel.id === 'festival'">
               <div v-if="panel.festivalName" class="preview-festival-head">
                 <span>当前节日：{{ panel.festivalName }}</span>
-                <label
-                  v-if="panel.festivalShowFes"
-                  class="preview-festival-inline-toggle"
-                  @mousedown.stop
-                  @touchstart.stop
-                  @click.stop
-                >
-                  <input class="pjsk-ui-choice" v-model="previewFestivalFesToggles[activePreviewFestivalName]" type="checkbox" />
-                  <span>统计FES：{{ panel.festivalIncludeFes ? '开' : '关' }}</span>
-                </label>
               </div>
               <div v-for="row in panel.festivalRows" :key="`festival-${row.key}`" class="preview-festival-row">
                 <span class="preview-festival-label">{{ row.label }}</span>
@@ -392,6 +320,11 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
+import { CARD_STATISTICS_EVENT_TYPES } from '../card-stats/cardStatisticsRules.js';
+import { CARD_YEAR_RARITY_OPTIONS } from '../card-stats/cardYearStats.js';
+import { CARD_YEAR_TYPE_OPTIONS } from '../card-stats/cardYearCardTypes.js';
+import HistoryPreviewCollapseButton from './HistoryPreviewCollapseButton.vue';
 const props = defineProps({
   previewLayout: { type: Object, required: true },
   previewSelections: { type: Object, required: true },
@@ -404,7 +337,8 @@ const props = defineProps({
   panel: { type: Object, required: true },
 });
 const { bringPreviewPanelToFront, isPreviewPanelCollapsed, togglePreviewPanelCollapsed, getPreviewPanelStyle, getPreviewStepsStyle, startDragPreview, startDragPreviewTouch, startResizePreview, startResizePreviewTouch } = props.previewLayout;
-const { previewIncludeCollabReward, previewThreeUseRewardCount, previewTwoUseRewardCount, previewIncludeUnitScoreInPureScore, previewFestivalMergeHigherRanks, previewFestivalFesToggles, cyclePreviewLimitedBanEventTypeFilter, cyclePreviewBannerEventTypeFilter, previewLimitedBanFilterButtonText, previewLimitedBanFilterButtonTitle, previewBannerFilterButtonText, previewBannerFilterButtonTitle } = props.previewSelections;
+const { previewYearRarities, previewYearCardTypes, previewYearUseOperatingYear, previewYearNewYearNextYear, previewIncludeCollabReward, previewThreeUseRewardCount, previewLimitedIncludeWl3, previewLimitedIncludeSongLimited, previewIncludeUnitScoreInPureScore, previewFestivalMergeHigherRanks, previewFestivalFesToggles, previewLimitedBanEventTypeFilter, previewBannerEventTypeFilter } = props.previewSelections;
+const hasPreviewOptions = computed(() => ['limited', 'banner', 'limited-ban', 'reward', 'three', 'two', 'pure-score', 'char-attr', 'festival', 'year'].includes(props.panel.id));
 const { activePreviewFestivalName } = props.previewCutoff;
 const { PREVIEW_VS_NAMES, previewVsLastFourUnitRows, previewVsUnitFourCountUnitRows, previewVsUnitScoreUnitRows, previewVsOriginalRows, getPreviewVsMiniDataCellStyle, getPreviewVsFourCountCellStyle } = props.vsPreview;
 const { previewAttrFiveSummaryRows, previewAttrFiveRows, getPreviewAttrRowStyle } = props.previewStatistics;

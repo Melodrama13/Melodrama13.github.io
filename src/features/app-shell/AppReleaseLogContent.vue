@@ -1,5 +1,6 @@
 <template>
 <div data-feature-view="app-release-log-content" data-feature-page="app" class="app-update-modal ui-motion-dialog-panel ui-liquid-glass ui-liquid-glass--modal" role="dialog" aria-modal="true" aria-label="新版日志">
+        <div data-feature-page="app" class="app-update-modal-scroll ui-static-corner-scroll">
         <div class="app-update-modal-title">{{ currentReleaseLogTitle }}</div>
         <div class="app-update-modal-subtitle">当前版本：{{ currentAppBuildId || '未知' }}</div>
         <ul class="app-update-log-list">
@@ -20,6 +21,7 @@
         </label>
         <div class="app-update-modal-actions">
           <button class="pjsk-ui-action app-update-btn app-update-btn-muted" @click="closeAppReleaseLogModal">我知道了</button>
+        </div>
         </div>
       </div>
 </template>

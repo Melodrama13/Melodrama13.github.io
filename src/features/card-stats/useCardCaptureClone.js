@@ -1,6 +1,7 @@
 import { copyCaptureCssVariables, copyCaptureCssVariablesFromAncestors, copyCaptureFeatureBoundary } from '../../services/capture/captureStyleContext.js';
 import { syncCaptureCloneFormControls } from '../../services/capture/captureElementState.js';
 import { syncCardYearCaptureLayout } from './cardYearCaptureLayout.js';
+import { getStaticCornerPaintElement } from '../../ui/staticCorners.js';
 
 /** Owns card capture clone behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -222,7 +223,7 @@ export function useCardCaptureClone(inputs) {
       const sourceEl = sourceNodes[idx];
       const cloneEl = cloneNodes[idx];
       if (!(sourceEl instanceof HTMLElement) || !(cloneEl instanceof HTMLElement)) continue;
-      const computed = window.getComputedStyle(sourceEl);
+      const computed = window.getComputedStyle(getStaticCornerPaintElement(sourceEl));
       const background = String(computed.background || '').trim();
       const bgColor = String(computed.backgroundColor || '').trim();
       const bgImage = String(computed.backgroundImage || '').trim();
@@ -242,6 +243,7 @@ export function useCardCaptureClone(inputs) {
         if (bgPosition) cloneEl.style.backgroundPosition = bgPosition;
         if (bgSize) cloneEl.style.backgroundSize = bgSize;
       }
+      if (sourceEl.hasAttribute('data-ui-static-corner')) continue;
       if (border && border !== '0px none rgb(0, 0, 0)') {
         cloneEl.style.border = border;
       } else if (borderColor && borderColor !== 'rgba(0, 0, 0, 0)') {
@@ -259,7 +261,7 @@ export function useCardCaptureClone(inputs) {
     if (!(sourceEl instanceof HTMLElement)) return '';
     const inlineBgColor = String(sourceEl.style?.backgroundColor || '').trim();
     if (!isTransparentColor(inlineBgColor)) return inlineBgColor;
-    const computed = window.getComputedStyle(sourceEl);
+    const computed = window.getComputedStyle(getStaticCornerPaintElement(sourceEl));
     const bgColor = String(computed.backgroundColor || '').trim();
     if (!isTransparentColor(bgColor)) return bgColor;
 
@@ -310,7 +312,7 @@ export function useCardCaptureClone(inputs) {
         const sourceEl = sourceNodes[idx];
         const cloneEl = cloneNodes[idx];
         if (!(sourceEl instanceof HTMLElement) || !(cloneEl instanceof HTMLElement)) continue;
-        const computed = window.getComputedStyle(sourceEl);
+        const computed = window.getComputedStyle(getStaticCornerPaintElement(sourceEl));
         const bgImage = String(computed.backgroundImage || '').trim();
         const bgRepeat = String(computed.backgroundRepeat || '').trim();
         const bgPosition = String(computed.backgroundPosition || '').trim();
@@ -432,6 +434,9 @@ export function useCardCaptureClone(inputs) {
       box-shadow: none !important;
       text-shadow: none !important;
     }
+    .export-clone-root .record-table-scroll {
+      overflow: visible !important;
+    }
     /* html-to-image's foreignObject renderer can shrink inline-flex header
        content even though the live clone has a single row. Give non-duo
        exports an explicit flex basis before SVG serialization. */
@@ -477,7 +482,7 @@ export function useCardCaptureClone(inputs) {
       z-index: 0 !important;
       pointer-events: none !important;
     }
-    .export-clone-root.export-single-card-fill-root > * {
+    .export-clone-root.export-single-card-fill-root > :not(.ui-static-corner-skin):not(.ui-static-corner-capture) {
       position: relative !important;
       z-index: 1 !important;
     }
@@ -518,11 +523,13 @@ export function useCardCaptureClone(inputs) {
       cloneMatrixWraps.forEach((cloneMatrixWrap, idx) => {
         const originalMatrixWrap = originalMatrixWraps[idx];
         if (!originalMatrixWrap) return;
+        const originalScroll = originalMatrixWrap.querySelector(':scope > .ui-static-corner-scroll') || originalMatrixWrap;
+        const cloneScroll = cloneMatrixWrap.querySelector(':scope > .ui-static-corner-scroll');
         const isDuoUnitWrap = originalMatrixWrap.classList.contains('duo-unit-wrap') || cloneMatrixWrap.classList.contains('duo-unit-wrap');
         const fullMatrixWidth = isDuoUnitWrap
           ? Math.max(originalMatrixWrap.clientWidth, originalMatrixWrap.getBoundingClientRect().width)
-          : Math.max(originalMatrixWrap.scrollWidth, originalMatrixWrap.clientWidth);
-        const fullMatrixHeight = Math.max(originalMatrixWrap.scrollHeight, originalMatrixWrap.clientHeight);
+          : Math.max(originalScroll.scrollWidth, originalScroll.clientWidth);
+        const fullMatrixHeight = Math.max(originalScroll.scrollHeight, originalScroll.clientHeight);
         if (!isDuoUnitWrap) {
           fullMatrixWidthMax = Math.max(fullMatrixWidthMax, fullMatrixWidth);
         }
@@ -530,6 +537,12 @@ export function useCardCaptureClone(inputs) {
         cloneMatrixWrap.style.height = `${fullMatrixHeight}px`;
         cloneMatrixWrap.style.width = `${fullMatrixWidth}px`;
         cloneMatrixWrap.style.overflow = 'visible';
+        if (cloneScroll) {
+          cloneScroll.style.maxHeight = 'none';
+          cloneScroll.style.height = 'auto';
+          cloneScroll.style.width = `${fullMatrixWidth}px`;
+          cloneScroll.style.overflow = 'visible';
+        }
       });
 
       const cloneMatrixHeadCells = clone.querySelectorAll('.matrix-table thead th, .matrix-table th:first-child, .matrix-table td:first-child');

@@ -110,7 +110,6 @@ export const VS_UNIT_ORDER_MAP = Object.freeze({ ln: 1, mmj: 2, vbs: 3, ws: 4, n
 export const BOOK_ROUND_POSITION_KEYS = Object.freeze([1, 2, 3, 4, 5]);
 
 export const SONG_SECTION_TITLE_MAP = Object.freeze({
-  'panel-song-stats': '乐曲统计',
   'panel-oc-stats': '各团歌曲统计',
   'panel-vs-song-stats': 'VS书下统计',
   'panel-oc-book-stats': 'OC书下统计',

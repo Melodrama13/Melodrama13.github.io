@@ -8,8 +8,8 @@
                 隐藏角色名
               </label>
               <label class="fes-card-mode-toggle stats-checkbox export-hide">
-                <input class="pjsk-ui-choice" v-controlled-checkbox="isCardImageMode" @change="$emit('change-card-image-mode', $event)" type="checkbox" />
-                <span>显示卡面</span>
+                <input aria-label="显示卡面" class="pjsk-ui-choice" v-controlled-checkbox="isCardImageMode" @change="$emit('change-card-image-mode', $event)" type="checkbox" />
+                <span><UiCompactLabel text="显示卡面" compact="卡面" /></span>
               </label>
             </div>
             <button class="pjsk-ui-action card-export-btn" :disabled="isExportingPng" @click="$emit('export-panel', 'panel-nuigurumi', '烤森娃娃')">PNG</button>
@@ -91,6 +91,7 @@
 </template>
 
 <script setup>
+import UiCompactLabel from '../../components/ui/UiCompactLabel.vue';
 import CardArtwork from '../../components/ui/CardArtwork.vue';
 /** Preserve v-model's live checked property without adding a checked attribute. */
 function updateControlledCheckboxState(element, { value, oldValue }) {

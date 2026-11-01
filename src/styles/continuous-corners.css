@@ -1,0 +1,158 @@
+@import './static-corner-presets.generated.css';
+
+:root {
+  --ui-radius-group: 26px;
+  --ui-radius-panel: 36px;
+  --ui-radius-compact: 18px;
+  --ui-radius-panel-large: 36px;
+  --ui-surface-outline: rgba(100, 116, 139, 0.22);
+  --ui-surface-outline-inner: rgba(100, 116, 139, 0.16);
+}
+:root[data-theme='dark'] {
+  --ui-surface-outline: rgba(203, 213, 225, 0.25);
+  --ui-surface-outline-inner: rgba(203, 213, 225, 0.17);
+}
+
+/* Low specificity prevents parent paint metadata leaking into a nested frame. */
+:where([data-ui-static-corner]) {
+  position: relative;
+  isolation: isolate;
+  --ui-static-top-width: 0px;
+  --ui-static-right-width: 0px;
+  --ui-static-bottom-width: 0px;
+  --ui-static-left-width: 0px;
+  --ui-static-top-display: block;
+  --ui-static-right-display: block;
+  --ui-static-bottom-display: block;
+  --ui-static-left-display: block;
+  --ui-static-stroke-display: none;
+  --ui-static-stroke-opacity: 1;
+  --ui-static-stroke-repeat: stretch;
+  --ui-static-side-display: none;
+  --ui-static-side-opacity: 1;
+  --ui-static-shadow-enabled: 0;
+}
+[data-ui-static-corner] {
+  --ui-static-shadow-source: var(--ui-static-shadow-light);
+  border-radius: var(--ui-static-radius) !important;
+  corner-shape: superellipse(var(--ui-corner-resolved-curve));
+}
+:root[data-theme='dark'] [data-ui-static-corner] { --ui-static-shadow-source: var(--ui-static-shadow-dark); }
+/* Existing card/song PNG clones intentionally suppress surface shadows. */
+:is(.export-clone-root, .song-export-clone-root)[data-ui-static-corner],
+:is(.export-clone-root, .song-export-clone-root) [data-ui-static-corner] {
+  --ui-static-shadow-enabled: 0 !important;
+}
+[data-ui-static-corner]::before,
+[data-ui-static-corner]::after { corner-shape: superellipse(var(--ui-corner-resolved-curve)); }
+[data-ui-static-capture-active]::before { display: none !important; }
+
+:is(.preview-config-panel.is-collapsed, .preview-panel.is-collapsed, .special-toolbar-actions:not(.has-cover))[data-ui-static-corner] {
+  border-radius: 999px !important;
+  corner-shape: round;
+  --ui-corner-radii: 22px 22px 22px 22px;
+  --ui-corner-resolved-curve: 1;
+  --ui-corner-profiles: none;
+}
+:is(.preview-config-panel.is-collapsed, .preview-panel.is-collapsed, .special-toolbar-actions:not(.has-cover)) > .ui-static-corner-skin { display: none; }
+
+[data-ui-static-fallback]:not(:is(.preview-config-panel.is-collapsed, .preview-panel.is-collapsed, .special-toolbar-actions:not(.has-cover))) {
+  border-color: transparent !important;
+  background: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  /* Decoration belongs to the border box. Scrolling and content clipping are
+     owned by inner elements, so no native padding-box clip can cut the skin. */
+  overflow: visible !important;
+  border-image-source: var(--ui-static-shadow-source);
+  border-image-slice: var(--ui-static-shadow-slice);
+  border-image-width: var(--ui-static-shadow-width);
+  border-image-outset: 24px;
+  border-image-repeat: stretch;
+}
+.ui-static-corner-skin {
+  display: block;
+  /* Content stacking rules such as `.source-menu > *` must never place a
+     decorative surface in normal flow or above the controls. */
+  position: absolute !important;
+  top: calc(0px - var(--ui-static-top-width));
+  right: calc(0px - var(--ui-static-right-width));
+  bottom: calc(0px - var(--ui-static-bottom-width));
+  left: calc(0px - var(--ui-static-left-width));
+  z-index: -2 !important;
+  pointer-events: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  -webkit-mask-box-image-source: var(--ui-static-fill-mask);
+  -webkit-mask-box-image-slice: var(--ui-static-mask-slice) fill;
+  -webkit-mask-box-image-width: var(--ui-static-mask-width);
+  -webkit-mask-box-image-repeat: stretch;
+}
+.ui-static-corner-capture {
+  position: absolute !important;
+  z-index: -2 !important;
+}
+
+.ui-static-corner-skin::before,
+.ui-static-corner-skin::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask-box-image-slice: var(--ui-static-mask-slice) fill;
+  -webkit-mask-box-image-width: var(--ui-static-mask-width);
+  -webkit-mask-box-image-repeat: stretch;
+}
+.ui-static-corner-skin::after {
+  display: var(--ui-static-stroke-display);
+  opacity: var(--ui-static-stroke-opacity);
+  background: var(--ui-static-stroke-color);
+  -webkit-mask-box-image-source: var(--ui-static-stroke-mask);
+  -webkit-mask-box-image-repeat: var(--ui-static-stroke-repeat);
+}
+.ui-static-corner-skin::before {
+  display: var(--ui-static-side-display);
+  opacity: var(--ui-static-side-opacity);
+  background: var(--ui-static-side-color);
+  -webkit-mask-box-image-source: var(--ui-static-side-mask);
+}
+
+.ui-static-corner-scroll {
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  border: 0;
+  margin: -1px;
+  padding: 1px;
+  overflow: auto;
+  -webkit-mask-box-image-source: var(--ui-static-inner-fill-mask);
+  -webkit-mask-box-image-slice: var(--ui-static-mask-slice) fill;
+  -webkit-mask-box-image-width: var(--ui-static-mask-width);
+  -webkit-mask-box-image-repeat: stretch;
+}
+[data-ui-static-capture] > .ui-static-corner-scroll { -webkit-mask-box-image-source: none !important; }
+:is(.export-clone-root, .song-export-clone-root) .ui-static-corner-scroll { max-height: none !important; overflow: visible !important; }
+
+/* Only already-clipped surfaces mask their contents. Popups remain uncut. */
+:is(.song-cover-album-card, .song-cover-album-extra, .special-limited-unit-segment, .score-attr-wrap, .attr-summary-table, table.count-table, table.festival-card-table)[data-ui-static-fallback] {
+  border-radius: 0 !important;
+  -webkit-mask-box-image-source: var(--ui-static-fill-mask);
+  -webkit-mask-box-image-slice: var(--ui-static-mask-slice) fill;
+  -webkit-mask-box-image-width: var(--ui-static-mask-width);
+  -webkit-mask-box-image-repeat: stretch;
+}
+@media (min-width: 1281px) {
+  :is(.pjsk-song-stats.is-anvo-fill-mode, #panel-another-vocal.song-export-clone-root.is-anvo-fill-export) .song-anvo-card.is-image-mode[data-ui-static-fallback] {
+    border-radius: 0 !important;
+    -webkit-mask-box-image-source: var(--ui-static-fill-mask);
+    -webkit-mask-box-image-slice: var(--ui-static-mask-slice) fill;
+    -webkit-mask-box-image-width: var(--ui-static-mask-width);
+    -webkit-mask-box-image-repeat: stretch;
+  }
+}
+
+.pjsk-song-stats .stats-section.card-panel { border-color: var(--ui-surface-outline); }
+.pjsk-song-stats :is(.song-oc-event-unit-card, .song-vs-event-unit-card, .song-duo-unit-card,
+  .song-cover-album-group, .song-book-round-table-card) { border-color: var(--ui-surface-outline-inner); }
