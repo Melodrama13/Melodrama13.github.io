@@ -99,10 +99,6 @@ onDeactivated(() => {
     cancelAnimationFrame(ports.filterLayout.resizeRafId);
     ports.filterLayout.resizeRafId = 0;
   }
-  if (ports.filterLayout.filterAdaptRafId) {
-    cancelAnimationFrame(ports.filterLayout.filterAdaptRafId);
-    ports.filterLayout.filterAdaptRafId = 0;
-  }
   window.removeEventListener('mousemove', ports.previewLayout.handleDragPreviewConfig);
   window.removeEventListener('mouseup', ports.previewLayout.stopDragPreviewConfig);
   window.removeEventListener('touchmove', ports.previewLayout.handleDragPreviewConfigTouch);
@@ -198,10 +194,6 @@ onBeforeUnmount(() => {
   if (ports.filterLayout.resizeRafId) {
     cancelAnimationFrame(ports.filterLayout.resizeRafId);
     ports.filterLayout.resizeRafId = 0;
-  }
-  if (ports.filterLayout.filterAdaptRafId) {
-    cancelAnimationFrame(ports.filterLayout.filterAdaptRafId);
-    ports.filterLayout.filterAdaptRafId = 0;
   }
   window.removeEventListener('mousemove', ports.previewLayout.handleDragPreviewConfig);
   window.removeEventListener('mouseup', ports.previewLayout.stopDragPreviewConfig);

@@ -13,7 +13,7 @@ const operators = options({ equal: '恰好', atLeast: '至少', atMost: '至多'
 export function getPrecedentQueryControls(state) {
   const { draft: q, scopeOptions, characterOptions, attributeLabels, skillLabels } = state;
   const family = state.family.value, project = state.project.value;
-  const people = characterOptions.value.map(person => ({ value: person.zh_name, label: person.zh_name }));
+  const people = characterOptions.value.filter(person => q.type !== 'sequence' || q.sequence !== 'otherBox' || q.sequenceMetric === 'pair' || person.unit !== 'vs').map(person => ({ value: person.zh_name, label: person.zh_name }));
   const person = (key = 'character', label = '角色', choices = people, ariaLabel = label) => select(key, label, [any(), ...choices], ariaLabel);
   const color = (ariaLabel = '花色') => select('attribute', '花色', [{ value: 'any', label: '任意' }, ...options(attributeLabels)], ariaLabel);
   const skill = (labels = skillLabels, ariaLabel = '技能') => select('skill', '技能', [any(), ...options(labels)], ariaLabel);
@@ -51,13 +51,13 @@ export function getPrecedentQueryControls(state) {
       select('sequence', '序列', state.sequences.value, '观察序列')];
     if (q.sequenceMetric === 'pair') {
       core.push(person('character', '角色一', people, '角色'), person('secondCharacter', '角色二', people.filter(person => person.value !== q.character), '同行角色'));
-      if (q.sequence === 'ownBox') core.push(person('sequenceOwner', '箱主', state.catalog.value.characters.filter(person => person.unit !== 'vs').map(person => ({ value: person.zh_name, label: person.zh_name })), '箱活角色'));
+      if (['ownBox', 'otherBox'].includes(q.sequence)) core.push(person('sequenceOwner', q.sequence === 'otherBox' ? '观察角色' : '箱主', state.catalog.value.characters.filter(person => person.unit !== 'vs').map(person => ({ value: person.zh_name, label: person.zh_name })), '箱活角色'));
     } else if (q.sequenceMetric === 'sameAttribute') core.push(person(), select('streakProperty', '特征', options({ attribute: '同色', skill: '同技能' }), '卡片特征'));
     else if (q.sequenceMetric === 'songVs') {
-      if (q.sequence === 'ownBox') core.push(person('character', '角色', people.filter(person => state.catalog.value.characterByName.get(person.value)?.unit !== 'vs')));
+      if (['ownBox', 'otherBox'].includes(q.sequence)) core.push(person('character', '角色', people.filter(person => state.catalog.value.characterByName.get(person.value)?.unit !== 'vs')));
       core.push(person('vs', 'VS', state.catalog.value.characters.filter(person => person.unit === 'vs').map(person => ({ value: person.zh_name, label: person.zh_name })), '书下VS'));
     } else if (q.sequenceMetric === 'bannerUnit') {
-      if (q.sequence === 'ownBox') core.push(person('sequenceOwner', '箱主', people.filter(person => state.catalog.value.characterByName.get(person.value)?.unit !== 'vs'), '箱活角色'));
+      if (['ownBox', 'otherBox'].includes(q.sequence)) core.push(person('sequenceOwner', q.sequence === 'otherBox' ? '观察角色' : '箱主', people.filter(person => state.catalog.value.characterByName.get(person.value)?.unit !== 'vs'), '箱活角色'));
     } else if (q.sequenceMetric === 'flowerGap') core.push(color());
     else core.push(person());
     core.push(quantity);

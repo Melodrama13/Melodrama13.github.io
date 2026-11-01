@@ -87,6 +87,14 @@ function png(size, alpha, color, opacity) {
   return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',deflateSync(rows,{level:9})),chunk('IEND',Buffer.alloc(0))]);
 }
 
+// Shared build-time encoder for already sampled transparent optical layers.
+export function encodeStaticRgbaPng(width, height, rgba) {
+  const header = Buffer.alloc(13); header.writeUInt32BE(width); header.writeUInt32BE(height,4); header[8] = 8; header[9] = 6;
+  const rows = Buffer.alloc((width*4+1)*height);
+  for (let y = 0; y < height; y++) rows.set(rgba.subarray(y*width*4,(y+1)*width*4),y*(width*4+1)+1);
+  return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',deflateSync(rows,{level:9})),chunk('IEND',Buffer.alloc(0))]);
+}
+
 export function createStaticCornerShadowImages(geometry) {
   const size = SIZE * SCALE, mask = coverage(flatten(geometry.path),size);
   const shifted = new Float32Array(mask.length), shift = OFFSET_Y * SCALE;

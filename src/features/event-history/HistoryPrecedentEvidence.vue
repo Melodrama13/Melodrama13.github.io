@@ -59,7 +59,7 @@ const props = defineProps({ record: { type: Object, required: true }, presentati
   scopeOptions: { type: Array, required: true }, eventForCard: { type: Function, required: true }, jumpToEvent: { type: Function, required: true } });
 const intervalSections = computed(() => buildIntervalEvidenceSections(props.record, props.eventForCard));
 const evidenceOpen = ref(false);
-const evidenceCount = computed(() => props.record.gapSnapshots?.length ?? props.record.songEvidence?.length ?? props.record.eventEvidence?.length ?? props.record.evidence.length);
+const evidenceCount = computed(() => props.record.type === 'quantityGap' ? props.record.after : props.record.songEvidence?.length ?? props.record.eventEvidence?.length ?? props.record.evidence.length);
 const scopeLabel = scope => props.scopeOptions.find(option => option.value === scope)?.label || scope;
 const alternateCeilings = computed(() => (props.record.ceilingFirsts || []).filter(first => first.advancement
   && first.advancement !== props.record.advancement && first.advancement.days !== props.record.advancement?.days));

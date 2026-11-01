@@ -151,8 +151,10 @@ export function buildLiquidGlassDisplacement({
   const minDimension = Math.min(surfaceWidth, surfaceHeight);
   const horizontal = new Float32Array(mapWidth * mapHeight);
   const vertical = new Float32Array(mapWidth * mapHeight);
-  const scatter = fieldConfig.profile === 'lens' ? new Float32Array(mapWidth * mapHeight) : null;
-  const reflectionRgba = fieldConfig.profile === 'lens' ? new Uint8ClampedArray(mapWidth * mapHeight * 4) : null;
+  // Large surfaces keep the same bend but paint their rim from a static asset.
+  const detailedLens = fieldConfig.profile === 'lens' && !fieldConfig.singlePass;
+  const scatter = detailedLens ? new Float32Array(mapWidth * mapHeight) : null;
+  const reflectionRgba = detailedLens ? new Uint8ClampedArray(mapWidth * mapHeight * 4) : null;
   let maxAbsoluteOffset = 0;
 
   for (let py = 0; py < mapHeight; py += 1) {
@@ -239,14 +241,16 @@ export function buildLiquidGlassDisplacement({
         verticalOffset = ny * bend;
         const index = py * mapWidth + px;
         const curvature = Math.min(1, Math.abs(slope) * 0.3);
-        scatter[index] = 0.10 * rim + 0.045 * curvature;
+        if (scatter) scatter[index] = 0.10 * rim + 0.045 * curvature;
         // Selector highlights should balance across the two top corners;
         // larger track lenses can keep a slight directional glint.
         const light = ny * -0.94 + (selectorLens ? 0 : nx * -0.35);
         const reflection = (0.65 * rim + 0.35 * curvature) * Math.abs(light);
         const offset = index * 4;
-        reflectionRgba[offset] = reflectionRgba[offset + 1] = reflectionRgba[offset + 2] = light > 0 ? 255 : 24;
-        reflectionRgba[offset + 3] = clampByte(255 * reflection * (light > 0 ? 0.30 : 0.18));
+        if (reflectionRgba) {
+          reflectionRgba[offset] = reflectionRgba[offset + 1] = reflectionRgba[offset + 2] = light > 0 ? 255 : 24;
+          reflectionRgba[offset + 3] = clampByte(255 * reflection * (light > 0 ? 0.30 : 0.18));
+        }
       }
       const index = py * mapWidth + px;
 
@@ -264,7 +268,7 @@ export function buildLiquidGlassDisplacement({
     rgba[rgbaOffset] = clampByte(255 * (0.5 + (horizontal[index] - bias) / scale));
     rgba[rgbaOffset + 1] = clampByte(255 * (0.5 + (vertical[index] - bias) / scale));
     // Blue is unused by displacement: it carries a soft-scattering edge mask.
-    rgba[rgbaOffset + 2] = fieldConfig.profile === 'lens'
+    rgba[rgbaOffset + 2] = scatter
       ? clampByte(255 * scatter[index])
       : 128;
     rgba[rgbaOffset + 3] = 255;
@@ -405,7 +409,7 @@ function createGlassSurfaceLifecycle(element) {
         config
       });
       // Pressure animates this surface's filter, so do not share its mutable nodes.
-      if (config.profile === 'lens') field.cacheKey += `|lens-${surfaceId}`;
+      if (config.profile === 'lens' && !config.singlePass) field.cacheKey += `|lens-${surfaceId}`;
       if (currentEntry?.key === field.cacheKey && currentEntry.node?.isConnected) {
         currentGeometryKey = geometryKey;
         return;
@@ -415,7 +419,7 @@ function createGlassSurfaceLifecycle(element) {
       currentEntry = acquireFilter(documentLike, field, bounds.width, bounds.height, config);
       if (currentEntry) currentGeometryKey = geometryKey;
       setBackdropFilter(element, currentEntry ? `url(#${currentEntry.id})` : '');
-      if (config.profile === 'lens') updatePressure();
+      if (config.profile === 'lens' && !config.singlePass) updatePressure();
     } catch {
       clearRefraction();
     }
@@ -443,6 +447,7 @@ function createGlassSurfaceLifecycle(element) {
 
   const onPointerMove = (event) => {
     if (!active) return;
+    if (element.getAttribute?.('data-ui-glass-rendering') === 'single-pass') return;
     const bounds = readBounds(element);
     if (!bounds) return;
     pointer = {
@@ -454,6 +459,7 @@ function createGlassSurfaceLifecycle(element) {
 
   const onPointerLeave = () => {
     if (!active) return;
+    if (element.getAttribute?.('data-ui-glass-rendering') === 'single-pass') return;
     pointer = null;
     if (pointerFrame !== null) runSafely(() => cancelFrame(pointerFrame));
     pointerFrame = null;
@@ -514,7 +520,9 @@ function createGlassSurfaceLifecycle(element) {
         resizeObserver = new globalThis.ResizeObserver(scheduleRebuild);
         resizeObserver.observe(element);
       }
-      if (element.getAttribute?.('data-ui-glass-profile') === 'lens' && typeof globalThis.MutationObserver === 'function') {
+      if (element.getAttribute?.('data-ui-glass-profile') === 'lens'
+        && element.getAttribute?.('data-ui-glass-rendering') !== 'single-pass'
+        && typeof globalThis.MutationObserver === 'function') {
         pressureObserver = new globalThis.MutationObserver(updatePressure);
         pressureObserver.observe(element, { attributes: true, attributeFilter: ['data-ui-glass-pressed'] });
       }
@@ -663,6 +671,7 @@ function resolveLiquidGlassConfig(element, windowLike) {
   return {
     ...GLASS_PRESET,
     profile: element.getAttribute?.('data-ui-glass-profile') === 'lens' ? 'lens' : 'standard',
+    singlePass: element.getAttribute?.('data-ui-glass-rendering') === 'single-pass',
     lensRole: element.getAttribute?.('data-ui-glass-lens-role') === 'selector' ? 'selector' : 'surface',
     edgeIntensity: GLASS_PRESET.edgeIntensity * strength,
     rimIntensity: GLASS_PRESET.rimIntensity * strength,
@@ -735,7 +744,7 @@ function acquireFilter(documentLike, field, width, height, config) {
 
   blur.setAttribute('in', 'displaced');
   blur.setAttribute('stdDeviation', String(config.blurRadius * BLUR_STD_PER_RADIUS));
-  if (config.profile === 'lens') {
+  if (config.profile === 'lens' && !config.singlePass) {
     filter.append(image);
     // Channel separation follows the same contour field, remaining neutral in
     // the clear center. This is subtle edge dispersion, not a painted rainbow.

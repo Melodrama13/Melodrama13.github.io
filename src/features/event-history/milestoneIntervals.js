@@ -1,11 +1,14 @@
 import { buildCardPeriodIndex } from '../card-stats/cardPeriodIndex.js';
 import { groupBy, bannerEntries, makeMilestone, DAY_MS } from './milestoneShared.js';
 import { isMilestoneLimited } from './milestoneRules.js';
+import { isCountedActivityEvent } from '../../domain/activityPeriods.js';
 
 /** The complete ended ranges are shared by ordinary searches and record detection. */
 export function getClosedIntervals(catalog, rules) {
-  const periodSources = catalog.events.filter(s => /^\d+$/.test(String(s.event.id)) && s.event.event_type !== '测试');
-  const periodIndex = buildCardPeriodIndex({ eventIds: periodSources.map(s => s.event.id), eventDates: periodSources.map(s => s.timestamp) });
+  const periodSources = catalog.events.filter(s => isCountedActivityEvent(s.event));
+  const dates = new Map(periodSources.map(source => [String(source.event.id), source.timestamp]));
+  const periodIndex = buildCardPeriodIndex({ events: periodSources.map(s => s.event), allEvents: catalog.sourceEvents || catalog.events.map(s => s.event),
+    dateForEvent: event => dates.get(String(event.id)) ?? +new Date(event.start_date) });
   const countPeriods = (start, end) => /^\d+$/.test(String(start.source.event.id)) && /^\d+$/.test(String(end.source.event.id))
     ? periodIndex.countIdsBetweenExclusive(Number(start.source.event.id), Number(end.source.event.id))
     : periodIndex.countDatesBetweenExclusive(start.timestamp, end.timestamp);

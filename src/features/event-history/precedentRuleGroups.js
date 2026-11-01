@@ -23,7 +23,7 @@ export function getQueryRuleGroups(query) {
 
   const activity = [], cards = [], affiliation = [], counts = [];
   if (family === 'sequence') {
-    if (!['sameAttribute', 'songVs'].includes(query.sequenceMetric)) activity.push(local('includeWl', '计入WL'));
+    if (!['sameAttribute', 'songVs'].includes(query.sequenceMetric) && !['otherBox', 'festival'].includes(query.sequence)) activity.push(local('includeWl', '计入WL'));
     if (query.sequence === 'all') activity.push(local('includeCollab', '计入联动'));
     if (['four', 'noFour', 'card', 'pair', 'sameAttribute'].includes(query.sequenceMetric)) cards.push(local('includeFes', '计入FES'));
     if (query.sequenceMetric === 'sameAttribute' && query.sequence === 'allCards') cards.push(local('includeBirthday', '计入生日卡'));

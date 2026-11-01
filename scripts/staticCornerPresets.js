@@ -3,7 +3,7 @@ const CONTINUOUS_CORNER_ROLES = {
   panel: ['card-panel','preview-config-panel','preview-panel','filter-panel','precedent-panel','card-detail-tooltip','tooltip-content','birthday-info-popover',
     'source-menu','app-update-modal','app-screenshot-modal','source-export-confirm','screenshot-export-modal','song-screenshot-modal','predict-switch-dialog-card','predict-drawer','special-toolbar','special-lock-inner'],
   group: ['stats-subsection','support-card','lineup-card','festival-card','duo-unit-row','duo-matrix-wrap','attr-summary-card','record-block','special-limited-unit-segment',
-    'preview-char-select','preview-daily-card','preview-char-attr-card','event-item','birthday-row','birthday-info-card','event-detail-overview','event-detail-card','editor-card',
+    'preview-char-select','preview-daily-card','preview-char-attr-card','event-item','birthday-row','birthday-info-card','event-detail-overview','event-detail-card','editor-card','empty-hint',
     'configuration-card','precedent-record','source-list','io-drop-zone','special-toolbar-group','special-toolbar-actions','special-toolbar-colors','special-toolbar-text',
     'song-stat-card','song-role-card','song-anvo-card','song-duo-unit-card','song-oc-event-unit-card','song-vs-event-unit-card','song-3dmv-unit-card','song-2dmv-unit-card',
     'song-cover-album-group','song-cover-album-card','song-cover-album-extra','song-book-round-table-card','song-april-year-card'],
@@ -72,7 +72,7 @@ export const STATIC_CORNER_EXCLUDED_CLASSES=new Set(['pool-item','preview-step',
 export function presetForClasses(classes){
   if(classes.some(name=>STATIC_CORNER_EXCLUDED_CLASSES.has(name)))return null;
   if(classes.includes('global-config-bar'))return'config';
-  if(classes.includes('predict-drawer'))return'zero';
+  if(classes.includes('predict-drawer'))return'panel';
   if(classes.some(name=>['preview-config-panel','preview-panel','special-toolbar'].includes(name)))return'float';
   if(classes.includes('birthday-row')||classes.includes('source-item-row')||classes.includes('tooltip-content'))return'compact';
   if(classes.includes('special-toolbar-range')||classes.includes('special-toolbar-colors'))return'compact';
@@ -94,7 +94,7 @@ export function presetForClasses(classes){
 export const STATIC_CORNER_VARIANTS=[
   {selector:'.preview-char-select.is-collapsed',preset:'compact'},
   {selector:'.predict-drawer.is-mobile-sheet',preset:'sheet'},
-  {selector:'.editor-card',preset:'compact',media:'(max-width: 900px)'},
+  {selector:':is(.editor-card, .empty-hint)',preset:'compact',media:'(max-width: 900px)'},
   {selector:'.card-panel:has(> .card-panel, > .stats-grid > .card-panel)',preset:'tableSection'},
   {selector:':is(#panel-another-vocal,#panel-3dmv-stats,#panel-2dmv-stats,#panel-april-fool-stats,#panel-vs-song-stats)',preset:'groupPanel'},
   {selector:':is(#panel-duo-stats,#panel-oc-book-stats,#panel-special)',preset:'groupStackPanel'},

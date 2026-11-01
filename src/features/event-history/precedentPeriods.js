@@ -1,12 +1,13 @@
 import { getPredictionScheduleOrderEntries } from '../../domain/predictionScheduleKeys.js';
 import { buildCardYearEventIndex, getCardStatsYear, getCardYearPanelLabels, parseCardYearDate } from '../card-stats/cardYearStats.js';
 import { getCountContributions } from './milestoneCounts.js';
-import { isPoolFesCard, isFesCard } from './milestoneRules.js';
+import { isPoolFesCard, isFestivalLimitedSource } from './milestoneRules.js';
 import { isPeriodBanner, hasLimitedSubdivision, matchesPeriodCard } from './precedentPeriodRules.js';
 import { OC_UNITS } from './milestoneShared.js';
 import { isDuoCollaborationEvent } from '../card-stats/cardDuoRules.js';
 import { markPrecedentPositions } from './precedentResultPositions.js';
 import { getObservedQuantityBounds } from './precedentThresholds.js';
+import { isCountedActivityEvent, groupActivitySources, countActivityPeriods, buildActivityPeriodMap } from '../../domain/activityPeriods.js';
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const orderCache = new WeakMap();
@@ -36,8 +37,7 @@ export function getEventQueryMonth(event, order) {
 
 export const periodPeople = (catalog, query) => catalog.characters.filter(person => (!query.character || person.zh_name === query.character)
   && (!query.scope || query.scope === 'all' || (query.scope === 'oc' ? person.unit !== 'vs' : person.unit === query.scope)));
-export const isRegularQueryEvent = source => /^\d+$/.test(String(source.event.id)) && Number(source.event.id) > 0
-  && !/测试|test|纪念/i.test(source.event.event_type || '');
+export const isRegularQueryEvent = source => isCountedActivityEvent(source.event);
 const isOpeningSource = source => ['0', 'ori'].includes(String(source.event.id));
 
 function coverageUnit(catalog, entry) {
@@ -57,7 +57,10 @@ const filterPeriods = (periods, query) => periods.filter(period => (query.includ
   && (!query.periodValue || query.periodValue === 'all' || query.periodValue === period.key)).sort((a, b) => a.startTimestamp - b.startTimestamp);
 
 function rollingPeriods(catalog, query) {
-  const anchors = catalog.events.filter(isRegularQueryEvent), now = +(catalog.now || new Date());
+  const bindings = catalog.sourceEvents || catalog.events.map(source => source.event);
+  const periodMap = buildActivityPeriodMap(bindings);
+  const groups = groupActivitySources(catalog.events.filter(isRegularQueryEvent), bindings);
+  const anchors = groups.map(group => group.sources[0]), now = +(catalog.now || new Date());
   const length = Number(query.periodLength ?? 3);
   if (query.periodKind === 'events' && (!Number.isInteger(length) || length < 1)) return [];
   const collaborations = catalog.events.filter(source => isDuoCollaborationEvent(source.event));
@@ -65,20 +68,21 @@ function rollingPeriods(catalog, query) {
     const startTimestamp = query.periodKind === 'events' ? source.timestamp : +parseCardYearDate(source.event.start_date);
     let sources, endTimestamp, complete;
     if (query.periodKind === 'events') {
-      sources = anchors.slice(index, index + length);
-      if (sources.length !== length) return null;
+      const selected = groups.slice(index, index + length);
+      if (selected.length !== length || selected.some(group => group.sources.length !== group.events.length)) return null;
+      sources = selected.flatMap(group => group.sources);
       endTimestamp = Math.max(...sources.map(activityEnd));
-      complete = sources.length === length && endTimestamp < now;
+      complete = endTimestamp < now;
     } else {
       const start = new Date(startTimestamp), year = start.getFullYear() + 1, month = start.getMonth();
       const end = new Date(startTimestamp);
       end.setDate(1); end.setFullYear(year); end.setMonth(month);
       end.setDate(Math.min(start.getDate(), new Date(year, month + 1, 0).getDate()));
       endTimestamp = +end - 1;
-      sources = anchors.filter(item => item.timestamp >= startTimestamp && item.timestamp < +end);
+      sources = catalog.events.filter(isRegularQueryEvent).filter(item => item.timestamp >= startTimestamp && item.timestamp < +end);
       complete = +end <= now && sources.every(item => activityEnd(item) < now);
     }
-    const eventCount = sources.length;
+    const eventCount = countActivityPeriods(sources.map(item => item.event), bindings, periodMap);
     if (query.periodKind !== 'events' || query.includeCollab) sources = [...sources, ...collaborations.filter(item =>
       item.timestamp >= startTimestamp && item.timestamp <= endTimestamp || item.allCards.some(entry => entry.timestamp >= startTimestamp && entry.timestamp <= endTimestamp))]
       .sort((a, b) => a.timestamp - b.timestamp);
@@ -91,6 +95,7 @@ function rollingPeriods(catalog, query) {
 export function getQueryPeriods(catalog, query) {
   if (isDynamicPeriod(query.periodKind)) return rollingPeriods(catalog, query);
   const allEvents = catalog.sourceEvents || catalog.events.map(source => source.event);
+  const periodMap = buildActivityPeriodMap(allEvents);
   const index = buildCardYearEventIndex(allEvents), now = catalog.now || new Date();
   const opening = index.bySourceKey.get('0')?.date || index.bySourceKey.get('ori')?.date;
   const windows = new Map(), operating = query.periodKind === 'operating';
@@ -114,7 +119,7 @@ export function getQueryPeriods(catalog, query) {
     windows.get(key).sources.push(source);
   }
   return filterPeriods([...windows.values()].map(period => {
-    const totalEvents = period.sources.filter(isRegularQueryEvent).length;
+    const totalEvents = countActivityPeriods(period.sources.map(source => source.event), allEvents, periodMap);
     return { ...period, totalEvents, eventCount: totalEvents };
   }), query);
 }
@@ -148,8 +153,9 @@ export function queryPeriodPrecedents(catalog, query, rules) {
   const units = [...new Set(people.map(person => person.unit))].filter(unit => query.metric !== 'unitBanner' || OC_UNITS.includes(unit));
   const subjects = unitMetric ? units.map(unit => ({ unit, label: unit.toUpperCase() })) : people.filter(person => !/Banner|banner/.test(query.metric) || person.unit !== 'vs').map(person => ({ name: person.zh_name, label: person.zh_name }));
   const contributions = getCountContributions(catalog, rules);
+  const bindings = catalog.sourceEvents || catalog.events.map(source => source.event), periodMap = buildActivityPeriodMap(bindings);
   const festivalBannerEvents = new Set(catalog.events.filter(source => isRegularQueryEvent(source)
-    && source.event.gacha_type === '普通限定' && source.allCards.some(entry => isFesCard(entry.card))).map(source => String(source.event.id)));
+    && isFestivalLimitedSource(source)).map(source => String(source.event.id)));
   const metric = query.metric === 'permBanner' ? 'banner' : query.metric || 'banner', contributionsByPerson = new Map();
   if (!unitMetric) for (const entry of contributions) {
     if (entry.metric !== metric || query.metric === 'permBanner' && entry.source.event.gacha_type !== '常驻') continue;
@@ -176,17 +182,32 @@ export function queryPeriodPrecedents(catalog, query, rules) {
       });
     else entries = sources.flatMap(source => contributionsByPerson.get(subject.name)?.get(String(source.event.id)) || [])
       .filter(entry => isPeriodBanner(query.metric) || matchesCard(entry));
+    if (query.metric === 'unitFour') {
+      const grouped = new Map();
+      for (const entry of entries) {
+        const key = periodMap.get(String(entry.source.event.id))?.key || String(entry.source.event.id), existing = grouped.get(key);
+        if (existing) {
+          existing.cards.push(...entry.cards); existing.sources.push(entry.source);
+          const timestamp = entry.timestamp ?? entry.source.timestamp;
+          if (timestamp >= existing.timestamp) { existing.timestamp = timestamp; existing.endSource = entry.source; }
+        }
+        else grouped.set(key, { ...entry, cards: [...entry.cards], sources: [entry.source], endSource: entry.source,
+          startTimestamp: entry.timestamp ?? entry.source.timestamp, timestamp: entry.timestamp ?? entry.source.timestamp });
+      }
+      entries = [...grouped.values()];
+    }
     const evidence = [...new Map(entries.flatMap(entry => entry.cards || (entry.card ? [entry.card] : [])).map(card => [String(card.CardID), card])).values()];
-    const eventSources = [...new Map(entries.map(entry => [String(entry.source.event.id), entry.source])).values()].sort((a, b) => a.timestamp - b.timestamp);
+    const eventSources = [...new Map(entries.flatMap(entry => entry.sources || [entry.source]).map(source => [String(source.event.id), source])).values()].sort((a, b) => a.timestamp - b.timestamp);
     const timedEntries = [...entries].sort((a, b) => (a.timestamp ?? a.source.timestamp) - (b.timestamp ?? b.source.timestamp));
     const first = timedEntries[0], last = timedEntries.at(-1);
     return { type: 'period', key: `period:${period.key}:${subject.label}:${query.metric}`, name: subject.name, scopeLabel: subject.unit?.toUpperCase(),
-      subject: { kind: subject.unit ? 'unit' : 'person', unit: subject.unit }, metric: query.metric, period: { ...period, totalEvents: sources.filter(isRegularQueryEvent).length },
+      subject: { kind: subject.unit ? 'unit' : 'person', unit: subject.unit }, metric: query.metric, period: { ...period, totalEvents: countActivityPeriods(sources.map(source => source.event), bindings, periodMap) },
       queryFilters: { gachaType: query.gachaType, eventType: query.eventType, limitedKind: query.limitedKind, skill: query.skill },
       value: entries.length, after: entries.length, threshold: entries.length, evidence, triggerCards: [], contributors: [],
       matchingEventIds: eventSources.map(source => String(source.event.id)),
-      event: last?.source.event, events: last ? [last.source.event] : [], startEvent: first?.source.event,
-      startTimestamp: first ? first.timestamp ?? first.source.timestamp : period.startTimestamp,
+      event: last ? (last.endSource || last.source).event : undefined, events: last ? (last.sources || [last.source]).map(source => source.event) : [], startEvent: first?.source.event,
+      startEvents: first ? (first.sources || [first.source]).map(source => source.event) : [],
+      startTimestamp: first ? first.startTimestamp ?? first.timestamp ?? first.source.timestamp : period.startTimestamp,
       timestamp: last ? last.timestamp ?? last.source.timestamp : period.endTimestamp, rules, isPersonalAchievement: true };
   }));
   const bounds = getObservedQuantityBounds(rows.filter(row => query.metric !== 'unitFour' || query.coverage !== 'all'

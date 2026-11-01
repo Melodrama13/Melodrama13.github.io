@@ -25,6 +25,7 @@ export const getPoolEventContext = source => {
 export const poolParticipant = (catalog, entry) => ({ name: entry.name, vsUnit: catalog.characterByName.get(entry.name)?.unit === 'vs'
   && OC_UNITS.includes(String(entry.card.Affiliation).toLowerCase()) ? String(entry.card.Affiliation).toLowerCase() : '' });
 export const poolHasUnitContext = source => Boolean(source?.event.banner || source?.event.unit);
+export const isEarlySplitFesEvent = event => ['18', '27'].includes(String(event.id));
 export const poolOwnVsMatch = (catalog, a, b, source) => {
   if (source && !poolHasUnitContext(source)) return true;
   const aUnit = catalog.characterByName.get(a.name)?.unit, bUnit = catalog.characterByName.get(b.name)?.unit;
@@ -41,7 +42,7 @@ export function getMilestonePools(catalog, rules) {
     const context = getPoolEventContext(source);
     if (!context || source.event.event_type === '测试') return [];
     const eligible = (source.allCards || source.cards).filter(e => String(e.card.Rarity) === '4' && (rules.poolIncludeFes || !isPoolFesCard(e.card)));
-    const pools = ['18', '27'].includes(String(source.event.id)) ? [...groupBy(eligible, e => isPoolFesCard(e.card) ? 'fes' : 'normal')] : [['main', eligible]];
+    const pools = isEarlySplitFesEvent(source.event) ? [...groupBy(eligible, e => isPoolFesCard(e.card) ? 'fes' : 'normal')] : [['main', eligible]];
     return pools.map(([pool, entries]) => ({ source, pool, entries, context }));
   });
 }

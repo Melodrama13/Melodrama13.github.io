@@ -9,7 +9,7 @@
         <div class="header-main">
           <h3>预测编辑器 <span class="ev-id">#{{ event.id }}</span></h3>
           <div class="editor-header-actions">
-            <button class="pjsk-ui-action close-btn" @click="$emit('close')">×</button>
+            <button type="button" class="pjsk-ui-action close-btn" aria-label="关闭预测编辑器" title="关闭预测编辑器" @click="$emit('close')">×</button>
           </div>
         </div>
 

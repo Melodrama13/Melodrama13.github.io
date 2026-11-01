@@ -2,6 +2,7 @@ import { computed } from "vue";
 import { getBaseName, hexToRgb, rgbaFromHex, mixHexWithWhite, normalizeId } from './specialPredictionFormatters.js';
 import { mergeCollaborationCardPredictions } from '../../domain/collaborationEvents.js';
 import { isCompilationEvent } from '../../utils/compilationEvents.js';
+import { buildActivityPeriodMap } from '../../domain/activityPeriods.js';
 import { getWorldLinkEventTypeLabel, isTeamWorldLinkEvent } from '../../domain/worldLink.js';
 
 /** Owns special prediction case rows with explicit instance dependencies. */
@@ -212,6 +213,7 @@ const buildCompilationEventRow = ({ event, index, scheduleIndex }) => {
 
 const groupCompilationRows = (rows) => {
   const grouped = [];
+  const bindings = buildActivityPeriodMap(ports.eventCatalog.numericEvents.value.map(item => item.event));
   rows.forEach((row) => {
     if (!row.isCompilation) {
       grouped.push(row);
@@ -219,7 +221,8 @@ const groupCompilationRows = (rows) => {
     }
     const monthKey = ports.eventCatalog.getMonthInfoFromDate(row.endDate || row.startDate)?.key;
     const previous = grouped.at(-1);
-    if (monthKey && previous?.isCompilation && previous.monthKey === monthKey && previous.events.length < 2) {
+    if (monthKey && previous?.isCompilation && previous.monthKey === monthKey && previous.events.length < 2
+      && bindings.get(String(previous.events[0].id))?.key === bindings.get(String(row.id))?.key) {
       previous.events.push(row);
       previous.endDate = row.endDate || row.startDate;
     } else {
@@ -381,15 +384,23 @@ const multiCaseRows = computed(() => {
 
 const monthlyMultiPages = computed(() => {
   const pages = [];
+  const bindings = buildActivityPeriodMap(ports.eventCatalog.numericEvents.value.map(item => item.event));
+  const keysByPage = new Map();
   multiCaseRows.value.forEach((row) => {
     const monthInfo = ports.eventCatalog.getMonthInfoFromDate(row.endDate || row.startDate) || { key: 'undated', label: '月份未定' };
     let page = pages.find((item) => item.key === monthInfo.key);
     if (!page) {
       page = { key: monthInfo.key, label: monthInfo.label, rows: [], eventCount: 0 };
       pages.push(page);
+      keysByPage.set(page.key, new Set());
     }
     page.rows.push(row);
-    page.eventCount += row.isCompilation ? row.events.length : 1;
+    const keys = keysByPage.get(page.key);
+    for (const event of row.isCompilation ? row.events : [row]) {
+      const key = bindings.get(String(event.id))?.key;
+      if (key) keys.add(key);
+    }
+    page.eventCount = keys.size;
   });
   return pages;
 });

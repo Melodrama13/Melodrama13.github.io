@@ -7,7 +7,7 @@ export const CARD_STATISTICS_DEFAULTS = Object.freeze({
   includeWl3: false,
   includeSongLimited: true,
   includeUnitScoreInPureScore: false,
-  includeFestivalFes: false,
+  includeFestivalFes: true,
   festivalMergeHigherRanks: false,
 });
 

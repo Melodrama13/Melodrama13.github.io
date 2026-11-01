@@ -1,6 +1,6 @@
 import { PRECEDENT_ATTRIBUTES, PRECEDENT_SKILL_LABELS } from './precedentRecords.js';
-import { isPoolFesCard, isPoolLimitedCard, isRewardCard } from './milestoneRules.js';
-import { getMilestonePools, filterPoolOwnVs, poolParticipant, poolOwnVsMatch } from './milestonePools.js';
+import { isPoolFesCard, isPoolLimitedCard, isRewardCard, isFestivalLimitedSource } from './milestoneRules.js';
+import { getMilestonePools, filterPoolOwnVs, poolParticipant, poolOwnVsMatch, isEarlySplitFesEvent } from './milestonePools.js';
 import { periodPeople, isRegularQueryEvent } from './precedentPeriods.js';
 import { OC_UNITS } from './milestoneShared.js';
 import { parseVirtualSingerNames } from '../../domain/virtualSingerNames.js';
@@ -8,8 +8,9 @@ import { isDuoCollaborationEvent } from '../card-stats/cardDuoRules.js';
 import { markPrecedentPositions } from './precedentResultPositions.js';
 import { queryQuantityGapPrecedents } from './precedentQuantityGaps.js';
 import { getObservedQuantityBounds } from './precedentThresholds.js';
+import { groupActivitySources, isCountedActivityEvent } from '../../domain/activityPeriods.js';
 
-export const SEQUENCE_LABELS = { all: '全部活动', ownBox: '本人箱活', unitBox: '本团箱活', allBox: '箱活', mix: '混活', cards: '个人四星', allCards: '个人全卡' };
+export const SEQUENCE_LABELS = { all: '全部活动', ownBox: '本人箱活', unitBox: '本团箱活', otherBox: '本团非本人箱活', allBox: '箱活', mix: '混活', festival: '百六卡池', cards: '个人四星', allCards: '个人全卡' };
 export const SEQUENCE_METRICS = { four: '出四星', noFour: '未出四星', reward: '出报酬', noReward: '未出报酬', card: '出卡', pair: '双人同池', sameAttribute: '同类型卡', quantityGap: '数量差距', songVs: '书下同V', bannerUnit: '同团Ban', flowerGap: '花色缺席' };
 const unique = (items, key) => [...new Map(items.map(item => [key(item), item])).values()];
 const unitsFor = (catalog, query) => unique(periodPeople(catalog, { ...query, character: '' }).map(person => person.unit), unit => unit);
@@ -26,12 +27,14 @@ const context = (source, query) => source.event.event_type === '箱活' ? 'box' 
 
 function subjectsFor(catalog, query) {
   const metric = query.sequenceMetric || 'four', people = periodPeople(catalog, query);
-  if (metric === 'bannerUnit' && query.sequence === 'ownBox') return people.filter(person => OC_UNITS.includes(person.unit)
+  const ownerBoxes = ['ownBox', 'otherBox'].includes(query.sequence);
+  if (metric === 'bannerUnit' && ownerBoxes) return people.filter(person => OC_UNITS.includes(person.unit)
     && (!query.sequenceOwner || person.zh_name === query.sequenceOwner)).map(person => ({ key: person.zh_name,
     sequenceOwner: person.zh_name, unit: person.unit, label: person.unit.toUpperCase() }));
   if (metric === 'bannerUnit' || metric === 'songVs' && query.sequence === 'unitBox') return unitsFor(catalog, query).filter(unit => OC_UNITS.includes(unit)).map(unit => ({ key: unit, unit, label: unit.toUpperCase() }));
-  if (metric === 'songVs' && query.sequence !== 'ownBox') return [{ key: 'all', label: '箱活' }];
-  if (metric !== 'pair') return people.filter(person => metric !== 'songVs' || person.unit !== 'vs').map(person => ({ key: person.zh_name, name: person.zh_name, unit: person.unit }));
+  if (metric === 'songVs' && !ownerBoxes) return [{ key: 'all', label: '箱活' }];
+  if (metric !== 'pair') return people.filter(person => (metric !== 'songVs' || person.unit !== 'vs')
+    && (query.sequence !== 'otherBox' || OC_UNITS.includes(person.unit))).map(person => ({ key: person.zh_name, name: person.zh_name, unit: person.unit }));
   const candidates = periodPeople(catalog, { ...query, character: '' }), pairs = [];
   for (let i = 0; i < candidates.length; i++) for (let j = i + 1; j < candidates.length; j++) {
     const a = candidates[i], b = candidates[j];
@@ -39,7 +42,7 @@ function subjectsFor(catalog, query) {
     if ([query.character, query.secondCharacter].filter(Boolean).some(name => name !== a.zh_name && name !== b.zh_name)) continue;
     pairs.push({ key: `${a.zh_name}:${b.zh_name}`, pair: [a.zh_name, b.zh_name], unit: a.unit === 'vs' ? b.unit : a.unit });
   }
-  if (query.sequence !== 'ownBox') return pairs;
+  if (!ownerBoxes) return pairs;
   const owners = catalog.characters.filter(person => OC_UNITS.includes(person.unit)
     && (!query.sequenceOwner || person.zh_name === query.sequenceOwner));
   return pairs.flatMap(pair => owners.map(owner => ({ ...pair, sequenceOwner: owner.zh_name })));
@@ -54,17 +57,41 @@ function nodesFor(catalog, query, subject) {
     return entries.length ? [{ source: entries[0].source, timestamp: step.timestamp, entries,
       propertyValue: values.size === 1 ? values.values().next().value : '', mixed: values.size > 1, weight: entries.length }] : [];
   });
-  return catalog.events.filter(source => (query.sequence === 'all' ? /^\d+$/.test(String(source.event.id)) && Number(source.event.id) > 0 && !/测试|test|纪念/i.test(source.event.event_type || '')
+  const selectedSources = catalog.events.filter(source => (query.sequence === 'all' ? isCountedActivityEvent(source.event)
     || query.includeCollab && isDuoCollaborationEvent(source.event) : isRegularQueryEvent(source))
     && (query.includeWl || !/^(world\s*link|wl)$/i.test(source.event.event_type || ''))).filter(source => {
     const kind = context(source, query);
     if (query.sequence === 'all') return true;
+    if (query.sequence === 'festival') return isFestivalLimitedSource(source)
+      || isEarlySplitFesEvent(source.event) && source.allCards.some(entry => isPoolFesCard(entry.card));
     if (query.sequence === 'mix') return kind === 'mix';
     if (query.sequence === 'ownBox') return kind === 'box' && source.event.banner === (subject.sequenceOwner || subject.name);
+    if (query.sequence === 'otherBox') {
+      const owner = subject.sequenceOwner || subject.name, unit = catalog.characterByName.get(owner)?.unit;
+      return source.event.event_type === '箱活' && OC_UNITS.includes(unit) && String(source.event.unit).toLowerCase() === unit
+        && Boolean(source.event.banner) && source.event.banner !== owner;
+    }
     if (query.sequence === 'unitBox') return kind === 'box' && String(source.event.unit).toLowerCase() === subject.unit;
     return kind === 'box';
-  }).filter(source => query.sequenceMetric !== 'songVs' || source.event.event_type === '箱活' && source.event.song_id)
-    .map(source => ({ source, entries: [], weight: 1 }));
+  }).filter(source => query.sequenceMetric !== 'songVs' || source.event.event_type === '箱活' && source.event.song_id);
+  if (query.sequence === 'all') {
+    const groups = groupActivitySources(selectedSources.filter(source => isCountedActivityEvent(source.event)), catalog.sourceEvents || catalog.events.map(source => source.event));
+    const collaborations = selectedSources.filter(source => !isCountedActivityEvent(source.event));
+    return groups.map((group, index) => {
+      const start = group.sources[0], boundary = groups[index + 1]?.sources[0].timestamp ?? Infinity;
+      const sources = [...group.sources, ...collaborations.filter(source => source.timestamp >= start.timestamp && source.timestamp < boundary)].sort((a, b) => a.timestamp - b.timestamp);
+      const source = { ...start, periodSources: sources, periodKey: group.key,
+        cards: unique(sources.flatMap(source => source.cards), entry => String(entry.card.CardID)),
+        allCards: unique(sources.flatMap(source => source.allCards), entry => String(entry.card.CardID)) };
+      return { source, startTimestamp: start.timestamp, timestamp: sources.at(-1).timestamp, entries: [], weight: 1 };
+    });
+  }
+  return selectedSources.map(source => {
+      if (query.sequence === 'festival' && isEarlySplitFesEvent(source.event)) source = { ...source, isFestivalFesOnly: true,
+        event: { ...source.event, banner: '', unit: '', event_attribute: '' },
+        cards: source.cards.filter(entry => isPoolFesCard(entry.card)), allCards: source.allCards.filter(entry => isPoolFesCard(entry.card)) };
+      return { source, entries: [], weight: 1 };
+    });
 }
 function makeRun(catalog, query, subject, nodes, value, extras = {}) {
   const first = nodes[0], last = nodes.at(-1), entries = nodes.flatMap(node => node.entries || []);
@@ -73,19 +100,23 @@ function makeRun(catalog, query, subject, nodes, value, extras = {}) {
     const cards = source.allCards || source.cards, banner = String(source.event.banner || '').split(' ')[0];
     const card = (cards.find(entry => entry.card.Name === source.event.banner && !isPoolFesCard(entry.card))
       || cards.find(entry => entry.name === banner && !isPoolFesCard(entry.card)))?.card;
-    const unit = String(source.event.unit || '').toLowerCase();
-    const units = [...OC_UNITS, 'vs'].includes(unit) ? [unit] : unique([catalog.characterByName.get(banner)?.unit,
+    const members = source.periodSources || [source], unit = String(source.event.unit || '').toLowerCase();
+    const units = members.length > 1 && members.every(member => member.event.event_type === '总集篇')
+      ? unique(members.map(member => String(member.event.unit || '').toLowerCase()).filter(Boolean), unit => unit)
+      : [...OC_UNITS, 'vs'].includes(unit) ? [unit] : unique([catalog.characterByName.get(banner)?.unit,
       ...cards.map(entry => catalog.characterByName.get(entry.name)?.unit)].filter(unit => [...OC_UNITS, 'vs'].includes(unit)), unit => unit);
-    return { event: source.event, card, units };
+    return { event: source.event, events: members.map(member => member.event), card, units };
   }) : undefined;
   return { type: 'sequence', key: `sequence:${query.sequenceMetric}:${subject.key}:${subject.sequenceOwner ? `${subject.sequenceOwner}:` : ''}${first.source.event.id}:${last.source.event.id}:${extras.attribute || extras.skill || extras.vs || ''}`,
     name: subject.name, pair: subject.pair, scopeLabel: subject.label, subject: { kind: subject.name ? 'person' : subject.pair ? 'pair' : subject.unit ? 'unit' : 'cohort', unit: subject.unit },
     ...(subject.sequenceOwner ? { sequenceOwner: subject.sequenceOwner } : {}),
     ...(query.sequenceMetric === 'sameAttribute' ? { streakProperty: streakProperty(query), countUnit: '张' } : {}),
     sequenceMetric: query.sequenceMetric, sequence: query.sequence, after: value, value, threshold: value,
-    startEvent: first.source.event, startTimestamp: first.timestamp ?? first.source.timestamp, event: last.source.event, events: [last.source.event], timestamp: last.timestamp ?? last.source.timestamp,
-    steps: nodes.map(node => ({ event: node.source.event, timestamp: node.timestamp ?? node.source.timestamp, weight: node.weight })),
-    sequenceEvents: nodes.map(node => node.source.event), contributors: unique((last.entries || []).map(entry => ({ name: entry.name, attribute: entry.attribute })), holder => `${holder.name}:${holder.attribute}`),
+    startEvent: first.source.event, startEvents: (first.source.periodSources || [first.source]).map(source => source.event), startTimestamp: first.startTimestamp ?? first.timestamp ?? first.source.timestamp,
+    event: (last.source.periodSources || [last.source]).at(-1).event, events: (last.source.periodSources || [last.source]).map(source => source.event), timestamp: last.timestamp ?? last.source.timestamp,
+    steps: nodes.map(node => ({ event: (node.source.periodSources || [node.source]).at(-1).event,
+      events: (node.source.periodSources || [node.source]).map(source => source.event), timestamp: node.timestamp ?? node.source.timestamp, weight: node.weight })),
+    sequenceEvents: nodes.flatMap(node => (node.source.periodSources || [node.source]).map(source => source.event)), contributors: unique((last.entries || []).map(entry => ({ name: entry.name, attribute: entry.attribute })), holder => `${holder.name}:${holder.attribute}`),
     evidence: unique(entries.filter(entry => entry.card).map(entry => entry.card).concat(eventEvidence?.flatMap(item => item.card ? [item.card] : []) || []), card => String(card.CardID)), triggerCards: [], isPersonalAchievement: true,
     ...(eventEvidence ? { eventEvidence } : {}),
     ...(query.sequenceMetric === 'songVs' ? { songEvidence: nodes.map(node => ({ event: node.source.event, song: catalog.songs?.find(song => String(song.id) === String(node.source.event.song_id)), vs: extras.vs })) } : {}),
@@ -103,7 +134,7 @@ export function getSequenceRuns(catalog, query, rules) {
       nodes.forEach((node, index) => {
         const current = String(node.source.event.event_attribute || '');
         if (!PRECEDENT_ATTRIBUTES.includes(current)) {
-          if (!/world\s*link|^wl$/i.test(node.source.event.event_type || '')) previous = -1;
+          if (!node.source.isFestivalFesOnly && node.source.event.event_type !== '总集篇' && !/world\s*link|^wl$/i.test(node.source.event.event_type || '')) previous = -1;
           return;
         }
         if (current !== attribute) return;
@@ -119,6 +150,7 @@ export function getSequenceRuns(catalog, query, rules) {
   }
   const poolsByEvent = new Map();
   if (metric === 'pair') for (const pool of getMilestonePools(catalog, { ...rules, poolIncludeFes: Boolean(query.includeFes) })) {
+    if (query.sequence === 'festival' && isEarlySplitFesEvent(pool.source.event) && pool.pool !== 'fes') continue;
     const id = String(pool.source.event.id);
     if (!poolsByEvent.has(id)) poolsByEvent.set(id, []);
     poolsByEvent.get(id).push(filterPoolOwnVs(catalog, pool.entries, rules, pool.source));
@@ -127,7 +159,7 @@ export function getSequenceRuns(catalog, query, rules) {
   const property = streakProperty(query), nodeCache = new Map();
   for (const subject of subjectsFor(catalog, query)) {
     // Pair queries can reuse each owner's activity sequence across every pair.
-    const nodeKey = metric === 'sameAttribute' ? subject.name : query.sequence === 'ownBox' ? subject.sequenceOwner || subject.name
+    const nodeKey = metric === 'sameAttribute' ? subject.name : ['ownBox', 'otherBox'].includes(query.sequence) ? subject.sequenceOwner || subject.name
       : query.sequence === 'unitBox' ? subject.unit : 'all';
     if (!nodeCache.has(nodeKey)) nodeCache.set(nodeKey, nodesFor(catalog, query, subject));
     const nodes = nodeCache.get(nodeKey);
@@ -160,11 +192,12 @@ export function getSequenceRuns(catalog, query, rules) {
         else if (metric === 'songVs') hit = parseVirtualSingerNames(node.source.event.virtual_singer, catalog.characters).includes(variant);
         else if (metric === 'bannerUnit') hit = catalog.characterByName.get(node.source.event.banner)?.unit === subject.unit;
         else if (metric === 'pair') {
-          for (const pool of poolsByEvent.get(String(node.source.event.id)) || []) {
+          const pools = (node.source.periodSources || [node.source]).flatMap(source => (poolsByEvent.get(String(source.event.id)) || []).map(entries => ({ entries, source })));
+          for (const { entries: pool, source: poolSource } of pools) {
             const aRows = pool.filter(entry => entry.name === subject.pair[0] && eligible(entry, query));
             const bRows = pool.filter(entry => entry.name === subject.pair[1] && eligible(entry, query));
-            const a = aRows.find(a => bRows.some(b => !rules.poolOwnVsOnly || poolOwnVsMatch(catalog, poolParticipant(catalog, a), poolParticipant(catalog, b), node.source)));
-            const b = a && bRows.find(b => !rules.poolOwnVsOnly || poolOwnVsMatch(catalog, poolParticipant(catalog, a), poolParticipant(catalog, b), node.source));
+            const a = aRows.find(a => bRows.some(b => !rules.poolOwnVsOnly || poolOwnVsMatch(catalog, poolParticipant(catalog, a), poolParticipant(catalog, b), poolSource)));
+            const b = a && bRows.find(b => !rules.poolOwnVsOnly || poolOwnVsMatch(catalog, poolParticipant(catalog, a), poolParticipant(catalog, b), poolSource));
             if (a && b) { entries = [a, b]; break; }
           }
           hit = entries.length === 2;

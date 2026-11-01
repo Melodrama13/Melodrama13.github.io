@@ -4,10 +4,12 @@ import { scopesFor } from './milestoneShared.js';
 import { markPrecedentPositions } from './precedentResultPositions.js';
 import { getObservedQuantityBounds } from './precedentThresholds.js';
 import { getCardImageReleaseGate } from '../../utils/spoilerGuard.js';
+import { buildActivityPeriodMap } from '../../domain/activityPeriods.js';
 
 export const QUANTITY_GAP_MIN = 3;
 export const QUANTITY_GAP_METRICS = Object.freeze({ four: '四星', limited: '限定' });
 const snapshotCache = new WeakMap();
+const periodCount = snapshots => new Set(snapshots.map(point => point.periodKey || String(point.event.id))).size;
 const metricFor = query => query.gapMetric === 'limited' ? 'limited' : 'four';
 const excludeMiku = query => query.gapExcludeMiku ?? metricFor(query) === 'four';
 const uniqueCards = rows => [...new Map(rows.filter(Boolean).map(card => [String(card.CardID), card])).values()]
@@ -22,6 +24,7 @@ function quantitySnapshots(catalog, metric, options) {
   const cache = snapshotCache.get(catalog);
   if (cache.has(key)) return cache.get(key);
   const events = catalog.events.filter(isRegularQueryEvent);
+  const bindings = buildActivityPeriodMap(catalog.sourceEvents || catalog.events.map(source => source.event));
   const entries = catalog.allSteps.flatMap(step => step.entries)
     .filter(entry => !/测试|test/i.test(entry.source.event.event_type || '')
       && (metric === 'four' ? String(entry.card.Rarity) === '4' : isMilestoneLimited(entry.card, rules)))
@@ -42,7 +45,8 @@ function quantitySnapshots(catalog, metric, options) {
         changes.push({ name: entry.name, card: entry.card, timestamp: entry.timestamp, before: previous.count, after: previous.count + 1 });
       }
     }
-    snapshots.push({ event: source.event, timestamp, changes, counts: [...totals.values()] });
+    const binding = bindings.get(String(source.event.id));
+    snapshots.push({ event: source.event, periodKey: binding?.key || String(source.event.id), timestamp, changes, counts: [...totals.values()] });
   }
   cache.set(key, snapshots);
   return snapshots;
@@ -64,7 +68,7 @@ function comparisonSnapshots(catalog, query, rules) {
     const causes = max - min < before.gap ? caughtLow : raisedHigh.length ? raisedHigh : caughtLow;
     previous = new Map(values.map(row => [row.name, row.count]));
     previousMax = max; previousMin = min;
-    return { event: snapshot.event, timestamp: snapshot.timestamp, changes: snapshot.changes.filter(row => names.has(row.name)), before, values, max, min, gap: max - min, high, low, causes };
+    return { event: snapshot.event, periodKey: snapshot.periodKey, timestamp: snapshot.timestamp, changes: snapshot.changes.filter(row => names.has(row.name)), before, values, max, min, gap: max - min, high, low, causes };
   });
   return { snapshots, names: [...names], scopeLabel: scope?.label || '', gapMax: Math.max(QUANTITY_GAP_MIN, ...snapshots.map(row => row.gap)) };
 }
@@ -105,7 +109,7 @@ function makeGapRun(query, scopeLabel, snapshots, recovery) {
     gapMetric: metricFor(query), gapComparison: personal ? 'personal' : 'range', gapOperator: query.gapOperator === 'equal' ? 'equal' : 'atLeast', gapThreshold: query.gapThreshold,
     scope: query.scope || 'all', scopeLabel, name, isPersonalAchievement: personal,
     subject: { kind: personal ? 'person' : 'cohort' }, gapExcludeMiku: excludeMiku(query),
-    after: snapshots.length, value: snapshots.length, duration: snapshots.length, episodeDuration: snapshots.length,
+    after: periodCount(snapshots), value: periodCount(snapshots), duration: periodCount(snapshots), episodeDuration: periodCount(snapshots),
     peakGap: Math.max(...snapshots.map(row => row.gap)), gapSnapshots: snapshots, recovery,
     ongoing: !recovery, recovered: Boolean(recovery && recovery.gap < query.gapThreshold),
     startEvent: first.event, startTimestamp: first.timestamp, event: end.event, events: [end.event], timestamp: end.timestamp,
@@ -166,10 +170,14 @@ export function collectQuantityGapMilestones(catalog, emit, rules = {}) {
       emit({ ...run, key: `milestone:${run.key}:onset`, category: 'gap', priority: 42, milestoneAction: 'onset',
         event: first.event, events: [first.event], timestamp: first.timestamp });
       if (!run.previousDuration) continue;
-      for (let index = run.previousDuration; index < run.gapSnapshots.length; index++) {
+      let bestDuration = run.previousDuration;
+      for (let index = 0; index < run.gapSnapshots.length; index++) {
         const point = run.gapSnapshots[index], snapshots = run.gapSnapshots.slice(0, index + 1);
+        const duration = periodCount(snapshots);
+        if (duration <= bestDuration) continue;
+        const previousDuration = bestDuration; bestDuration = duration;
         emit({ ...run, key: `milestone:${run.key}:duration:${point.event.id}`, category: 'gap', priority: 41,
-          milestoneAction: 'duration', previousDuration: index, after: index + 1, value: index + 1, duration: index + 1, episodeDuration: index + 1,
+          milestoneAction: 'duration', previousDuration, after: duration, value: duration, duration, episodeDuration: duration,
           gapSnapshots: snapshots, recovery: null, recovered: false, ongoing: true,
           peakGap: Math.max(...snapshots.map(row => row.gap)), event: point.event, events: [point.event], timestamp: point.timestamp,
           contributors: point.low.map(row => ({ name: row.name })), sequenceEvents: snapshots.map(row => row.event),

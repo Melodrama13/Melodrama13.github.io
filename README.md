@@ -9,10 +9,12 @@
 ## 开发脚本与数据同步
 
 - `scripts/` 保存随公开仓库发布的构建插件和 UI 检查脚本，作用见 [脚本说明](scripts/README.md)。
-- `sync-scripts/` 保存私有的数据抓取、活动/卡片/歌曲同步及图片同步脚本，整个目录由 Git 忽略。脚本内容在 `Melodrama13/pjsk-planner-sync-private` 私有仓库维护。
+- 数据抓取、活动/卡片/歌曲/WL 篇章同步及图片同步脚本，唯一源码在 `Melodrama13/pjsk-planner-sync-private` 私有仓库的 `scripts/`；本地默认将该仓库检出到网站同级目录。
 - `.sync-private/` 是 GitHub 自动同步任务检出私有仓库的临时目录，本地开发通常没有这个目录；它也由 Git 忽略。
 
-在本地使用同步命令前，将私有仓库 `scripts/` 中的 `.mjs` 文件放入本站的 `sync-scripts/`。例如 `npm run fetch:other-source` 抓取源数据，`npm run sync:songs-other:dry` 预览歌曲同步结果。现有同步命令名称仍可照常使用；CI 会自动将私有脚本安装到该目录。
+本地从网站根目录直接执行私有仓库脚本，例如 `node ../pjsk-planner-sync-private/scripts/fetch-other-source.mjs` 抓取源数据，`node ../pjsk-planner-sync-private/scripts/sync-songs-other-source.mjs --dry-run` 预览歌曲同步。数据和报告仍属于网站目录。原 npm 同步命令和 CI 工作流保持原样，继续供 CI 临时安装脚本后执行；本机辅助工具可以只保存在忽略目录，不需要改写共用命令或上传。
+
+**长期维护规则：同步逻辑只在私有仓库直接修改、检查和提交，不再手工维护本地 `sync-scripts/` 副本。** CI 保持原有流程，每次从私有仓库临时复制到 `sync-scripts/` 后执行，无需维护第二份源码。普通网站开发、构建无需检出私有仓库。
 
 ## 页面总览
 

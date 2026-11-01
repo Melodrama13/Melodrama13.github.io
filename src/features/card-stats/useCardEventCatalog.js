@@ -109,6 +109,8 @@ export function useCardEventCatalog(inputs) {
   });
 
   const cardPeriodIndex = computed(() => buildCardPeriodIndex({
+    events: (inputs.props.allEvents || []).filter(event => !shouldSkipPredictEvent(event) && validPeriodEventIds.value.includes(Number(event.id))),
+    allEvents: inputs.props.allEvents || [], dateForEvent: event => inputs.presentation.parseDateSafe(event.start_date),
     eventIds: validPeriodEventIds.value,
     eventDates: validPeriodEvents.value.map(event => event.dateObj)
   }));

@@ -5,6 +5,8 @@
         ref="drawerRef"
         v-show="isOpen"
         v-liquid-glass
+        :data-ui-glass-profile="isMobileViewport ? null : 'lens'"
+        :data-ui-glass-rendering="isMobileViewport ? null : 'single-pass'"
         :data-ui-glass-defer-rebuild="isLayoutTransitioning ? 'true' : null"
         data-feature-view="predict-drawer" data-feature-page="prediction-editor" class="predict-drawer ui-liquid-glass ui-glass-optical-detail"
         :class="{
@@ -36,6 +38,7 @@
   :selectedRenderKey="selectedRenderKey"
   :shouldMarkBannerCard="shouldMarkBannerCard"
   :charMap="charMap"
+  :getCharColor="getCharColor"
   :VS_NAMES="VS_NAMES"
   :isVSUnitLocked="isVSUnitLocked"
   :UNITS="UNITS"
@@ -98,6 +101,7 @@ const props = defineProps({
   isLayoutTransitioning: { type: Boolean, default: false },
   event: { type: Object, default: null },
   charMap: { type: Object, default: () => ({}) },
+  getCharColor: { type: Function, default: () => 'var(--pe-glass-border)' },
   boxLockedUnits: { type: Array, default: () => [] },
   allCharacters: { type: Array, default: () => [] }
 });

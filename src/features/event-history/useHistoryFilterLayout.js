@@ -3,64 +3,24 @@ import { isViewportAtMost, UI_BREAKPOINTS } from '../../ui/breakpoints.js';
 
 /** Filter Layout owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
- * Dependencies: PredictionEditor, Navigation, Lifecycle, PreviewLayout, Filtering.
+ * Dependencies: PredictionEditor, Navigation, Lifecycle, PreviewLayout, Filtering, Rows.
  */
 export function useHistoryFilterLayout(ports) {
 const isCompactFilterBar = ref(false);
 
 const isBottomPredictEditorMode = ref(false);
 
-const isEditorFilterTight = ref(false);
-
-const isEditorFilterMobile = ref(false);
-
 let resizeRafId = 0;
-
-let filterAdaptRafId = 0;
-
-let filterAdaptFramesLeft = 0;
-
-const getEditorDrawerWidthEstimate = () => {
-  if (typeof window === 'undefined') return 360;
-  return Math.min(380, Math.max(320, window.innerWidth * 0.3));
-};
-
-const getHistoryWidthWithEditor = () => {
-  if (typeof window === 'undefined') return 0;
-  if (!ports.predictionEditor.isEditorOpen.value || isBottomPredictEditorMode.value) return window.innerWidth;
-  const wrapperWidth = ports.navigation.historyWrapperRef.value instanceof HTMLElement
-    ? ports.navigation.historyWrapperRef.value.getBoundingClientRect().width
-    : window.innerWidth;
-  return Math.max(0, wrapperWidth - getEditorDrawerWidthEstimate());
-};
+let filterFitSequence = 0;
 
 const applyMeasuredFilterFit = () => {
   if (!ports.lifecycle.isHistoryPageActive) return;
-  if (!ports.predictionEditor.isEditorOpen.value || isBottomPredictEditorMode.value || !isEditorFilterTight.value) return;
+  if (isBottomPredictEditorMode.value) return;
   const bar = ports.navigation.filterBarRef.value;
   if (!(bar instanceof HTMLElement)) return;
-  const needsMobile = bar.scrollWidth > bar.clientWidth + 1;
-  if (needsMobile !== isEditorFilterMobile.value) {
-    isEditorFilterMobile.value = needsMobile;
-    isCompactFilterBar.value = isViewportAtMost(window.innerWidth, UI_BREAKPOINTS.compactMax) || needsMobile;
-  }
-};
-
-const scheduleMeasuredFilterFit = () => {
-  if (!ports.lifecycle.isHistoryPageActive) return;
-  if (filterAdaptRafId) cancelAnimationFrame(filterAdaptRafId);
-  filterAdaptFramesLeft = 6;
-  const tick = () => {
-    filterAdaptRafId = 0;
-    applyMeasuredFilterFit();
-    filterAdaptFramesLeft -= 1;
-    if (filterAdaptFramesLeft > 0 && ports.predictionEditor.isEditorOpen.value && !isEditorFilterMobile.value) {
-      filterAdaptRafId = requestAnimationFrame(tick);
-    }
-  };
-  filterAdaptRafId = requestAnimationFrame(() => {
-    tick();
-  });
+  // Flex/Grid has already reduced the gaps and button gutters. Compact only
+  // when the complete labels still exceed the real available width.
+  isCompactFilterBar.value = bar.scrollWidth > bar.clientWidth + 1;
 };
 
 const updateCompactFilterState = () => {
@@ -69,17 +29,11 @@ const updateCompactFilterState = () => {
   const nextBottomMode = isViewportAtMost(viewportWidth, UI_BREAKPOINTS.compactMax);
   isBottomPredictEditorMode.value = nextBottomMode;
 
-  const historyWidth = getHistoryWidthWithEditor();
-  const editorSideMode = ports.predictionEditor.isEditorOpen.value && !nextBottomMode;
-  const editorTight = editorSideMode && historyWidth > 0 && historyWidth < 900;
-
-  isEditorFilterTight.value = editorTight;
-  isEditorFilterMobile.value = false;
-  isCompactFilterBar.value = isViewportAtMost(viewportWidth, UI_BREAKPOINTS.compactMax);
-
-  if (editorTight) {
+  isCompactFilterBar.value = nextBottomMode;
+  const sequence = ++filterFitSequence;
+  if (!nextBottomMode) {
     nextTick(() => {
-      scheduleMeasuredFilterFit();
+      if (sequence === filterFitSequence) applyMeasuredFilterFit();
     });
   }
 };
@@ -98,7 +52,13 @@ const handleWindowResize = () => {
 };
 
 function watchEditorFilterLayout() {
-watch([ports.filtering.showFilter, ports.predictionEditor.isEditorOpen], () => {
+watch([
+  ports.filtering.showFilter,
+  ports.filtering.hasActiveFilters,
+  ports.rows.filterHitEventCount,
+  ports.predictionEditor.isEditorOpen,
+  ports.navigation.isEditorSpaceReserved,
+], () => {
   if (!ports.lifecycle.isHistoryPageActive) return;
   nextTick(() => {
     if (!ports.lifecycle.isHistoryPageActive) return;
@@ -110,14 +70,10 @@ watch([ports.filtering.showFilter, ports.predictionEditor.isEditorOpen], () => {
 return {
   isCompactFilterBar,
   isBottomPredictEditorMode,
-  isEditorFilterTight,
-  isEditorFilterMobile,
   updateCompactFilterState,
   handleWindowResize,
   get resizeRafId() { return resizeRafId; },
   set resizeRafId(value) { resizeRafId = value; },
-  get filterAdaptRafId() { return filterAdaptRafId; },
-  set filterAdaptRafId(value) { filterAdaptRafId = value; },
   watchEditorFilterLayout,
 };
 }

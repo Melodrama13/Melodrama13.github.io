@@ -10,7 +10,7 @@
   top: 0;
   left: 0;
   overflow: hidden;
-  --editor-drawer-width: clamp(320px, 30vw, 380px);
+  --editor-drawer-width: var(--ui-predict-editor-width);
   --preview-config-top: 16px;
   --eh-radius-card: 16px;
   --eh-radius-panel: 16px;
@@ -843,7 +843,8 @@
 
 .preview-step-empty, :global([data-feature-page="history"] :is(.preview-step-empty)), :global(:is(.preview-step-empty)[data-feature-page="history"]) {
   justify-content: center;
-  background: rgba(255, 255, 255, 0.34);
+  background: transparent;
+  box-shadow: none;
 }
 
 .preview-resize-handle, :global([data-feature-page="history"] :is(.preview-resize-handle)), :global(:is(.preview-resize-handle)[data-feature-page="history"]) {
@@ -888,7 +889,7 @@ button:not(:disabled):active, :global([data-feature-page="history"] :is(button:n
    但给左侧列表增加 marginRight */
 @media (min-width: 901px) {
   .event-history-wrapper.with-editor-space .event-history, :global([data-feature-page="history"] :is(.event-history-wrapper.with-editor-space .event-history)), :global(:is(.event-history-wrapper.with-editor-space .event-history)[data-feature-page="history"]) {
-    margin-right: var(--editor-drawer-width); /* 强制拉开距离，绝不重叠 */
+    margin-right: calc(var(--editor-drawer-width) + var(--ui-predict-editor-inset));
   }
 }
 
@@ -966,104 +967,6 @@ button:not(:disabled):active, :global([data-feature-page="history"] :is(button:n
 .current-btn, :global([data-feature-page="history"] :is(.current-btn)), :global(:is(.current-btn)[data-feature-page="history"]) {
   min-width: 58px;
   font-weight: 700;
-}
-
-.filter-bar.is-editor-tight, :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight)), :global(:is(.filter-bar.is-editor-tight)[data-feature-page="history"]) {
-  gap: 4px;
-  padding: 6px;
-  scrollbar-width: none;
-}
-
-.filter-bar.is-editor-tight::-webkit-scrollbar, :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight)::-webkit-scrollbar), :global(:is(.filter-bar.is-editor-tight)[data-feature-page="history"]::-webkit-scrollbar) {
-  display: none;
-}
-
-.filter-bar.is-editor-tight .sort-btn,
-.filter-bar.is-editor-tight .nav-btn,
-.filter-bar.is-editor-tight .clear-btn,
-:global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .sort-btn)),
-:global(:is(.filter-bar.is-editor-tight .sort-btn)[data-feature-page="history"]),
-:global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .nav-btn)),
-:global(:is(.filter-bar.is-editor-tight .nav-btn)[data-feature-page="history"]),
-:global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .clear-btn)),
-:global(:is(.filter-bar.is-editor-tight .clear-btn)[data-feature-page="history"]) {
-  height: 31px;
-  min-height: 31px;
-  padding: 0 7px;
-  font-size: 0.72rem;
-  gap: 3px;
-}
-
-.filter-bar.is-editor-tight .sort-btn, :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .sort-btn)), :global(:is(.filter-bar.is-editor-tight .sort-btn)[data-feature-page="history"]) {
-  min-width: 78px;
-}
-
-.filter-bar.is-editor-tight .nav-btn:not(.is-icon-only), :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .nav-btn:not(.is-icon-only))), :global(:is(.filter-bar.is-editor-tight .nav-btn:not(.is-icon-only))[data-feature-page="history"]) {
-  min-width: 0;
-}
-
-.filter-bar.is-editor-tight .current-btn, :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .current-btn)), :global(:is(.filter-bar.is-editor-tight .current-btn)[data-feature-page="history"]) {
-  min-width: 52px;
-}
-
-.filter-bar.is-editor-tight .compact-btn-icon, :global([data-feature-page="history"] :is(.filter-bar.is-editor-tight .compact-btn-icon)), :global(:is(.filter-bar.is-editor-tight .compact-btn-icon)[data-feature-page="history"]) {
-  width: 14px;
-  height: 14px;
-}
-
-.filter-bar.is-editor-mobile, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile)), :global(:is(.filter-bar.is-editor-mobile)[data-feature-page="history"]) {
-  gap: 3px;
-  padding: 5px 6px;
-  scrollbar-width: none;
-}
-
-.filter-bar.is-editor-mobile::-webkit-scrollbar, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile)::-webkit-scrollbar), :global(:is(.filter-bar.is-editor-mobile)[data-feature-page="history"]::-webkit-scrollbar) {
-  display: none;
-}
-
-.filter-bar.is-editor-mobile .sort-btn,
-.filter-bar.is-editor-mobile .nav-btn,
-.filter-bar.is-editor-mobile .clear-btn,
-:global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .sort-btn)),
-:global(:is(.filter-bar.is-editor-mobile .sort-btn)[data-feature-page="history"]),
-:global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .nav-btn)),
-:global(:is(.filter-bar.is-editor-mobile .nav-btn)[data-feature-page="history"]),
-:global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .clear-btn)),
-:global(:is(.filter-bar.is-editor-mobile .clear-btn)[data-feature-page="history"]) {
-  min-width: 0;
-  height: 30px;
-  min-height: 30px;
-  padding: 0 6px;
-  font-size: 0.72rem;
-}
-
-.filter-bar.is-editor-mobile .nav-btn.is-icon-only, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .nav-btn.is-icon-only)), :global(:is(.filter-bar.is-editor-mobile .nav-btn.is-icon-only)[data-feature-page="history"]) {
-  width: 30px;
-  min-width: 30px;
-  height: 30px;
-  min-height: 30px;
-  padding: 0;
-}
-
-.filter-bar.is-editor-mobile .nav-btn.compact-tip.has-count, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .nav-btn.compact-tip.has-count)), :global(:is(.filter-bar.is-editor-mobile .nav-btn.compact-tip.has-count)[data-feature-page="history"]) {
-  width: auto;
-  min-width: 52px;
-  padding: 0 8px;
-  gap: 3px;
-  aspect-ratio: auto;
-}
-
-.filter-bar.is-editor-mobile .sort-btn, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .sort-btn)), :global(:is(.filter-bar.is-editor-mobile .sort-btn)[data-feature-page="history"]) {
-  min-width: 80px;
-}
-
-.filter-bar.is-editor-mobile .current-btn, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .current-btn)), :global(:is(.filter-bar.is-editor-mobile .current-btn)[data-feature-page="history"]) {
-  min-width: 52px;
-}
-
-.filter-bar.is-editor-mobile .compact-btn-icon, :global([data-feature-page="history"] :is(.filter-bar.is-editor-mobile .compact-btn-icon)), :global(:is(.filter-bar.is-editor-mobile .compact-btn-icon)[data-feature-page="history"]) {
-  width: 14px;
-  height: 14px;
 }
 
 .compact-btn-icon, :global([data-feature-page="history"] :is(.compact-btn-icon)), :global(:is(.compact-btn-icon)[data-feature-page="history"]) {

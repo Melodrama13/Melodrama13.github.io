@@ -4,8 +4,11 @@
       <HistoryPrecedentCardGallery v-if="item.card" :cards="[item.card]" :presentation="presentation" :card-media="cardMedia" :attribute-labels="attributeLabels" :event-for-card="() => item.event" :jump-to-event="jumpToEvent" :date-label="item.event.start_date" />
       <template v-else>
         <div class="precedent-event-unit precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="item.event.event_title || item.event.event_type" :aria-label="item.units?.length ? item.units.map(unit => unit.toUpperCase()).join('、') : item.event.event_type" role="img"><img v-for="unit in item.units" :key="unit" :src="`/elements/unit_mini_${unit}.png`" :alt="unit.toUpperCase()" /><Layers v-if="!item.units?.length" :size="28" aria-hidden="true" /></div>
-        <button type="button" class="pjsk-ui-action precedent-event-jump precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="`#${item.event.id} · ${item.event.event_title || ''}`" :aria-label="`定位活动 ${item.event.id}`" @click="jumpToEvent(item.event.id)"><span>{{ presentation.formatSeriesCompact(item.event) || item.event.event_type || `#${item.event.id}` }}</span><ArrowUpRight :size="10" aria-hidden="true" /></button>
-        <time>{{ item.event.start_date }}</time>
+        <div v-if="item.events?.length > 1" class="precedent-period-members" :data-period-ids="item.events.map(event => event.id).join(',')">
+          <small>合计 1 期</small>
+          <template v-for="event in item.events" :key="event.id"><button type="button" class="pjsk-ui-action precedent-event-jump precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="`#${event.id} · ${event.event_title || ''}`" :aria-label="`定位活动 ${event.id}`" @click="jumpToEvent(event.id)"><span>{{ event.unit || presentation.formatSeriesCompact(event) || `#${event.id}` }}</span><ArrowUpRight :size="10" aria-hidden="true" /></button><time>{{ event.start_date }}</time></template>
+        </div>
+        <template v-else><button type="button" class="pjsk-ui-action precedent-event-jump precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="`#${item.event.id} · ${item.event.event_title || ''}`" :aria-label="`定位活动 ${item.event.id}`" @click="jumpToEvent(item.event.id)"><span>{{ presentation.formatSeriesCompact(item.event) || item.event.event_type || `#${item.event.id}` }}</span><ArrowUpRight :size="10" aria-hidden="true" /></button><time>{{ item.event.start_date }}</time></template>
       </template>
     </li>
   </ul>
@@ -29,4 +32,6 @@ defineProps({ items: { type: Array, required: true }, presentation: { type: Obje
 .precedent-event-jump > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .precedent-event-jump > svg { flex-shrink: 0; }
 .precedent-event-gallery time { display: block; width: 100%; text-align: center; font-size: 0.6875rem; line-height: 1.25; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.precedent-period-members { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
+.precedent-period-members small { color: var(--precedent-accent); font-size: 0.625rem; }
 </style>

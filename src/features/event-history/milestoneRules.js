@@ -4,7 +4,7 @@ import { isWorldLinkCardType } from '../../domain/worldLink.js';
 export const DEFAULT_MILESTONE_RULES = Object.freeze({
   includeWl3: false, includeSongLimited: true, includeUnitScoreInPureScore: false,
   includeCollabRewardCards: false, useRewardCountForLowStars: true,
-  includeFestivalFes: false,
+  includeFestivalFes: true,
   poolIncludeFes: false, poolOwnVsOnly: true,
 });
 export function normalizeMilestoneRules(options = {}) {
@@ -25,6 +25,8 @@ export const MILESTONE_METRICS = Object.freeze({
   boxFesLimitedBanner: '箱活百六限Banner', mixedFesLimitedBanner: '混活百六限Banner',
 });
 export const isFesCard = card => ['cfes', 'bfes'].includes(String(card?.Type).toLowerCase());
+export const isFestivalLimitedSource = source => /^\d+$/.test(String(source.event.id)) && source.event.gacha_type === '普通限定'
+  && (source.allCards || source.cards).some(entry => isFesCard(entry.card));
 export const isPoolFesCard = card => isFesCard(card) || /^cfes|^bfes_up$/.test(String(card?.Skill).toLowerCase());
 export const isFesMilestoneSkill = skill => /^cfes|^bfes/.test(String(skill).toLowerCase());
 export const isPoolLimitedCard = card => isWorldLinkCardType(card?.Type) || ['limited', 'collab', 'collab_t', 'cfes', 'bfes'].includes(String(card?.Type).toLowerCase());

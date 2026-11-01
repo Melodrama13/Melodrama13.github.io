@@ -33,6 +33,63 @@
 
 /* 展开动画 */
 
+/* Empty grid tracks are the button's flexible side gutters. Separate flex
+   gaps share the same shortage, so text/icons stay intact without measuring
+   or changing the enclosing capsule's padding. */
+.filter-bar:not(.is-compact) {
+  column-gap: 0;
+}
+
+.toolbar-button-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  grid-column: 2;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.toolbar-gap {
+  flex: 0 1 10px;
+  min-width: 2px;
+  pointer-events: none;
+}
+
+.filter-bar:not(.is-compact) > button:is(.sort-btn, .nav-btn) {
+  display: grid;
+  grid-template-columns: minmax(4px, var(--toolbar-side-gutter, 15px)) max-content minmax(4px, var(--toolbar-side-gutter, 15px));
+  column-gap: 0;
+  flex: 0 1 auto;
+  min-width: min-content;
+  padding-inline: 0;
+}
+
+.filter-bar:not(.is-compact) > .sort-btn {
+  --toolbar-side-gutter: 16px;
+}
+
+.filter-bar.is-compact .toolbar-button-content {
+  gap: inherit;
+}
+
+.filter-bar.is-compact .toolbar-gap {
+  display: none;
+}
+
+@media (min-width: 901px) {
+  .filter-bar:not(.is-compact), .filter-bar.is-compact {
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 1280px) {
+  .toolbar-gap { flex-basis: 8px; }
+  .filter-bar:not(.is-compact) > button:is(.sort-btn, .nav-btn) {
+    --toolbar-side-gutter: 10px;
+  }
+}
+
+
 
 /* 1. 基础信息：日期下方居中显示节日 */
 

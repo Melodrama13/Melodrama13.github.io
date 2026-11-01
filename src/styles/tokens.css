@@ -1,4 +1,6 @@
 :root {
+  --ui-predict-editor-width: clamp(320px, 30vw, 380px);
+  --ui-predict-editor-inset: 12px;
   --ui-shell-glass-bg: linear-gradient(
     145deg,
     rgba(255, 255, 255, 0.52),
@@ -115,8 +117,14 @@
     radial-gradient(circle at 10% 78%, rgba(153, 246, 228, 0.20), transparent 34%),
     radial-gradient(circle at 52% 18%, rgba(251, 146, 160, 0.14), transparent 30%),
     linear-gradient(180deg, #f9fafb 0%, #f3f7f6 48%, #f8f5f8 100%);
+  --ui-predict-editor-backdrop:
+    radial-gradient(ellipse 210px 230px at calc(100% - 80px) 24%, rgba(56, 189, 248, 0.30), rgba(125, 211, 252, 0.12) 48%, transparent 80%),
+    radial-gradient(ellipse 240px 210px at calc(100% - 310px) 55%, rgba(167, 139, 250, 0.28), rgba(196, 181, 253, 0.10) 50%, transparent 82%),
+    radial-gradient(ellipse 230px 220px at calc(100% - 90px) 84%, rgba(251, 146, 160, 0.20), rgba(254, 205, 211, 0.07) 52%, transparent 84%),
+    radial-gradient(ellipse at 10% 78%, rgba(153, 246, 228, 0.16), transparent 42%),
+    linear-gradient(180deg, #f8fafc 0%, #f4f8f8 48%, #f8f6fb 100%);
   --ui-glass-refractive-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(248, 250, 252, 0.22) 46%, rgba(226, 232, 240, 0.16));
-  --ui-glass-editor-refractive-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(248, 250, 252, 0.10) 48%, rgba(226, 232, 240, 0.08));
+  --ui-glass-editor-refractive-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.025), rgba(178, 178, 178, 0.025));
   --ui-glass-editor-refraction-blur: 1.5;
   --ui-glass-editor-refraction-strength: 1.8;
   --ui-glass-editor-refraction-spread: 1.75;

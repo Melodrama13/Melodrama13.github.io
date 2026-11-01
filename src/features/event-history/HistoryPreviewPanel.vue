@@ -70,7 +70,7 @@
                 <span>{{ row.Mysterious }}</span>
               </div>
               <div v-if="previewAttrFiveRows.length === 0" class="preview-step preview-step-empty">
-                <span class="preview-meta">请先在上方选择最多8位角色</span>
+                <span class="preview-meta">请先选择最多8位角色</span>
               </div>
             </template>
             <template v-else-if="panel.id === 'festival'">
@@ -231,7 +231,7 @@
                 </table>
               </div>
               <div v-if="previewDailyLineupRows.length === 0" class="preview-step preview-step-empty">
-                <span class="preview-meta">请先在上方选择最多6位角色</span>
+                <span class="preview-meta">请先选择最多6位角色</span>
               </div>
             </template>
             <template v-else-if="panel.id === 'char-attr'">
@@ -287,7 +287,7 @@
                 </table>
               </div>
               <div v-if="previewCharAttrRows.length === 0" class="preview-step preview-step-empty">
-                <span class="preview-meta">请先在上方选择最多6位角色</span>
+                <span class="preview-meta">请先选择最多6位角色</span>
               </div>
             </template>
             <template v-else>

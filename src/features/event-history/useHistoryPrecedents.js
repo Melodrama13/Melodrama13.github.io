@@ -266,7 +266,7 @@ export function useHistoryPrecedents(ports) {
       ? `此前最长 ${record.previousDuration} 期 · 本期刷新纪录`
       : record.milestoneAction === 'onset' ? `${record.scopeLabel} · 本段持续 ${record.episodeDuration} 期`
       : `${record.scopeLabel} · 最大差距 ${record.peakGap} 张`;
-    if (record.type === 'sequence') return `${record.sequenceOwner ? `${record.sequenceOwner}箱活` : SEQUENCE_LABELS[record.sequence] || '全部活动'} · ${record.sequenceMetric === 'sameAttribute' ? record.streakProperty === 'skill' ? '同技能' : '同色' : SEQUENCE_METRICS[record.sequenceMetric]}`;
+    if (record.type === 'sequence') return `${record.sequenceOwner ? record.sequence === 'otherBox' ? `${record.sequenceOwner} · 本团非本人箱活` : `${record.sequenceOwner}箱活` : SEQUENCE_LABELS[record.sequence] || '全部活动'} · ${record.sequenceMetric === 'sameAttribute' ? record.streakProperty === 'skill' ? '同技能' : '同色' : SEQUENCE_METRICS[record.sequenceMetric]}`;
     if (record.type === 'pool') {
       const matches = record.configurationMatches || [], rewards = matches.filter(match => ['2', '3'].includes(String(match.card.Rarity))).length;
       return `${record.totalUp} 张 UP${matches.length ? ` · 匹配 ${matches.length} 张${rewards ? ` · 含 ${rewards} 张报酬` : ''}` : ' · 完整卡池'}`;
@@ -311,7 +311,7 @@ export function useHistoryPrecedents(ports) {
         timestamp: point.timestamp, holders: index ? record.recoveryActors || [] : record.onsetActors || [], events: [eventContexts.value.get(String(point.event.id)) || point.event] }));
     }
     if (['sequence', 'period'].includes(record.type)) {
-      return [{ key: 'start', label: '起点', timestamp: record.startTimestamp, holders: [], events: record.startEvent ? [eventContexts.value.get(String(record.startEvent.id)) || record.startEvent] : [] },
+      return [{ key: 'start', label: '起点', timestamp: record.startTimestamp, holders: [], events: (record.startEvents || (record.startEvent ? [record.startEvent] : [])).map(event => eventContexts.value.get(String(event.id)) || event) },
         { key: 'end', label: '终点', timestamp: record.timestamp, holders: record.contributors || [], events: record.events.map(event => eventContexts.value.get(String(event.id)) || event) }];
     }
     if (record.type === 'interval') points.push({
@@ -343,11 +343,13 @@ export function useHistoryPrecedents(ports) {
   watch(() => draft.character, value => { if (value === draft.secondCharacter) draft.secondCharacter = ''; });
   watch(() => draft.sequenceMetric, metric => {
     if (draft.type !== 'sequence') return;
-    draft.sequence = metric === 'sameAttribute' ? 'cards' : ['bannerUnit', 'flowerGap', 'quantityGap'].includes(metric) ? 'all' : 'unitBox';
+    if (!sequenceOptions(draft).some(option => option.value === draft.sequence)) draft.sequence = metric === 'sameAttribute' ? 'cards'
+      : ['bannerUnit', 'flowerGap', 'quantityGap'].includes(metric) ? 'all' : 'unitBox';
     draft.attribute = 'any'; draft.skill = ''; draft.vs = ''; draft.character = ''; draft.secondCharacter = ''; draft.onlyMilestones = false;
     draft.sequenceOwner = ''; draft.streakProperty = 'attribute'; draft.includeBirthday = false;
     if (metric === 'quantityGap') Object.assign(draft, { gapMetric: 'four', gapComparison: 'range', gapThreshold: QUANTITY_GAP_MIN, gapOperator: 'atLeast', gapExcludeMiku: true });
     if (metric === 'songVs') draft.includeWl = false;
+    if (draft.sequence === 'festival') draft.includeFes = true;
     draft.threshold = 'MAX'; resetSearch();
   }, { flush: 'sync' });
   watch(() => draft.gapMetric, value => {
@@ -384,9 +386,13 @@ export function useHistoryPrecedents(ports) {
     if (draft.type === 'period' && draft.periodValue !== 'all' && !options.some(option => option.key === draft.periodValue)) draft.periodValue = 'all';
   });
   watch(() => draft.sequence, value => {
-    if (draft.sequenceMetric === 'songVs' && value !== 'ownBox') draft.character = '';
-    if (value !== 'ownBox') draft.sequenceOwner = '';
+    if (draft.sequenceMetric === 'songVs' && !['ownBox', 'otherBox'].includes(value)) draft.character = '';
+    if (!['ownBox', 'otherBox'].includes(value)) draft.sequenceOwner = '';
+    if (value === 'otherBox' && draft.sequenceMetric !== 'pair' && catalog.value.characterByName.get(draft.character)?.unit === 'vs') draft.character = '';
+    if (['otherBox', 'festival'].includes(value)) draft.includeWl = false;
+    if (value === 'festival') draft.includeFes = true;
     if (value !== 'allCards') draft.includeBirthday = false;
+    draft.threshold = 'MAX';
   });
   watch([() => draft.includeBirthday, () => draft.sequence], ([includeBirthday, sequence]) => {
     if ((!includeBirthday || sequence !== 'allCards') && draft.skill === 'birthday') draft.skill = '';

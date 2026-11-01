@@ -1,10 +1,9 @@
 import { makeThresholdCheckpoint, getThresholdAdvancement } from './precedentThresholds.js';
 import { scopesFor, groupBy, bannerEntries, makeMilestone } from './milestoneShared.js';
-import { getEntryMetrics, isFesCard } from './milestoneRules.js';
+import { getEntryMetrics, isFestivalLimitedSource } from './milestoneRules.js';
 
 export function getCountContributions(catalog, rules) {
-  const festivalIds = new Set(catalog.events.filter(s => /^\d+$/.test(String(s.event.id)) && s.event.gacha_type === '普通限定'
-    && (s.allCards || s.cards).some(e => isFesCard(e.card))).map(s => String(s.event.id)));
+  const festivalIds = new Set(catalog.events.filter(isFestivalLimitedSource).map(s => String(s.event.id)));
   const contributions = (catalog.allSteps || catalog.steps).flatMap(s => s.entries.flatMap(e => getEntryMetrics(e, rules, festivalIds).map(metric => ({ ...e, metric }))));
   for (const entry of bannerEntries(catalog)) {
     const box = entry.source.event.event_type === '箱活';

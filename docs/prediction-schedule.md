@@ -63,7 +63,7 @@
 
 顺序表、活动资源和代码应一起发布，公共缓存及资源版本包含顺序表。活动同步不再需要 `--prediction-order-file`，也不读取、写入或生成 `pjsk_prediction_schedule.json`，不向活动资料补写永久 key。检查活动副本时可运行 `npm run check:prediction-order -- --events-file 路径 --order-file 路径`。
 
-CI 从私有脚本仓库的 `scripts/` 安装 `.mjs` 文件到本站被忽略的 `sync-scripts/`，活动同步入口是 `sync-events-other-source.mjs`。本地同步也使用该目录，公开的 `scripts/` 只保存构建和检查工具。修改同步脚本时需同时维护本站运行副本与私有仓库源文件；本地实施不代表已经提交或发布网站。
+CI 从私有脚本仓库的 `scripts/` 安装 `.mjs` 文件到本站被忽略的 `sync-scripts/`，活动同步入口是 `sync-events-other-source.mjs`，临时安装流程及原 npm 命令保持不变。本地从网站根目录直接用 Node 执行同级私有仓库源码，不改 `package.json`，也不需要上传本机辅助入口。以后同步逻辑只在私有仓库更新和提交，不再手工维护网站本地副本。公开的 `scripts/` 仅保存构建和检查工具；本地实施不代表已经提交或发布网站。
 
 ## 总集篇配套卡池同步
 

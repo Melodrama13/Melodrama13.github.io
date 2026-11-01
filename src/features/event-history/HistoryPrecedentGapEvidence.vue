@@ -28,8 +28,8 @@
     </section>
     <div class="gap-period-heading"><span>持续 {{ record.after }} 期</span><small>最高 / {{ record.gapComparison === 'personal' ? '本人' : '最低' }} · 差值</small></div>
     <ol class="gap-periods" aria-label="逐期数量差距">
-      <li v-for="point in record.gapSnapshots" :key="point.event.id" :data-gap-event="point.event.id">
-        <button type="button" class="pjsk-ui-action gap-event precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="eventTitle(point.event)" :aria-label="`定位活动 ${point.event.id}`" @click="jumpToEvent(point.event.id)">{{ shortLabel(point.event) }}<ArrowUpRight :size="10" aria-hidden="true" /></button>
+      <li v-for="point in periodSnapshots" :key="point.periodKey || point.event.id" :data-gap-event="point.event.id">
+        <span class="gap-period-events"><button v-for="event in point.events" :key="event.id" type="button" class="pjsk-ui-action gap-event precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="eventTitle(event)" :aria-label="`定位活动 ${event.id}`" @click="jumpToEvent(event.id)">{{ shortLabel(event) }}<ArrowUpRight :size="10" aria-hidden="true" /></button><small v-if="point.events.length > 1">合计 1 期</small></span>
         <span class="gap-period-counts" :title="`${holderLabel(point.high)} / ${holderLabel(point.low)}`">{{ point.max }} / {{ point.low[0]?.count ?? 0 }}</span><strong class="gap-value">{{ point.gap }}</strong>
       </li>
     </ol>
@@ -44,9 +44,17 @@ const props = defineProps({ record: { type: Object, required: true }, presentati
   cardMedia: { type: Object, required: true }, attributeLabels: { type: Object, required: true },
   eventForCard: { type: Function, required: true }, jumpToEvent: { type: Function, required: true } });
 const endpoints = computed(() => [props.record.gapSnapshots[0], props.record.recovery || props.record.gapSnapshots.at(-1)]);
+const periodSnapshots = computed(() => {
+  const groups = new Map();
+  for (const point of props.record.gapSnapshots) {
+    const key = point.periodKey || String(point.event.id), previous = groups.get(key);
+    groups.set(key, { ...point, events: [...previous?.events || [], point.event] });
+  }
+  return [...groups.values()];
+});
 const changeLabels = { onset: '异常开始', peak: '差距扩大', recovery: '恢复正常', exit: '条件中断' };
 const holderLabel = rows => rows.map(row => `${row.name} ${row.count} 张`).join('、');
-const shortLabel = event => props.presentation.formatSeriesCompact(event).trim() || `#${event.id}`;
+const shortLabel = event => event.event_type === '总集篇' && event.unit ? `${event.unit}总集篇` : props.presentation.formatSeriesCompact(event).trim() || `#${event.id}`;
 const eventTitle = event => `#${event.id} · ${event.event_title || event.event_type}`;
 </script>
 
@@ -71,6 +79,8 @@ const eventTitle = event => `#${event.id} · ${event.event_title || event.event_
 .gap-period-heading small { font-size: 0.625rem; font-weight: 400; color: var(--precedent-muted); }
 .gap-periods { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 0 12px; list-style: none; margin: 4px 0 0; padding: 0; }
 .gap-periods li { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 6px 0; border-bottom: 1px solid var(--precedent-divider); }
+.gap-period-events { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; min-width: 0; }
+.gap-period-events small { color: var(--precedent-muted); font-size: 0.625rem; }
 .gap-period-counts { margin-left: auto; color: var(--precedent-muted); white-space: nowrap; font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
 .gap-value { min-width: 1ch; font-size: 0.9375rem; color: var(--precedent-accent); font-variant-numeric: tabular-nums; }
 .gap-key-changes { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--precedent-divider); }

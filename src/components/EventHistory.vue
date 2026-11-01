@@ -35,8 +35,6 @@
       <div ref="filterStickyRef" class="filter-sticky">
         <EventHistoryFilterToolbar
             :is-compact="isCompactFilterBar"
-            :is-editor-tight="isEditorFilterTight"
-            :is-editor-mobile="isEditorFilterMobile"
             :is-sort-descending="sortDesc"
             :are-birthday-rows-hidden="hideBirthdayRows"
             :are-preview-rows-hidden="hidePreviewRows"
@@ -143,6 +141,7 @@
         :is-layout-transitioning="navigation.isEditorLayoutTransitioning.value"
         :event="currentEditingEvent"
         :char-map="CHAR_MAP"
+        :get-char-color="getCharColor"
         :all-characters="props.allCharacters"
         :box-locked-units="currentEditingBoxLockedUnits"
         @selection-change="handlePredictSelectionChange"
@@ -432,8 +431,9 @@ const filterLayout = useHistoryFilterLayout({
   get lifecycle() { return lifecycle; },
   get previewLayout() { return previewLayout; },
   get filtering() { return filtering; },
+  get rows() { return rows; },
 });
-const { isCompactFilterBar, isBottomPredictEditorMode, isEditorFilterTight, isEditorFilterMobile } = filterLayout;
+const { isCompactFilterBar, isBottomPredictEditorMode } = filterLayout;
 
 const lifecycle = useHistoryLifecycle({
   emit,

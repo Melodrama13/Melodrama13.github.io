@@ -6,6 +6,7 @@ import { STATIC_CORNER_PRESETS, STATIC_CORNER_VARIANTS, STATIC_SURFACE_TOKENS, S
 import { createContinuousCornerGeometry, insetContinuousCornerGeometry, offsetContinuousCornerGeometry } from './corners/continuousCornerGeometry.js';
 import { createStaticCornerShadowImages } from './corners/staticCornerShadow.js';
 import { createStaticCornerCssClipDeclarations } from './corners/staticCornerCssClip.js';
+import { createStaticCornerLensSvg } from './corners/staticCornerLens.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const widths = [1, 2, 3, 5, 6];
@@ -107,7 +108,8 @@ export function generateStaticCorners() {
   for(const name of['group','compact'])css.push(clipRule(name,`:root[data-ui-glass-mode='frosted'] .precedent-panel [data-ui-static-corner='${name}']`));
   for(const mode of STATIC_SURFACE_MODES)css.push(`@media ${mode.media}{${clipRule(`panel-${mode.name}`,panelSelector)}}`);
   write(path.join(root, 'src/styles/static-corner-presets.generated.css'), css.join('\n') + '\n');
-  return { presets: blocks.size, assets: blocks.size * 3 };
+  write(path.join(root,'public/ui/corners/editor-lens-bevel.svg'),createStaticCornerLensSvg(STATIC_CORNER_PRESETS.panel));
+  return { presets: blocks.size, assets: blocks.size * 3 + 1 };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) console.log(generateStaticCorners());

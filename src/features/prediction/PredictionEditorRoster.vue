@@ -11,6 +11,7 @@
             :key="`${char.cardId || ''}-${char.name}-${idx}`"
             class="editor-card"
             :class="{ 'is-banner-card': shouldMarkBannerCard(char) }"
+            :style="{ '--pe-banner-color': getCharColor(char.name) }"
           >
             <div class="card-left">
               <img :src="`/chars/${charMap[char.name]}.png`" class="editor-avatar" />
@@ -65,5 +66,5 @@
 
 <script setup>
 /** Native controls share the editor's per-instance form and explicit actions. */
-defineProps(["form","fixedRosterTip","selectedRenderKey","shouldMarkBannerCard","charMap","VS_NAMES","isVSUnitLocked","UNITS","getDisplayUnit","isRarityLocked","isAttrLocked","isVsFesSkillMode","ACTIVE_FES_SKILL_KEY","ACTIVE_FES_SKILL_LABEL","isSkillLocked","isPScoreAvailable","isUnitScoreLocked","isBfesSkillAvailable","isFixedRosterCollabMode"]);
+defineProps(["form","fixedRosterTip","selectedRenderKey","shouldMarkBannerCard","charMap","getCharColor","VS_NAMES","isVSUnitLocked","UNITS","getDisplayUnit","isRarityLocked","isAttrLocked","isVsFesSkillMode","ACTIVE_FES_SKILL_KEY","ACTIVE_FES_SKILL_LABEL","isSkillLocked","isPScoreAvailable","isUnitScoreLocked","isBfesSkillAvailable","isFixedRosterCollabMode"]);
 </script>

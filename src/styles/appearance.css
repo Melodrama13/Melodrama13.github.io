@@ -38,8 +38,13 @@
     radial-gradient(circle at 10% 78%, rgba(32, 119, 111, 0.13), transparent 36%),
     radial-gradient(circle at 52% 18%, rgba(175, 73, 108, 0.09), transparent 30%),
     linear-gradient(180deg, #101624 0%, #111c27 48%, #1a1729 100%);
+  --ui-predict-editor-backdrop:
+    radial-gradient(ellipse 210px 230px at calc(100% - 80px) 24%, rgba(56, 189, 248, 0.18), rgba(32, 121, 153, 0.07) 48%, transparent 80%),
+    radial-gradient(ellipse 240px 210px at calc(100% - 310px) 55%, rgba(167, 139, 250, 0.18), rgba(121, 74, 149, 0.06) 50%, transparent 82%),
+    radial-gradient(ellipse 230px 220px at calc(100% - 90px) 84%, rgba(251, 146, 160, 0.12), rgba(175, 73, 108, 0.04) 52%, transparent 84%),
+    radial-gradient(ellipse at 10% 78%, rgba(32, 119, 111, 0.10), transparent 42%),
+    linear-gradient(180deg, #101624 0%, #101b25 48%, #181724 100%);
   --ui-glass-refractive-bg: linear-gradient(145deg, rgba(70, 82, 105, 0.34), rgba(29, 39, 57, 0.26) 46%, rgba(22, 31, 48, 0.22));
-  --ui-glass-editor-refractive-bg: linear-gradient(145deg, rgba(53, 66, 89, 0.40), rgba(24, 34, 52, 0.28) 48%, rgba(21, 29, 45, 0.24));
   --ui-glass-regular-bg: linear-gradient(145deg, rgba(59, 72, 96, 0.62), rgba(31, 42, 61, 0.55) 52%, rgba(25, 35, 51, 0.48));
   --ui-glass-prominent-bg: linear-gradient(145deg, rgba(48, 62, 85, 0.82), rgba(29, 41, 61, 0.78) 52%, rgba(22, 33, 49, 0.74));
   --ui-glass-modal-bg: linear-gradient(145deg, rgba(44, 57, 79, 0.96), rgba(27, 39, 58, 0.94) 54%, rgba(23, 33, 49, 0.92));
