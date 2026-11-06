@@ -20916,18 +20916,18 @@
     "Bundle": "res025_no060"
   },
   {
-    "CardID": "-",
+    "CardID": "1495",
     "Name": "东云彰人",
     "Affiliation": "vbs",
-    "CardName": "-",
+    "CardName": "Happy Birthday！！2026",
     "Rarity": "birthday",
     "Type": "birthday",
-    "Attribute": "-",
+    "Attribute": "Cool",
     "Skill": "birthday",
     "EventID": "birth_akt6",
     "GachaID": "birth_akt6",
     "Date": "2026/11/8",
-    "Bundle": ""
+    "Bundle": "res011_no058"
   },
   {
     "CardID": "-",

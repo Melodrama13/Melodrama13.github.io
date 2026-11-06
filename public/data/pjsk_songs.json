@@ -35617,6 +35617,53 @@
     ]
   },
   {
+    "id": 761,
+    "title": "星を探して♭♭",
+    "pronunciation": "ほしをさがして",
+    "composer": "原口沙輔",
+    "lyricist": "原口沙輔",
+    "arranger": "原口沙輔",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-11-08 22:05:00",
+    "categories": [
+      "3DMV",
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "nc"
+    ],
+    "difficulties": {
+      "easy": 5,
+      "normal": 11,
+      "hard": 16,
+      "expert": 22,
+      "master": 27
+    },
+    "vocals": [
+      {
+        "vocal_id": 1318,
+        "type": "original_song",
+        "released_at": "2026/11/8",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2119,
+        "type": "sekai",
+        "released_at": "2026/11/8",
+        "characters": [
+          "宵崎奏",
+          "巡音流歌",
+          "朝比奈真冬",
+          "东云绘名",
+          "晓山瑞希"
+        ]
+      }
+    ]
+  },
+  {
     "id": 763,
     "title": "ハイドレンジア",
     "pronunciation": "はいどれんじあ",
@@ -35988,6 +36035,42 @@
         "released_at": "2026/10/7",
         "characters": [
           "KAITO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 782,
+    "title": "プシ",
+    "pronunciation": "ぷし",
+    "composer": "r-906",
+    "lyricist": "r-906",
+    "arranger": "r-906",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-11-06 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 13,
+      "hard": 21,
+      "expert": 27,
+      "master": 31,
+      "append": 34
+    },
+    "vocals": [
+      {
+        "vocal_id": 1339,
+        "type": "original_song",
+        "released_at": "2026/11/6",
+        "characters": [
+          "初音未来"
         ]
       }
     ]
