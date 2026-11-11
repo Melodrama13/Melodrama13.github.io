@@ -773,7 +773,8 @@
       "normal": 14,
       "hard": 18,
       "expert": 26,
-      "master": 30
+      "master": 30,
+      "append": 31
     },
     "vocals": [
       {
@@ -15907,6 +15908,14 @@
         ]
       },
       {
+        "vocal_id": 2120,
+        "type": "another_vocal",
+        "released_at": "2026/11/11",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
         "vocal_id": 1471,
         "type": "april_fool_2024",
         "released_at": "2024/4/1",
@@ -24461,6 +24470,14 @@
           "花里实乃里",
           "桐谷遥",
           "桃井爱莉"
+        ]
+      },
+      {
+        "vocal_id": 2121,
+        "type": "another_vocal",
+        "released_at": "2026/11/11",
+        "characters": [
+          "日野森雫"
         ]
       },
       {
@@ -36682,6 +36699,52 @@
     ]
   },
   {
+    "id": 810,
+    "title": "ノーモアフィクション",
+    "pronunciation": "のーもあふぃくしょん",
+    "composer": "晴いちばん",
+    "lyricist": "晴いちばん",
+    "arranger": "晴いちばん",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-11-11 15:00:00",
+    "categories": [
+      "2DMV"
+    ],
+    "units": [
+      "all",
+      "mmj"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 12,
+      "hard": 18,
+      "expert": 24,
+      "master": 30
+    },
+    "vocals": [
+      {
+        "vocal_id": 1854,
+        "type": "original_song",
+        "released_at": "2026/11/11",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2122,
+        "type": "sekai",
+        "released_at": "2026/11/11",
+        "characters": [
+          "日野森雫",
+          "镜音铃",
+          "花里实乃里",
+          "桐谷遥",
+          "桃井爱莉"
+        ]
+      }
+    ]
+  },
+  {
     "id": 811,
     "title": "ヘレディティ",
     "pronunciation": "へれでぃてぃ",
@@ -36914,6 +36977,41 @@
         "vocal_id": 1869,
         "type": "original_song",
         "released_at": "2026/10/26",
+        "characters": [
+          "初音未来"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 826,
+    "title": "スロウライト",
+    "pronunciation": "すろうらいと",
+    "composer": "パンタレイ",
+    "lyricist": "パンタレイ",
+    "arranger": "パンタレイ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-11-16 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 13,
+      "hard": 18,
+      "expert": 26,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1870,
+        "type": "original_song",
+        "released_at": "2026/11/16",
         "characters": [
           "初音未来"
         ]
