@@ -14424,6 +14424,14 @@
         ]
       },
       {
+        "vocal_id": 2123,
+        "type": "another_vocal",
+        "released_at": "2026/11/19",
+        "characters": [
+          "望月穗波"
+        ]
+      },
+      {
         "vocal_id": 731,
         "type": "another_vocal",
         "released_at": "2022/12/28",
@@ -14437,6 +14445,14 @@
         "released_at": "2025/2/28",
         "characters": [
           "镜音连"
+        ]
+      },
+      {
+        "vocal_id": 2124,
+        "type": "another_vocal",
+        "released_at": "2026/11/19",
+        "characters": [
+          "MEIKO"
         ]
       },
       {
@@ -24541,6 +24557,22 @@
           "凤笑梦",
           "草薙宁宁",
           "神代类"
+        ]
+      },
+      {
+        "vocal_id": 2125,
+        "type": "another_vocal",
+        "released_at": "2026/11/19",
+        "characters": [
+          "天马司"
+        ]
+      },
+      {
+        "vocal_id": 2126,
+        "type": "another_vocal",
+        "released_at": "2026/11/19",
+        "characters": [
+          "草薙宁宁"
         ]
       }
     ]
@@ -36057,6 +36089,42 @@
     ]
   },
   {
+    "id": 777,
+    "title": "レグルス（REMIX）",
+    "pronunciation": "れぐるす りみっくす",
+    "composer": "ゆうゆ",
+    "lyricist": "ゆうゆ",
+    "arranger": "かねこちはる",
+    "isNewlyWrittenMusic": true,
+    "releaseDate": "2026-11-20 15:00:00",
+    "categories": [
+      "image"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 8,
+      "normal": 14,
+      "hard": 18,
+      "expert": 26,
+      "master": 32,
+      "append": 35
+    },
+    "vocals": [
+      {
+        "vocal_id": 1334,
+        "type": "original_song",
+        "released_at": "2026/11/20",
+        "characters": [
+          "镜音铃"
+        ]
+      }
+    ]
+  },
+  {
     "id": 782,
     "title": "プシ",
     "pronunciation": "ぷし",
@@ -36502,6 +36570,41 @@
         "released_at": "2026/8/4",
         "characters": [
           "ついなちゃん"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 796,
+    "title": "ジグソーパズル",
+    "pronunciation": "じぐそーぱずる",
+    "composer": "まふまふ",
+    "lyricist": "まふまふ",
+    "arranger": "まふまふ",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-11-23 15:00:00",
+    "categories": [
+      "original"
+    ],
+    "units": [
+      "all",
+      "vs",
+      "vocaloid"
+    ],
+    "difficulties": {
+      "easy": 7,
+      "normal": 13,
+      "hard": 17,
+      "expert": 26,
+      "master": 29
+    },
+    "vocals": [
+      {
+        "vocal_id": 1353,
+        "type": "original_song",
+        "released_at": "2026/11/23",
+        "characters": [
+          "镜音连"
         ]
       }
     ]
