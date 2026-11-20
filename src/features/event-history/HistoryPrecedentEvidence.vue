@@ -38,7 +38,26 @@
       <p v-for="advance in alternateAdvancements" :key="advance.scope" class="precedent-detail-note">{{ scopeLabel(advance.scope) }} · 上一阶 {{ new Date(advance.previous.timestamp).toLocaleDateString('zh-CN') }} · {{ [...new Set(advance.previous.holders.map(holder => holder.name))].join('、') }} · 用时 {{ advance.days }} 天</p>
       <p v-if="record.type === 'pairFirst'" class="precedent-detail-note">{{ record.rules.poolIncludeFes ? '计入 FES' : '不计入 FES' }} · {{ record.rules.poolOwnVsOnly ? '仅计入本团V' : '不限VS归属' }}；限定同池计入 WL 和联动，FES依上方选项。</p>
       <p v-if="record.attainment && record.attainment.timestamp !== record.timestamp" class="precedent-detail-note">首次达到 {{ record.attainment.count }} 次 · {{ new Date(record.attainment.timestamp).toLocaleDateString('zh-CN') }} <button type="button" class="pjsk-ui-action precedent-endpoint-jump precedent-surface ui-liquid-glass ui-liquid-glass--chip" @click="jumpToEvent(record.attainment.event.id)">{{ presentation.formatSeriesCompact(record.attainment.event) || `#${record.attainment.event.id}` }}<ArrowUpRight :size="10" aria-hidden="true" /></button></p>
-      <HistoryPrecedentSongGallery v-if="record.songEvidence" :items="record.songEvidence" :presentation="presentation" :jump-to-event="jumpToEvent" />
+      <template v-if="record.metric === 'noMaleOutfit'">
+        <template v-if="evidenceOpen">
+          <p v-if="record.matchedCards.length" class="precedent-detail-note">描边标出未附服装的男角色四星。</p>
+          <ul class="precedent-outfit-activities" aria-label="活动及四星">
+            <li v-for="item in record.eventEvidence" :key="item.event.id">
+              <div class="precedent-outfit-heading">
+                <button type="button" class="pjsk-ui-action precedent-endpoint-jump precedent-surface ui-liquid-glass ui-liquid-glass--chip"
+                  :aria-label="`定位活动 ${item.event.id}`" @click="jumpToEvent(item.event.id)">
+                  <span>#{{ item.event.id }} · {{ item.event.event_title || eventShortLabel(item.event) }}</span><ArrowUpRight :size="10" aria-hidden="true" />
+                </button>
+                <time>{{ item.event.start_date }}</time>
+              </div>
+              <HistoryPrecedentCardGallery v-if="item.cards.length" :cards="item.cards" :matched-cards="record.matchedCards" :show-caption="false" match-label="未附服装"
+                :presentation="presentation" :card-media="cardMedia" :attribute-labels="attributeLabels" :event-for-card="eventForCard" :jump-to-event="jumpToEvent" />
+              <p v-else class="precedent-detail-note">无四星卡</p>
+            </li>
+          </ul>
+        </template>
+      </template>
+      <HistoryPrecedentSongGallery v-else-if="record.songEvidence" :items="record.songEvidence" :presentation="presentation" :jump-to-event="jumpToEvent" />
       <HistoryPrecedentEventGallery v-else-if="record.eventEvidence" :items="record.eventEvidence" :presentation="presentation" :card-media="cardMedia" :attribute-labels="attributeLabels" :jump-to-event="jumpToEvent" />
       <p v-else-if="record.type === 'period' && !record.evidence.length" class="precedent-detail-note">{{ record.value === 0 ? '本期间没有符合条件的记录。' : '活动依据见上方时间线。' }}</p>
       <HistoryPrecedentCardGallery v-else :cards="record.evidence" :matched-cards="record.matchedCards || []" :presentation="presentation" :card-media="cardMedia" :attribute-labels="attributeLabels" :event-for-card="eventForCard" :jump-to-event="jumpToEvent" />
@@ -100,6 +119,12 @@ const eventShortLabel = event => props.presentation.formatSeriesCompact(event).t
 .precedent-reward-breakdown > span, .precedent-evidence-scopes > span { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 7px; border-radius: 999px; background: var(--precedent-surface-fill); font-size: 0.66rem; }
 .precedent-reward-breakdown strong { color: var(--precedent-ink); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
 .precedent-detail-note { margin: 7px 0; font-size: 0.69rem; line-height: 1.5; color: var(--precedent-muted); }
+.precedent-outfit-activities { display: grid; gap: 9px; margin: 7px 0 0; padding: 0; list-style: none; }
+.precedent-outfit-activities > li { min-width: 0; }
+.precedent-outfit-activities > li + li { border-top: 1px solid var(--precedent-divider); padding-top: 9px; }
+.precedent-outfit-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 8px; }
+.precedent-outfit-heading button span { min-width: 0; overflow-wrap: anywhere; text-align: start; }
+.precedent-outfit-heading button svg { flex-shrink: 0; }
 @container precedent-evidence (min-width: 458px) {
   .precedent-evidence-section + .precedent-evidence-section { border-top: 0; padding-top: 0; border-left: 1px solid var(--precedent-divider); padding-left: 12px; }
   .precedent-evidence-section:nth-child(2n + 1) { border-left: 0; padding-left: 0; }

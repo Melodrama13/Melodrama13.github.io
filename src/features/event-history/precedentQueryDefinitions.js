@@ -9,7 +9,7 @@ export const ACHIEVEMENT_GROUPS = [
   { label: '间隔纪录', options: Object.entries(INTERVAL_METRIC_LABELS).map(([key, label]) => ({ value: `interval:${key}`, label: `${label}间隔纪录` })) },
 ];
 export const PERIOD_METRICS = { ...Object.fromEntries(Object.entries(COUNT_LABELS).filter(([key]) => !['limited', 'fesLimited', 'pScore', 'pureScore', 'recovery', 'accuracy', 'scoreUp'].includes(key) && (!/banner/i.test(key) || key === 'banner'))),
-  unitFour: '同团四星', unitBanner: '同团Ban' };
+  unitFour: '同团四星', unitBanner: '同团Ban', noMaleOutfit: '未出男装' };
 export { SEQUENCE_METRICS, SEQUENCE_LABELS };
 export const queryFamily = draft => ['sequence', 'period', 'pool'].includes(draft.type) ? draft.type : 'achievement';
 export const achievementProject = draft => draft.type === 'count' || draft.type === 'interval' ? `${draft.type}:${draft.metric}`

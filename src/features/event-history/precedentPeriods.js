@@ -8,6 +8,7 @@ import { isDuoCollaborationEvent } from '../card-stats/cardDuoRules.js';
 import { markPrecedentPositions } from './precedentResultPositions.js';
 import { getObservedQuantityBounds } from './precedentThresholds.js';
 import { isCountedActivityEvent, groupActivitySources, countActivityPeriods, buildActivityPeriodMap } from '../../domain/activityPeriods.js';
+import { hasCardOutfit, isMaleOutfitCharacter } from '../../domain/cardOutfits.js';
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const orderCache = new WeakMap();
@@ -40,7 +41,7 @@ export const periodPeople = (catalog, query) => catalog.characters.filter(person
 export const isRegularQueryEvent = source => isCountedActivityEvent(source.event);
 const isOpeningSource = source => ['0', 'ori'].includes(String(source.event.id));
 
-function coverageUnit(catalog, entry) {
+export function coverageUnit(catalog, entry) {
   const unit = catalog.characterByName.get(entry.name)?.unit;
   if (unit !== 'vs') return unit;
   const affiliation = String(entry.card.Affiliation || String(entry.card.Name).split(' ')[1] || 'vs').toLowerCase();
@@ -147,8 +148,41 @@ function mergeDynamicMatches(records, query) {
   });
 }
 
+function finishPeriodQuery({ records, threshold, bounds, periods }, query) {
+  records.sort((a, b) => b.period.startTimestamp - a.period.startTimestamp || a.key.localeCompare(b.key));
+  records = mergeDynamicMatches(markPrecedentPositions(records), query);
+  const totalRecords = records.length;
+  if (query.order === 'first' || query.order === 'latest') {
+    records = records.filter(row => row.queryPositions.includes(query.order));
+  }
+  return { records, totalRecords, threshold, bounds, periods };
+}
+
+function queryNoMaleOutfitPeriods(catalog, query, periods) {
+  const maleNames = new Set(catalog.characters.filter(isMaleOutfitCharacter).map(person => person.zh_name));
+  const cardsBySource = new Map(catalog.events.map(source => [source, source.allCards
+    .filter(entry => String(entry.card.Rarity) === '4')]));
+  const records = periods.flatMap(period => {
+    const activities = period.sources.map(source => ({ event: source.event, entries: (cardsBySource.get(source) || [])
+      .filter(entry => !isDynamicPeriod(period.kind) || entry.timestamp >= period.startTimestamp && entry.timestamp <= period.endTimestamp) }));
+    const maleEntries = activities.flatMap(activity => activity.entries.filter(entry => maleNames.has(entry.name)));
+    if (maleEntries.some(entry => hasCardOutfit(entry.card, entry.source.event))) return [];
+    const eventEvidence = activities.map(({ event, entries }) => ({ event, cards: entries.map(entry => entry.card) }));
+    return [{
+      type: 'period', key: `period:${period.key}:noMaleOutfit`, metric: 'noMaleOutfit', period,
+      subject: { kind: 'cohort' }, value: 0, after: 0, threshold: 0,
+      startTimestamp: period.startTimestamp, timestamp: period.endTimestamp, events: [],
+      eventEvidence, evidence: eventEvidence.flatMap(item => item.cards), matchedCards: maleEntries.map(entry => entry.card),
+      matchingEventIds: eventEvidence.map(item => String(item.event.id)),
+    }];
+  });
+  return finishPeriodQuery({ records, threshold: 0, bounds: getObservedQuantityBounds(records, row => row.value), periods }, query);
+}
+
 export function queryPeriodPrecedents(catalog, query, rules) {
-  const periods = getQueryPeriods(catalog, query), unitMetric = ['unitFour', 'unitBanner'].includes(query.metric);
+  const periods = getQueryPeriods(catalog, query);
+  if (query.metric === 'noMaleOutfit') return queryNoMaleOutfitPeriods(catalog, query, periods);
+  const unitMetric = ['unitFour', 'unitBanner'].includes(query.metric);
   const people = periodPeople(catalog, query);
   const units = [...new Set(people.map(person => person.unit))].filter(unit => query.metric !== 'unitBanner' || OC_UNITS.includes(unit));
   const subjects = unitMetric ? units.map(unit => ({ unit, label: unit.toUpperCase() })) : people.filter(person => !/Banner|banner/.test(query.metric) || person.unit !== 'vs').map(person => ({ name: person.zh_name, label: person.zh_name }));
@@ -213,14 +247,7 @@ export function queryPeriodPrecedents(catalog, query, rules) {
   const bounds = getObservedQuantityBounds(rows.filter(row => query.metric !== 'unitFour' || query.coverage !== 'all'
     || row.period.totalEvents > 0 && row.value === row.period.totalEvents), row => row.value), { max, min } = bounds;
   const threshold = query.threshold === 'MAX' ? max : query.threshold === 'MIN' ? min : Number(query.threshold ?? max);
-  let records = rows.filter(row => query.metric === 'unitFour' && query.coverage === 'all' ? row.period.totalEvents > 0 && row.value === row.period.totalEvents
+  const records = rows.filter(row => query.metric === 'unitFour' && query.coverage === 'all' ? row.period.totalEvents > 0 && row.value === row.period.totalEvents
     : query.operator === 'atLeast' ? row.value >= threshold : query.operator === 'atMost' ? row.value <= threshold : row.value === threshold);
-  records.sort((a, b) => b.period.startTimestamp - a.period.startTimestamp || a.key.localeCompare(b.key));
-  records = markPrecedentPositions(records);
-  records = mergeDynamicMatches(records, query);
-  const totalRecords = records.length;
-  if (query.order === 'first' || query.order === 'latest') {
-    records = records.filter(row => row.queryPositions.includes(query.order));
-  }
-  return { records, totalRecords, threshold, bounds, periods };
+  return finishPeriodQuery({ records, threshold, bounds, periods }, query);
 }

@@ -2,7 +2,7 @@
   <ul class="precedent-evidence-gallery" aria-label="卡片依据">
     <li v-for="card in cards" :key="card.CardID" :class="{ 'is-pool-match': matchedIds.has(String(card.CardID)) }">
       <HistoryCardArtwork :card="card" :src="cardImage(card)" :label="cardLabel(card)" :presentation="presentation" :card-media="cardMedia" :attribute-labels="attributeLabels" />
-      <div class="precedent-card-caption">
+      <div v-if="showCaption" class="precedent-card-caption">
         <button v-if="eventForCard(card)" type="button" class="pjsk-ui-action precedent-evidence-event precedent-surface ui-liquid-glass ui-liquid-glass--chip" :title="`#${eventForCard(card).id} · ${eventForCard(card).event_title || eventForCard(card).event_type}`" :aria-label="`定位活动 ${eventForCard(card).id}`" @click="jumpToEvent(eventForCard(card).id)"><span>{{ presentation.formatSeriesCompact(eventForCard(card)).trim() || eventForCard(card).event_type || `#${eventForCard(card).id}` }}</span><ArrowUpRight :size="10" aria-hidden="true" /></button>
         <time>{{ dateLabel || card.Date }}</time>
       </div>
@@ -16,10 +16,14 @@ import { computed } from 'vue';
 import HistoryCardArtwork from './HistoryCardArtwork.vue';
 const props = defineProps({ cards: { type: Array, required: true }, presentation: { type: Object, required: true },
   cardMedia: { type: Object, required: true }, attributeLabels: { type: Object, required: true },
-  eventForCard: { type: Function, required: true }, jumpToEvent: { type: Function, required: true }, dateLabel: { type: String, default: '' }, matchedCards: { type: Array, default: () => [] } });
+  eventForCard: { type: Function, required: true }, jumpToEvent: { type: Function, required: true }, dateLabel: { type: String, default: '' },
+  showCaption: { type: Boolean, default: true }, matchedCards: { type: Array, default: () => [] }, matchLabel: { type: String, default: '' } });
 const matchedIds = computed(() => new Set(props.matchedCards.map(card => String(card.CardID))));
 const cardImage = card => props.cardMedia.getSingleCardImageSrc(card);
-const cardLabel = card => `${card.Name} · ${props.attributeLabels[card.Attribute] || card.Attribute} · ${card.CardName || `卡片 #${card.CardID}`}`;
+const cardLabel = card => {
+  const label = `${card.Name} · ${props.attributeLabels[card.Attribute] || card.Attribute} · ${card.CardName || `卡片 #${card.CardID}`}`;
+  return props.matchLabel && matchedIds.value.has(String(card.CardID)) ? `${label} · ${props.matchLabel}` : label;
+};
 </script>
 
 <style scoped>

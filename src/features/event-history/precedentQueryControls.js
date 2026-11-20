@@ -67,15 +67,20 @@ export function getPrecedentQueryControls(state) {
       secondary.push(select('gachaType', '卡片', typeOptions, '卡片类型'));
     }
   } else if (family === 'period') {
-    core = [{ key: 'metric', label: '项目', ariaLabel: '期间项目', groups: [
+    const project = { key: 'metric', label: '项目', ariaLabel: '期间项目', groups: [
       { label: '卡片', options: ['four', 'three', 'two', 'reward', 'unitFour'].map(value => ({ value, label: PERIOD_METRICS[value] })) },
       { label: '活动', options: ['banner', 'unitBanner'].map(value => ({ value, label: PERIOD_METRICS[value] })) },
-    ] }, scope, q.metric.startsWith('unit') ? select('coverage', '覆盖', [any('按次数'), ...(q.metric === 'unitFour' ? [{ value: 'all', label: '每期都有' }] : [])], '期间覆盖') : person(),
-    { key: 'periodKind', label: '周期', ariaLabel: '统计周期', groups: [
+      { label: '服装', options: [{ value: 'noMaleOutfit', label: PERIOD_METRICS.noMaleOutfit }] },
+    ] };
+    const cycle = { key: 'periodKind', label: '周期', ariaLabel: '统计周期', groups: [
       { label: '固定周期', options: options({ month: '月份', year: '自然年', operating: '运营年' }) },
       { label: '动态周期', options: options({ rollingYear: '动态年', events: '连续 N 期' }) },
-    ] }, q.periodKind === 'events' ? { key: 'periodLength', label: '期数', kind: 'number', ariaLabel: '连续期数' }
-      : select('periodValue', '时段', [{ value: 'all', label: '全部' }, ...state.periodOptions.value.map(period => ({ value: period.key, label: `${period.label}${period.complete ? '' : ' · 非完整'}` }))], '统计时段'), quantity];
+    ] };
+    const windowField = q.periodKind === 'events' ? { key: 'periodLength', label: '期数', kind: 'number', ariaLabel: '连续期数' }
+      : select('periodValue', '时段', [{ value: 'all', label: '全部' }, ...state.periodOptions.value.map(period => ({ value: period.key, label: `${period.label}${period.complete ? '' : ' · 非完整'}` }))], '统计时段');
+    if (q.metric === 'noMaleOutfit') return { core: [project, cycle, windowField], secondary };
+    core = [project, scope, q.metric.startsWith('unit') ? select('coverage', '覆盖', [any('按次数'), ...(q.metric === 'unitFour' ? [{ value: 'all', label: '每期都有' }] : [])], '期间覆盖') : person(),
+      cycle, windowField, quantity];
     secondary.push(select('eventType', '活动', activityOptions, '活动类型'), select('gachaType', isPeriodBanner(q.metric) ? '卡池' : '卡片', typeOptions, isPeriodBanner(q.metric) ? '卡池类型' : '卡片类型'));
     if (hasLimitedSubdivision(q)) secondary.push(select('limitedKind', '限定分类', [any(), ...options({ three: '百三', six: '百六' })]));
     if (!isPeriodBanner(q.metric)) secondary.push(skill(PERIOD_SKILL_LABELS));

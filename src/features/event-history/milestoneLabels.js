@@ -20,8 +20,17 @@ export const MILESTONE_GRADES = Object.freeze({
 const GOLD_COUNTS = new Set(['four', 'limited', 'reward', 'fesLimited']);
 const SILVER_COUNTS = new Set(['pureScore', 'pScore', 'scoreUp', 'recovery', 'accuracy', 'three', 'two',
   'limitedBanner', 'boxLimitedBanner', 'mixedLimitedBanner']);
+const COUNT_COMPLETION_LABEL = '全员数量达标';
+const SEQUENCE_MILESTONES = {
+  four: { label: '本团箱活四星连出新纪录', grade: 'silver' },
+  flowerGap: { label: '花色缺席新纪录', grade: 'gold' },
+  unitFour: { label: '同团四星连续覆盖', grade: 'silver' },
+  sameAttribute: { label: '四星同技能连出', grade: 'bronze' },
+};
 
 export function getMilestoneGrade(record) {
+  if (record.type === 'countCompletion') return 'silver';
+  if (record.type === 'sequence') return SEQUENCE_MILESTONES[record.sequenceMetric]?.grade || 'unrated';
   if (record.type === 'quantityGap') return record.milestoneAction === 'duration' ? 'gold' : 'silver';
   if (record.type === 'count') return GOLD_COUNTS.has(record.metric) ? 'gold' : SILVER_COUNTS.has(record.metric) ? 'silver' : 'bronze';
   if (['interval', 'lineup'].includes(record.type)) return 'gold';
@@ -50,6 +59,8 @@ export function getMilestoneBadges(record) {
 
 /** The visible badge and its accessible name share one naming source. */
 export function getMilestoneLabel(record) {
+  if (record.type === 'countCompletion') return plain(COUNT_COMPLETION_LABEL);
+  if (record.type === 'sequence' && SEQUENCE_MILESTONES[record.sequenceMetric]) return plain(SEQUENCE_MILESTONES[record.sequenceMetric].label);
   if (record.type === 'quantityGap') return plain(record.milestoneAction === 'duration' ? '持续新纪录' : `${record.gapMetric === 'limited' ? '限定' : '四星'}差距`);
   if (record.type === 'count') return plain(`${COUNT_LABELS[record.metric]}新上限`);
   if (record.type === 'attribute') {
@@ -69,6 +80,8 @@ export function getMilestoneLabel(record) {
 export const MILESTONE_NAME_CATALOG = Object.freeze([
   { category: '数量差距', names: ['四星差距', '限定差距', '持续新纪录'] },
   { category: '数量新上限', names: Object.values(COUNT_LABELS).map(label => `${label}新上限`) },
+  { category: '全员数量达标', names: [COUNT_COMPLETION_LABEL] },
+  { category: '连续纪录', names: Object.values(SEQUENCE_MILESTONES).map(({ label }) => label) },
   { category: '间隔纪录', names: ['间隔新纪录'], titleVariants: Object.values(INTERVAL_METRIC_LABELS).flatMap(metric => ['最长', '最短'].map(direction => `${metric}${direction}间隔`)) },
   { category: '花色新上限', names: ['OC', 'VS'].flatMap(cohort => [`${cohort}花色新上限`, ...Object.values(PRECEDENT_ATTRIBUTE_LABELS).map(attribute => `${cohort}${attribute}新上限`)]) },
   { category: '五色补齐', names: ['个人五色补齐', '团体五色补齐', '全员五色补齐'] },

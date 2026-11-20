@@ -30,7 +30,7 @@ export const PRECEDENT_SCOPE_OPTIONS = [
   { value: 'nc', label: 'NC' }, { value: 'vs', label: 'VS' },
 ];
 const SKILL_LABELS = PRECEDENT_SKILL_LABELS;
-const MILESTONE_CATEGORIES = { count: '首次达成', interval: '间隔纪录', attribute: '花色达成', pair: '首次同池', gap: '数量差距' };
+const MILESTONE_CATEGORIES = { count: '首次达成', interval: '间隔纪录', attribute: '花色达成', pair: '首次同池', gap: '数量差距', sequence: '连续纪录' };
 
 /** Page-owned query state. Historical evidence always uses base cards, independently of predictions and list filters. */
 export function useHistoryPrecedents(ports) {
@@ -141,7 +141,7 @@ export function useHistoryPrecedents(ports) {
       ? `${appliedQuery.value.direction === 'shortest' ? '最短' : '最长'}间隔纪录`
       : appliedQuery.value.type === 'pool' ? '配置先例' : { first: '首次达成', latest: '最近达成', all: '达成记录' }[appliedQuery.value.order],
     records: visibleRecords.value, total: filteredRecords.value.length }];
-    if (mode.value === 'search' && appliedQuery.value.type === 'attribute' && result.value.completion?.records.length) {
+    if (mode.value === 'search' && result.value.completion?.records.length) {
       sections.push({ key: 'completion', label: ['all', 'oc'].includes(appliedQuery.value.scope) ? '全员达成' : '团体达成', records: result.value.completion.records, total: result.value.completion.records.length });
     }
     return sections;
@@ -239,6 +239,7 @@ export function useHistoryPrecedents(ports) {
     }
     if (record.type === 'sequence') {
       const subject = record.name || record.pair?.join(' × ') || record.scopeLabel || '';
+      if (record.sequenceMetric === 'unitFour') return `${subject} · 连续 ${record.after} 期都有四星`;
       const label = record.sequenceMetric === 'flowerGap' ? '缺席' : '连续';
       const feature = record.sequenceMetric === 'sameAttribute' && record.streakProperty === 'skill' ? `${SKILL_LABELS[record.skill] || (record.skill === 'birthday' ? '生日卡' : '同技能')} ` : '';
       return `${subject ? `${subject} · ` : ''}${record.vs ? `${record.vs} ` : ''}${feature}${label} ${record.after} ${record.sequenceMetric === 'sameAttribute' ? '张' : '期'}`;
@@ -247,6 +248,7 @@ export function useHistoryPrecedents(ports) {
     if (record.type === 'period') {
       const period = record.period.kind === 'events' ? `${record.period.eventCount ?? record.period.totalEvents} 期`
         : `1 ${record.period.kind === 'month' ? '月' : '年'}`;
+      if (record.metric === 'noMaleOutfit') return record.period.kind === 'events' ? `连续 ${period}未出男装` : '未出男装';
       return `${record.name || record.scopeLabel} · ${period} ${record.value} ${periodMetricTitle(record.metric, record.queryFilters)}`;
     }
     if (record.type === 'attribute' && record.attribute === 'all') return `${prefix}五色各 ${record.threshold} 四星`;
@@ -255,6 +257,7 @@ export function useHistoryPrecedents(ports) {
       ? record.completionAttribute === 'any' ? '各有一色' : PRECEDENT_ATTRIBUTE_LABELS[record.completionAttribute] : '五色各'} ${record.threshold} 四星`;
     if (record.type === 'personalCompletion') return `${record.name} · 五色各 ${record.threshold} 四星`;
     if (record.type === 'skillFirst') return `${record.name} · ${PRECEDENT_ATTRIBUTE_LABELS[record.attribute]}首张 ${SKILL_LABELS[record.skill]}`;
+    if (record.type === 'countCompletion') return `全员各 ${record.threshold} 张${metricLabel(record.metric, record.rules)}`;
     if (record.type === 'count') return `${prefix}${record.threshold} ${metricLabel(record.metric, record.rules)}`;
     if (record.type === 'pairFirst' || record.pair) return (record.participants || record.pair.map(name => ({ name }))).map(p => `${p.name}${p.vsUnit ? `（${p.vsUnit.toUpperCase()}）` : ''}`).join(' × ');
     if (record.type === 'streak') return `${record.name}连续 ${record.after} 张${PRECEDENT_ATTRIBUTE_LABELS[record.attribute]}`;
@@ -266,7 +269,14 @@ export function useHistoryPrecedents(ports) {
       ? `此前最长 ${record.previousDuration} 期 · 本期刷新纪录`
       : record.milestoneAction === 'onset' ? `${record.scopeLabel} · 本段持续 ${record.episodeDuration} 期`
       : `${record.scopeLabel} · 最大差距 ${record.peakGap} 张`;
-    if (record.type === 'sequence') return `${record.sequenceOwner ? record.sequence === 'otherBox' ? `${record.sequenceOwner} · 本团非本人箱活` : `${record.sequenceOwner}箱活` : SEQUENCE_LABELS[record.sequence] || '全部活动'} · ${record.sequenceMetric === 'sameAttribute' ? record.streakProperty === 'skill' ? '同技能' : '同色' : SEQUENCE_METRICS[record.sequenceMetric]}`;
+    if (record.type === 'sequence') {
+      const sequence = record.sequenceOwner ? record.sequence === 'otherBox' ? `${record.sequenceOwner} · 本团非本人箱活` : `${record.sequenceOwner}箱活`
+        : SEQUENCE_LABELS[record.sequence] || '全部活动';
+      const metric = record.sequenceMetric === 'sameAttribute' ? record.streakProperty === 'skill' ? '同技能' : '同色'
+        : record.sequenceMetric === 'unitFour' ? '同团四星' : SEQUENCE_METRICS[record.sequenceMetric];
+      const unit = record.sequenceMetric === 'sameAttribute' ? '张' : '期';
+      return `${sequence} · ${metric}${record.previousRecord == null ? '' : ` · 此前最长 ${record.previousRecord} ${unit}`}`;
+    }
     if (record.type === 'pool') {
       const matches = record.configurationMatches || [], rewards = matches.filter(match => ['2', '3'].includes(String(match.card.Rarity))).length;
       return `${record.totalUp} 张 UP${matches.length ? ` · 匹配 ${matches.length} 张${rewards ? ` · 含 ${rewards} 张报酬` : ''}` : ' · 完整卡池'}`;
@@ -375,6 +385,7 @@ export function useHistoryPrecedents(ports) {
   watch(() => draft.metric, metric => {
     if (draft.type !== 'period') return;
     draft.threshold = 'MAX'; resetSearch();
+    if (metric === 'noMaleOutfit') Object.assign(draft, { scope: 'all', character: '', eventType: '', gachaType: '', skill: '', operator: 'equal' });
     if (metric === 'unitFour') draft.includeFes = true;
     if (draft.gachaType === 'fesLimited' && !['banner', 'unitBanner'].includes(metric)) draft.gachaType = '';
     if (metric !== 'unitFour') draft.coverage = '';

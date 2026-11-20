@@ -6,6 +6,7 @@ export const DEFAULT_MILESTONE_RULES = Object.freeze({
   includeCollabRewardCards: false, useRewardCountForLowStars: true,
   includeFestivalFes: true,
   poolIncludeFes: false, poolOwnVsOnly: true,
+  flowerGapIncludeWl: false,
 });
 export function normalizeMilestoneRules(options = {}) {
   const rewardOnly = options.useRewardCountForLowStars ?? options.useRewardCountForThreeStar

@@ -74,7 +74,7 @@
               <p v-if="record.advancement" class="precedent-record-advance"><span>{{ advancementLabel(record) }}</span><strong>用时 {{ record.advancement.days }} 天</strong></p>
               <p v-else-if="record.type === 'interval'" class="precedent-record-metrics"><span v-for="unit in record.recordUnits" :key="unit" class="precedent-record-metric"><template v-if="record.previousValues[unit] != null"><span class="precedent-previous-value">{{ record.previousValues[unit] }}</span><span class="precedent-metric-arrow" aria-hidden="true">→</span></template><strong class="precedent-result-number">{{ record[unit] }}</strong><span class="precedent-metric-unit">{{ unit === 'days' ? '天' : '期' }}</span></span></p>
               <p v-else-if="record.type === 'quantityGap'" class="precedent-sequence-description"><span>{{ recordDescription(record) }}</span><span class="precedent-run-status precedent-surface ui-liquid-glass ui-liquid-glass--chip" :data-ongoing="record.ongoing"><i aria-hidden="true"></i>{{ record.milestoneAction === 'duration' ? '截至本期' : record.ongoing ? '仍在持续' : record.recovered ? '已恢复' : '已结束' }}</span></p>
-              <p v-else-if="record.type === 'sequence'" class="precedent-sequence-description"><span>{{ recordDescription(record) }}</span><span v-if="record.sequenceMetric !== 'flowerGap'" class="precedent-run-status precedent-surface ui-liquid-glass ui-liquid-glass--chip" :data-ongoing="record.ongoing"><i aria-hidden="true"></i>{{ record.ongoing ? '仍在连续' : '已结束' }}</span></p>
+              <p v-else-if="record.type === 'sequence'" class="precedent-sequence-description"><span>{{ recordDescription(record) }}</span><span v-if="!record.category && record.sequenceMetric !== 'flowerGap'" class="precedent-run-status precedent-surface ui-liquid-glass ui-liquid-glass--chip" :data-ongoing="record.ongoing"><i aria-hidden="true"></i>{{ record.ongoing ? '仍在连续' : '已结束' }}</span></p>
               <p v-else>{{ recordDescription(record) }}</p>
             </div>
           </div>
@@ -103,7 +103,7 @@
         </article>
         </div>
 
-        <div v-if="section.key === 'matches' && !filteredRecords.length" class="precedent-empty"><Search :size="23" aria-hidden="true" /><strong>{{ mode === 'event' ? '暂无此类里程碑' : appliedQuery.type === 'pool' ? '暂无匹配配置' : appliedQuery.sequenceMetric === 'quantityGap' && appliedQuery.type === 'sequence' ? '暂无异常差距' : result.threshold === 0 ? '零张无需历史达成' : '暂无匹配先例' }}</strong><p v-if="mode === 'search' && (result.threshold !== 0 || appliedQuery.type === 'pool' || appliedQuery.type === 'sequence' && appliedQuery.sequenceMetric === 'quantityGap')">可放宽范围或数量条件。</p></div>
+        <div v-if="section.key === 'matches' && !filteredRecords.length" class="precedent-empty"><Search :size="23" aria-hidden="true" /><strong>{{ mode === 'event' ? '暂无此类里程碑' : appliedQuery.type === 'pool' ? '暂无匹配配置' : appliedQuery.sequenceMetric === 'quantityGap' && appliedQuery.type === 'sequence' ? '暂无异常差距' : isOutfitSearch ? '暂无未出男装的时段' : result.threshold === 0 ? '零张无需历史达成' : '暂无匹配先例' }}</strong><p v-if="mode === 'search' && !isOutfitSearch && (result.threshold !== 0 || appliedQuery.type === 'pool' || appliedQuery.type === 'sequence' && appliedQuery.sequenceMetric === 'quantityGap')">可放宽范围或数量条件。</p></div>
         <button v-if="section.key === 'matches' && filteredRecords.length > visibleCount" type="button" class="pjsk-ui-action precedent-show-more precedent-surface ui-liquid-glass ui-liquid-glass--chip" @click="visibleCount += 10">更多 {{ filteredRecords.length - visibleCount }}<ChevronDown :size="14" aria-hidden="true" /></button>
         </div>
       </section>
@@ -124,7 +124,7 @@ import HistoryPrecedentEvidence from './HistoryPrecedentEvidence.vue';
 import { makePrecedentEventOptions } from './precedentEventOptions.js';
 import { MILESTONE_GRADES as milestoneGrades } from './milestoneLabels.js';
 import { QUERY_FAMILIES as queryFamilies } from './precedentQueryDefinitions.js';
-import { getQueryRuleGroups, MILESTONE_RULE_OPTIONS as ruleOptions } from './precedentRuleGroups.js';
+import { getQueryRuleGroups, MILESTONE_RULE_GROUPS as ruleOptionGroups } from './precedentRuleGroups.js';
 const detailTabs = Object.freeze([{ value: 'details', label: '活动详情' }, { value: 'search', label: '查先例' }, { value: 'event', label: '本期纪录' }]);
 const props = defineProps({ precedents: { type: Object, required: true }, presentation: { type: Object, required: true }, cardMedia: { type: Object, required: true }, songMedia: { type: Object, required: true } });
 const { mode, draft, appliedQuery, selectedEventId, selectedEventDetails, eventOptions, catalog, characterOptions, scopeOptions, skillLabels,
@@ -147,7 +147,7 @@ const badgeList = record => {
 };
 const queryControls = computed(() => getPrecedentQueryControls(props.precedents));
 const queryRuleGroups = computed(() => getQueryRuleGroups(draft));
-const ruleOptionGroups = [{ label: '数量口径', options: ruleOptions.slice(0, 6) }, { label: '同池口径', options: ruleOptions.slice(6) }];
+const isOutfitSearch = computed(() => appliedQuery.value.type === 'period' && appliedQuery.value.metric === 'noMaleOutfit');
 const panelElement = ref(null);
 onMounted(() => panelElement.value?.focus({ preventScroll: true }));
 </script>

@@ -3,6 +3,7 @@ import { collectCountCeilings } from './milestoneCounts.js';
 import { collectIntervals } from './milestoneIntervals.js';
 import { collectPoolFirsts } from './milestonePools.js';
 import { collectQuantityGapMilestones } from './precedentQuantityGaps.js';
+import { collectSequenceMilestones } from './milestoneSequences.js';
 import { normalizeMilestoneRules } from './milestoneRules.js';
 import { milestoneEventKey } from './milestoneShared.js';
 import { getMilestoneLabel, getMilestoneGrade, getMilestoneBadges, compareMilestones } from './milestoneLabels.js';
@@ -26,6 +27,7 @@ export function buildMilestoneIndex(catalog, options = {}) {
   collectPoolFirsts(catalog, emit, rules);
   collectIntervals(catalog, emit, rules);
   collectQuantityGapMilestones(catalog, emit, rules);
+  collectSequenceMilestones(catalog, emit, rules);
   for (const records of index.values()) records.sort(compareMilestones);
   return index;
 }

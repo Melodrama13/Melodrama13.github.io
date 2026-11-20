@@ -1,6 +1,8 @@
 import { makeThresholdCheckpoint, getThresholdAdvancement } from './precedentThresholds.js';
-import { scopesFor, groupBy, bannerEntries, makeMilestone } from './milestoneShared.js';
+import { scopesFor, groupBy, bannerEntries, makeMilestone, DAY_MS } from './milestoneShared.js';
 import { getEntryMetrics, isFestivalLimitedSource } from './milestoneRules.js';
+
+const COMPLETION_METRICS = new Set(['four', 'limited', 'reward']);
 
 export function getCountContributions(catalog, rules) {
   const festivalIds = new Set(catalog.events.filter(isFestivalLimitedSource).map(s => String(s.event.id)));
@@ -15,12 +17,31 @@ export function getCountContributions(catalog, rules) {
   return contributions;
 }
 
+function emitCountCompletions(metric, entries, states, before, firsts, completed, rules, emit) {
+  const minimum = Math.min(...[...states.values()].map(list => list.length));
+  for (let threshold = completed + 1; threshold <= minimum; threshold++) {
+    const triggers = entries.filter(entry => before.get(entry.name) < threshold);
+    const evidence = [...states.values()].map(list => list[threshold - 1]).concat(triggers);
+    const previous = firsts.get(threshold);
+    emit(makeMilestone('countCompletion', 'count', triggers, evidence, {
+      key: `count-completion:${metric}:${threshold}`, metric, threshold, rules, priority: 4,
+      subject: { kind: 'cohort' }, scopeLabel: '全角色', isGroupCompletion: true,
+      advancement: {
+        scope: 'all', fromThreshold: threshold, toThreshold: threshold, previous,
+        days: Math.round((triggers[0].timestamp - previous.timestamp) / DAY_MS),
+      },
+    }));
+  }
+  return minimum;
+}
+
 export function collectCountCeilings(catalog, emit, rules) {
   const scopes = scopesFor(catalog).filter(s => s.key === 'all');
   for (const [metric, metricEntries] of groupBy(getCountContributions(catalog, rules), e => e.metric)) {
     const applicableScopes = scopes;
     const states = new Map(catalog.characters.map(c => [c.zh_name, []]));
     const firsts = new Map(applicableScopes.map(s => [s.key, new Map()]));
+    let completed = 0;
     for (const [, entries] of [...groupBy(metricEntries, e => e.timestamp)].sort(([a], [b]) => a - b)) {
       const before = new Map([...states].map(([name, list]) => [name, list.length]));
       entries.forEach(e => states.get(e.name).push(e));
@@ -49,6 +70,7 @@ export function collectCountCeilings(catalog, emit, rules) {
         record.advancement = record.advancementsByScope[scope];
         emit(record);
       }
+      if (COMPLETION_METRICS.has(metric)) completed = emitCountCompletions(metric, entries, states, before, firsts.get('all'), completed, rules, emit);
     }
   }
 }

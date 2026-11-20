@@ -1,7 +1,7 @@
 import { PRECEDENT_ATTRIBUTES, PRECEDENT_SKILL_LABELS } from './precedentRecords.js';
 import { isPoolFesCard, isPoolLimitedCard, isRewardCard, isFestivalLimitedSource } from './milestoneRules.js';
 import { getMilestonePools, filterPoolOwnVs, poolParticipant, poolOwnVsMatch, isEarlySplitFesEvent } from './milestonePools.js';
-import { periodPeople, isRegularQueryEvent } from './precedentPeriods.js';
+import { periodPeople, isRegularQueryEvent, coverageUnit } from './precedentPeriods.js';
 import { OC_UNITS } from './milestoneShared.js';
 import { parseVirtualSingerNames } from '../../domain/virtualSingerNames.js';
 import { isDuoCollaborationEvent } from '../card-stats/cardDuoRules.js';
@@ -18,6 +18,7 @@ const selected = (value, selection) => !selection || selection === 'any' || sele
 const skillOf = entry => String(entry.card.Skill || '').trim().toLowerCase();
 const streakProperty = query => query.streakProperty === 'skill' ? 'skill' : 'attribute';
 const propertyOf = (entry, property) => property === 'skill' ? skillOf(entry) : entry.attribute;
+const isWorldLink = event => /^(world\s*link|wl)(终章)?$/i.test(event.event_type || '');
 const eligible = (entry, query) => (query.includeFes || !isPoolFesCard(entry.card))
   && selected(entry.attribute, query.attribute)
   && selected(skillOf(entry), query.skill)
@@ -27,6 +28,7 @@ const context = (source, query) => source.event.event_type === '箱活' ? 'box' 
 
 function subjectsFor(catalog, query) {
   const metric = query.sequenceMetric || 'four', people = periodPeople(catalog, query);
+  if (metric === 'unitFour') return unitsFor(catalog, query).map(unit => ({ key: unit, unit, label: unit.toUpperCase() }));
   const ownerBoxes = ['ownBox', 'otherBox'].includes(query.sequence);
   if (metric === 'bannerUnit' && ownerBoxes) return people.filter(person => OC_UNITS.includes(person.unit)
     && (!query.sequenceOwner || person.zh_name === query.sequenceOwner)).map(person => ({ key: person.zh_name,
@@ -59,7 +61,7 @@ function nodesFor(catalog, query, subject) {
   });
   const selectedSources = catalog.events.filter(source => (query.sequence === 'all' ? isCountedActivityEvent(source.event)
     || query.includeCollab && isDuoCollaborationEvent(source.event) : isRegularQueryEvent(source))
-    && (query.includeWl || !/^(world\s*link|wl)$/i.test(source.event.event_type || ''))).filter(source => {
+    && (query.includeWl || !isWorldLink(source.event))).filter(source => {
     const kind = context(source, query);
     if (query.sequence === 'all') return true;
     if (query.sequence === 'festival') return isFestivalLimitedSource(source)
@@ -77,13 +79,14 @@ function nodesFor(catalog, query, subject) {
   if (query.sequence === 'all') {
     const groups = groupActivitySources(selectedSources.filter(source => isCountedActivityEvent(source.event)), catalog.sourceEvents || catalog.events.map(source => source.event));
     const collaborations = selectedSources.filter(source => !isCountedActivityEvent(source.event));
-    return groups.map((group, index) => {
+    return groups.flatMap((group, index) => {
+      if (query.sequenceMetric === 'unitFour' && group.sources.length !== group.events.length) return [];
       const start = group.sources[0], boundary = groups[index + 1]?.sources[0].timestamp ?? Infinity;
       const sources = [...group.sources, ...collaborations.filter(source => source.timestamp >= start.timestamp && source.timestamp < boundary)].sort((a, b) => a.timestamp - b.timestamp);
       const source = { ...start, periodSources: sources, periodKey: group.key,
         cards: unique(sources.flatMap(source => source.cards), entry => String(entry.card.CardID)),
         allCards: unique(sources.flatMap(source => source.allCards), entry => String(entry.card.CardID)) };
-      return { source, startTimestamp: start.timestamp, timestamp: sources.at(-1).timestamp, entries: [], weight: 1 };
+      return [{ source, startTimestamp: start.timestamp, timestamp: sources.at(-1).timestamp, entries: [], weight: 1 }];
     });
   }
   return selectedSources.map(source => {
@@ -95,9 +98,11 @@ function nodesFor(catalog, query, subject) {
 }
 function makeRun(catalog, query, subject, nodes, value, extras = {}) {
   const first = nodes[0], last = nodes.at(-1), entries = nodes.flatMap(node => node.entries || []);
+  const timestamp = extras.timestamp ?? last.timestamp ?? last.source.timestamp;
   const eventEvidence = ['bannerUnit', 'flowerGap', 'noFour', 'noReward'].includes(query.sequenceMetric) ? nodes.map(node => {
     const source = node.source;
-    const cards = source.allCards || source.cards, banner = String(source.event.banner || '').split(' ')[0];
+    const cards = (source.allCards || source.cards).filter(entry => entry.timestamp <= (extras.timestamp ?? Infinity));
+    const banner = String(source.event.banner || '').split(' ')[0];
     const card = (cards.find(entry => entry.card.Name === source.event.banner && !isPoolFesCard(entry.card))
       || cards.find(entry => entry.name === banner && !isPoolFesCard(entry.card)))?.card;
     const members = source.periodSources || [source], unit = String(source.event.unit || '').toLowerCase();
@@ -113,7 +118,7 @@ function makeRun(catalog, query, subject, nodes, value, extras = {}) {
     ...(query.sequenceMetric === 'sameAttribute' ? { streakProperty: streakProperty(query), countUnit: '张' } : {}),
     sequenceMetric: query.sequenceMetric, sequence: query.sequence, after: value, value, threshold: value,
     startEvent: first.source.event, startEvents: (first.source.periodSources || [first.source]).map(source => source.event), startTimestamp: first.startTimestamp ?? first.timestamp ?? first.source.timestamp,
-    event: (last.source.periodSources || [last.source]).at(-1).event, events: (last.source.periodSources || [last.source]).map(source => source.event), timestamp: last.timestamp ?? last.source.timestamp,
+    event: (last.source.periodSources || [last.source]).at(-1).event, events: (last.source.periodSources || [last.source]).map(source => source.event), timestamp,
     steps: nodes.map(node => ({ event: (node.source.periodSources || [node.source]).at(-1).event,
       events: (node.source.periodSources || [node.source]).map(source => source.event), timestamp: node.timestamp ?? node.source.timestamp, weight: node.weight })),
     sequenceEvents: nodes.flatMap(node => (node.source.periodSources || [node.source]).map(source => source.event)), contributors: unique((last.entries || []).map(entry => ({ name: entry.name, attribute: entry.attribute })), holder => `${holder.name}:${holder.attribute}`),
@@ -123,31 +128,45 @@ function makeRun(catalog, query, subject, nodes, value, extras = {}) {
     ...extras };
 }
 
-/** Construct the observation sequence before applying hit conditions. */
-export function getSequenceRuns(catalog, query, rules) {
-  const metric = query.sequenceMetric || 'four';
-  query = { ...query, sequenceMetric: metric };
-  if (metric === 'flowerGap') {
-    const nodes = nodesFor(catalog, { ...query, sequence: query.sequence || 'all' }, {}), runs = [];
-    for (const attribute of PRECEDENT_ATTRIBUTES.filter(attribute => !query.attribute || query.attribute === 'any' || attribute === query.attribute)) {
-      let previous = -1, best = -1;
-      nodes.forEach((node, index) => {
-        const current = String(node.source.event.event_attribute || '');
-        if (!PRECEDENT_ATTRIBUTES.includes(current)) {
-          if (!node.source.isFestivalFesOnly && node.source.event.event_type !== '总集篇' && !/world\s*link|^wl$/i.test(node.source.event.event_type || '')) previous = -1;
-          return;
-        }
-        if (current !== attribute) return;
+/** Closed gaps serve searches; observed missing periods can also award live records. */
+export function getFlowerGapRuns(catalog, query, visitMissing) {
+  const nodes = nodesFor(catalog, { ...query, sequence: query.sequence || 'all' }, {}), runs = [];
+  for (const attribute of PRECEDENT_ATTRIBUTES.filter(attribute => !query.attribute || query.attribute === 'any' || attribute === query.attribute)) {
+    let previous = -1, best = -1;
+    nodes.forEach((node, index) => {
+      const { event, isFestivalFesOnly } = node.source;
+      const current = String(event.event_attribute || '');
+      if (!PRECEDENT_ATTRIBUTES.includes(current) && !isFestivalFesOnly && event.event_type !== '总集篇' && !isWorldLink(event)) {
+        previous = -1;
+        return;
+      }
+      if (current === attribute) {
         if (previous >= 0) {
           const gap = index - previous - 1;
           runs.push(makeRun(catalog, query, { key: attribute }, nodes.slice(previous, index + 1), gap, { attribute, isRecord: best >= 0 && gap > best }));
           best = Math.max(best, gap);
         }
         previous = index;
-      });
-    }
-    return runs;
+      } else if (visitMissing && previous >= 0) {
+        // A paired compilation counts once, from the first member's opening.
+        const start = previous, source = node.source.periodSources?.[0] || node.source;
+        const timestamp = source.timestamp, after = index - start;
+        visitMissing({
+          after, timestamp, subjectKey: 'all',
+          makeRecord: () => makeRun(catalog, query, { key: attribute },
+            [...nodes.slice(start, index), { ...node, source, timestamp }], after, { attribute, timestamp }),
+        });
+      }
+    });
   }
+  return runs;
+}
+
+/** Construct the observation sequence before applying hit conditions. */
+export function getSequenceRuns(catalog, query, rules, visitRun) {
+  const metric = query.sequenceMetric || 'four';
+  query = { ...query, sequenceMetric: metric };
+  if (metric === 'flowerGap') return getFlowerGapRuns(catalog, query);
   const poolsByEvent = new Map();
   if (metric === 'pair') for (const pool of getMilestonePools(catalog, { ...rules, poolIncludeFes: Boolean(query.includeFes) })) {
     if (query.sequence === 'festival' && isEarlySplitFesEvent(pool.source.event) && pool.pool !== 'fes') continue;
@@ -169,10 +188,15 @@ export function getSequenceRuns(catalog, query, rules) {
       let run = [], best = 1;
       const finish = ongoing => {
         if (!run.length) return;
-        const after = run.reduce((sum, node) => sum + node.weight, 0);
-        runs.push(makeRun(catalog, query, subject, run, after, { ongoing, isRecord: after > best,
-          ...(metric === 'sameAttribute' ? { [property]: variant } : metric === 'songVs' ? { vs: variant } : {}) }));
-        best = Math.max(best, after); run = [];
+        const feature = metric === 'sameAttribute' ? { [property]: variant } : metric === 'songVs' ? { vs: variant } : {};
+        if (visitRun) {
+          visitRun(subject, run, (nodes, after, extra) => makeRun(catalog, query, subject, nodes, after, { ...feature, ...extra }));
+        } else {
+          const after = run.reduce((sum, node) => sum + node.weight, 0);
+          runs.push(makeRun(catalog, query, subject, run, after, { ongoing, isRecord: after > best, ...feature }));
+          best = Math.max(best, after);
+        }
+        run = [];
       };
       for (const node of nodes) {
         let entries = [], hit;
@@ -191,6 +215,10 @@ export function getSequenceRuns(catalog, query, rules) {
         }
         else if (metric === 'songVs') hit = parseVirtualSingerNames(node.source.event.virtual_singer, catalog.characters).includes(variant);
         else if (metric === 'bannerUnit') hit = catalog.characterByName.get(node.source.event.banner)?.unit === subject.unit;
+        else if (metric === 'unitFour') {
+          entries = node.source.cards.filter(entry => coverageUnit(catalog, entry) === subject.unit && eligible(entry, query));
+          hit = entries.length > 0;
+        }
         else if (metric === 'pair') {
           const pools = (node.source.periodSources || [node.source]).flatMap(source => (poolsByEvent.get(String(source.event.id)) || []).map(entries => ({ entries, source })));
           for (const { entries: pool, source: poolSource } of pools) {
@@ -213,6 +241,7 @@ export function getSequenceRuns(catalog, query, rules) {
       finish(true);
     }
   }
+  if (visitRun) return runs;
   const bests = new Map(), batches = new Map();
   const recordSubject = run => `${run.sequenceOwner || ''}:${run.name || run.pair?.join(':') || run.subject.unit || 'all'}`;
   for (const run of runs) {

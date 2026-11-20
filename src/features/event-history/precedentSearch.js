@@ -1,11 +1,12 @@
 import { queryPrecedents, getColorQuantityBounds, PRECEDENT_SKILL_LABELS } from './precedentRecords.js';
 import { getCountContributions } from './milestoneCounts.js';
-import { queryPeriodPrecedents } from './precedentPeriods.js';
+import { queryPeriodPrecedents, isRegularQueryEvent } from './precedentPeriods.js';
 import { querySequencePrecedents } from './precedentSequences.js';
 import { getPoolQueryBounds, queryPoolPrecedents } from './precedentPoolQueries.js';
 import { getMilestonePools, filterPoolOwnVs, poolParticipant, poolOwnVsMatch } from './milestonePools.js';
 import { normalizeMilestoneRules, isPoolLimitedCard, isFesMilestoneSkill } from './milestoneRules.js';
 import { buildMilestoneIndex } from './precedentMilestones.js';
+import { isMilestoneSequenceQuery } from './milestoneSequences.js';
 import { MILESTONE_GRADES } from './milestoneLabels.js';
 import { groupBy, makeMilestone, scopesFor, milestoneEventKey } from './milestoneShared.js';
 import { makeThresholdCheckpoint, getThresholdAdvancement } from './precedentThresholds.js';
@@ -204,17 +205,47 @@ function decorateQuantityGap(record, index) {
   return { ...record, badges: badges.filter(badge => badge.grade === badges[0].grade), badge: badges[0].text, badgeParts: badges[0], grade: badges[0].grade };
 }
 
+const milestoneBadges = (record, milestone) => milestone
+  ? { ...record, grade: milestone.grade, badge: milestone.badge, badges: milestone.badges } : record;
+
+function decorateSequenceRecord(record, query, rules, index) {
+  if (query.sequenceMetric === 'quantityGap') return decorateQuantityGap(record, index);
+  if (!isMilestoneSequenceQuery(query, rules)) return record;
+  if (query.sequenceMetric === 'flowerGap') {
+    const lastMissing = record.steps.at(-2)?.events[0];
+    const milestone = index.get(milestoneEventKey(lastMissing?.id))?.find(item => item.type === 'sequence'
+      && item.sequenceMetric === 'flowerGap' && item.attribute === record.attribute
+      && item.startEvent.id === record.startEvent.id && item.after === record.after);
+    return milestoneBadges(record, milestone);
+  }
+  const milestone = index.get(milestoneEventKey(record.event.id))?.find(item => item.type === 'sequence'
+    && item.sequenceKey === record.key && item.after === record.after);
+  return milestoneBadges(record, milestone);
+}
+
+function decoratePeriodRecord(record, query, index) {
+  if (query.metric !== 'unitFour' || query.periodKind !== 'events' || query.coverage !== 'all'
+    || query.includeFes === false || query.eventType || query.gachaType || query.skill) return record;
+  const sources = record.period.sources.filter(isRegularQueryEvent);
+  const milestone = index.get(milestoneEventKey(sources.at(-1)?.event.id))?.find(item => item.type === 'sequence'
+    && item.sequenceMetric === 'unitFour' && item.subject.unit === record.subject.unit
+    && item.startEvent.id === sources[0]?.event.id && item.after === record.value);
+  return milestoneBadges(record, milestone);
+}
+
 /** Ordinary achievements are the source; milestones annotate/filter them, never replace their history. */
 export function queryHistoryPrecedents(catalog, criteria, options = {}) {
   const query = { type: 'attribute', attributeMode: 'count', scope: 'all', order: 'all', threshold: 'MAX', metric: 'four', ...criteria };
   const rules = normalizeMilestoneRules(options.rules), index = options.index || buildMilestoneIndex(catalog, rules);
   if (query.type === 'sequence') {
     const result = querySequencePrecedents(catalog, query, rules);
-    return prioritizePrecedentResults(query.sequenceMetric === 'quantityGap'
-      ? { ...result, records: result.records.map(record => decorateQuantityGap(record, index)) } : result, query.order);
+    return prioritizePrecedentResults({ ...result, records: result.records.map(record => decorateSequenceRecord(record, query, rules, index)) }, query.order);
   }
   if (query.type === 'pool') return prioritizePrecedentResults(queryPoolPrecedents(catalog, query, rules), query.order);
-  if (query.type === 'period') return prioritizePrecedentResults(queryPeriodPrecedents(catalog, query, rules), query.order);
+  if (query.type === 'period') {
+    const result = queryPeriodPrecedents(catalog, query, rules);
+    return prioritizePrecedentResults({ ...result, records: result.records.map(record => decoratePeriodRecord(record, query, index)) }, query.order);
+  }
   if (query.type === 'interval') query.onlyMilestones = true;
   const bounds = getHistoryQueryBounds(catalog, query, rules);
   let result;
@@ -259,6 +290,13 @@ export function queryHistoryPrecedents(catalog, criteria, options = {}) {
         .find(item => item.type === 'completion' && item.scope === query.scope && item.threshold === record.threshold && item.timestamp === timestamp);
       return match ? { ...adapted, grade: match.grade, badges: match.badges } : adapted;
     }).filter(record => !query.onlyMilestones || record.badges?.length);
+  }
+  if (query.type === 'count' && query.scope === 'all' && !query.character && (!query.attribute || query.attribute === 'any' || query.attribute === 'all')
+    && result.records.length && result.progress.covered === result.progress.total) {
+    const last = result.records.at(-1);
+    const completion = index.get(milestoneEventKey(last.event.id))?.find(record => record.type === 'countCompletion'
+      && record.metric === query.metric && record.threshold === result.threshold);
+    if (completion) result.completion = { records: [completion] };
   }
   return prioritizePrecedentResults({ ...result, records, totalRecords, bounds }, query.order);
 }
