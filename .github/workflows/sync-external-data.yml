@@ -120,6 +120,11 @@ jobs:
         timeout-minutes: 3
         run: node sync-scripts/sync-livestream-preview.mjs --apply
 
+      - name: Sync MySEKAI nuigurumi
+        continue-on-error: true
+        timeout-minutes: 3
+        run: node sync-scripts/sync-nuigurumi.mjs --apply
+
       - name: Sync event data
         run: npm run sync:events-other
 
