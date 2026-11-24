@@ -109,6 +109,12 @@ jobs:
       - name: Sync song data
         run: npm run sync:songs-other
 
+      - name: Sync Full 2DMV from 4Gamer
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '7 3 * * *'
+        continue-on-error: true
+        timeout-minutes: 3
+        run: node sync-scripts/sync-full-2dmv.mjs --apply
+
       - name: Sync event data
         run: npm run sync:events-other
 
