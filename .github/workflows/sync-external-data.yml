@@ -115,6 +115,11 @@ jobs:
         timeout-minutes: 3
         run: node sync-scripts/sync-full-2dmv.mjs --apply
 
+      - name: Sync livestream preview
+        continue-on-error: true
+        timeout-minutes: 3
+        run: node sync-scripts/sync-livestream-preview.mjs --apply
+
       - name: Sync event data
         run: npm run sync:events-other
 
