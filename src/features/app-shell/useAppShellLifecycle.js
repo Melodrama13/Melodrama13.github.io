@@ -31,7 +31,6 @@ onMounted(() => {
       ports.tabGestures.desktopTabResizeObserver.observe(ports.tabGestures.desktopTabSwitcherRef.value);
     }
   });
-  void ports.resourceLoading.scheduleSmallStaticImageWarmup();
   ports.versionUpdates.releaseLogSkipBuildId.value = String(localStorage.getItem(ports.versionUpdates.APP_RELEASE_LOG_SKIP_KEY) || '').trim();
   ports.versionUpdates.syncReleaseLogSkipChecked();
   ports.versionUpdates.scheduleInitialAppVersionCheck();
@@ -93,17 +92,9 @@ onBeforeUnmount(() => {
     ports.versionUpdates.appVersionCheckDelayTimer = null;
   }
   ports.versionUpdates.clearReleaseLogImageDelay();
-  if (typeof ports.resourceLoading.cancelSmallImageWarmup === 'function') {
-    ports.resourceLoading.cancelSmallImageWarmup();
-    ports.resourceLoading.cancelSmallImageWarmup = null;
-  }
   if (typeof ports.resourceLoading.cancelScheduledPublicDataCacheWrite === 'function') {
     ports.resourceLoading.cancelScheduledPublicDataCacheWrite();
     ports.resourceLoading.cancelScheduledPublicDataCacheWrite = null;
-  }
-  if (typeof ports.resourceLoading.stopSmallImageWarmupObserver === 'function') {
-    ports.resourceLoading.stopSmallImageWarmupObserver();
-    ports.resourceLoading.stopSmallImageWarmupObserver = null;
   }
 });
 };

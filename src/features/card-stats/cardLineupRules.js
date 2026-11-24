@@ -76,10 +76,14 @@ export function createCardLineupRules(inputs) {
     return { total: baseTotal + captainBonus, members };
   };
 
+  const eventStartTimes = new Map();
   const getEventRefRecencyScore = (eventRef) => {
     const dateText = String(eventRef?.start_date || '').trim();
-    const dateObj = inputs.presentation.parseDateSafe(dateText);
-    if (dateObj) return dateObj.getTime();
+    if (!eventStartTimes.has(dateText)) {
+      eventStartTimes.set(dateText, inputs.presentation.parseDateSafe(dateText)?.getTime() ?? null);
+    }
+    const timestamp = eventStartTimes.get(dateText);
+    if (timestamp !== null) return timestamp;
 
     const sourceKey = String(eventRef?.sourceKey || eventRef?.id || '').trim();
     if (inputs.eventCatalog.isNumericEventId(sourceKey)) return Number(sourceKey);

@@ -8,7 +8,9 @@ import { waitNextPaint } from './songFormatters.js';
 import { runCaptureRenderAttempts } from '../../services/capture/captureRenderAttempts.js';
 import { renderCaptureToCanvas as toCanvas, renderHtmlCapture } from '../../services/capture/captureEngineLoader.js';
 import { CAPTURE_IMAGE_PLACEHOLDER } from './songCaptureClone.js';
-import { formatExportTimestamp, sanitizeExportFileName, triggerDownloadPng } from './songCaptureFiles.js';
+import { formatExportTimestamp, sanitizeExportFileName } from './songCaptureFiles.js';
+import { encodeCapturePng, downloadCapturePng } from '../../services/capture/capturePng.js';
+import { renderCaptureSections, shouldSplitCapture } from '../../services/capture/captureSections.js';
 import { getSiteMediaRecovery } from '../../utils/mediaImageRecovery.js';
 import { getCaptureBackgroundColor } from '../../services/capture/captureStyleContext.js';
 
@@ -204,6 +206,9 @@ const exportElementPng = async (targetEl, title, options = {}) => {
     const width = Math.max(1, Math.ceil(renderEl.scrollWidth || renderEl.clientWidth || 0));
     const height = Math.max(1, Math.ceil(renderEl.scrollHeight || renderEl.clientHeight || 0));
     const heavyMediaCount = countHeavyMediaNodes(renderEl);
+    const sections = renderEl.matches('#panel-2dmv-stats') && shouldSplitCapture(renderEl)
+      ? [...renderEl.querySelectorAll(':scope > .song-3dmv-unit-grid > .song-3dmv-unit-card')]
+      : [];
     const pixelRatioPlan = buildCapturePixelRatioPlan(deviceTier);
     const renderAttemptBudgets = buildRenderAttemptTimeouts({
       deviceTier,
@@ -213,8 +218,18 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       pixelRatioPlan
     });
 
-    const canvas = await runCaptureRenderAttempts({
+    const finishCaptureAttempt = canvas => {
+      setModal({
+        state: 'exporting',
+        title: '导出图片',
+        message: '[编码中] 正在生成 PNG 文件...',
+        cancelTask: cancelContext.cancel
+      });
+      return encodeCapturePng(canvas, cancelContext.isCancelled);
+    };
+    const blob = await runCaptureRenderAttempts({
       attemptCount: renderAttemptBudgets.length,
+      finishAttempt: finishCaptureAttempt,
       prepareAttempt: (attemptIdx) => {
         const { pixelRatio, timeoutMs: renderTimeoutMs } = renderAttemptBudgets[attemptIdx];
         const canvasWidth = Math.max(1, Math.round(width * pixelRatio));
@@ -229,6 +244,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
         return { canvasWidth, canvasHeight, renderTimeoutMs };
       },
       renderAttempt: async ({ canvasWidth, canvasHeight, renderTimeoutMs }) => {
+        let attemptFinished = false;
         const renderTask = startSongCaptureRenderTask(() => options?.useHtmlCanvas
           ? renderHtmlCapture(renderEl, {
             backgroundColor: getCaptureBackgroundColor(renderEl),
@@ -239,7 +255,7 @@ const exportElementPng = async (targetEl, title, options = {}) => {
             allowTaint: false,
             logging: false
           })
-          : toCanvas(renderEl, {
+          : renderCaptureSections(renderEl, {
           backgroundColor: getCaptureBackgroundColor(renderEl),
           width,
           height,
@@ -256,8 +272,12 @@ const exportElementPng = async (targetEl, title, options = {}) => {
             }
             return true;
           }
-        }));
-        return await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
+        }, sections, toCanvas, () => attemptFinished || cancelContext.isCancelled()));
+        try {
+          return await withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
+        } finally {
+          attemptFinished = true;
+        }
       },
       handleAttemptError: async (renderError, _attemptContext, attemptIdx) => {
         if (isCaptureRenderTimeoutError(renderError)) {
@@ -289,18 +309,11 @@ const exportElementPng = async (targetEl, title, options = {}) => {
       }
     });
 
-    setModal({
-      state: 'exporting',
-      title: '导出图片',
-      message: '[编码中] 正在生成 PNG 文件...',
-      cancelTask: cancelContext.cancel
-    });
-
     const ts = typeof formatExportTimestamp === 'function' ? formatExportTimestamp() : Date.now();
     const safeTitle = typeof sanitizeExportFileName === 'function' ? sanitizeExportFileName(`${title}_${ts}`) : `${title}_${ts}`;
 
-    await triggerDownloadPng(canvas, safeTitle, cancelContext.isCancelled);
     if (cancelContext.isCancelled()) throw new Error('export-cancelled');
+    downloadCapturePng(blob, `${safeTitle}.png`);
 
     setModal({
       state: 'success',

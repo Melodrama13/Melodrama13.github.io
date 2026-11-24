@@ -2,6 +2,7 @@ import { nextTick } from 'vue';
 import { renderCaptureToCanvas as toCanvas } from '../../services/capture/captureEngineLoader.js';
 import { getSiteMediaRecovery } from '../../utils/mediaImageRecovery.js';
 import { getCaptureBackgroundColor } from '../../services/capture/captureStyleContext.js';
+import { encodeCapturePng, downloadCapturePng } from '../../services/capture/capturePng.js';
 
 /** Capture owns its per-instance state and behavior.
  * Named peer ports are explicit, lazy references to preserve cross-feature initialization.
@@ -37,7 +38,7 @@ const exportPredictedRangePng = async (options = {}) => {
   if (!listEl) return { ok: false, message: '历史列表尚未渲染完成。' };
 
   let exportClone = null;
-  const previousProgressiveRenderKeys = new Set(ports.progressiveRender.progressiveEventRenderKeys.value);
+  const previousProgressiveRenderKeys = new Set(ports.progressiveRender.progressiveEventRenderKeys);
   try {
     const deviceTier = ports.capturePolicy.getHistoryCaptureDeviceTier();
     ports.progressiveRender.addProgressiveEventRenderKeys(getHistoryEventKeysFromExportRows(rows));
@@ -59,7 +60,7 @@ const exportPredictedRangePng = async (options = {}) => {
       return { ok: false, message: '导出截图准备失败。' };
     }
 
-    const canvas = await (async () => {
+    const blob = await (async () => {
       const renderTarget = exportClone.target;
       const bounds = {
         top: 0,
@@ -126,7 +127,7 @@ const exportPredictedRangePng = async (options = {}) => {
 
           const canvasWidth = Math.max(1, Math.round(bounds.width * scale));
           const canvasHeight = Math.max(1, Math.round(bounds.height * scale));
-          return await ports.capturePolicy.withCaptureTimeout(toCanvas(renderTarget, {
+          const canvas = await ports.capturePolicy.withCaptureTimeout(toCanvas(renderTarget, {
             backgroundColor: getCaptureBackgroundColor(renderTarget, '#f4f7f6'),
             width: bounds.width,
             height: bounds.height,
@@ -138,6 +139,7 @@ const exportPredictedRangePng = async (options = {}) => {
             skipAutoScale: true,
             imagePlaceholder: ports.captureAssets.HISTORY_CAPTURE_IMAGE_PLACEHOLDER
           }), timeoutMs, cancelPromise);
+          return await encodeCapturePng(canvas, isCancelled);
         } catch (err) {
           lastErr = err;
         }
@@ -153,22 +155,8 @@ const exportPredictedRangePng = async (options = {}) => {
     const fallback = `pjsk-predict-snapshot-${y}${m}${d}`;
     const fileBaseName = ports.captureRange.sanitizeExportBaseName(options?.fileBaseName || fallback);
 
-    const blob = await new Promise((resolve, reject) => {
-      canvas.toBlob((b) => {
-        if (b) resolve(b);
-        else reject(new Error('toBlob failed'));
-      }, 'image/png');
-    });
-
     if (isCancelled()) throw new Error('export-cancelled');
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${fileBaseName}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+    downloadCapturePng(blob, `${fileBaseName}.png`);
     onStatus?.({
       state: 'success',
       stage: 'success',

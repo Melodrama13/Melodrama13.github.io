@@ -1,5 +1,6 @@
 import { computed, nextTick, ref } from "vue";
 import { renderHtmlCapture as html2canvas } from '../../services/capture/captureEngineLoader.js';
+import { renderCapturePng, downloadCapturePng } from '../../services/capture/capturePng.js';
 import { ALL_PAGE_CONFIG_KEY } from './specialPredictionTextDefaults.js';
 
 /** Owns special prediction capture with explicit instance dependencies. */
@@ -28,9 +29,9 @@ const buildSpecialExportFileName = (sourceName, page, stamp) => [
 const captureSpecialCanvas = async (target) => {
   const exportWidth = Math.ceil(target.scrollWidth || target.getBoundingClientRect().width);
   const exportHeight = Math.ceil(target.scrollHeight || target.getBoundingClientRect().height);
-  const canvas = await html2canvas(target, {
+  return renderCapturePng(scale => html2canvas(target, {
     backgroundColor: '#ffffff',
-    scale: 2,
+    scale,
     useCORS: true,
     logging: false,
     imageTimeout: 12000,
@@ -38,24 +39,7 @@ const captureSpecialCanvas = async (target) => {
     height: exportHeight,
     windowWidth: Math.max(document.documentElement.clientWidth, exportWidth),
     windowHeight: Math.max(document.documentElement.clientHeight, exportHeight)
-  });
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((result) => {
-      if (result) resolve(result);
-      else reject(new Error('toBlob failed'));
-    }, 'image/png');
-  });
-};
-
-const downloadSpecialBlob = (blob, fileName) => {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }));
 };
 
 const resolveMultiExportPages = (
@@ -101,7 +85,7 @@ const exportPng = async () => {
         exportStatus.value = `正在生成 ${index + 1}/${exportTargets.length}：${page.label}`;
       }
       const blob = await captureSpecialCanvas(target);
-      downloadSpecialBlob(blob, buildSpecialExportFileName(sourceName, page, stamp));
+      downloadCapturePng(blob, buildSpecialExportFileName(sourceName, page, stamp));
       if (index < exportTargets.length - 1) {
         await new Promise((resolve) => requestAnimationFrame(resolve));
       }
@@ -128,7 +112,6 @@ hasRenderableRows,
 sanitizeFileName,
 buildSpecialExportFileName,
 captureSpecialCanvas,
-downloadSpecialBlob,
 resolveMultiExportPages,
 exportPng };
 }

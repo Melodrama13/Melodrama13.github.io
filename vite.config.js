@@ -102,6 +102,11 @@ const versionManifestPlugin = () => ({
 export default defineConfig({
   plugins: [staticCornersTemplatePlugin(), vue(), versionManifestPlugin(), lazyModuleRecoveryPlugin()],
   css: { postcss: { plugins: [staticCornerPaintPlugin()] } },
+  // The app has one HTML entry. Local archives can contain whole copies of it.
+  optimizeDeps: { entries: ['index.html'] },
+  server: {
+    watch: { ignored: ['**/.codex/**', '**/.worktrees/**'] }
+  },
   define: {
     __APP_BUILD_ID__: JSON.stringify(buildId),
     __APP_RELEASE_NOTES__: JSON.stringify(releaseNotes),

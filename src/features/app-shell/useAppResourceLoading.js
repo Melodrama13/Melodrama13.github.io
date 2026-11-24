@@ -1,41 +1,10 @@
 import { createPublicDataRepository } from "../../services/publicData/publicDataRepository.js";
 import { validatePredictionScheduleOrderEvents } from "../../domain/predictionScheduleKeys.js";
-import { ref, shallowRef, onMounted, nextTick } from "vue";
-import { collectSmallStaticImageUrls, getCommonSmallStaticImageUrls, installSmallStaticImageWarmupObserver, scheduleImageWarmup } from "../../utils/assets.js";
+import { ref, shallowRef, onMounted } from "vue";
 
 /** Owns application resource loading with per-instance state and explicit peer interfaces. */
 export function useAppResourceLoading(ports = {}) {
-let cancelSmallImageWarmup = null;
-
-let stopSmallImageWarmupObserver = null;
-
 let cancelScheduledPublicDataCacheWrite = null;
-
-const scheduleSmallStaticImageWarmup = async () => {
-  if (typeof document === 'undefined') return;
-  await nextTick();
-
-  const root = document.body;
-  const mobileLike = ports.versionUpdates.isMobileLikeViewport();
-  const urls = [
-    ...getCommonSmallStaticImageUrls({ characters: charactersData.value }),
-    ...collectSmallStaticImageUrls(root)
-  ];
-
-  if (typeof cancelSmallImageWarmup === 'function') cancelSmallImageWarmup();
-  cancelSmallImageWarmup = scheduleImageWarmup(urls, {
-    concurrency: mobileLike ? 3 : 5,
-    timeoutMs: mobileLike ? 10000 : 7000,
-    smallOnly: true
-  });
-
-  if (!stopSmallImageWarmupObserver) {
-    stopSmallImageWarmupObserver = installSmallStaticImageWarmupObserver(root, {
-      concurrency: mobileLike ? 2 : 3,
-      timeoutMs: mobileLike ? 10000 : 7000
-    });
-  }
-};
 
 const historyData = shallowRef([]);
 
@@ -84,7 +53,6 @@ const applyLoadedAppData = (loadedData) => {
   nuigurumiData.value = Array.isArray(loadedData.nuigurumi) ? loadedData.nuigurumi : [];
   isAppDataReady.value = true;
   appDataLoadFailed.value = false;
-  void scheduleSmallStaticImageWarmup();
   ports.statsControls.scheduleStatsTopControlStateSync();
 };
 
@@ -155,10 +123,7 @@ onMounted(async () => {
 });
 };
 return {
-get cancelSmallImageWarmup() { return cancelSmallImageWarmup; }, set cancelSmallImageWarmup(value) { cancelSmallImageWarmup = value; },
-get stopSmallImageWarmupObserver() { return stopSmallImageWarmupObserver; }, set stopSmallImageWarmupObserver(value) { stopSmallImageWarmupObserver = value; },
 get cancelScheduledPublicDataCacheWrite() { return cancelScheduledPublicDataCacheWrite; }, set cancelScheduledPublicDataCacheWrite(value) { cancelScheduledPublicDataCacheWrite = value; },
-scheduleSmallStaticImageWarmup,
 historyData,
 predictionScheduleOrder,
 baseCards,

@@ -28,12 +28,21 @@ const createAsyncTab = (loader) => defineAsyncComponent({
   loadingComponent: TabLoadingIndicator
 });
 
-const tabs = {
-  stats: createAsyncTab(() => import("../../components/CardStats.vue")),
-  history: createAsyncTab(() => import("../../components/EventHistory.vue")),
-  songs: createAsyncTab(() => import("../../components/SongStats.vue")),
-  specialPredict: createAsyncTab(() => import("../../components/SpecialPredictGenerator.vue"))
+const tabImports = {
+  stats: () => import("../../components/CardStats.vue"),
+  history: () => import("../../components/EventHistory.vue"),
+  songs: () => import("../../components/SongStats.vue"),
+  specialPredict: () => import("../../components/SpecialPredictGenerator.vue")
 };
+
+const tabLoaders = Object.fromEntries(Object.entries(tabImports).map(([tab, load]) => {
+  let pending;
+  return [tab, () => pending ??= load().catch(error => {
+    pending = undefined;
+    throw error;
+  })];
+}));
+const tabs = Object.fromEntries(Object.entries(tabLoaders).map(([tab, load]) => [tab, createAsyncTab(load)]));
 
 const APP_CURRENT_TAB_KEY = 'pjsk_planner_current_tab_v1';
 
@@ -56,6 +65,9 @@ const persistCurrentTab = (tab) => {
 };
 
 const currentTab = ref(getInitialTab());
+// Start the selected page's code and CSS while public data is still loading.
+// Keep mounting behind data readiness so initial statistics use the full snapshot.
+void tabLoaders[currentTab.value]().catch(() => {});
 
 return {
 TabLoadingIndicator,

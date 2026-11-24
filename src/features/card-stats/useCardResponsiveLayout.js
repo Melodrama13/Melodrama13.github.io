@@ -117,41 +117,33 @@ export function useCardResponsiveLayout(inputs) {
   };
 
   const syncRelatedJumpChipWidths = () => {
+    const root = inputs.cardStatsRootRef.value;
+    if (!(root instanceof HTMLElement)) return;
     const panels = ['panel-related', 'panel-duo', 'panel-special']
-      .map((id) => document.getElementById(id))
-      .filter((panel) => panel instanceof HTMLElement);
-
-    panels.forEach((panel) => {
-      const blocks = panel.querySelectorAll('.record-block');
-      blocks.forEach((blockEl) => {
-        if (!(blockEl instanceof HTMLElement)) return;
-        const buttons = blockEl.querySelectorAll('.jump-link');
-        if (!buttons.length) {
-          blockEl.style.removeProperty('--record-jump-chip-width');
-          return;
-        }
-
-        let maxWidth = 0;
-        buttons.forEach((btnEl) => {
-          if (!(btnEl instanceof HTMLButtonElement)) return;
-          const prevWidth = btnEl.style.width;
-          const prevMinWidth = btnEl.style.minWidth;
-          const prevMaxWidth = btnEl.style.maxWidth;
-          btnEl.style.width = 'auto';
-          btnEl.style.minWidth = '0';
-          btnEl.style.maxWidth = 'none';
-          const measured = Math.ceil(btnEl.getBoundingClientRect().width);
-          if (measured > maxWidth) maxWidth = measured;
-          btnEl.style.width = prevWidth;
-          btnEl.style.minWidth = prevMinWidth;
-          btnEl.style.maxWidth = prevMaxWidth;
-        });
-
-        if (maxWidth > 0) {
-          blockEl.style.setProperty('--record-jump-chip-width', `${maxWidth}px`);
-        }
-      });
-    });
+      .map(id => root.querySelector(`#${id}`))
+      .filter(Boolean);
+    const blocks = panels.flatMap(panel => [...panel.querySelectorAll('.record-block')]).map(element => ({
+      element,
+      buttons: [...element.querySelectorAll('button.jump-link')].map(button => {
+        const { width, minWidth, maxWidth } = button.style;
+        Object.assign(button.style, { width: 'auto', minWidth: '0', maxWidth: 'none' });
+        return { button, width, minWidth, maxWidth };
+      }),
+      width: 0
+    }));
+    // Measure all intrinsic widths before changing any buttons or blocks again.
+    for (const block of blocks) {
+      for (const { button } of block.buttons) {
+        block.width = Math.max(block.width, Math.ceil(button.getBoundingClientRect().width));
+      }
+    }
+    for (const block of blocks) {
+      for (const { button, width, minWidth, maxWidth } of block.buttons) {
+        Object.assign(button.style, { width, minWidth, maxWidth });
+      }
+      if (block.width > 0) block.element.style.setProperty('--record-jump-chip-width', `${block.width}px`);
+      else if (!block.buttons.length) block.element.style.removeProperty('--record-jump-chip-width');
+    }
   };
 
   const scheduleRelatedJumpChipWidthSync = () => {

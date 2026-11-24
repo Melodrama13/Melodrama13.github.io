@@ -35,6 +35,7 @@ const MILESTONE_CATEGORIES = { count: '首次达成', interval: '间隔纪录', 
 /** Page-owned query state. Historical evidence always uses base cards, independently of predictions and list filters. */
 export function useHistoryPrecedents(ports) {
   const isOpen = ref(false);
+  const hasOpened = ref(false);
   const mode = ref('search');
   const draft = reactive(initialQuery());
   const appliedQuery = ref(initialQuery());
@@ -208,6 +209,7 @@ export function useHistoryPrecedents(ports) {
   };
   const open = (event, id) => {
     dismissTransientOverlays();
+    hasOpened.value = true;
     if (event?.currentTarget && event.currentTarget instanceof HTMLElement) triggerElement = event.currentTarget;
     ports.filtering.showFilter.value = false;
     if (id !== undefined) {
@@ -337,8 +339,16 @@ export function useHistoryPrecedents(ports) {
     });
     return points.map(point => ({ ...point, events: point.events.map(event => eventContexts.value.get(String(event.id)) || event) }));
   };
-  watch([() => draft.type, draftColorBounds], () => {
-    if (draft.type === 'sequence' && draft.sequenceMetric === 'quantityGap' && Number(draft.gapThreshold) > draftColorBounds.value.gapMax) draft.gapThreshold = QUANTITY_GAP_MIN;
+  // Default thresholds need no bounds check. Keep the history catalog lazy
+  // until an exact quantity or a quantity-gap rule actually needs it.
+  watch(() => {
+    const needsGapBounds = draft.type === 'sequence' && draft.sequenceMetric === 'quantityGap';
+    const needsQuantityBounds = draft.type !== 'interval' && draft.attributeMode !== 'skillFirst'
+      && !['MAX', 'MIN'].includes(draft.threshold) && !(draft.type === 'pool' && draft.threshold === '');
+    return needsGapBounds || needsQuantityBounds ? draftColorBounds.value : null;
+  }, bounds => {
+    if (!bounds) return;
+    if (draft.type === 'sequence' && draft.sequenceMetric === 'quantityGap' && Number(draft.gapThreshold) > bounds.gapMax) draft.gapThreshold = QUANTITY_GAP_MIN;
     normalizeQuantity();
   });
   watch(() => draft.attributeMode, value => {
@@ -393,8 +403,8 @@ export function useHistoryPrecedents(ports) {
     if (isPeriodBanner(metric)) draft.skill = '';
   }, { flush: 'sync' });
   watch(() => draft.skill, () => { if (draft.type === 'period') draft.threshold = 'MAX'; }, { flush: 'sync' });
-  watch(periodOptions, options => {
-    if (draft.type === 'period' && draft.periodValue !== 'all' && !options.some(option => option.key === draft.periodValue)) draft.periodValue = 'all';
+  watch(() => draft.type === 'period' && draft.periodValue !== 'all' ? periodOptions.value : null, options => {
+    if (options && !options.some(option => option.key === draft.periodValue)) draft.periodValue = 'all';
   });
   watch(() => draft.sequence, value => {
     if (draft.sequenceMetric === 'songVs' && !['ownBox', 'otherBox'].includes(value)) draft.character = '';
@@ -410,7 +420,11 @@ export function useHistoryPrecedents(ports) {
   }, { flush: 'sync' });
   watch(() => draft.threshold, value => { if (draft.type === 'period' && ['MAX', 'MIN'].includes(value)) draft.operator = 'equal'; });
   watch(mode, () => { visibleCount.value = mode.value === 'event' ? 8 : 5; });
-  watch(selectedEventId, () => { milestoneFilter.value = 'all'; visibleCount.value = 8; });
+  watch(() => hasOpened.value ? selectedEventId.value : undefined, (_, previousId) => {
+    if (previousId === undefined) return;
+    milestoneFilter.value = 'all';
+    visibleCount.value = 8;
+  });
   watch(milestoneFilter, () => { visibleCount.value = 8; });
   return {
     isOpen, mode, draft, appliedQuery, hasSearched, visibleCount, selectedEventId, selectedEventDetails, catalog, eventOptions, characterOptions,

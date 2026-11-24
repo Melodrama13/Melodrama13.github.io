@@ -224,7 +224,7 @@ export function useCardCaptureClone(inputs) {
       const cloneEl = cloneNodes[idx];
       if (!(sourceEl instanceof HTMLElement) || !(cloneEl instanceof HTMLElement)) continue;
       const computed = window.getComputedStyle(getStaticCornerPaintElement(sourceEl));
-      const background = String(computed.background || '').trim();
+      // WebKit can crash when serializing the computed background shorthand.
       const bgColor = String(computed.backgroundColor || '').trim();
       const bgImage = String(computed.backgroundImage || '').trim();
       const bgRepeat = String(computed.backgroundRepeat || '').trim();

@@ -34399,7 +34399,8 @@
     "isNewlyWrittenMusic": true,
     "releaseDate": "2026-09-30 00:00:00",
     "categories": [
-      "3DMV"
+      "3DMV",
+      "2DMV"
     ],
     "units": [
       "all",

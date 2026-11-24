@@ -7,13 +7,15 @@ import { isCaptureCancelledError } from './captureTaskControl.js';
  * @param {number} options.attemptCount
  * @param {(attemptIndex: number) => unknown} options.prepareAttempt Synchronous preparation.
  * @param {(context: unknown, attemptIndex: number) => Promise<HTMLCanvasElement|null>} options.renderAttempt
+ * @param {(canvas: HTMLCanvasElement) => Promise<Blob>} [options.finishAttempt] Optional encoding before an attempt succeeds.
  * @param {(error: unknown, context: unknown, attemptIndex: number) => Promise<void>} options.handleAttemptError
- * @returns {Promise<HTMLCanvasElement>}
+ * @returns {Promise<HTMLCanvasElement|Blob>}
  */
 export const runCaptureRenderAttempts = async ({
   attemptCount,
   prepareAttempt,
   renderAttempt,
+  finishAttempt,
   handleAttemptError
 }) => {
   let lastRenderError = null;
@@ -22,7 +24,7 @@ export const runCaptureRenderAttempts = async ({
     const context = prepareAttempt(attemptIndex);
     try {
       const canvas = await renderAttempt(context, attemptIndex);
-      if (canvas) return canvas;
+      if (canvas) return finishAttempt ? await finishAttempt(canvas) : canvas;
     } catch (renderError) {
       lastRenderError = renderError;
       if (isCaptureCancelledError(renderError)) throw renderError;

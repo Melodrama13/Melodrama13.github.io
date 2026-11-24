@@ -116,8 +116,7 @@ export const useViewportFocus = ({ getHost, getRoot, getReadingCandidates = null
     return hit.getBoundingClientRect().height <= host.clientHeight ? hit : null;
   };
 
-  const snapshot = (element = null) => {
-    const layout = geometry();
+  const snapshot = (element = null, layout = geometry()) => {
     if (!layout) return null;
     const anchor = element instanceof HTMLElement && root.contains(element) ? element : pickReadingElement();
     // An explicitly pinned activity is still the reading row. Keep it after
@@ -135,7 +134,7 @@ export const useViewportFocus = ({ getHost, getRoot, getReadingCandidates = null
     if (isScrollNavigationActive(host)) { clearTouch(); clearNativeScroll(); force = true; }
     if (!force && cached && !sameGeometry(cached.layout, layout)) return;
     if (!force && cached && Math.abs(host.scrollTop - cached.scrollTop) < 0.5 && cached.anchor?.isConnected) return;
-    cached = snapshot();
+    cached = snapshot(null, layout);
   };
   const scheduleRemember = event => {
     trackNativeScroll();
@@ -216,7 +215,7 @@ export const useViewportFocus = ({ getHost, getRoot, getReadingCandidates = null
     holdAnchoring(owner);
     const tick = () => {
       if (!correct(owner)) return;
-      const layout = geometry();
+      const layout = owner.nativeScrollBaseline.layout;
       const time = performance.now();
       if (!sameGeometry(owner.layout, layout)) owner.stableSince = time;
       owner.layout = layout;

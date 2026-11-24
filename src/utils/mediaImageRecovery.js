@@ -21,7 +21,7 @@ export function createMediaImageRecovery(getRoot) {
   const images = new Map(), resources = new Map(), recovered = new Map(), objectUrls = new Map();
   const captureTargets = new Set(), pausedRoots = new Set();
   const retryControls = createMediaImageRetryControls(retryImage);
-  let running = false, active = 0, timer = 0, observer, mutations;
+  let running = false, active = 0, timer = 0, schedulePending = false, observer, mutations;
   const canRun = () => running && document.visibilityState !== 'hidden' && navigator.onLine !== false;
   const limit = () => window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches ? 4 : 16;
   const paused = image => [...pausedRoots].some(root => root.contains(image));
@@ -87,7 +87,7 @@ export function createMediaImageRecovery(getRoot) {
     }
     retryControls.collect((image, source) => getRoot()?.contains(image) && getMediaImageSource(image) === source);
   };
-  const schedule = () => {
+  const updateSchedule = () => {
     clearTimeout(timer); timer = 0; collect();
     if (!canRun() || active >= limit()) return;
     let next = Infinity;
@@ -95,6 +95,15 @@ export function createMediaImageRecovery(getRoot) {
       if (!resource.active && resource.attempts < MAX_ATTEMPTS && [...resource.images].some(requested)) next = Math.min(next, resource.retryAt);
     }
     if (Number.isFinite(next)) timer = window.setTimeout(pump, Math.max(0, next - performance.now()));
+  };
+  // A subtree insertion can register hundreds of images in one turn.
+  const schedule = () => {
+    if (!running || schedulePending) return;
+    schedulePending = true;
+    queueMicrotask(() => {
+      schedulePending = false;
+      if (running) updateSchedule();
+    });
   };
   const register = (image, source, failed = false, deferred = false) => {
     if (!(image instanceof HTMLImageElement) || !getRoot()?.contains(image) || paused(image) || !isMediaImageUrl(source)) return;
@@ -275,7 +284,10 @@ export function createMediaImageRecovery(getRoot) {
       }
     } finally {
       captureTargets.delete(root);
-      for (const [image, loading] of previousLoading) image.setAttribute('loading', loading || 'lazy');
+      for (const [image, loading] of previousLoading) {
+        if (loading === null) image.removeAttribute('loading');
+        else image.setAttribute('loading', loading);
+      }
       for (const resource of resources.values()) if (resource.active && ![...resource.images].some(requested)) {
         releaseRequest(resource); resource.attempts = Math.max(0, resource.attempts - 1);
       }

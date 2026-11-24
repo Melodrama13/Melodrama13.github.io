@@ -1,5 +1,5 @@
 import { getInitialHeavyRowBudget, selectInitialHeavyEventKeys, resolveInitialHistoryTargetId } from './historyRenderSchedule.js';
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, reactive, computed, nextTick, watch } from 'vue';
 import { isViewportAtMost, UI_BREAKPOINTS } from '../../ui/breakpoints.js';
 import { getHistoryRowsInBounds } from './historyVisibleRows.js';
 
@@ -17,7 +17,9 @@ const EVENT_FULL_RENDER_STORAGE_KEY = 'pjsk_event_history_full_render_v1';
 
 const EVENT_FULL_RENDER_QUERY_PARAM = 'eventFullRender';
 
-const progressiveEventRenderKeys = ref(new Set());
+// Track membership by row key so adding a batch does not invalidate the
+// render effect of every existing row.
+const progressiveEventRenderKeys = reactive(new Set());
 
 const isFullEventRenderMode = ref(false);
 
@@ -120,19 +122,20 @@ const forcedHeavyEventKeys = computed(() => {
 const getForceHeavyEventKeys = () => new Set(forcedHeavyEventKeys.value);
 
 const setProgressiveEventRenderKeys = (nextKeys) => {
-  progressiveEventRenderKeys.value = nextKeys;
+  for (const key of progressiveEventRenderKeys) {
+    if (!nextKeys.has(key)) progressiveEventRenderKeys.delete(key);
+  }
+  addProgressiveEventRenderKeys(nextKeys);
 };
 
 const addProgressiveEventRenderKeys = (keys) => {
   if (!keys || keys.size === 0) return false;
-  const next = new Set(progressiveEventRenderKeys.value);
   let changed = false;
   keys.forEach((key) => {
-    if (!key || next.has(key)) return;
-    next.add(key);
+    if (!key || progressiveEventRenderKeys.has(key)) return;
+    progressiveEventRenderKeys.add(key);
     changed = true;
   });
-  if (changed) setProgressiveEventRenderKeys(next);
   return changed;
 };
 
@@ -219,19 +222,17 @@ const scheduleProgressiveEventRender = () => {
     const rows = getProgressiveEventRows();
     if (rows.length === 0) return;
 
-    const next = new Set(progressiveEventRenderKeys.value);
     const batch = getProgressiveBatchRowCount();
     let added = 0;
 
     for (const row of rows) {
-      if (next.has(row.key)) continue;
-      next.add(row.key);
+      if (progressiveEventRenderKeys.has(row.key)) continue;
+      progressiveEventRenderKeys.add(row.key);
       added += 1;
       if (added >= batch) break;
     }
 
     if (added > 0) {
-      setProgressiveEventRenderKeys(next);
       scheduleProgressiveEventRender();
     }
   }, getProgressiveBatchDelayMs());
@@ -289,7 +290,7 @@ const resetProgressiveEventRender = () => {
   }
   const rowKeys = new Set(rows.map((row) => row.key));
   const next = getForceHeavyEventKeys();
-  progressiveEventRenderKeys.value.forEach((key) => {
+  progressiveEventRenderKeys.forEach((key) => {
     if (rowKeys.has(key)) next.add(key);
   });
   const initialKeys = selectInitialHeavyEventKeys(rows, {
@@ -315,7 +316,7 @@ const shouldRenderEventHeavy = (row) => {
   if (!row || row.kind !== 'event') return true;
   if (isFullEventRenderMode.value) return true;
   const forceKeys = forcedHeavyEventKeys.value;
-  return forceKeys.has(row.key) || progressiveEventRenderKeys.value.has(row.key);
+  return forceKeys.has(row.key) || progressiveEventRenderKeys.has(row.key);
 };
 
 const getEventPlaceholderMemberCount = (event, group = 'normal') => {

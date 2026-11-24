@@ -3,8 +3,10 @@ import { waitForCaptureAssetsReady } from '../../services/capture/captureAssetRe
 import { freezeCaptureCssVariables, hideUnreadyCaptureImages } from '../../services/capture/captureElementState.js';
 import { runCaptureRenderAttempts } from '../../services/capture/captureRenderAttempts.js';
 import { renderCaptureToCanvas as toCanvas } from '../../services/capture/captureEngineLoader.js';
-import { renderCardYearCaptureToCanvas } from './cardYearCaptureRendering.js';
+import { getCardCaptureSections } from './cardPanelCaptureRendering.js';
+import { renderCaptureSections } from '../../services/capture/captureSections.js';
 import { getCaptureBackgroundColor } from '../../services/capture/captureStyleContext.js';
+import { encodeCapturePng, downloadCapturePng } from '../../services/capture/capturePng.js';
 
 /** Owns card capture export behavior for one mounted page instance.
  * Inputs are explicit feature interfaces; getters preserve lazy cross-feature reads.
@@ -27,24 +29,6 @@ export function useCardCaptureExport(inputs) {
     const hh = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
     return `${y}${m}${d}_${hh}${mm}`;
-  };
-
-  const triggerDownloadPng = async (canvas, fileName, isCancelled) => {
-    const blob = await new Promise((resolve) => {
-      canvas.toBlob((b) => resolve(b), 'image/png');
-    });
-    if (isCancelled()) throw new Error('export-cancelled');
-    if (!blob) {
-      throw new Error('toBlob failed');
-    }
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${fileName}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   const waitNextPaint = () => new Promise((resolve) => {
@@ -198,17 +182,29 @@ export function useCardCaptureExport(inputs) {
       const yearCardCount = targetEl.matches('.year-stats-panel')
         ? targetEl.querySelectorAll('.year-stats-card-entry').length
         : 0;
+      const sections = getCardCaptureSections(renderEl);
+      const sectionRenderBudget = sections.length ? cloneImages.length * 40 + sections.length * 600 : 0;
       const pixelRatioPlan = inputs.captureRendering.buildCapturePixelRatioPlan(deviceTier);
-      const canvas = await runCaptureRenderAttempts({
+      const finishCaptureAttempt = canvas => {
+        inputs.captureModal.setScreenshotModalState({
+          state: 'exporting',
+          title: '导出图片',
+          message: '[编码中] 正在生成 PNG 文件...',
+          cancelTask: cancelContext.cancel
+        });
+        return encodeCapturePng(canvas, cancelContext.isCancelled);
+      };
+      const blob = await runCaptureRenderAttempts({
         attemptCount: pixelRatioPlan.length,
+        finishAttempt: finishCaptureAttempt,
         prepareAttempt: (attemptIdx) => {
           const pixelRatio = pixelRatioPlan[attemptIdx];
           const canvasWidth = Math.max(1, Math.round(width * pixelRatio));
           const canvasHeight = Math.max(1, Math.round(height * pixelRatio));
           const renderTimeoutMs = Math.min(
             56000,
-            // Whole-year exports serialize hundreds of cards even when the canvas is small.
-            Math.max(12000, yearCardCount * 40, Math.round(inputs.captureRendering.computeRenderTimeoutMs({
+            // Section rendering still embeds every image even when the canvas is small.
+            Math.max(12000, yearCardCount * 40, sectionRenderBudget, Math.round(inputs.captureRendering.computeRenderTimeoutMs({
               deviceTier,
               heavyMediaCount,
               width,
@@ -227,7 +223,7 @@ export function useCardCaptureExport(inputs) {
         },
         renderAttempt: async ({ canvasWidth, canvasHeight, renderTimeoutMs }) => {
           let attemptFinished = false;
-          const renderTask = inputs.captureRendering.trackCardCaptureRenderTask(renderCardYearCaptureToCanvas(renderEl, {
+          const renderTask = inputs.captureRendering.trackCardCaptureRenderTask(renderCaptureSections(renderEl, {
             backgroundColor: getCaptureBackgroundColor(renderEl),
             width,
             height,
@@ -244,7 +240,7 @@ export function useCardCaptureExport(inputs) {
               }
               return true;
             }
-          }, toCanvas, () => attemptFinished || cancelContext.isCancelled()));
+          }, sections, toCanvas, () => attemptFinished || cancelContext.isCancelled()));
           try {
             return await inputs.captureRendering.withRenderTimeout(renderTask, renderTimeoutMs, cancelContext.cancelPromise);
           } finally {
@@ -267,18 +263,11 @@ export function useCardCaptureExport(inputs) {
         }
       });
 
-      inputs.captureModal.setScreenshotModalState({
-        state: 'exporting',
-        title: '导出图片',
-        message: '[编码中] 正在生成 PNG 文件...',
-        cancelTask: cancelContext.cancel
-      });
-
       const ts = typeof formatExportTimestamp === 'function' ? formatExportTimestamp() : Date.now();
       const safeTitle = typeof sanitizeExportFileName === 'function' ? sanitizeExportFileName(`${title}_${ts}`) : `${title}_${ts}`;
 
-      await triggerDownloadPng(canvas, safeTitle, cancelContext.isCancelled);
       if (cancelContext.isCancelled()) throw new Error('export-cancelled');
+      downloadCapturePng(blob, `${safeTitle}.png`);
 
       inputs.captureModal.setScreenshotModalState({
         state: 'success',

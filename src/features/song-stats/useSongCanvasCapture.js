@@ -1,5 +1,6 @@
 import { createCaptureCancelContext, isCaptureCancelledError } from '../../services/capture/captureTaskControl.js';
-import { formatExportTimestamp, sanitizeExportFileName, triggerDownloadPng } from './songCaptureFiles.js';
+import { formatExportTimestamp, sanitizeExportFileName } from './songCaptureFiles.js';
+import { downloadCapturePng, renderCapturePng } from '../../services/capture/capturePng.js';
 import { getMediaImageSource, getSiteMediaRecovery, isMediaImageUrl } from '../../utils/mediaImageRecovery.js';
 
 /** Per-instance state owned by SongCanvasCapture. */
@@ -183,7 +184,6 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
   const rowHeight = metrics.size + metrics.dateHeight + metrics.gap + 2;
   const gridHeight = cardTopPad + headHeight + maxSongCount * rowHeight + 4;
   const height = outerPad * 2 + titleHeight + gridHeight;
-  const pixelScale = 2;
 
   setModal({
     state: 'capturing',
@@ -234,76 +234,85 @@ const exportAnvoFillCanvasPng = async (title, options = {}) => {
 
     if (cancelContext.isCancelled()) throw new Error('export-cancelled');
 
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.ceil(width * pixelScale);
-    canvas.height = Math.ceil(height * pixelScale);
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('canvas context unavailable');
-    ctx.scale(pixelScale, pixelScale);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, height);
+    const blob = await renderCapturePng(pixelScale => {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(width * pixelScale);
+      canvas.height = Math.ceil(height * pixelScale);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      try {
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('canvas context unavailable');
+        ctx.scale(pixelScale, pixelScale);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
 
-    ctx.fillStyle = '#0f172a';
-    ctx.font = '800 20px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(title || 'Anvo', outerPad, outerPad + titleHeight / 2);
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '800 20px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(title || 'Anvo', outerPad, outerPad + titleHeight / 2);
 
-    const gridX = outerPad;
-    const gridY = outerPad + titleHeight;
-    const gridWidth = width - outerPad * 2;
-    const gap = metrics.columnGap;
-    const columnWidth = (gridWidth - gap * Math.max(0, cards.length - 1)) / cards.length;
-    const jacketSize = Math.max(10, Math.min(metrics.size, columnWidth - metrics.columnPadding * 2));
+        const gridX = outerPad;
+        const gridY = outerPad + titleHeight;
+        const gridWidth = width - outerPad * 2;
+        const gap = metrics.columnGap;
+        const columnWidth = (gridWidth - gap * Math.max(0, cards.length - 1)) / cards.length;
+        const jacketSize = Math.max(10, Math.min(metrics.size, columnWidth - metrics.columnPadding * 2));
 
-    cards.forEach((card, index) => {
-      const x = gridX + index * (columnWidth + gap);
-      const y = gridY;
-      drawCanvasRoundRectPath(ctx, x, y, columnWidth, gridHeight, 5);
-      ctx.fillStyle = card?.tint || '#ffffff';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(15, 23, 42, 0.16)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+        cards.forEach((card, index) => {
+          const x = gridX + index * (columnWidth + gap);
+          const y = gridY;
+          drawCanvasRoundRectPath(ctx, x, y, columnWidth, gridHeight, 5);
+          ctx.fillStyle = card?.tint || '#ffffff';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.16)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
 
-      const centerX = x + columnWidth / 2;
-      const avatarSize = Math.max(16, Math.min(28, jacketSize));
-      drawCanvasCircleImage(ctx, imageMap.get(card?.avatar) || null, centerX, y + cardTopPad + avatarSize / 2, avatarSize / 2);
+          const centerX = x + columnWidth / 2;
+          const avatarSize = Math.max(16, Math.min(28, jacketSize));
+          drawCanvasCircleImage(ctx, imageMap.get(card?.avatar) || null, centerX, y + cardTopPad + avatarSize / 2, avatarSize / 2);
 
-      ctx.fillStyle = '#475569';
-      ctx.font = `800 ${Math.max(10, Math.min(16, jacketSize / 2.2))}px system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String(card?.count ?? 0), centerX, y + cardTopPad + avatarSize + 12);
-
-      let rowY = y + cardTopPad + headHeight;
-      (card?.songs || []).forEach((song) => {
-        const imgX = x + (columnWidth - jacketSize) / 2;
-        drawCanvasRoundedImage(ctx, imageMap.get(song?.jacketUrl) || null, imgX, rowY, jacketSize, Math.min(6, jacketSize / 5));
-        if (song?.releasedAtText) {
-          ctx.fillStyle = '#334155';
-          ctx.font = `700 ${Math.max(7, Math.min(10, metrics.dateHeight * 0.9))}px system-ui, sans-serif`;
+          ctx.fillStyle = '#475569';
+          ctx.font = `800 ${Math.max(10, Math.min(16, jacketSize / 2.2))}px system-ui, sans-serif`;
           ctx.textAlign = 'center';
-          ctx.textBaseline = 'top';
-          ctx.fillText(String(song.releasedAtText), centerX, rowY + jacketSize + 1, columnWidth - 2);
-        }
-        rowY += rowHeight;
-      });
-    });
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(card?.count ?? 0), centerX, y + cardTopPad + avatarSize + 12);
 
-    setModal({
-      state: 'exporting',
-      title: '导出图片',
-      message: '正在生成 PNG 文件...',
-      cancelTask: cancelContext.cancel
-    });
+          let rowY = y + cardTopPad + headHeight;
+          (card?.songs || []).forEach((song) => {
+            const imgX = x + (columnWidth - jacketSize) / 2;
+            drawCanvasRoundedImage(ctx, imageMap.get(song?.jacketUrl) || null, imgX, rowY, jacketSize, Math.min(6, jacketSize / 5));
+            if (song?.releasedAtText) {
+              ctx.fillStyle = '#334155';
+              ctx.font = `700 ${Math.max(7, Math.min(10, metrics.dateHeight * 0.9))}px system-ui, sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'top';
+              ctx.fillText(String(song.releasedAtText), centerX, rowY + jacketSize + 1, columnWidth - 2);
+            }
+            rowY += rowHeight;
+          });
+        });
+
+        setModal({
+          state: 'exporting',
+          title: '导出图片',
+          message: '正在生成 PNG 文件...',
+          cancelTask: cancelContext.cancel
+        });
+
+        return canvas;
+      } catch (error) {
+        canvas.width = canvas.height = 0;
+        throw error;
+      }
+    }, cancelContext.isCancelled);
 
     const ts = typeof formatExportTimestamp === 'function' ? formatExportTimestamp() : Date.now();
     const safeTitle = typeof sanitizeExportFileName === 'function' ? sanitizeExportFileName(`${title || 'Anvo'}_${ts}`) : `${title || 'Anvo'}_${ts}`;
-    await triggerDownloadPng(canvas, safeTitle, cancelContext.isCancelled);
     if (cancelContext.isCancelled()) throw new Error('export-cancelled');
+    downloadCapturePng(blob, `${safeTitle}.png`);
 
     setModal({
       state: 'success',

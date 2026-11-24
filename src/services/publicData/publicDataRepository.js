@@ -75,8 +75,7 @@ export function createPublicDataRepository({ dataVersion, isDevelopment, updateK
   const readPublicDataTextsFromCache = async (cache, allowLooseMatch = false) => {
     if (!cache) return null;
     const cachedRequests = allowLooseMatch ? await cache.keys() : [];
-    const resourceTexts = {};
-    for (const resource of DATA_RESOURCE_DEFS) {
+    const responses = await Promise.all(DATA_RESOURCE_DEFS.map(async (resource) => {
       let response = await cache.match(buildVersionedPublicDataUrl(resource.url));
       if (!response && allowLooseMatch) {
         const looseRequest = cachedRequests.find((request) => {
@@ -88,10 +87,11 @@ export function createPublicDataRepository({ dataVersion, isDevelopment, updateK
         });
         response = looseRequest ? await cache.match(looseRequest) : null;
       }
-      if (!response) return null;
-      resourceTexts[resource.key] = await response.text();
-    }
-    return resourceTexts;
+      return response;
+    }));
+    if (responses.some(response => !response)) return null;
+    const texts = await Promise.all(responses.map(response => response.text()));
+    return Object.fromEntries(DATA_RESOURCE_DEFS.map(({ key }, index) => [key, texts[index]]));
   };
 
   const readCachedPublicDataTexts = async () => {
