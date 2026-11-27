@@ -37165,5 +37165,51 @@
         ]
       }
     ]
+  },
+  {
+    "id": 830,
+    "title": "再会",
+    "pronunciation": "さいかい",
+    "composer": "はるまきごはん",
+    "lyricist": "はるまきごはん",
+    "arranger": "はるまきごはん",
+    "isNewlyWrittenMusic": false,
+    "releaseDate": "2026-11-27 15:00:00",
+    "categories": [
+      "original"
+    ],
+    "units": [
+      "all",
+      "ln"
+    ],
+    "difficulties": {
+      "easy": 6,
+      "normal": 13,
+      "hard": 17,
+      "expert": 23,
+      "master": 27
+    },
+    "vocals": [
+      {
+        "vocal_id": 1874,
+        "type": "original_song",
+        "released_at": "2026/11/27",
+        "characters": [
+          "初音未来"
+        ]
+      },
+      {
+        "vocal_id": 2127,
+        "type": "sekai",
+        "released_at": "2026/11/27",
+        "characters": [
+          "巡音流歌",
+          "星乃一歌",
+          "天马咲希",
+          "望月穗波",
+          "日野森志步"
+        ]
+      }
+    ]
   }
 ]
